@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tankbot.example/schemas/v1/view-policy.schema.json",
+  "title": "TankBot 受信 View Policy 草案",
+  "type": "object",
+  "properties": {
+    "policy_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "system_pose_allowed": {
+      "type": "boolean"
+    },
+    "player_pose_allowed": {
+      "type": "boolean"
+    },
+    "allowed_pose_frames": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "map",
+          "odom"
+        ]
+      },
+      "minItems": 0,
+      "maxItems": 2,
+      "uniqueItems": true
+    },
+    "public_map": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "local_observation_channels": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 160,
+        "pattern": "^/[a-z][a-z0-9_]*(/[a-z][a-z0-9_]*)*$"
+      },
+      "minItems": 0,
+      "maxItems": 32,
+      "uniqueItems": true
+    },
+    "true_enemy_objects": {
+      "type": "boolean"
+    },
+    "world_effects": {
+      "type": "boolean"
+    },
+    "camera_source": {
+      "const": "selected_pose_or_manual"
+    },
+    "pose_fresh_ticks": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "pose_hide_after_ticks": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    }
+  },
+  "required": [
+    "policy_id",
+    "system_pose_allowed",
+    "player_pose_allowed",
+    "allowed_pose_frames",
+    "public_map",
+    "local_observation_channels",
+    "true_enemy_objects",
+    "world_effects",
+    "camera_source",
+    "pose_fresh_ticks",
+    "pose_hide_after_ticks"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,300 @@
+{
+  "profile": "training-60hz-v1",
+  "cases": [
+    {
+      "case_id": "unknown-field",
+      "fixture": "pose-message.json",
+      "layer": "schema",
+      "mutation": {
+        "pointer": "/secret_world",
+        "value": {}
+      },
+      "expected": "reject",
+      "expected_code": "INVALID_SCHEMA",
+      "note": "Envelope 禁止未知字段。"
+    },
+    {
+      "case_id": "unsafe-integer",
+      "fixture": "pose-message.json",
+      "layer": "schema",
+      "mutation": {
+        "pointer": "/sequence_number",
+        "value": 9007199254740992
+      },
+      "expected": "reject",
+      "expected_code": "INVALID_SCHEMA",
+      "note": "超出 JavaScript 安全整数范围。"
+    },
+    {
+      "case_id": "bad-covariance-shape",
+      "fixture": "pose-message.json",
+      "layer": "schema",
+      "mutation": {
+        "pointer": "/payload/covariance",
+        "value": [
+          1,
+          2
+        ]
+      },
+      "expected": "reject",
+      "expected_code": "INVALID_SCHEMA",
+      "note": "协方差必须是九个数或 null。"
+    },
+    {
+      "case_id": "invalid-yaw",
+      "fixture": "pose-message.json",
+      "layer": "schema",
+      "mutation": {
+        "pointer": "/payload/yaw_rad",
+        "value": 4
+      },
+      "expected": "reject",
+      "expected_code": "INVALID_SCHEMA",
+      "note": "yaw 必须处于规范的半开区间。"
+    },
+    {
+      "case_id": "command-without-request-id",
+      "fixture": "drive-command.json",
+      "layer": "schema",
+      "mutation": {
+        "pointer": "/request_id",
+        "value": null
+      },
+      "expected": "reject",
+      "expected_code": "INVALID_SCHEMA",
+      "note": "Command 必须有请求 ID。"
+    },
+    {
+      "case_id": "payload-kind-mismatch",
+      "fixture": "pose-message.json",
+      "layer": "schema",
+      "mutation": {
+        "pointer": "/message_type",
+        "value": "command"
+      },
+      "expected": "reject",
+      "expected_code": "INVALID_SCHEMA",
+      "note": "Pose 负载必须是 Topic。"
+    },
+    {
+      "case_id": "invalid-extension-name",
+      "fixture": "pose-message.json",
+      "layer": "schema",
+      "mutation": {
+        "pointer": "/extensions",
+        "value": {
+          "truth": 1
+        }
+      },
+      "expected": "reject",
+      "expected_code": "INVALID_SCHEMA",
+      "note": "扩展键必须使用 x_ 前缀。"
+    },
+    {
+      "case_id": "hidden-object-in-view",
+      "fixture": "view-snapshot.json",
+      "layer": "schema",
+      "mutation": {
+        "pointer": "/payload/objects",
+        "value": [
+          {
+            "x_m": 2
+          }
+        ]
+      },
+      "expected": "reject",
+      "expected_code": "INVALID_SCHEMA",
+      "note": "v1 保留此数组为空，未来需先定义实体 Schema。"
+    },
+    {
+      "case_id": "missing-player-source",
+      "fixture": "tankbot.json",
+      "layer": "schema",
+      "mutation": {
+        "pointer": "/pose_source/module_id",
+        "value": null
+      },
+      "expected": "reject",
+      "expected_code": "INVALID_SCHEMA",
+      "note": "player 模式必须显式选择来源模块。"
+    },
+    {
+      "case_id": "invalid-trigger-list",
+      "fixture": "module-contract-event.json",
+      "layer": "schema",
+      "mutation": {
+        "pointer": "/execution/trigger_inputs",
+        "value": []
+      },
+      "expected": "reject",
+      "expected_code": "INVALID_SCHEMA",
+      "note": "event 模式至少有一个触发输入。"
+    },
+    {
+      "case_id": "asymmetric-covariance",
+      "fixture": "pose-message.json",
+      "layer": "domain",
+      "mutation": {
+        "pointer": "/payload/covariance",
+        "value": [
+          1,
+          0.1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1
+        ]
+      },
+      "expected": "reject",
+      "expected_code": "INVALID_COVARIANCE",
+      "note": "结构应通过，但违反对称容差。"
+    },
+    {
+      "case_id": "indefinite-covariance",
+      "fixture": "pose-message.json",
+      "layer": "domain",
+      "mutation": {
+        "pointer": "/payload/covariance",
+        "value": [
+          1,
+          2,
+          0,
+          2,
+          1,
+          0,
+          0,
+          0,
+          1
+        ]
+      },
+      "expected": "reject",
+      "expected_code": "INVALID_COVARIANCE",
+      "note": "矩阵对称且对角非负，但不是半正定。"
+    },
+    {
+      "case_id": "wrong-time-formula",
+      "fixture": "pose-message.json",
+      "layer": "domain",
+      "mutation": {
+        "pointer": "/simulation_time_ns",
+        "value": 1999999999
+      },
+      "expected": "reject",
+      "expected_code": "INVALID_SCHEMA",
+      "note": "判断时需要会话的 physics_hz。"
+    },
+    {
+      "case_id": "wrong-run",
+      "fixture": "pose-message.json",
+      "layer": "domain",
+      "mutation": {
+        "pointer": "/run_id",
+        "value": "old-run"
+      },
+      "expected": "reject",
+      "expected_code": "WRONG_RUN",
+      "note": "绑定会话当前 run 为 run-demo-001。"
+    },
+    {
+      "case_id": "ungranted-publisher",
+      "fixture": "pose-message.json",
+      "layer": "domain",
+      "mutation": {
+        "pointer": "/publisher_id",
+        "value": "sensor:imu"
+      },
+      "expected": "reject",
+      "expected_code": "UNAUTHORIZED",
+      "note": "绑定主体仅能发布配置中的候选输出端口。"
+    },
+    {
+      "case_id": "forbidden-frame",
+      "fixture": "pose-message.json",
+      "layer": "domain",
+      "mutation": {
+        "pointer": "/frame_id",
+        "value": "odom"
+      },
+      "expected": "reject",
+      "expected_code": "INVALID_FRAME",
+      "note": "本案例任务只授权 map 帧的位姿输出。"
+    },
+    {
+      "case_id": "drive-expired",
+      "fixture": "drive-command.json",
+      "layer": "domain",
+      "mutation": {
+        "pointer": "/payload/valid_until_tick",
+        "value": 125
+      },
+      "expected": "reject",
+      "expected_code": "STALE_DATA",
+      "note": "有效期早于 apply_tick=126。"
+    },
+    {
+      "case_id": "drive-too-far-future",
+      "fixture": "drive-command.json",
+      "layer": "domain",
+      "mutation": {
+        "pointer": "/payload/apply_tick",
+        "value": 127
+      },
+      "expected": "reject",
+      "expected_code": "MISSED_DEADLINE",
+      "note": "生成上下文 tick=120，最多超前六个 tick。"
+    },
+    {
+      "case_id": "period-before-deadline",
+      "fixture": "module-contract.json",
+      "layer": "domain",
+      "mutation": {
+        "pointer": "/execution/period_ticks",
+        "value": 3
+      },
+      "expected": "reject",
+      "expected_code": "INVALID_SCHEMA",
+      "note": "调度要求 period_ticks 不小于 deadline_ticks。"
+    },
+    {
+      "case_id": "trigger-not-an-input",
+      "fixture": "module-contract-event.json",
+      "layer": "domain",
+      "mutation": {
+        "pointer": "/execution/trigger_inputs",
+        "value": [
+          "missing"
+        ]
+      },
+      "expected": "reject",
+      "expected_code": "INVALID_SCHEMA",
+      "note": "触发器必须引用声明的输入端口。"
+    },
+    {
+      "case_id": "unknown-port",
+      "fixture": "tankbot.json",
+      "layer": "domain",
+      "mutation": {
+        "pointer": "/connections/0/to",
+        "value": "odometry.missing"
+      },
+      "expected": "reject",
+      "expected_code": "INVALID_SCHEMA",
+      "note": "连接必须绑定已存在的 Contract 端口。"
+    },
+    {
+      "case_id": "policy-invalid-age-window",
+      "fixture": "view-policy.json",
+      "layer": "domain",
+      "mutation": {
+        "pointer": "/pose_hide_after_ticks",
+        "value": 6
+      },
+      "expected": "reject",
+      "expected_code": "INVALID_SCHEMA",
+      "note": "隐藏阈值不得早于 fresh 阈值。"
+    }
+  ]
+}

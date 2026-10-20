@@ -1,0 +1,573 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tankbot.example/schemas/v1/envelope.schema.json",
+  "title": "TankBot Protocol 1.0 草案 Envelope",
+  "type": "object",
+  "properties": {
+    "protocol_version": {
+      "const": "1.0"
+    },
+    "message_type": {
+      "enum": [
+        "topic",
+        "command",
+        "service_request",
+        "service_response",
+        "event"
+      ]
+    },
+    "channel": {
+      "type": "string",
+      "maxLength": 160,
+      "pattern": "^/[a-z][a-z0-9_]*(/[a-z][a-z0-9_]*)*$"
+    },
+    "sequence_number": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "simulation_tick": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "simulation_time_ns": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,64}$"
+    },
+    "publisher_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_:-]{0,63}$"
+    },
+    "request_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "frame_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,47}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "schema": {
+      "enum": [
+        "pose2d@1",
+        "imu@1",
+        "encoder@1",
+        "radar@1",
+        "drive_command@1",
+        "view_snapshot@1",
+        "error@1",
+        "negotiate_request@1",
+        "negotiate_response@1",
+        "runtime_step_request@1",
+        "runtime_step_result@1"
+      ]
+    },
+    "payload": {
+      "type": "object"
+    },
+    "extensions": {
+      "type": "object",
+      "maxProperties": 16,
+      "propertyNames": {
+        "pattern": "^x_[a-z0-9_]{1,48}$"
+      }
+    }
+  },
+  "required": [
+    "protocol_version",
+    "message_type",
+    "channel",
+    "sequence_number",
+    "simulation_tick",
+    "simulation_time_ns",
+    "run_id",
+    "publisher_id",
+    "request_id",
+    "frame_id",
+    "schema",
+    "payload"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "message_type": {
+            "enum": [
+              "topic",
+              "event"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "request_id": {
+            "type": "null"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "pose2d@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "payloads.schema.json#/$defs/pose2d"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "imu@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "payloads.schema.json#/$defs/imu"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "encoder@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "payloads.schema.json#/$defs/encoder"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "radar@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "payloads.schema.json#/$defs/radar"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "drive_command@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "payloads.schema.json#/$defs/drive_command"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "view_snapshot@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "payloads.schema.json#/$defs/view_snapshot"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "error@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "payloads.schema.json#/$defs/error"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "negotiate_request@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "payloads.schema.json#/$defs/negotiate_request"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "negotiate_response@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "payloads.schema.json#/$defs/negotiate_response"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "runtime_step_request@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "payloads.schema.json#/$defs/runtime_step_request"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "runtime_step_result@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "payloads.schema.json#/$defs/runtime_step_result"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "pose2d@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "message_type": {
+            "enum": [
+              "topic"
+            ]
+          },
+          "frame_id": {
+            "enum": [
+              "map",
+              "odom"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "imu@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "message_type": {
+            "enum": [
+              "topic"
+            ]
+          },
+          "frame_id": {
+            "enum": [
+              "imu_link",
+              "base_link"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "encoder@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "message_type": {
+            "enum": [
+              "topic"
+            ]
+          },
+          "frame_id": {
+            "enum": [
+              "base_link"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "radar@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "message_type": {
+            "enum": [
+              "topic"
+            ]
+          },
+          "frame_id": {
+            "enum": [
+              "radar_link"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "drive_command@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "message_type": {
+            "enum": [
+              "command"
+            ]
+          },
+          "frame_id": {
+            "enum": [
+              "base_link"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "view_snapshot@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "message_type": {
+            "enum": [
+              "topic"
+            ]
+          },
+          "frame_id": {
+            "enum": [
+              null
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "error@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "message_type": {
+            "enum": [
+              "event",
+              "service_response"
+            ]
+          },
+          "frame_id": {
+            "enum": [
+              null
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "negotiate_request@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "message_type": {
+            "enum": [
+              "service_request"
+            ]
+          },
+          "frame_id": {
+            "enum": [
+              null
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "negotiate_response@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "message_type": {
+            "enum": [
+              "service_response"
+            ]
+          },
+          "frame_id": {
+            "enum": [
+              null
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "runtime_step_request@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "message_type": {
+            "enum": [
+              "service_request"
+            ]
+          },
+          "frame_id": {
+            "enum": [
+              null
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "runtime_step_result@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "message_type": {
+            "enum": [
+              "service_response"
+            ]
+          },
+          "frame_id": {
+            "enum": [
+              null
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

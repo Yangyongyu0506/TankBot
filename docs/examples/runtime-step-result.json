@@ -1,0 +1,55 @@
+{
+  "protocol_version": "1.0",
+  "message_type": "service_response",
+  "channel": "/runtime/step",
+  "sequence_number": 1,
+  "simulation_tick": 6,
+  "simulation_time_ns": 100000000,
+  "run_id": "run-demo-001",
+  "publisher_id": "runtime:robot1",
+  "request_id": "step-6",
+  "frame_id": null,
+  "schema": "runtime_step_result@1",
+  "payload": {
+    "step_id": "step-6",
+    "results": [
+      {
+        "module_id": "odometry",
+        "status": "completed",
+        "error_code": null
+      }
+    ],
+    "outputs": [
+      {
+        "protocol_version": "1.0",
+        "message_type": "topic",
+        "channel": "/robot/estimates/odometry/pose",
+        "sequence_number": 1,
+        "simulation_tick": 6,
+        "simulation_time_ns": 100000000,
+        "run_id": "run-demo-001",
+        "publisher_id": "module:odometry",
+        "request_id": null,
+        "frame_id": "map",
+        "schema": "pose2d@1",
+        "payload": {
+          "child_frame_id": "base_link",
+          "x_m": 1.2,
+          "y_m": 0.4,
+          "yaw_rad": 0.1,
+          "covariance": [
+            0.04,
+            0,
+            0,
+            0,
+            0.04,
+            0,
+            0,
+            0,
+            0.01
+          ]
+        }
+      }
+    ]
+  }
+}

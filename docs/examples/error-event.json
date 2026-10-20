@@ -1,0 +1,19 @@
+{
+  "protocol_version": "1.0",
+  "message_type": "event",
+  "channel": "/system/diagnostics",
+  "sequence_number": 20,
+  "simulation_tick": 126,
+  "simulation_time_ns": 2100000000,
+  "run_id": "run-demo-001",
+  "publisher_id": "host:router",
+  "request_id": null,
+  "frame_id": null,
+  "schema": "error@1",
+  "payload": {
+    "code": "STALE_DATA",
+    "message": "Pose sample is too old.",
+    "field": "simulation_tick",
+    "related_request_id": null
+  }
+}

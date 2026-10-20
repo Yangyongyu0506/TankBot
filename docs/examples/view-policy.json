@@ -1,0 +1,18 @@
+{
+  "policy_id": "campaign-l3-v1",
+  "system_pose_allowed": false,
+  "player_pose_allowed": true,
+  "allowed_pose_frames": [
+    "map",
+    "odom"
+  ],
+  "public_map": "task-map-01",
+  "local_observation_channels": [
+    "/robot/sensors/radar"
+  ],
+  "true_enemy_objects": false,
+  "world_effects": false,
+  "camera_source": "selected_pose_or_manual",
+  "pose_fresh_ticks": 12,
+  "pose_hide_after_ticks": 60
+}

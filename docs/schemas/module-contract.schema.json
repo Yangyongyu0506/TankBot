@@ -1,0 +1,188 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tankbot.example/schemas/v1/module-contract.schema.json",
+  "title": "TankBot Module Contract 1.0 草案",
+  "type": "object",
+  "properties": {
+    "contract_version": {
+      "const": "1.0"
+    },
+    "module_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,47}$"
+    },
+    "entry_point": {
+      "type": "string",
+      "maxLength": 160,
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)*:[A-Za-z_][A-Za-z0-9_]*$"
+    },
+    "inputs": {
+      "type": "object",
+      "maxProperties": 32,
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]{0,47}$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "max_age_ticks": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3600
+          }
+        },
+        "required": [
+          "schema",
+          "required",
+          "max_age_ticks"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "outputs": {
+      "type": "object",
+      "maxProperties": 32,
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]{0,47}$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "schema"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "execution": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "enum": [
+            "periodic",
+            "event"
+          ]
+        },
+        "period_ticks": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3600
+        },
+        "trigger_inputs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,47}$"
+          },
+          "minItems": 1,
+          "maxItems": 32
+        },
+        "min_interval_ticks": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3600
+        },
+        "deadline_ticks": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3600
+        },
+        "budget_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        }
+      },
+      "required": [
+        "mode",
+        "deadline_ticks",
+        "budget_ms"
+      ],
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "mode": {
+              "const": "periodic"
+            }
+          },
+          "required": [
+            "period_ticks"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "trigger_inputs"
+                ]
+              },
+              {
+                "required": [
+                  "min_interval_ticks"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "properties": {
+            "mode": {
+              "const": "event"
+            }
+          },
+          "required": [
+            "trigger_inputs",
+            "min_interval_ticks"
+          ],
+          "not": {
+            "required": [
+              "period_ticks"
+            ]
+          }
+        }
+      ]
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]{0,47}$"
+      },
+      "minItems": 0,
+      "maxItems": 64,
+      "uniqueItems": true
+    },
+    "state_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    }
+  },
+  "required": [
+    "contract_version",
+    "module_id",
+    "entry_point",
+    "inputs",
+    "outputs",
+    "execution",
+    "dependencies",
+    "state_version"
+  ],
+  "additionalProperties": false
+}

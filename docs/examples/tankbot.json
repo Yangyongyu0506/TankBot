@@ -1,0 +1,34 @@
+{
+  "manifest_version": "1.0",
+  "sdk_version": "0.1.0",
+  "protocol_version": "1.0",
+  "project_id": "my-first-robot",
+  "entry_point": "main:build_robot",
+  "modules": [
+    {
+      "module_id": "odometry",
+      "contract": "contracts/odometry.json",
+      "config": {}
+    }
+  ],
+  "connections": [
+    {
+      "from": "/robot/sensors/encoder",
+      "to": "odometry.encoder"
+    },
+    {
+      "from": "/robot/sensors/imu",
+      "to": "odometry.imu"
+    },
+    {
+      "from": "odometry.pose",
+      "to": "/robot/estimates/odometry/pose"
+    }
+  ],
+  "dependencies": [],
+  "pose_source": {
+    "mode": "player",
+    "module_id": "odometry",
+    "fallback": "none"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "protocol_version": "1.0",
+  "message_type": "service_request",
+  "channel": "/session/negotiate",
+  "sequence_number": 0,
+  "simulation_tick": 0,
+  "simulation_time_ns": 0,
+  "run_id": "bootstrap",
+  "publisher_id": "connection:ui",
+  "request_id": "negotiate-1",
+  "frame_id": null,
+  "schema": "negotiate_request@1",
+  "payload": {
+    "supported_protocol_versions": [
+      "1.0"
+    ],
+    "role": "ui"
+  }
+}

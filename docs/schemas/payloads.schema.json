@@ -1,0 +1,576 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tankbot.example/schemas/v1/payloads.schema.json",
+  "title": "TankBot v1 负载定义",
+  "$defs": {
+    "pose2d": {
+      "type": "object",
+      "properties": {
+        "child_frame_id": {
+          "const": "base_link"
+        },
+        "x_m": {
+          "type": "number",
+          "minimum": -1000000.0,
+          "maximum": 1000000.0
+        },
+        "y_m": {
+          "type": "number",
+          "minimum": -1000000.0,
+          "maximum": 1000000.0
+        },
+        "yaw_rad": {
+          "type": "number",
+          "minimum": -3.141592653589793,
+          "exclusiveMaximum": 3.141592653589793
+        },
+        "covariance": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 9,
+              "maxItems": 9
+            }
+          ]
+        }
+      },
+      "required": [
+        "child_frame_id",
+        "x_m",
+        "y_m",
+        "yaw_rad",
+        "covariance"
+      ],
+      "additionalProperties": false
+    },
+    "imu": {
+      "type": "object",
+      "properties": {
+        "angular_velocity_z_radps": {
+          "type": "number"
+        },
+        "linear_acceleration_x_mps2": {
+          "type": "number"
+        },
+        "linear_acceleration_y_mps2": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "angular_velocity_z_radps",
+        "linear_acceleration_x_mps2",
+        "linear_acceleration_y_mps2"
+      ],
+      "additionalProperties": false
+    },
+    "encoder": {
+      "type": "object",
+      "properties": {
+        "left_distance_m": {
+          "type": "number"
+        },
+        "right_distance_m": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "left_distance_m",
+        "right_distance_m"
+      ],
+      "additionalProperties": false
+    },
+    "radar": {
+      "type": "object",
+      "properties": {
+        "detections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "observation_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 32
+              },
+              "range_m": {
+                "type": "number",
+                "minimum": 0
+              },
+              "bearing_rad": {
+                "type": "number",
+                "minimum": -3.141592653589793,
+                "exclusiveMaximum": 3.141592653589793
+              }
+            },
+            "required": [
+              "observation_id",
+              "range_m",
+              "bearing_rad"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0,
+          "maxItems": 128
+        }
+      },
+      "required": [
+        "detections"
+      ],
+      "additionalProperties": false
+    },
+    "drive_command": {
+      "type": "object",
+      "properties": {
+        "apply_tick": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "valid_until_tick": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "linear_velocity_mps": {
+          "type": "number"
+        },
+        "angular_velocity_radps": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "apply_tick",
+        "valid_until_tick",
+        "linear_velocity_mps",
+        "angular_velocity_radps"
+      ],
+      "additionalProperties": false
+    },
+    "view_snapshot": {
+      "type": "object",
+      "properties": {
+        "view_revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "policy_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "selected_pose": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "source_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "frame_id": {
+                  "enum": [
+                    "map",
+                    "odom"
+                  ]
+                },
+                "simulation_tick": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "freshness": {
+                  "enum": [
+                    "fresh",
+                    "stale"
+                  ]
+                },
+                "pose": {
+                  "$ref": "payloads.schema.json#/$defs/pose2d"
+                }
+              },
+              "required": [
+                "source_id",
+                "frame_id",
+                "simulation_tick",
+                "freshness",
+                "pose"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "local_observations": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "$ref": "envelope.schema.json"
+              },
+              {
+                "properties": {
+                  "message_type": {
+                    "const": "topic"
+                  },
+                  "schema": {
+                    "enum": [
+                      "imu@1",
+                      "encoder@1",
+                      "radar@1"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 64
+        },
+        "objects": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "effects": {
+          "type": "array",
+          "maxItems": 0
+        }
+      },
+      "required": [
+        "view_revision",
+        "policy_id",
+        "selected_pose",
+        "local_observations",
+        "objects",
+        "effects"
+      ],
+      "additionalProperties": false
+    },
+    "error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "enum": [
+            "INVALID_JSON",
+            "INVALID_SCHEMA",
+            "NON_FINITE",
+            "UNAUTHORIZED",
+            "UNKNOWN_CHANNEL",
+            "OUT_OF_ORDER",
+            "WRONG_RUN",
+            "STALE_DATA",
+            "INVALID_FRAME",
+            "INVALID_COVARIANCE",
+            "MISSED_DEADLINE",
+            "RATE_LIMITED",
+            "DUPLICATE_REQUEST",
+            "VERSION_UNSUPPORTED",
+            "INPUT_UNAVAILABLE",
+            "MODULE_ERROR",
+            "HOST_OVERRUN",
+            "RESOURCE_LIMIT"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 1024
+        },
+        "field": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "related_request_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "field",
+        "related_request_id"
+      ],
+      "additionalProperties": false
+    },
+    "negotiate_request": {
+      "type": "object",
+      "properties": {
+        "supported_protocol_versions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]*\\.[0-9]+$"
+          },
+          "minItems": 1,
+          "maxItems": 8
+        },
+        "role": {
+          "enum": [
+            "ui",
+            "robot"
+          ]
+        }
+      },
+      "required": [
+        "supported_protocol_versions",
+        "role"
+      ],
+      "additionalProperties": false
+    },
+    "negotiate_response": {
+      "type": "object",
+      "properties": {
+        "selected_protocol_version": {
+          "const": "1.0"
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "physics_hz": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "profile_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "minItems": 0,
+          "maxItems": 64
+        }
+      },
+      "required": [
+        "selected_protocol_version",
+        "run_id",
+        "physics_hz",
+        "profile_id",
+        "capabilities"
+      ],
+      "additionalProperties": false
+    },
+    "runtime_step_request": {
+      "type": "object",
+      "properties": {
+        "step_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "activation_tick": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "output_commit_tick": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "modules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "module_id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]{0,47}$"
+              },
+              "dt_ticks": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "module_id",
+              "dt_ticks"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 1,
+          "maxItems": 64
+        },
+        "inputs": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "$ref": "envelope.schema.json"
+              },
+              {
+                "properties": {
+                  "message_type": {
+                    "const": "topic"
+                  },
+                  "schema": {
+                    "enum": [
+                      "pose2d@1",
+                      "imu@1",
+                      "encoder@1",
+                      "radar@1"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 128
+        }
+      },
+      "required": [
+        "step_id",
+        "activation_tick",
+        "output_commit_tick",
+        "modules",
+        "inputs"
+      ],
+      "additionalProperties": false
+    },
+    "runtime_step_result": {
+      "type": "object",
+      "properties": {
+        "step_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "module_id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]{0,47}$"
+              },
+              "status": {
+                "enum": [
+                  "completed",
+                  "failed",
+                  "skipped"
+                ]
+              },
+              "error_code": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "module_id",
+              "status",
+              "error_code"
+            ],
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "status": {
+                      "const": "completed"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "error_code": {
+                      "type": "null"
+                    }
+                  }
+                },
+                "else": {
+                  "properties": {
+                    "error_code": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 64
+        },
+        "outputs": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "$ref": "envelope.schema.json"
+              },
+              {
+                "properties": {
+                  "message_type": {
+                    "enum": [
+                      "topic",
+                      "command"
+                    ]
+                  },
+                  "schema": {
+                    "enum": [
+                      "pose2d@1",
+                      "drive_command@1"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 128
+        }
+      },
+      "required": [
+        "step_id",
+        "results",
+        "outputs"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

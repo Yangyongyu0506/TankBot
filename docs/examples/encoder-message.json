@@ -1,0 +1,17 @@
+{
+  "protocol_version": "1.0",
+  "message_type": "topic",
+  "channel": "/robot/sensors/encoder",
+  "sequence_number": 20,
+  "simulation_tick": 120,
+  "simulation_time_ns": 2000000000,
+  "run_id": "run-demo-001",
+  "publisher_id": "sensor:encoder",
+  "request_id": null,
+  "frame_id": "base_link",
+  "schema": "encoder@1",
+  "payload": {
+    "left_distance_m": 1.0,
+    "right_distance_m": 1.1
+  }
+}

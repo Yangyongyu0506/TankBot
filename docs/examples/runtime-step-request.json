@@ -1,0 +1,61 @@
+{
+  "protocol_version": "1.0",
+  "message_type": "service_request",
+  "channel": "/runtime/step",
+  "sequence_number": 1,
+  "simulation_tick": 6,
+  "simulation_time_ns": 100000000,
+  "run_id": "run-demo-001",
+  "publisher_id": "host:supervisor",
+  "request_id": "step-6",
+  "frame_id": null,
+  "schema": "runtime_step_request@1",
+  "payload": {
+    "step_id": "step-6",
+    "activation_tick": 6,
+    "output_commit_tick": 12,
+    "modules": [
+      {
+        "module_id": "odometry",
+        "dt_ticks": 6
+      }
+    ],
+    "inputs": [
+      {
+        "protocol_version": "1.0",
+        "message_type": "topic",
+        "channel": "/robot/sensors/encoder",
+        "sequence_number": 1,
+        "simulation_tick": 6,
+        "simulation_time_ns": 100000000,
+        "run_id": "run-demo-001",
+        "publisher_id": "sensor:encoder",
+        "request_id": null,
+        "frame_id": "base_link",
+        "schema": "encoder@1",
+        "payload": {
+          "left_distance_m": 1.0,
+          "right_distance_m": 1.1
+        }
+      },
+      {
+        "protocol_version": "1.0",
+        "message_type": "topic",
+        "channel": "/robot/sensors/imu",
+        "sequence_number": 1,
+        "simulation_tick": 6,
+        "simulation_time_ns": 100000000,
+        "run_id": "run-demo-001",
+        "publisher_id": "sensor:imu",
+        "request_id": null,
+        "frame_id": "imu_link",
+        "schema": "imu@1",
+        "payload": {
+          "angular_velocity_z_radps": 0.12,
+          "linear_acceleration_x_mps2": 0.02,
+          "linear_acceleration_y_mps2": 0.0
+        }
+      }
+    ]
+  }
+}

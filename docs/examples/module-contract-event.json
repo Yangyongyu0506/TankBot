@@ -1,0 +1,33 @@
+{
+  "contract_version": "1.0",
+  "module_id": "odometry",
+  "entry_point": "localization.odometry:Odometry",
+  "inputs": {
+    "encoder": {
+      "schema": "encoder@1",
+      "required": true,
+      "max_age_ticks": 12
+    },
+    "imu": {
+      "schema": "imu@1",
+      "required": false,
+      "max_age_ticks": 6
+    }
+  },
+  "outputs": {
+    "pose": {
+      "schema": "pose2d@1"
+    }
+  },
+  "execution": {
+    "mode": "event",
+    "trigger_inputs": [
+      "encoder"
+    ],
+    "min_interval_ticks": 6,
+    "deadline_ticks": 6,
+    "budget_ms": 20
+  },
+  "dependencies": [],
+  "state_version": "1"
+}

@@ -1,0 +1,22 @@
+{
+  "protocol_version": "1.0",
+  "message_type": "service_response",
+  "channel": "/session/negotiate",
+  "sequence_number": 0,
+  "simulation_tick": 0,
+  "simulation_time_ns": 0,
+  "run_id": "run-demo-001",
+  "publisher_id": "host:session",
+  "request_id": "negotiate-1",
+  "frame_id": null,
+  "schema": "negotiate_response@1",
+  "payload": {
+    "selected_protocol_version": "1.0",
+    "run_id": "run-demo-001",
+    "physics_hz": 60,
+    "profile_id": "training-60hz-v1",
+    "capabilities": [
+      "view.snapshot.read"
+    ]
+  }
+}

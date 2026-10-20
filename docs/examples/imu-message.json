@@ -1,0 +1,18 @@
+{
+  "protocol_version": "1.0",
+  "message_type": "topic",
+  "channel": "/robot/sensors/imu",
+  "sequence_number": 20,
+  "simulation_tick": 120,
+  "simulation_time_ns": 2000000000,
+  "run_id": "run-demo-001",
+  "publisher_id": "sensor:imu",
+  "request_id": null,
+  "frame_id": "imu_link",
+  "schema": "imu@1",
+  "payload": {
+    "angular_velocity_z_radps": 0.12,
+    "linear_acceleration_x_mps2": 0.02,
+    "linear_acceleration_y_mps2": 0.0
+  }
+}
