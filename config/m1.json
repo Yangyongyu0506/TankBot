@@ -1,5 +1,5 @@
 {
-  "config_version": "1.0",
+  "config_version": "1.1",
   "confirmation_status": "confirmed",
   "body": {
     "length_m": 0.8,
@@ -137,35 +137,6 @@
       }
     ]
   },
-  "deferred_weapons": {
-    "implemented": false,
-    "turret": {
-      "mass_kg": 2.0,
-      "yaw_inertia_kg_m2": 0.08,
-      "center_m": [
-        0.0,
-        0.0
-      ],
-      "tau_s": 0.1,
-      "max_torque_nm": 2.0,
-      "max_relative_rate_radps": 8.0,
-      "bearing_drag_nm_s": 0.02,
-      "muzzle_offset_m": [
-        0.45,
-        0.0
-      ]
-    },
-    "projectile": {
-      "mass_kg": 0.05,
-      "radius_m": 0.03,
-      "relative_speed_mps": 15.0,
-      "wall_restitution": 1.0,
-      "wall_friction": 0.0,
-      "max_bounces": 3,
-      "lifetime_s": 5.0
-    },
-    "mass_accounting": "fixed_chassis_mass"
-  },
   "runtime": {
     "commit_delay_ticks": 6,
     "batch_budget_ms": 20,
@@ -191,7 +162,9 @@
     "public_map": "m1-test-map",
     "local_observation_channels": [
       "/robot/sensors/joint_states",
-      "/robot/sensors/imu"
+      "/robot/sensors/imu",
+      "/robot/turret/joint_states",
+      "/robot/weapons/cannon/state"
     ],
     "true_enemy_objects": false,
     "world_effects": false,
@@ -207,7 +180,8 @@
     "keyboard_refresh_ms": 100,
     "keyboard_linear_mps": 1.0,
     "keyboard_yaw_radps": 1.0,
-    "interpolation_jump_m": 1.0
+    "interpolation_jump_m": 1.0,
+    "keyboard_turret_radps": 2.0
   },
   "host": {
     "bind": "127.0.0.1",
@@ -300,6 +274,106 @@
     "entry_point": "localization.odometry:Odometry",
     "pose_offset_m": 0.0,
     "output_frame": "map",
-    "fault": "none"
+    "fault": "none",
+    "weapon_demo": {
+      "enabled": false,
+      "turret_velocity_radps": 2.0,
+      "fire_period_ticks": 18
+    }
+  },
+  "weapons": {
+    "turret": {
+      "mass_kg": 2.0,
+      "yaw_inertia_kg_m2": 0.08,
+      "center_m": [
+        0.0,
+        0.0
+      ],
+      "tau_s": 0.1,
+      "max_torque_nm": 2.0,
+      "max_relative_rate_radps": 8.0,
+      "bearing_drag_nm_s": 0.02,
+      "muzzle_offset_m": [
+        0.45,
+        0.0
+      ],
+      "initial_relative_angle_rad": 0.0,
+      "initial_relative_rate_radps": 0.0,
+      "cmd_vel_timeout_s": 0.5
+    },
+    "projectile": {
+      "mass_kg": 0.05,
+      "radius_m": 0.03,
+      "relative_speed_mps": 5.0,
+      "wall_restitution": 1.0,
+      "wall_friction": 0.0,
+      "max_bounces": 3,
+      "lifetime_s": 5.0
+    },
+    "mass_accounting": "fixed_chassis_mass",
+    "enabled": true,
+    "firing": {
+      "cooldown_s": 0.25,
+      "trigger": "single",
+      "ammunition": "unlimited",
+      "request_cache_capacity": 65536,
+      "pending_capacity": 64,
+      "max_active_projectiles": 64
+    },
+    "numerics": {
+      "time_epsilon_s": 1e-09,
+      "spatial_epsilon_m": 1e-06
+    },
+    "impact": {
+      "momentum": "world_velocity",
+      "application_body": "chassis",
+      "application_point": "contact_or_muzzle",
+      "direction_rule": "chassis_capability",
+      "timing": "substep_end"
+    },
+    "targets": [
+      {
+        "target_id": "target_01",
+        "pose": [
+          -3.0,
+          0.0,
+          0.0
+        ]
+      }
+    ],
+    "collision": {
+      "owner_immunity": "until_exit",
+      "projectile_pair": "destroy_both",
+      "simultaneous_pairs": "destroy_contact_graph",
+      "priority": "target_pair_wall",
+      "wall_order": "stable_id",
+      "blocked_muzzle": "reject_without_recoil_or_cooldown"
+    }
+  },
+  "control_sources": {
+    "chassis": "keyboard",
+    "turret": "keyboard",
+    "weapon": "keyboard"
+  },
+  "view_mode": "estimated",
+  "practice_view_policy": {
+    "policy_id": "m1b-weapons-practice",
+    "system_pose_allowed": true,
+    "player_pose_allowed": false,
+    "allowed_pose_frames": [
+      "map"
+    ],
+    "public_map": "m1-test-map",
+    "local_observation_channels": [
+      "/robot/sensors/joint_states",
+      "/robot/sensors/imu",
+      "/robot/turret/joint_states",
+      "/robot/weapons/cannon/state"
+    ],
+    "true_enemy_objects": false,
+    "world_effects": true,
+    "camera_source": "selected_pose_or_manual",
+    "pose_fresh_ticks": 12,
+    "pose_hide_after_ticks": 60
   }
 }

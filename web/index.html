@@ -1,17 +1,18 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>TankBot · Motion Lab</title><link rel="stylesheet" href="/style.css"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>TankBot · Weapons Lab</title><link rel="stylesheet" href="/style.css"></head>
 <body>
-  <header><a class="brand" href="/">T<span>◈</span>NK<span>BOT</span></a><span class="edition">M1 / MOTION LAB</span><span id="connection" class="pill">连接中</span></header>
+  <header><a class="brand" href="/">T<span>◈</span>NK<span>BOT</span></a><span class="edition">M1b / WEAPONS LAB</span><span id="connection" class="pill">连接中</span></header>
   <main>
     <section class="arena-panel"><div class="panel-heading"><div><p class="eyebrow">ROBOTICS PLAYGROUND</p><h1>从观测开始，建立世界。</h1></div><span class="live"><i></i><span id="physics-rate">SIMULATION</span></span></div>
       <div class="canvas-wrap"><canvas id="arena" width="1000" height="700"></canvas><div class="map-label">TASK MAP / METERS</div><div id="pose-label" class="pose-label">等待位姿估计</div></div>
-      <div class="legend"><span><i class="estimate"></i> 机器人估计</span><span><i class="trail"></i> 估计轨迹</span><span>静态地图已由任务公开</span></div>
+      <p id="mode-label" class="hint">—</p><div class="legend"><span><i class="estimate"></i> <span id="legend-pose">机器人估计</span></span><span><i class="trail"></i> 估计轨迹</span><span>静态地图已由任务公开</span></div>
     </section>
     <aside><section class="card"><p class="eyebrow">01 / CHASSIS</p><h2 id="chassis">—</h2><p id="controls">—</p><div class="keypad"><button data-key="KeyW">W<br><small>前进</small></button><div><button data-key="KeyA">A</button><button data-key="KeyS">S</button><button data-key="KeyD">D</button></div><div><button data-key="KeyQ">Q ↶</button><button data-key="KeyE">E ↷</button></div></div><p class="hint">松开按键主动制动 · 失联后看门狗制动</p></section>
-    <section class="card"><p class="eyebrow">02 / ESTIMATED STATE</p><div class="state-grid"><span>X / m<strong id="x">—</strong></span><span>Y / m<strong id="y">—</strong></span><span>YAW / rad<strong id="yaw">—</strong></span><span>SAMPLE TICK<strong id="tick">—</strong></span></div><p id="freshness" class="hint">没有合法估计时不显示全局车体</p></section>
+    <section class="card"><p class="eyebrow"><span id="state-heading">02 / ESTIMATED STATE</span></p><div class="state-grid"><span>X / m<strong id="x">—</strong></span><span>Y / m<strong id="y">—</strong></span><span>YAW / rad<strong id="yaw">—</strong></span><span>SAMPLE TICK<strong id="tick">—</strong></span></div><p id="freshness" class="hint">没有合法估计时不显示全局车体</p></section>
     <section class="card"><p class="eyebrow">03 / LOCAL SENSORS</p><div id="wheels" class="wheel-list"></div><div class="imu"><span>IMU ωz</span><strong id="gyro">—</strong></div><p id="accel" class="hint">aₓ — · aᵧ — m/s²</p></section>
-    <section class="note"><span>↗</span><p>在地图上的位置来自 Python 里程计。碰撞仍由独立的物理世界决定，估计误差会保留。</p></section></aside>
-  </main><footer><span>TankBot / Experimental M1</span><span>Physics → Sensors → Python → Estimated pose → Authorized view</span></footer>
+    <section class="card"><p class="eyebrow">04 / TURRET & CANNON</p><h2>炮台与武器</h2><p id="weapon-control" class="hint">—</p><div class="keypad"><button data-key="KeyJ">J ↶</button><button data-key="KeyL">L ↷</button><button id="fire">空格 · 单发</button></div><p id="turret" class="hint">等待炮台观测</p><p id="weapon" class="hint">等待武器状态</p></section>
+    <section class="note"><span>↗</span><p id="view-note">在地图上的位置来自 Python 里程计。碰撞仍由独立的物理世界决定，估计误差会保留。</p></section></aside>
+  </main><footer><span>TankBot / Experimental M1b</span><span>Physics → Sensors → Python → Estimated pose → Authorized view</span></footer>
   <script type="module" src="/app.js"></script>
 </body></html>

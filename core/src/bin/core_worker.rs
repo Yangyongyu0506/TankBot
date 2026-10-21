@@ -1,7 +1,7 @@
 //! Private stdio adapter, never connected to the player worker or browser.
 use serde_json::{Value, json};
 use std::io::{self, Read, Write};
-use tankbot_core::{Config, GameCore, VelocityTarget};
+use tankbot_core::{Config, GameCore, TurretTarget, VelocityTarget};
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut input = io::stdin().lock();
     let mut output = io::stdout().lock();
@@ -41,13 +41,33 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             .map_err(|e| e.to_string())?;
                         c.set_target(t)?;
                     }
-                    c.step();
+                    if r["revoke_turret"] == true {
+                        c.revoke_turret_target();
+                    }
+                    if !r["turret_target"].is_null() {
+                        let target: TurretTarget =
+                            serde_json::from_value(r["turret_target"].clone())
+                                .map_err(|e| e.to_string())?;
+                        c.set_turret_target(target)?;
+                    }
+                    if let Some(requests) = r["fire_requests"].as_array() {
+                        for request in requests {
+                            c.queue_fire(
+                                serde_json::from_value(request.clone())
+                                    .map_err(|e| e.to_string())?,
+                            )?;
+                        }
+                    }
+                    c.step()?;
                 }
                 Some("snapshot") => {}
                 Some("probe") => {
                     return Ok(json!(tankbot_core::run_build_probe(
                         &r["config"].to_string()
                     )?));
+                }
+                Some("weapons_probe") => {
+                    return tankbot_core::run_weapon_probe(&r["config"].to_string());
                 }
                 _ => return Err("Unknown operation".into()),
             }

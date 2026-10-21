@@ -80,7 +80,11 @@
         "negotiate_response@1",
         "runtime_step_request@1",
         "runtime_step_result@1",
-        "joint_state@1"
+        "joint_state@1",
+        "turret_velocity@1",
+        "fire_command@1",
+        "weapon_state@1",
+        "view_snapshot@2"
       ]
     },
     "payload": {
@@ -588,6 +592,106 @@
           },
           "frame_id": {
             "const": "base_link"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "turret_velocity@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "payloads.schema.json#/$defs/turret_velocity"
+          },
+          "message_type": {
+            "const": "topic"
+          },
+          "frame_id": {
+            "const": "base_link"
+          },
+          "channel": {
+            "const": "/robot/turret/cmd_vel"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "fire_command@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "payloads.schema.json#/$defs/fire_command"
+          },
+          "message_type": {
+            "const": "command"
+          },
+          "frame_id": {
+            "const": null
+          },
+          "channel": {
+            "const": "/robot/weapons/cannon/fire"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "weapon_state@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "payloads.schema.json#/$defs/weapon_state"
+          },
+          "message_type": {
+            "const": "topic"
+          },
+          "frame_id": {
+            "const": "base_link"
+          },
+          "channel": {
+            "const": "/robot/weapons/cannon/state"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "view_snapshot@2"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "payloads.schema.json#/$defs/view_snapshot_v2"
+          },
+          "message_type": {
+            "const": "topic"
+          },
+          "frame_id": {
+            "const": null
+          },
+          "channel": {
+            "const": "/view/snapshot"
           }
         }
       }

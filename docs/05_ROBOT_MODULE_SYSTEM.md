@@ -130,3 +130,7 @@ M1 麦克纳姆底盘支持非零 `linear.y`，差速底盘只接受零横向分
 M1 实现 `Module.setup/update/reset/teardown`、不可变值类型、`Sample`、`Inputs.latest`、`ModuleContext.simulation_tick/dt_seconds/output_commit_tick/config/publish`；输出收集到固定提交门，经 Authority 再验证。Host 从唯一 `config/m1.json` 派生生效 Contract（period=60/10，deadline=commit_delay_ticks），避免第二份硬编码控制参数。示例端口 wheels:joint_state@1、imu:imu@1 → pose:pose2d@1；SDK 初始化仅公开起点、轮几何和模块自身配置。
 
 M1 仅运行一个 periodic Module，支持多文件 import；event、多模块依赖执行、FunctionModule/RobotApp、手动 Topic、ctx.rng/log/state、检查点与自动模板属于后续能力。标准库/宿主文件/网络在普通 CPython 进程中没有被安全隔离；只能运行本人可信代码，不能把“ctx 未暴露引擎”说成“已经沙箱化”。[实际测试](../tests/test_m1.py) 会执行本文 SDK Python 片段并检查发布类型，同时独立验证真实外部 worker。
+
+## M1b 增量 API
+
+已增加不可变 `TurretVelocity`、`FireCommand`、`FireResult`、`WeaponState` 与 `ctx.fire(port="fire", request_id=None)`。ctx.publish 收集炮台速度 Topic；ctx.fire 收集离散命令并返回 ID，结果从后续武器状态读取，不阻塞算法。只有启动配置授予 robot 控制源时，对应输出端口才出现在 Contract；声明端口不等于自动获得权限。新示例单独位于 [weapon_demo.py](../examples/robot/weapon_demo.py)，保留原定位源码；接口、时序、反馈字段与可执行片段见 [14](14_WEAPONS_DESIGN.md)。炮台/武器输入为可选授权观测；新增功能仍复用单 periodic Module，不代表完整模块图已实现。

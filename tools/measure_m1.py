@@ -65,7 +65,7 @@ def main():
     report = {"date":"2026-10-21", "os":platform.platform(), "python":platform.python_version(),
               "cpu":next((line.split(":",1)[1].strip() for line in Path('/proc/cpuinfo').read_text().splitlines() if line.startswith('model name')),platform.processor()) if sys.platform=="linux" else platform.processor(),
               "native_binary_sha256":digest(ROOT/"target/debug/core_worker"), "cargo_lock_sha256":digest(ROOT/"Cargo.lock"),
-              "config_sha256":digest(ROOT/"config/m1.json"), "scene":{"dynamic_bodies":1,"static_walls":len(config["scene"]["walls"])}, "runs":[]}
+              "config_sha256":digest(ROOT/"config/m1.json"), "scene":{"dynamic_bodies":1+int(config["weapons"]["enabled"]),"static_walls":len(config["scene"]["walls"])}, "runs":[]}
     for name in config["chassis"]:
         candidate = copy.deepcopy(config);candidate["scene"]["default_chassis"] = name
         report["runs"].append(measure(candidate))
@@ -79,7 +79,7 @@ def main():
     report["native_wasm_probe_equal"] = native==wasm["final_x_m"]
     if not report["native_wasm_probe_equal"] or any(not r["same_build_replay_exact"] or r["rejections"] or r["max_estimate_position_error_m"]>config["validation"]["odom_error_tolerance_m"] for r in report["runs"]):
         raise SystemExit("M1 measurement acceptance failed")
-    path = ROOT/"docs/reports/m1-baseline.json"
+    path = ROOT/"docs/reports/m1-current-profile.json"  # Preserve the historical M1 evidence.
     path.parent.mkdir(exist_ok=True)
     path.write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n")
     print(path.relative_to(ROOT))

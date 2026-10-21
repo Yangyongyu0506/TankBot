@@ -30,6 +30,7 @@ class M1Tests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.config = load_config(ROOT/"config/m1.json")
+        cls.config["weapons"]["enabled"] = False  # Preserve the M1 bare-chassis regression profile.
 
     def core(self, config=None, chassis=None):
         c = copy.deepcopy(config or self.config)

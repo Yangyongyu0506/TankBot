@@ -68,7 +68,7 @@ class LocalServer:
                 if not self.valid_host() or self.headers.get("Origin") not in origins or self.headers.get("X-TankBot-Control") != owner.token:
                     self.reply(403, b'{}')
                     return
-                if self.path != "/api/cmd_vel":
+                if self.path not in ("/api/cmd_vel", "/api/turret_cmd_vel", "/api/fire"):
                     self.reply(404, b'{}')
                     return
                 try:
@@ -76,10 +76,17 @@ class LocalServer:
                     if self.headers.get("Content-Type") != "application/json" or not 0 < size <= config["runtime"]["max_message_bytes"]:
                         raise ValueError("Invalid frame size/type")
                     self.connection.settimeout(config["runtime"]["startup_timeout_s"])
-                    twist = strict_loads(self.rfile.read(size))
+                    value = strict_loads(self.rfile.read(size))
                     with owner.lock:
-                        owner.authority.keyboard(twist)
-                    self.reply(200, b'{"accepted":true}')
+                        if self.path == "/api/cmd_vel":
+                            owner.authority.keyboard(value)
+                            result = {"accepted": True}
+                        elif self.path == "/api/turret_cmd_vel":
+                            owner.authority.turret_keyboard(value)
+                            result = {"accepted": True}
+                        else:
+                            result = owner.authority.fire_keyboard(value)
+                    self.reply(200, json.dumps(result).encode())
                 except (ValueError, Rejected, RecursionError):
                     self.reply(400, b'{"accepted":false}')
 

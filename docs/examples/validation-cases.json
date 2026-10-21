@@ -472,6 +472,100 @@
         "last_target_tick": 125,
         "last_sequence_number": 19
       }
+    },
+    {
+      "case_id": "fire-needs-request-id",
+      "fixture": "fire-command.json",
+      "layer": "schema",
+      "mutations": [
+        {
+          "pointer": "/request_id",
+          "value": null
+        }
+      ],
+      "expected": "reject",
+      "expected_code": "INVALID_SCHEMA",
+      "note": "M1b 严格武器接口与信息边界。"
+    },
+    {
+      "case_id": "fire-rejects-payload-fields",
+      "fixture": "fire-command.json",
+      "layer": "schema",
+      "mutations": [
+        {
+          "pointer": "/payload",
+          "value": {
+            "execute_start_tick": 18
+          }
+        }
+      ],
+      "expected": "reject",
+      "expected_code": "INVALID_SCHEMA",
+      "note": "M1b 严格武器接口与信息边界。"
+    },
+    {
+      "case_id": "fire-frame-is-null",
+      "fixture": "fire-command.json",
+      "layer": "schema",
+      "mutations": [
+        {
+          "pointer": "/frame_id",
+          "value": "base_link"
+        }
+      ],
+      "expected": "reject",
+      "expected_code": "INVALID_SCHEMA",
+      "note": "M1b 严格武器接口与信息边界。"
+    },
+    {
+      "case_id": "turret-rejects-global-frame",
+      "fixture": "turret-velocity-message.json",
+      "layer": "schema",
+      "mutations": [
+        {
+          "pointer": "/frame_id",
+          "value": "map"
+        }
+      ],
+      "expected": "reject",
+      "expected_code": "INVALID_SCHEMA",
+      "note": "M1b 严格武器接口与信息边界。"
+    },
+    {
+      "case_id": "weapon-feedback-no-hit-location",
+      "fixture": "weapon-state-message.json",
+      "layer": "schema",
+      "mutations": [
+        {
+          "pointer": "/payload/last_result",
+          "value": {
+            "request_id": "shot-18",
+            "status": "fired",
+            "processed_tick": 18,
+            "hit_position": [
+              0,
+              0
+            ]
+          }
+        }
+      ],
+      "expected": "reject",
+      "expected_code": "INVALID_SCHEMA",
+      "note": "M1b 严格武器接口与信息边界。"
+    },
+    {
+      "case_id": "view-v1-does-not-admit-projectiles",
+      "fixture": "weapons-practice-view.json",
+      "layer": "schema",
+      "mutations": [
+        {
+          "pointer": "/schema",
+          "value": "view_snapshot@1"
+        }
+      ],
+      "expected": "reject",
+      "expected_code": "INVALID_SCHEMA",
+      "note": "M1b 严格武器接口与信息边界。"
     }
   ]
 }

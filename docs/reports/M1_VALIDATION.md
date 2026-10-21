@@ -1,5 +1,8 @@
 # M1 最小闭环验证报告
 
+> 本文及 m1-baseline.json 为 M1 历史证据，保留原构建/配置摘要。当前 M1b 见 [新报告](M1B_VALIDATION.md)；旧测量工具重跑输出改为 m1-current-profile.json，不覆盖历史基线。
+
+
 ## 范围与复现
 
 日期 2026-10-21。本轮按用户授权从设计阶段进入 M1；实现止于本机可信代码原型。根 AGENTS.md 保留原内容。构建/启动见 [根 README](../../README.md)，物理确认和取舍见 [13](../13_PHYSICS_MODEL_DECISIONS.md)、[ADR-0015](../adr/0015-confirmed-m1-physics-profile.md)。原始测量在 [m1-baseline.json](m1-baseline.json)，包含实际机器、配置/Cargo.lock/构建摘要、时延、误差、消息大小和 WASM 探针结果；重新测量会更新机器相关数值。

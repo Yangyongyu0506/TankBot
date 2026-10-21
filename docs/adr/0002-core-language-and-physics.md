@@ -29,3 +29,7 @@ M1/M2 提交至少原生 Linux 与浏览器 WASM 的构建/600 tick/CCD/故障�
 M1 已用 Rust 1.99.1、rapier2d-f64 **0.36.1**（enhanced-determinism、serde-serialize，依赖摘要见 Cargo.lock）实现本机两底盘/接触/传感器，并完成 Linux 原生和 wasm32-unknown-unknown 的同核心构建、Node 中 600 tick WASM 执行、原生重放和 Runtime 故障探针。见 [实际报告](../reports/M1_VALIDATION.md)。下载公开镜像只解决本机工具链获取，不构成平台保证。
 
 Status 继续 Proposed：M1 的实验性实现可以使用候选组合，但原接受门包含完整浏览器 WASM 部署；当前浏览器页面连接的是原生 Host，尚无双 Worker/Pyodide 验证。高速弹丸 CCD、发布包体、Windows/macOS 及长期维护成本仍待后续阶段，不能因为一组浮点结果相同就宣称跨平台位级确定。
+
+## M1b 补充证据（2026-10-22）
+
+[武器验证报告](../reports/M1B_VALIDATION.md) 已覆盖本机高速弹丸/互撞、旋转刚体查询、冲量、原生/WASM 同探针和真实浏览器操作。高速弹丸的初步接受门已有证据；完整浏览器双 Worker、生产包体与 Windows/macOS 构建仍未满足，Status 保持 Proposed。

@@ -1,0 +1,16 @@
+{
+  "protocol_version": "1.0",
+  "message_type": "topic",
+  "channel": "/robot/turret/cmd_vel",
+  "sequence_number": 3,
+  "simulation_tick": 18,
+  "simulation_time_ns": 300000000,
+  "run_id": "weapons-demo",
+  "publisher_id": "module:odometry",
+  "request_id": null,
+  "frame_id": "base_link",
+  "schema": "turret_velocity@1",
+  "payload": {
+    "velocity_radps": 2
+  }
+}

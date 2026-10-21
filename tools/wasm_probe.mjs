@@ -5,4 +5,7 @@ const bytes = readFileSync(path);
 const {instance} = await WebAssembly.instantiate(bytes, {});
 const x = instance.exports.tankbot_m1_probe();
 if (!Number.isFinite(x)) throw new Error("Non-finite probe result");
-console.log(JSON.stringify({wasm_bytes: bytes.length, final_x_m: x}));
+const shots = instance.exports.tankbot_m1b_probe();
+const angle = instance.exports.tankbot_m1b_angle_probe();
+if (!Number.isFinite(shots) || shots <= 0 || !Number.isFinite(angle)) throw new Error("Invalid weapon probe");
+console.log(JSON.stringify({wasm_bytes: bytes.length, final_x_m: x, shots_fired: shots, relative_angle_rad: angle}));

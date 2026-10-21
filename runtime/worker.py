@@ -6,7 +6,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT / "sdk/python"), str(ROOT / "protocol")]
-from tankbot import Module, ModuleContext, Inputs, Sample, ImuData, JointState
+from dataclasses import asdict
+from tankbot import Module, ModuleContext, Inputs, Sample, ImuData, JointState, WeaponState, FireCommand
 from tankbot_protocol.wire import receive, send
 from tankbot_protocol.validation import envelope
 
@@ -29,7 +30,7 @@ def main():
         module.reset(context, "new_run")
     send(sink, {"ready": True}, limit)
     sequence = 0
-    converters = {"imu@1": ImuData, "joint_state@1": lambda **p: JointState(**{k: tuple(v) for k, v in p.items()})}
+    converters = {"imu@1": ImuData, "joint_state@1": lambda **p: JointState(**{k: tuple(v) for k, v in p.items()}), "weapon_state@1": WeaponState}
     try:
         while True:
             request = receive(source, limit)
@@ -52,6 +53,13 @@ def main():
                     outputs.append(envelope(schema, init["output_channels"][port], payload, tick=sample_tick,
                                             hz=init["physics_hz"], run_id=init["run_id"], publisher_id=init["publisher_id"],
                                             sequence=sequence, frame_id=frame))
+                    sequence += 1
+                for port, request_id in context._commands:
+                    if port not in init["output_channels"] or contract["outputs"][port]["schema"] != "fire_command@1":
+                        raise ValueError("Undeclared fire port")
+                    outputs.append(envelope("fire_command@1", init["output_channels"][port], asdict(FireCommand()), tick=tick,
+                                            hz=init["physics_hz"], run_id=init["run_id"], publisher_id=init["publisher_id"],
+                                            sequence=sequence, message_type="command", request_id=request_id))
                     sequence += 1
                 status, error = "completed", None
             except Exception:

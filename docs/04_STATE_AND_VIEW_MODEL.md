@@ -120,3 +120,7 @@ Renderer 只在同 `run_id`、同 source、同 frame 且有效的相邻估计样
 M1 只有玩家位姿源 odometry，默认 System Pose Provider 禁用；开启未实现的系统源会拒绝配置。Selector 独占 `/robot/localization/pose`，Gateway 只接受标准估计与授权观测，不接受真值对象。UI 只在同 run/revision/source/frame 内插值，来源变化清缓存；跳变阈值以 config/m1.json 的 `view` 为准。`view_revision` 不随普通快照递增，Envelope sequence 负责排序。
 
 公开地图和零初始位姿属于用户确认的试验场任务信息；这不授予运行中的世界状态读取权限。未定位时仍能使用键盘与轮速/IMU 面板；完整局部 scan/接触提示、通用选源服务、TF 和 C0 系统显示留在后续任务。相关泄漏/错估计/超龄测试见 M1 报告。
+
+## M1b 实施范围
+
+默认估计模式仍禁用系统定位，objects/effects 为空。显式 `--view weapons-practice` 在启动时启用单独受信策略：System Pose Provider 按字段投影真实位姿，经同一个 Pose Selector 发布内部标准位姿，再由 Gateway 生成 view_snapshot@2。实体只包含已授权的弹丸 ID/位置/半径和静态靶标位姿/命中计数；无原始世界句柄或通用 dump。UI 显著标记真值练习。Python 仍只获轮组、IMU、炮台关节和自身武器反馈，不能订阅系统位姿或视图。具体已确认限制与测试见 [14](14_WEAPONS_DESIGN.md)。本阶段只在启动时选择模式，不提供动态提权/撤权服务。

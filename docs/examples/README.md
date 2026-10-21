@@ -12,6 +12,8 @@
 | [cmd-vel-message.json](cmd-vel-message.json) | tick 120 生成的车体 Twist Topic，没有执行起止字段 |
 | [cmd-vel-omni-message.json](cmd-vel-omni-message.json) | 非零 linear.y 的结构正例；M1 麦克纳姆底盘已实现该能力 |
 | [chassis-controller.json](chassis-controller.json) | 差速底盘与 0.5 s cmd_vel_timeout 的受信配置 |
+| [turret-velocity-message.json](turret-velocity-message.json)、[fire-command.json](fire-command.json)、[weapon-state-message.json](weapon-state-message.json) | M1b 炮台速度、幂等单发与自身反馈 |
+| [weapons-practice-view.json](weapons-practice-view.json) | 显式真值练习的严格 view_snapshot@2 |
 | [view-snapshot.json](view-snapshot.json) | tick 126 的授权估计视图，不含完整世界 |
 | [negotiate-request.json](negotiate-request.json)、[negotiate-response.json](negotiate-response.json) | bootstrap 协商 |
 | [runtime-step-request.json](runtime-step-request.json)、[runtime-step-result.json](runtime-step-result.json) | tick 6 激活、tick 12 提交的私有 Runtime 控制面 |

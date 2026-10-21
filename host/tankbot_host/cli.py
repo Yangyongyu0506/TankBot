@@ -12,10 +12,20 @@ def main():
     parser.add_argument("--core-binary", type=Path)
     parser.add_argument("--workspace", type=Path)
     parser.add_argument("--ticks", type=int)
+    parser.add_argument("--view", choices=("estimated", "weapons-practice"))
+    parser.add_argument("--robot-demo", action="store_true", help="Run the separate SDK turret/fire example")
     args = parser.parse_args()
     config = load_config(args.config)
     if args.chassis:
         config["scene"]["default_chassis"] = args.chassis
+    if args.view:
+        config["view_mode"] = args.view
+        if args.view == "weapons-practice":
+            config["view_policy"] = config["practice_view_policy"]
+    if args.robot_demo:
+        config["control_sources"].update(turret="robot", weapon="robot")
+        config["module"]["entry_point"] = "weapon_demo:WeaponDemo"
+        config["module"]["weapon_demo"]["enabled"] = True
     if args.mode == "probe":
         from .authority import CoreAdapter
         core = CoreAdapter(config, config["scene"]["default_chassis"], args.core_binary)

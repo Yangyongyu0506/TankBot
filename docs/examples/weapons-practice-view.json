@@ -1,0 +1,61 @@
+{
+  "protocol_version": "1.0",
+  "message_type": "topic",
+  "channel": "/view/snapshot",
+  "sequence_number": 20,
+  "simulation_tick": 126,
+  "simulation_time_ns": 2100000000,
+  "run_id": "run-demo-001",
+  "publisher_id": "host:view",
+  "request_id": null,
+  "frame_id": null,
+  "schema": "view_snapshot@2",
+  "payload": {
+    "view_revision": 4,
+    "policy_id": "m1b-weapons-practice",
+    "selected_pose": {
+      "source_id": "system",
+      "frame_id": "map",
+      "simulation_tick": 126,
+      "freshness": "fresh",
+      "pose": {
+        "child_frame_id": "base_link",
+        "x_m": 1.2,
+        "y_m": 0.4,
+        "yaw_rad": 0.1,
+        "covariance": [
+          0.04,
+          0,
+          0,
+          0,
+          0.04,
+          0,
+          0,
+          0,
+          0.01
+        ]
+      }
+    },
+    "local_observations": [],
+    "objects": [
+      {
+        "kind": "projectile",
+        "projectile_id": 0,
+        "x_m": 1,
+        "y_m": 0,
+        "radius_m": 0.03
+      },
+      {
+        "kind": "target",
+        "target_id": "target_01",
+        "pose": {
+          "x_m": -3,
+          "y_m": 0,
+          "yaw_rad": 0
+        },
+        "hits": 0
+      }
+    ],
+    "effects": []
+  }
+}

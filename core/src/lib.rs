@@ -1,4 +1,8 @@
 //! Pure fixed-step authority. Private snapshots belong only to the trusted host.
+mod cannon;
+mod turret;
+use cannon::CannonSystem;
+pub use cannon::{FiringConfig, Numerics, ProjectileConfig, ShotRequest, TargetConfig};
 use rapier2d_f64::prelude::*;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -6,6 +10,8 @@ use std::{
     collections::BTreeMap,
     f64::consts::{PI, TAU},
 };
+use turret::TurretSystem;
+pub use turret::{TurretConfig, TurretTarget};
 
 #[derive(Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -82,6 +88,21 @@ pub struct Config {
     pub contact: Value,
     pub controller: Value,
     pub motion_limits: Value,
+    pub weapons: WeaponsConfig,
+}
+
+#[derive(Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WeaponsConfig {
+    pub enabled: bool,
+    pub turret: TurretConfig,
+    pub projectile: ProjectileConfig,
+    pub firing: FiringConfig,
+    pub numerics: Numerics,
+    pub targets: Vec<TargetConfig>,
+    pub impact: Value,
+    pub collision: Value,
+    pub mass_accounting: String,
 }
 pub fn normalize_angle(x: f64) -> f64 {
     (x + PI).rem_euclid(TAU) - PI
@@ -126,6 +147,12 @@ pub struct PrivateSnapshot {
     pub truth_pose: [f64; 3],
     pub truth_velocity: [f64; 3],
     pub sensors: Option<Value>,
+    pub turret_state: Option<Value>,
+    pub weapon_state: Option<Value>,
+    pub projectiles: Value,
+    pub fire_results: Value,
+    pub weapon_events: Value,
+    pub target_hits: Value,
 }
 
 pub struct GameCore {
@@ -142,6 +169,8 @@ pub struct GameCore {
     delta_v_body: Vector,
     angular_rate_integral: f64,
     last_sensors: Option<Value>,
+    turret: Option<TurretSystem>,
+    cannon: Option<CannonSystem>,
 }
 impl GameCore {
     pub fn new(config: Config, chassis_name: &str) -> Result<Self, String> {
@@ -231,6 +260,19 @@ impl GameCore {
         .friction(f)
         .restitution(e);
         let (tank, _) = world.insert(rb, shape);
+        let turret = if config.weapons.enabled {
+            if config.weapons.mass_accounting != "fixed_chassis_mass" {
+                return Err("Unsupported weapon mass accounting".into());
+            }
+            Some(TurretSystem::new(
+                &mut world,
+                tank,
+                config.weapons.turret.clone(),
+                &config.rigid_body,
+            )?)
+        } else {
+            None
+        };
         for w in &config.scene.walls {
             if w.size.iter().any(|x| !x.is_finite() || *x <= 0.0) {
                 return Err("Invalid wall size".into());
@@ -242,6 +284,21 @@ impl GameCore {
                     .restitution(e),
             );
         }
+        let cannon = if config.weapons.enabled {
+            let cannon = CannonSystem::new(&config.weapons, b, &config.scene.walls)?;
+            for target in &config.weapons.targets {
+                world.colliders.insert(
+                    ColliderBuilder::new(cannon::body_shape(b))
+                        .translation(Vector::new(target.pose[0], target.pose[1]))
+                        .rotation(target.pose[2])
+                        .friction(f)
+                        .restitution(e),
+                );
+            }
+            Some(cannon)
+        } else {
+            None
+        };
         let limits = [
             number(&config.motion_limits, "max_vx_mps")?,
             number(&config.motion_limits, "max_vy_mps")?,
@@ -287,6 +344,8 @@ impl GameCore {
             delta_v_body: Vector::ZERO,
             angular_rate_integral: 0.0,
             last_sensors: None,
+            turret,
+            cannon,
         };
         core.wheel_rates = core.rates(core.body_velocity());
         core.last_sensors = Some(core.sensor_payload(Vector::ZERO, v[2]));
@@ -323,7 +382,25 @@ impl GameCore {
         } else {
             vec!["left", "right"]
         };
-        json!({"joint_states":{"name":names,"position":self.wheel_positions,"velocity":self.wheel_rates,"effort":[]},"imu":{"angular_velocity_z_radps":wz,"linear_acceleration_x_mps2":a.x,"linear_acceleration_y_mps2":a.y}})
+        let mut sample = json!({"joint_states":{"name":names,"position":self.wheel_positions,"velocity":self.wheel_rates,"effort":[]},"imu":{"angular_velocity_z_radps":wz,"linear_acceleration_x_mps2":a.x,"linear_acceleration_y_mps2":a.y}});
+        if let Some(t) = &self.turret {
+            sample["turret_joint_states"] = t.sample(&self.world, self.tank);
+        }
+        if let Some(c) = &self.cannon {
+            sample["weapon_state"] = c.state(self.tick);
+        }
+        sample
+    }
+    pub fn set_turret_target(&mut self, target: TurretTarget) -> Result<(), String> {
+        self.turret
+            .as_mut()
+            .ok_or("Weapons disabled")?
+            .set_target(target, self.tick)
+    }
+    pub fn revoke_turret_target(&mut self) {
+        if let Some(t) = &mut self.turret {
+            t.revoke();
+        }
     }
     pub fn set_target(&mut self, t: VelocityTarget) -> Result<(), String> {
         if t.source_tick > self.tick || ![t.vx, t.vy, t.wz].iter().all(|v| v.is_finite()) {
@@ -343,7 +420,26 @@ impl GameCore {
     pub fn revoke_target(&mut self) {
         self.target = None;
     }
-    pub fn step(&mut self) {
+    pub fn queue_fire(&mut self, request: ShotRequest) -> Result<(), String> {
+        self.cannon
+            .as_mut()
+            .ok_or("Weapons disabled")?
+            .queue(request, self.tick)
+    }
+    pub fn step(&mut self) -> Result<(), String> {
+        if let (Some(c), Some(t)) = (&mut self.cannon, &self.turret) {
+            let before = self.world.bodies[self.tank].linvel();
+            c.begin_tick(
+                &mut self.world,
+                self.tank,
+                t,
+                &self.chassis,
+                self.tick,
+                self.config.clock.physics_hz,
+            )?;
+            let b = &self.world.bodies[self.tank];
+            self.delta_v_body += b.rotation().inverse() * (b.linvel() - before);
+        }
         let goal = self
             .target
             .filter(|t| {
@@ -353,10 +449,11 @@ impl GameCore {
             .map(|t| [t.vx, t.vy, t.wz])
             .unwrap_or([0.0; 3]);
         let dt = self.world.integration_parameters.dt;
-        for _ in 0..self.config.clock.substeps {
+        for substep in 0..self.config.clock.substeps {
             let before = self.body_velocity();
             let rates = self.rates(before);
             let b = &mut self.world.bodies[self.tank];
+            let old_pose = *b.position();
             let old_v = b.linvel();
             let old_angle = b.rotation().angle();
             let s = &self.config.servo;
@@ -378,7 +475,33 @@ impl GameCore {
             b.reset_torques(true);
             b.add_force(force, true);
             b.add_torque(mz, true);
+            if let Some(t) = &self.turret {
+                t.apply_servo(
+                    &mut self.world,
+                    self.tank,
+                    self.tick,
+                    self.config.clock.physics_hz,
+                );
+            }
             self.world.step();
+            if let Some(c) = &mut self.cannon {
+                let end = *self.world.bodies[self.tank].position();
+                let start_s =
+                    self.tick as f64 / self.config.clock.physics_hz as f64 + substep as f64 * dt;
+                c.advance(
+                    &mut self.world,
+                    self.tank,
+                    &self.chassis,
+                    &self.config.body,
+                    old_pose,
+                    end,
+                    start_s,
+                    dt,
+                )?;
+            }
+            if let Some(t) = &mut self.turret {
+                t.observe_angle(&self.world, self.tank);
+            }
             let b = &self.world.bodies[self.tank];
             let da = normalize_angle(b.rotation().angle() - old_angle);
             self.delta_v_body +=
@@ -404,6 +527,7 @@ impl GameCore {
         } else {
             self.last_sensors = None;
         }
+        Ok(())
     }
     /// Trusted adapter only: never serialize this DTO to the robot worker or UI.
     pub fn private_snapshot(&self) -> PrivateSnapshot {
@@ -415,6 +539,15 @@ impl GameCore {
             truth_pose: [p.x, p.y, normalize_angle(b.rotation().angle())],
             truth_velocity: self.body_velocity(),
             sensors: self.last_sensors.clone(),
+            weapon_state: self.cannon.as_ref().map(|c|c.state(self.tick)),
+            projectiles: self.cannon.as_ref().map(|c|c.private_projectiles()).unwrap_or(json!([])),
+            fire_results: self.cannon.as_ref().map(|c|json!(c.results)).unwrap_or(json!([])),
+            weapon_events: self.cannon.as_ref().map(|c|json!(c.events)).unwrap_or(json!([])),
+            target_hits: self.cannon.as_ref().map(|c|json!(c.target_hits)).unwrap_or(json!({})),
+            turret_state: self.turret.as_ref().map(|t|json!({"relative_angle_rad":t.relative_angle,
+                "relative_rate_radps":self.world.bodies[t.body].angvel()-b.angvel(),
+                "position":[self.world.bodies[t.body].translation().x,self.world.bodies[t.body].translation().y],
+                "world_yaw_rad":self.world.bodies[t.body].rotation().angle()})),
         }
     }
 }
@@ -435,13 +568,55 @@ pub fn run_build_probe(text: &str) -> Result<f64, String> {
             wz: target[2],
             source_tick: tick,
         })?;
-        c.step();
+        c.step()?;
     }
     Ok(c.private_snapshot().truth_pose[0])
+}
+pub fn run_weapon_probe(text: &str) -> Result<Value, String> {
+    let raw: Value = serde_json::from_str(text).map_err(|e| e.to_string())?;
+    let config: Config = serde_json::from_value(raw.clone()).map_err(|e| e.to_string())?;
+    let ticks = raw["validation"]["ticks"]
+        .as_u64()
+        .ok_or("Missing probe ticks")?;
+    let period = raw["module"]["weapon_demo"]["fire_period_ticks"]
+        .as_u64()
+        .filter(|p| *p > 0)
+        .ok_or("Invalid fire period")?;
+    let rate = number(&raw["module"]["weapon_demo"], "turret_velocity_radps")?;
+    let name = config.scene.default_chassis.clone();
+    let mut c = GameCore::new(config, &name)?;
+    for tick in 0..ticks {
+        c.set_turret_target(TurretTarget {
+            velocity_radps: rate,
+            source_tick: tick,
+        })?;
+        if tick.is_multiple_of(period) {
+            c.queue_fire(ShotRequest {
+                publisher_id: "probe".into(),
+                request_id: format!("probe-{tick}"),
+                source_tick: tick,
+            })?;
+        }
+        c.step()?;
+    }
+    let snapshot = c.private_snapshot();
+    Ok(
+        json!({"weapon_state":snapshot.weapon_state,"relative_angle_rad":snapshot.turret_state.unwrap()["relative_angle_rad"],"truth_pose":snapshot.truth_pose}),
+    )
 }
 // Trusted build probe, not the browser deployment API. Single source of physical parameters.
 #[cfg(target_arch = "wasm32")]
 #[unsafe(no_mangle)]
 pub extern "C" fn tankbot_m1_probe() -> f64 {
     run_build_probe(include_str!("../../config/m1.json")).expect("Invalid profile")
+}
+#[cfg(target_arch = "wasm32")]
+#[unsafe(no_mangle)]
+pub extern "C" fn tankbot_m1b_probe() -> f64 {
+    run_weapon_probe(include_str!("../../config/m1.json")).expect("Invalid weapon profile")["weapon_state"]["shots_fired"].as_f64().unwrap()
+}
+#[cfg(target_arch = "wasm32")]
+#[unsafe(no_mangle)]
+pub extern "C" fn tankbot_m1b_angle_probe() -> f64 {
+    run_weapon_probe(include_str!("../../config/m1.json")).expect("Invalid weapon profile")["relative_angle_rad"].as_f64().unwrap()
 }

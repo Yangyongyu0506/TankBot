@@ -13,7 +13,7 @@
 | `message_type` | 语义 | 示例与限制 |
 | --- | --- | --- |
 | `topic` | 状态、测量或持续更新的设定值；按频道策略保留最新值/历史 | IMU、估计位姿、cmd_vel；无逐条执行确认 |
-| `command` | 确有需要的离散操作请求 | 如后续一次开火；需注册独立 Schema 和仲裁，不用于速度流 |
+| `command` | 确有需要的离散操作请求 | M1b 单发 fire_command@1；独立 Schema 和仲裁，不用于速度流 |
 | `service_request` / `service_response` | 有关联 ID、有限时长的请求/响应 | 协商、选定位姿源；不在物理线程阻塞等待 |
 | `event` | 已发生的离散事实 | 命令拒绝、模块错误、部署生效；不得隐含秘密坐标 |
 
@@ -129,7 +129,7 @@ Host 把有效目标放入内部提交计划；Python 输出仍随 Runtime 批�
 
 差速模型支持 vx/wz，非零 vy 报 `UNSUPPORTED_MOTION`；M1 麦克纳姆全向模型支持 vx/vy/wz，同一 Twist 无需改格式。按用户确认的 ADR-0015，有限目标超过 ControllerProfile 各轴限值时逐轴截断；非平面轴、非有限量与差速非零 vy 仍整条拒绝。真实速度不直接截断，实际响应由受限伺服、阻力与接触决定。
 
-离散 command/service 的去重键仍为 `(run_id, bound_principal, request_id)`；缓存内相同内容返回已记录结果，同 ID 不同内容报 `DUPLICATE_REQUEST`。窗口为会话内最近 256 项，超出窗口不保证识别重复，不支持自动重试。有副作用服务还须按 artifact/revision/step 等业务键幂等。cmd_vel 不使用此请求缓存，重连也不重发旧速度，需新发布当前意图。
+离散 command/service 的去重键仍为 `(run_id, bound_principal, request_id)`；缓存内相同内容返回已记录结果，同 ID 不同内容报 `DUPLICATE_REQUEST`。通用请求窗口为会话内最近 256 项，超出窗口不保证识别重复，不支持自动重试。有副作用服务还须按 artifact/revision/step 等业务键幂等。M1b 开火使用整个 run 的有界、不淘汰业务日志，详见下节与 ADR-0017；不受通用短窗口淘汰规则限制。cmd_vel 不使用此请求缓存，重连也不重发旧速度，需新发布当前意图。
 
 连接先完成 Transport 级认证与角色绑定，再以 `run_id="bootstrap"`、tick/time=0 请求版本协商。选择共同的精确 minor profile，返回真实 `run_id`、`physics_hz` 和能力摘要；请求中的 role 仅为申请。协商前只允许此服务，失败关闭；不公开秘密 seed 或隐藏实体清单。进程内适配也必须显式创建绑定会话。
 
@@ -175,3 +175,13 @@ ROS2/DDS 超出部署和学习负担；直接函数调用只允许在模块内�
 `/robot/sensors/joint_states` 使用新增 `joint_state@1`，形状参考 ROS JointState，字段 `name/position/velocity/effort` 均为数组。position 是自 run 重置以来累计轮角（rad），velocity 是采样边界角速度（rad/s），effort 为空表示未建模。位置数组长度必须等于 name；velocity/effort 长度为零或与 name 相同，由领域层校验，不能假设 Schema 已完成跨数组关联。M1 固定车体系 `base_link`；差速 wheel name 为 left/right，全向为 front_left/front_right/rear_left/rear_right。见 [完整样例](examples/joint-state-message.json) 和 [ADR-0016](adr/0016-wheel-joint-state.md)。不修改旧 encoder@1 的米单位与左右轮含义。
 
 M1 实现严格 JSON、Schema、源/频道 grant、run/序号/时间/帧、PSD 和固定提交门；候选为 `/robot/estimates/odometry/pose`，Selector 生成 `/robot/localization/pose`，Gateway 生成 `/view/snapshot`。只开放单机器人、单周期模块和键盘控制租约。通用协商、任意订阅/服务、event、动态 TF、控制权切换与跨 Transport 等价性尚未实现，不能因 Schema 已存在而宣称可用。M1 Runtime 帧上限取更严格的 64 KiB；源码入口与测试见 [报告](reports/M1_VALIDATION.md)。
+
+## M1b 已实现的武器接口
+
+炮台 Topic `/robot/turret/cmd_vel` 使用 `turret_velocity@1`，payload 为 `velocity_radps`，相对车体 rad/s，frame=base_link。与 Twist 一样只含当前速度意图，按生成时间执行统一 watchdog，没有执行起止字段。开火 Command `/robot/weapons/cannon/fire` 使用空 payload 的 `fire_command@1`，frame=null，必须关联非空 request_id。完整 Envelope、SDK 与数值规则见 [14](14_WEAPONS_DESIGN.md)。
+
+`/robot/turret/joint_states` 为 joint_state@1；`/robot/weapons/cannon/state` 为 weapon_state@1，仅含 ready、cooldown_remaining_ticks、shots_fired、hits_received、last_result。后者为 null 或 `{request_id,status,processed_tick}`；status=fired/cooldown/blocked/resource_limit。不含命中坐标、对手 ID 或真实位姿。两个频道按 30 Hz 采样；命令结果在 Core 发射边界产生，后续采样可见。
+
+开火业务去重键为 run/绑定主体/ID，保存成功及拒绝结果，不因冷却结束重试改变。日志容量来自 weapons.firing.request_cache_capacity，满后拒绝新 ID；pending 队列和活跃弹丸也有配置上限。当前 payload 恒为空，同 ID 携带其他内容会被结构层拒绝。人工重试重新经过绑定身份/结构校验再查询缓存；程序可以在新的合法批次中复用原 ID 获取原结果，不能重发过期 Runtime 批次。运行时输出每频道每批最多一个；整批验证后在固定门处理，命令没有插队特权。
+
+控制源在启动时按执行器配置为 keyboard/robot；只为被授予的输出派生 Contract/grant，运行中动态切换尚未实现。默认 view_snapshot@1 的 objects/effects 仍为空。新增 view_snapshot@2 仅在显式 weapons-practice 策略下携带严格 projectiles/targets 对象，不新增任意 World 字段；不向 Robot Runtime 转发该快照。Protocol 仍为未发布的 1.0 草案；新增 Schema ID 不改变旧 @1 结构。

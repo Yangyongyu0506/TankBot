@@ -63,8 +63,9 @@ class Validator:
             raise Rejected("INVALID_TIMESTAMP")
         if msg["schema"] == "pose2d@1":
             stale = (now if source_tick is None else source_tick)-tick > self.config["runtime"]["estimate_history_ticks"]
-        elif msg["schema"] == "twist@1":
-            stale = (now-tick)/self.config["clock"]["physics_hz"] >= self.config["controller"]["cmd_vel_timeout_s"]
+        elif msg["schema"] in ("twist@1", "turret_velocity@1", "fire_command@1"):
+            timeout = self.config["controller"]["cmd_vel_timeout_s"] if msg["schema"] == "twist@1" else self.config["weapons"]["turret"]["cmd_vel_timeout_s"]
+            stale = (now-tick)/self.config["clock"]["physics_hz"] >= timeout
         else:
             stale = now-tick > self.config["runtime"]["input_max_age_ticks"]
         if stale:
@@ -73,10 +74,10 @@ class Validator:
             raise Rejected("OUT_OF_ORDER")
         if msg["schema"] == "pose2d@1":
             self.covariance(msg["payload"]["covariance"])
-        if msg["schema"] == "twist@1":
+        if msg["schema"] in ("twist@1", "turret_velocity@1"):
             if tick < self.target_ticks.get(key, -1):
                 raise Rejected("OUT_OF_ORDER")
-            if not self.config["chassis"][self.config["scene"]["default_chassis"]]["lateral_actuation"] and msg["payload"]["linear"]["y"] != 0:
+            if msg["schema"] == "twist@1" and not self.config["chassis"][self.config["scene"]["default_chassis"]]["lateral_actuation"] and msg["payload"]["linear"]["y"] != 0:
                 raise Rejected("UNSUPPORTED_MOTION")
         if msg["schema"] == "joint_state@1":
             p = msg["payload"]
@@ -84,7 +85,7 @@ class Validator:
                 raise Rejected("INVALID_SCHEMA")
         if consume:
             self.sequences[key] = msg["sequence_number"]
-            if msg["schema"] == "twist@1":
+            if msg["schema"] in ("twist@1", "turret_velocity@1"):
                 self.target_ticks[key] = tick
 
     def covariance(self, values):

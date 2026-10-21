@@ -7,14 +7,14 @@
 | 文件 | 职责 |
 | --- | --- |
 | [envelope.schema.json](envelope.schema.json) | 公共字段、payload/type/frame 静态组合、请求关联规则 |
-| [payloads.schema.json](payloads.schema.json) | 12 个最小负载定义与 Vector3 辅助结构，使用 `$defs`；不单独匹配任意对象 |
+| [payloads.schema.json](payloads.schema.json) | 协议负载与 Vector3/FireResult 辅助结构，使用 `$defs`；不单独匹配任意对象 |
 | [module-contract.schema.json](module-contract.schema.json) | 端口、周期/event 元数据、预算、依赖与状态版本 |
 | [workspace.schema.json](workspace.schema.json) | Manifest、模块引用、连线、精确依赖与位姿来源 |
 | [view-policy.schema.json](view-policy.schema.json) | 受信策略字段；不是玩家授权申请格式 |
 | [chassis-controller.schema.json](chassis-controller.schema.json) | 受信底盘类型、速度轴限值、cmd_vel_timeout；不是逐条速度消息 |
 | [simulation-profile.schema.json](simulation-profile.schema.json) | M1 唯一配置文件的必填结构，跨字段/数值可行性另由 Host/Core 校验 |
 
-payload 标识为 `joint_state@1`、`pose2d@1`、`imu@1`、`encoder@1`、`radar@1`、`twist@1`、`view_snapshot@1`、`error@1`、`negotiate_request@1`、`negotiate_response@1`、`runtime_step_request@1`、`runtime_step_result@1`。Twist 保留 linear.x/y/z、angular.x/y/z，二维的 linear.z/angular.x/angular.y 限定为零，底盘是否支持非零 linear.y 由领域层判定。首发 `view_snapshot@1` 的 objects/effects 为空；实体/效果、scan、地图瓦片、pose_fix、fire、选源服务仍须补齐结构和权限后才能注册，不以任意 object 扩展绕过审查。
+payload 标识为 `joint_state@1`、`pose2d@1`、`imu@1`、`encoder@1`、`radar@1`、`twist@1`、`view_snapshot@1`、`error@1`、`negotiate_request@1`、`negotiate_response@1`、`runtime_step_request@1`、`runtime_step_result@1`。Twist 保留 linear.x/y/z、angular.x/y/z，二维的 linear.z/angular.x/angular.y 限定为零，底盘是否支持非零 linear.y 由领域层判定。首发 `view_snapshot@1` 的 objects/effects 为空；实体/效果、scan、地图瓦片、pose_fix、选源服务仍须补齐结构和权限后才能注册，不以任意 object 扩展绕过审查。
 
 ## 四层验证职责
 
@@ -40,3 +40,7 @@ python3 docs/tools/check_design.py
 结构较严格有利于阻止意外真值字段，但新增类型必须版本化注册；扩展字段只走 Envelope 的 `extensions.x_*`。语义约束不硬塞到难维护的 Schema 表达式。更改本目录时同步 [03](../03_PROTOCOL_SPECIFICATION.md)、[05](../05_ROBOT_MODULE_SYSTEM.md)、[06](../06_WORKSPACE_AND_TEMPLATES.md) 和 [样例](../examples/README.md)。
 
 首发冻结前完成所有必需频道与服务的 Schema、授权矩阵及跨语言夹具。当前未实现服务不能因 Schema 存在而标为已完成。
+
+## M1b 增量
+
+已注册 turret_velocity@1、fire_command@1、weapon_state@1、view_snapshot@2，接口权威见 [14](../14_WEAPONS_DESIGN.md)。旧 view_snapshot@1 的空实体数组约束不变；@2 只允许严格 projectile/target 联合类型，effects 仍为空。结构夹具同时覆盖空开火 payload、请求类型/帧、反馈脱敏及旧快照不能夹带实体。SimulationProfile 内部版本为 1.1，weapons/control_sources/practice_view_policy 均为必填；Model/权限跨字段约束仍由 Host/Core 验证。

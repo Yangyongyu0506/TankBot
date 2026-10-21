@@ -9,7 +9,7 @@ import uuid
 from tankbot_protocol.validation import Validator, Rejected, envelope
 from tankbot_protocol.wire import send, receive, strict_loads
 from .supervisor import Supervisor
-from .view import PoseSelector, ViewGateway
+from .view import PoseSelector, ViewGateway, SystemPoseProvider
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -73,6 +73,10 @@ class CoreAdapter:
 
 class Authority:
     def __init__(self, config, *, workspace=None, binary=None, controlled=False):
+        if config["view_mode"]=="estimated" and (config["view_policy"]["system_pose_allowed"] or config["view_policy"]["world_effects"]):
+            raise ValueError("Estimated view cannot grant truth")
+        if config["view_mode"]=="weapons-practice" and (not config["view_policy"]["system_pose_allowed"] or not config["view_policy"]["world_effects"]):
+            raise ValueError("Practice view requires explicit authority policy")
         self.config = copy.deepcopy(config)
         self.run_id = uuid.uuid4().hex
         self.controlled = controlled
@@ -83,7 +87,7 @@ class Authority:
         self.view_revision = 0
         self.validator = Validator(config, self.run_id)
         self.validator.structure(config["view_policy"], "view-policy.schema.json")
-        self.selector = PoseSelector(config["view"]["pose_source_id"])
+        self.selector = PoseSelector("system" if config["view_mode"]=="weapons-practice" else config["view"]["pose_source_id"])
         self.gateway = ViewGateway(config["view_policy"])
         self.core = CoreAdapter(config, config["scene"]["default_chassis"], binary)
         self._private = self.core.snapshot
@@ -94,6 +98,10 @@ class Authority:
         self._pending = None
         self._last_activation = 0
         self._keyboard = None
+        self._turret_target = None
+        self._fire_pending = []
+        self._fire_journal = {}
+        self._revoke_robot = False
         self._command_ticks = deque()
         self._command_wall_times = deque()
         self._failures = 0
@@ -107,12 +115,23 @@ class Authority:
         self.publisher_id = "module:" + module_id
         self.input_channels = {"wheels": "/robot/sensors/joint_states", "imu": "/robot/sensors/imu"}
         self.output_channels = {"pose": f"/robot/estimates/{module_id}/pose"}
+        if config["weapons"]["enabled"]:
+            self.input_channels.update(turret="/robot/turret/joint_states", weapon="/robot/weapons/cannon/state")
         self.contract = {"contract_version": "1.0", "module_id": module_id, "entry_point": config["module"]["entry_point"],
                          "inputs": {"wheels": {"schema": "joint_state@1", "required": True, "max_age_ticks": config["runtime"]["input_max_age_ticks"]},
                                     "imu": {"schema": "imu@1", "required": False, "max_age_ticks": config["runtime"]["input_max_age_ticks"]}},
                          "outputs": {"pose": {"schema": "pose2d@1"}},
                          "execution": {"mode": "periodic", "period_ticks": self.period, "deadline_ticks": self.delay, "budget_ms": config["runtime"]["batch_budget_ms"]},
                          "dependencies": [], "state_version": "1"}
+        if config["weapons"]["enabled"]:
+            for port, schema in (("turret", "joint_state@1"), ("weapon", "weapon_state@1")):
+                self.contract["inputs"][port] = {"schema":schema,"required":False,"max_age_ticks":config["runtime"]["input_max_age_ticks"]}
+        for actuator, port, schema, channel in (("chassis","cmd_vel","twist@1","/robot/cmd_vel"),
+                ("turret","turret_velocity","turret_velocity@1","/robot/turret/cmd_vel"),
+                ("weapon","fire","fire_command@1","/robot/weapons/cannon/fire")):
+            if config["control_sources"][actuator] == "robot" and (actuator == "chassis" or config["weapons"]["enabled"]):
+                self.contract["outputs"][port] = {"schema":schema}
+                self.output_channels[port] = channel
         self.validator.structure(self.contract, "module-contract.schema.json")
         if not config["scene"]["public_initial_pose"]:
             self.core.close()
@@ -141,13 +160,16 @@ class Authority:
         if values is None:
             return
         self._sampled_tick = self.tick
-        for key, schema in (("joint_states", "joint_state@1"), ("imu", "imu@1")):
-            channel = "/robot/sensors/" + key
+        for key, schema, channel in (("joint_states","joint_state@1","/robot/sensors/joint_states"),
+                ("imu","imu@1","/robot/sensors/imu"),("turret_joint_states","joint_state@1","/robot/turret/joint_states"),
+                ("weapon_state","weapon_state@1","/robot/weapons/cannon/state")):
+            if key not in values:
+                continue
             msg = self._message(schema, channel, values[key], frame="base_link")
             self.validator.validate(msg, now=self.tick, grants={("authority", channel, schema, "base_link")})
             self._sensors[channel] = msg
 
-    def keyboard(self, twist):
+    def _rate_limit(self):
         now = time.monotonic()
         while self._command_ticks and self._command_ticks[0] <= self.tick-self.hz:
             self._command_ticks.popleft()
@@ -157,13 +179,51 @@ class Authority:
             raise Rejected("RATE_LIMITED")
         self._command_ticks.append(self.tick)
         self._command_wall_times.append(now)
+    def _require_control(self, actuator, source):
+        if self.config["control_sources"][actuator] != source or (actuator != "chassis" and not self.config["weapons"]["enabled"]):
+            raise Rejected("UNAUTHORIZED")
+
+    def keyboard(self, twist):
+        self._require_control("chassis", "keyboard")
+        self._rate_limit()
         msg = self._message("twist@1", "/robot/cmd_vel", twist, frame="base_link", publisher="ui")
         self.validator.validate(msg, now=self.tick, grants={("ui", "/robot/cmd_vel", "twist@1", "base_link")})
         # Controller's single keyboard lease; M1 has no simultaneous algorithm actuator grant.
         self._keyboard = msg
 
+    def turret_keyboard(self, value):
+        self._require_control("turret", "keyboard")
+        self._rate_limit()
+        msg = self._message("turret_velocity@1","/robot/turret/cmd_vel",value,frame="base_link",publisher="ui")
+        self.validator.validate(msg,now=self.tick,grants={("ui",msg["channel"],msg["schema"],"base_link")})
+        self._turret_target = {**msg["payload"],"source_tick":self.tick}
+
+    def _queue_fire(self, msg):
+        key = (msg["publisher_id"],msg["request_id"])
+        if key in self._fire_journal:
+            return copy.deepcopy(self._fire_journal[key])
+        limits=self.config["weapons"]["firing"]
+        if len(self._fire_journal)>=limits["request_cache_capacity"] or len(self._fire_pending)>=limits["pending_capacity"]:
+            raise Rejected("RESOURCE_LIMIT")
+        self._fire_pending.append({"publisher_id":msg["publisher_id"],"request_id":msg["request_id"],"source_tick":msg["simulation_tick"]})
+        receipt={"request_id":msg["request_id"],"status":"queued"}
+        self._fire_journal[key]=receipt
+        return copy.deepcopy(receipt)
+
+    def fire_keyboard(self, value):
+        self._require_control("weapon","keyboard")
+        self._rate_limit()
+        if not isinstance(value,dict) or set(value)!={"request_id"}:
+            raise Rejected("INVALID_SCHEMA")
+        msg=envelope("fire_command@1","/robot/weapons/cannon/fire",{},tick=self.tick,hz=self.hz,
+                     run_id=self.run_id,publisher_id="ui",sequence=self._sequences.get(("ui","fire"),0),
+                     message_type="command",request_id=value["request_id"])
+        self.validator.validate(msg,now=self.tick,grants={("ui",msg["channel"],msg["schema"],None)})
+        self._sequences["ui","fire"]=msg["sequence_number"]+1
+        return self._queue_fire(msg)
+
     def select_pose_source(self, source_id):
-        if source_id != self.contract["module_id"]:
+        if self.config["view_mode"]!="estimated" or source_id != self.contract["module_id"]:
             raise Rejected("UNAUTHORIZED")
         self.config["view"]["pose_source_id"] = source_id
         self.selector.source_id = source_id
@@ -191,24 +251,40 @@ class Authority:
                 raise Rejected("MODULE_ERROR")
             if len(p["outputs"]) > len(self.contract["outputs"]):
                 raise Rejected("RATE_LIMITED")
-            grants = {(self.publisher_id, self.output_channels["pose"], "pose2d@1", "map")}
+            grants = {(self.publisher_id,channel,self.contract["outputs"][port]["schema"],
+                       None if port=="fire" else "map" if port=="pose" else "base_link")
+                      for port,channel in self.output_channels.items()}
+            seen=set()
             for msg in p["outputs"]:
-                if msg["frame_id"] not in self.config["view_policy"]["allowed_pose_frames"]:
-                    raise Rejected("INVALID_FRAME")
-                self.validator.validate(msg, now=self.tick, grants=grants, source_tick=pending["activation"], consume=False)
+                if msg["channel"] in seen:
+                    raise Rejected("RATE_LIMITED")
+                seen.add(msg["channel"])
+                self.validator.validate(msg,now=self.tick,grants=grants,source_tick=pending["activation"],consume=False)
+                if msg["schema"]=="fire_command@1" and (msg["publisher_id"],msg["request_id"]) not in self._fire_journal:
+                    limits=self.config["weapons"]["firing"]
+                    if len(self._fire_journal)>=limits["request_cache_capacity"] or len(self._fire_pending)>=limits["pending_capacity"]:
+                        raise Rejected("RESOURCE_LIMIT")
             for msg in p["outputs"]:
-                self.validator.validate(msg, now=self.tick, grants=grants, source_tick=pending["activation"])
-                old = self._candidates.get(self.contract["module_id"])
-                if old is None or (msg["simulation_tick"],msg["sequence_number"]) > (old["simulation_tick"],old["sequence_number"]):
-                    self._candidates[self.contract["module_id"]] = msg
-                    self.selector.accept(self.contract["module_id"], msg, self._message)
-                self.audit.append({"event": "pose_commit", "tick": self.tick, "sample_tick": msg["simulation_tick"]})
+                self.validator.validate(msg,now=self.tick,grants=grants,source_tick=pending["activation"])
+                if msg["schema"]=="pose2d@1":
+                    old=self._candidates.get(self.contract["module_id"])
+                    if old is None or (msg["simulation_tick"],msg["sequence_number"])>(old["simulation_tick"],old["sequence_number"]):
+                        self._candidates[self.contract["module_id"]]=msg
+                        self.selector.accept(self.contract["module_id"],msg,self._message)
+                    self.audit.append({"event":"pose_commit","tick":self.tick,"sample_tick":msg["simulation_tick"]})
+                elif msg["schema"]=="twist@1":
+                    self._keyboard=msg
+                elif msg["schema"]=="turret_velocity@1":
+                    self._turret_target={**msg["payload"],"source_tick":msg["simulation_tick"]}
+                elif msg["schema"]=="fire_command@1":
+                    self._queue_fire(msg)
             self._failures = 0
         except Rejected as e:
             self.audit.append({"event": "rejected", "tick": self.tick, "code": e.code})
             self._failures += 1
             if self._failures >= self.config["runtime"]["max_failures"] or self.worker.fault:
                 self._faulted = True
+                self._revoke_robot = True
                 self.worker.close()
 
     def _activate(self):
@@ -236,8 +312,13 @@ class Authority:
             self.audit.append({"event": "activation", "tick": self.tick, "commit_tick": self.tick+self.delay})
 
     def _build_view(self):
-        payload = self.gateway.build(self.tick, self.view_revision, self.selector, self._sensors)
-        self.view = self._message("view_snapshot@1", "/view/snapshot", payload, frame=None, publisher="view_gateway")
+        practice = None
+        if self.config["view_mode"]=="weapons-practice":
+            practice=SystemPoseProvider.project(self._private,self.config,self.tick)
+            system=self._message("pose2d@1","/system/pose",practice["pose"],frame="map",publisher="system_pose_provider")
+            self.selector.accept("system",system,self._message)
+        payload = self.gateway.build(self.tick,self.view_revision,self.selector,self._sensors,practice=practice)
+        self.view = self._message("view_snapshot@2" if practice is not None else "view_snapshot@1", "/view/snapshot", payload, frame=None, publisher="view_gateway")
         self.validator.structure(self.view)
         import json
         self.max_view_bytes = max(self.max_view_bytes, len(json.dumps(self.view).encode()))
@@ -255,9 +336,17 @@ class Authority:
             p = self._keyboard["payload"]
             target = {"vx": p["linear"]["x"], "vy": p["linear"]["y"], "wz": p["angular"]["z"], "source_tick": self._keyboard["simulation_tick"]}
             self._keyboard = None
-        self.replay.append({"tick": self.tick, "target": target, "truth_pose": self._private["truth_pose"],
+        command={"op":"step","target":target,"turret_target":self._turret_target,"fire_requests":self._fire_pending,
+                 "revoke":self._revoke_robot and self.config["control_sources"]["chassis"]=="robot",
+                 "revoke_turret":self._revoke_robot and self.config["control_sources"]["turret"]=="robot"}
+        self.replay.append({"tick": self.tick, "target": target, "actuators":copy.deepcopy(command), "truth_pose": self._private["truth_pose"],
                             "truth_velocity": self._private["truth_velocity"]})
-        self._private = self.core.call({"op": "step", "target": target})
+        self._private = self.core.call(command)
+        self._turret_target=None
+        self._fire_pending=[]
+        self._revoke_robot=False
+        for publisher,result in self._private["fire_results"]:
+            self._fire_journal[publisher,result["request_id"]]=result
         self.tick += 1
         self.tick_times_ms.append((time.monotonic()-started)*1000)
 
@@ -271,7 +360,9 @@ class Authority:
                       "cmd_vel_timeout":self.config["controller"]["cmd_vel_timeout_s"], "limits":limits}
         self.validator.structure(controller, "chassis-controller.schema.json")
         return {"run_id": self.run_id, "physics_hz": self.hz, "chassis": self.config["scene"]["default_chassis"],
-                "controller_profile":controller,
+                "controller_profile":controller,"view_mode":self.config["view_mode"],
+                "control_sources":copy.deepcopy(self.config["control_sources"]),
+                "turret_muzzle_offset_m":copy.deepcopy(self.config["weapons"]["turret"]["muzzle_offset_m"]),
                 "body": {k: self.config["body"][k] for k in ("length_m", "width_m", "corner_radius_m")},
                 "walls": copy.deepcopy(self.config["scene"]["walls"]) if self.config["scene"]["public_map"] and self.config["view_policy"]["public_map"] else [],
                 "view": copy.deepcopy(self.config["view"])}

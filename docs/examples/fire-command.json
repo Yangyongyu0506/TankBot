@@ -1,0 +1,14 @@
+{
+  "protocol_version": "1.0",
+  "message_type": "command",
+  "channel": "/robot/weapons/cannon/fire",
+  "sequence_number": 3,
+  "simulation_tick": 18,
+  "simulation_time_ns": 300000000,
+  "run_id": "weapons-demo",
+  "publisher_id": "module:odometry",
+  "request_id": "shot-18",
+  "frame_id": null,
+  "schema": "fire_command@1",
+  "payload": {}
+}

@@ -44,6 +44,37 @@ class ImuData:
 
 
 @dataclass(frozen=True)
+class TurretVelocity:
+    velocity_radps: float
+
+
+@dataclass(frozen=True)
+class FireCommand:
+    """Single cannon shot. Use ModuleContext.fire to attach its idempotency key."""
+    pass
+
+
+@dataclass(frozen=True)
+class FireResult:
+    request_id: str
+    status: str
+    processed_tick: int
+
+
+@dataclass(frozen=True)
+class WeaponState:
+    ready: bool
+    cooldown_remaining_ticks: int
+    shots_fired: int
+    hits_received: int
+    last_result: FireResult | None
+
+    def __post_init__(self):
+        if isinstance(self.last_result, dict):
+            object.__setattr__(self, "last_result", FireResult(**self.last_result))
+
+
+@dataclass(frozen=True)
 class JointState:
     name: tuple[str, ...]
     position: tuple[float, ...]
@@ -89,14 +120,22 @@ class ModuleContext:
         self.output_commit_tick = output_commit_tick
         self.config = freeze(config)
         self._outputs = []
+        self._commands = []
 
     def publish(self, port: str, value: Any, *, frame_id: str,
                 simulation_tick: int | None = None) -> None:
-        types = {Pose2D: "pose2d@1", Twist: "twist@1"}
+        types = {Pose2D: "pose2d@1", Twist: "twist@1", TurretVelocity: "turret_velocity@1"}
         if type(value) not in types:
             raise TypeError("Unsupported output value")
         self._outputs.append((port, types[type(value)], asdict(value), frame_id,
                               self.simulation_tick if simulation_tick is None else simulation_tick))
+
+    def fire(self, port: str = "fire", *, request_id: str | None = None) -> str:
+        request_id = request_id if request_id is not None else f"fire-{self.simulation_tick}-{len(self._commands)}"
+        if not isinstance(request_id, str) or not 1 <= len(request_id) <= 128:
+            raise ValueError("Invalid request_id")
+        self._commands.append((port, request_id))
+        return request_id
 
 
 class Module:
