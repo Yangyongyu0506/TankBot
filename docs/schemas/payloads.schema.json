@@ -239,7 +239,8 @@
                     "enum": [
                       "imu@1",
                       "encoder@1",
-                      "radar@1"
+                      "radar@1",
+                      "joint_state@1"
                     ]
                   }
                 }
@@ -458,7 +459,8 @@
                       "imu@1",
                       "encoder@1",
                       "radar@1",
-                      "twist@1"
+                      "twist@1",
+                      "joint_state@1"
                     ]
                   }
                 }
@@ -605,6 +607,50 @@
         "x",
         "y",
         "z"
+      ],
+      "additionalProperties": false
+    },
+    "joint_state": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,47}$"
+          },
+          "minItems": 1,
+          "maxItems": 16,
+          "uniqueItems": true
+        },
+        "position": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 1,
+          "maxItems": 16
+        },
+        "velocity": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 16
+        },
+        "effort": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 16
+        }
+      },
+      "required": [
+        "name",
+        "position",
+        "velocity",
+        "effort"
       ],
       "additionalProperties": false
     }

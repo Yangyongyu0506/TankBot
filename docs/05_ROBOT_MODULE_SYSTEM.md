@@ -2,13 +2,13 @@
 
 ## 目的、范围与约束
 
-`tankbot` SDK 隐藏 JSON、网络、进程和权限细节，公开稳定的类型、模块生命周期和端口。初学者函数与高级模块采用同一份 Contract 及同一 Host 验证路径。ADR-0008 接受 Contract 和混合交互原则；以下 API 为未实现的设计接口，不能直接 `pip install` 使用。
+`tankbot` SDK 隐藏 JSON、网络、进程和权限细节，公开稳定的类型、模块生命周期和端口。初学者函数与高级模块采用同一份 Contract 及同一 Host 验证路径。ADR-0008 接受 Contract 和混合交互原则；M1 已实现下述类型与同步周期 API 的子集，源码在 `sdk/python/tankbot/`，尚未发布到 pip；未实现部分在文末明确列出。
 
 ## 类型与 Contract
 
 SDK 核心类型是不可变值：`Pose2D`、`ImuData`、`EncoderData`、`RadarData`、`Vector3`、`Twist`、`Sample[T]`、`Inputs`、`ModuleContext`、`Module`。编码映射以 03 和 Schema 为准：`Pose2D(x_m, y_m, yaw_rad, covariance, child_frame_id="base_link")`；`EncoderData(left_distance_m, right_distance_m)` 为自本 run 重置以来的累计轮距；`ImuData(angular_velocity_z_radps, linear_acceleration_x_mps2, linear_acceleration_y_mps2)`；`Sample` 包含 `data`、`simulation_tick`、`frame_id`、`sequence_number`。SDK 解码时保留时间与帧，不只传数值。
 
-`Vector3(x=0.0, y=0.0, z=0.0)` 与 `Twist(linear: Vector3, angular: Vector3)` 参考 ROS 的熟悉形状，`Twist()` 默认为两个零向量，序列化总是给出全部分量。二维使用 linear.x/y 与 angular.z，其他轴显式为零；时间和 frame 由 Sample/Envelope 承载，不加入消息执行起止字段。现有 EncoderData 是差速左右轮接口，并非所有底盘通用；未来全向轮需要按轮名组织状态的独立传感器 Contract/Schema，可参考 JointState，不能伪造左右轮数据或悄悄改变 encoder@1 含义。
+`Vector3(x=0.0, y=0.0, z=0.0)` 与 `Twist(linear: Vector3, angular: Vector3)` 参考 ROS 的熟悉形状，`Twist()` 默认为两个零向量，序列化总是给出全部分量。二维使用 linear.x/y 与 angular.z，其他轴显式为零；时间和 frame 由 Sample/Envelope 承载，不加入消息执行起止字段。现有 EncoderData 是差速左右轮接口，并非所有底盘通用；M1 新增独立 `JointState(name, position, velocity, effort=())`，数组为不可变 tuple，单位 rad/rad·s⁻¹，频道 `/robot/sensors/joint_states`；差速/麦轮共用该新 Contract。不能伪造左右轮数据或悄悄改变 encoder@1 含义。
 
 每个模块提供可静态检查的 `contracts/<module_id>.json`：
 
@@ -61,7 +61,7 @@ class Odometry(Module):
         pass
 ```
 
-这里是模板示例，不实现里程计。`ModuleContext` 公开 `simulation_tick`、`dt_seconds`、`output_commit_tick`、不可变 `config`、按模块派生的 `rng`、有配额的 `log` 和 `state` 检查点接口。它没有 World、物理对象、宿主文件系统、真实地图 seed 或未授权变换。
+上面是模板示例；M1 可执行多文件里程计见 `examples/robot/localization/`。完整目标 `ModuleContext` 拟公开 `simulation_tick`、`dt_seconds`、`output_commit_tick`、不可变 `config`、按模块派生的 `rng`、有配额的 `log` 和 `state` 检查点接口。它没有 World、物理对象、宿主文件系统、真实地图 seed 或未授权变换。
 
 `ctx.publish(port, value, frame_id, simulation_tick=None)` 在本激活批次收集输出，默认 tick 为激活 tick；候选频道与 publisher 由已验证连接绑定。返回不代表已提交。输入是快照，模块不能修改 Router 缓存。`Inputs.latest(port)` 在允许的历史内选 `(sample_tick, sequence)` 最大的合法样本；过期可选输入返回 `None`。
 
@@ -77,7 +77,7 @@ velocity = Twist(
 ctx.publish("cmd_vel", velocity, frame_id="base_link")
 ```
 
-未来全向底盘可发布非零 `linear.y`，差速底盘只接受零横向分量。Publisher 自动绑定生成 tick；算法无需使用 `output_commit_tick` 填写执行计划，该上下文字段仅供时延诊断/高级补偿。统一看门狗位于控制器配置，玩家发布零 Twist 可主动停车，停止发布则按配置超时。
+M1 麦克纳姆底盘支持非零 `linear.y`，差速底盘只接受零横向分量。Publisher 自动绑定生成 tick；算法无需使用 `output_commit_tick` 填写执行计划，该上下文字段仅供时延诊断/高级补偿。统一看门狗位于控制器配置，玩家发布零 Twist 可主动停车，停止发布则按配置超时。
 
 生命周期为 `created → initializing → ready → running → stopped`；异常可进入 `faulted`。部署时先按依赖调用 `setup`，成功后才能激活。新 run 在 tick 0 调用 `reset` 清空时间相关状态、输入历史和 RNG。调度起点 `origin_tick` 是部署生效 tick，run 重置时归零；第一个周期回调在 `origin_tick + period_ticks`，因此正常 `dt_seconds > 0`。`teardown` 有界且尽力执行，强杀时不保证运行。
 
@@ -124,3 +124,9 @@ ctx.publish("cmd_vel", velocity, frame_id="base_link")
 全部用函数调用耦合太强；全部暴露原始 JSON 增加学习负担；以 Python 线程隔离模块无法可靠终止死循环。采用模块内调用、模块间 Topic、机器人级 worker。单 worker 让一个模块卡住整台机器人，后续可按风险/预算分 worker，需记录部署拓扑而不改算法端口。
 
 开放项：event 批处理对吞吐的影响、数学库可用集、检查点上限、IDE 类型提示生成。验收包含类型/连线/依赖静态检查、缺输入、异常、重置、多文件 import、超时、过期/错帧输出，以及函数包装与等价类输出一致。SDK 示例必须在 SDK 实现后通过 import、Contract 与文档片段测试。
+
+## M1 可用 API 与后续能力
+
+M1 实现 `Module.setup/update/reset/teardown`、不可变值类型、`Sample`、`Inputs.latest`、`ModuleContext.simulation_tick/dt_seconds/output_commit_tick/config/publish`；输出收集到固定提交门，经 Authority 再验证。Host 从唯一 `config/m1.json` 派生生效 Contract（period=60/10，deadline=commit_delay_ticks），避免第二份硬编码控制参数。示例端口 wheels:joint_state@1、imu:imu@1 → pose:pose2d@1；SDK 初始化仅公开起点、轮几何和模块自身配置。
+
+M1 仅运行一个 periodic Module，支持多文件 import；event、多模块依赖执行、FunctionModule/RobotApp、手动 Topic、ctx.rng/log/state、检查点与自动模板属于后续能力。标准库/宿主文件/网络在普通 CPython 进程中没有被安全隔离；只能运行本人可信代码，不能把“ctx 未暴露引擎”说成“已经沙箱化”。[实际测试](../tests/test_m1.py) 会执行本文 SDK Python 片段并检查发布类型，同时独立验证真实外部 worker。

@@ -1,0 +1,34 @@
+{
+  "protocol_version": "1.0",
+  "message_type": "topic",
+  "channel": "/robot/sensors/joint_states",
+  "sequence_number": 20,
+  "simulation_tick": 120,
+  "simulation_time_ns": 2000000000,
+  "run_id": "run-demo-001",
+  "publisher_id": "sensor:encoder",
+  "request_id": null,
+  "frame_id": "base_link",
+  "schema": "joint_state@1",
+  "payload": {
+    "name": [
+      "front_left",
+      "front_right",
+      "rear_left",
+      "rear_right"
+    ],
+    "position": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "velocity": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "effort": []
+  }
+}

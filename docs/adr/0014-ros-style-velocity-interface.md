@@ -15,7 +15,7 @@
 2. Payload 仅表示当前目标速度，不携带执行起止时间，也不需要逐条请求 ID 或执行确认。通用 Envelope 保留生成时间与 frame，作为相当于 stamped 消息的元数据；不另外嵌套第二份 Header。
 3. 何时进入仿真由可信 Host 确定。Python 批次仍在固定提交门生效；外部输入在下一可用提交门处理。玩家无需计算生效 tick。控制器保持最新有效目标直至收到新目标或自身超时。
 4. 超时由可信 ControllerProfile 的 `cmd_vel_timeout`（仿真秒）配置，以目标生成时间判断新鲜度；不是每条消息的有效期字段。失去租约、断线、reset 或部署切换立即清空目标。超时后的目标是零速度，实际停车服从公开动力学与制动限制。
-5. Chassis Controller 把 Twist 转换为底盘可实现的运动。差速模型只支持 vx/wz，非零 vy 显式拒绝并诊断；全向模型未来可支持 vx/vy/wz，不能在差速模型中偷偷横移。本次只设计扩展接口，不实现全向轮或额外传感器。
+5. Chassis Controller 把 Twist 转换为底盘可实现的运动。差速模型只支持 vx/wz，非零 vy 显式拒绝并诊断；全向模型未来可支持 vx/vy/wz，不能在差速模型中偷偷横移。该 ADR 初版只设计扩展；后续 M1 经用户确认实现全向刚体与 joint_state 观测，见 ADR-0015/0016。
 6. Topic 承载连续设定值；Service 承载有限请求响应；Action 是否引入仍按实际长任务需求决策。自定义 `command` 仅保留给确有必要的离散操作，不作为执行器的唯一入口。所有入口仍执行权限、控制租约、资源配额和物理仲裁。
 7. 后续接口优先参考 ROS 的消息语义、命名、单位与坐标系；目前自定义 Pose2D/IMU 等不是完整 ROS 消息，逐项评审后演进，不宣称网络或 SDK 与 ROS 2 直接兼容。
 
@@ -34,7 +34,7 @@
 
 ## References / Open Questions
 
-参考定义：[Twist](https://docs.ros.org/en/rolling/p/geometry_msgs/msg/Twist.html)、[ROS 2 官方 Twist 源码](https://github.com/ros2/common_interfaces/blob/rolling/geometry_msgs/msg/Twist.msg)、[diff_drive_controller](https://control.ros.org/rolling/doc/ros2_controllers/diff_drive_controller/doc/userdoc.html)、[mecanum_drive_controller](https://control.ros.org/rolling/doc/ros2_controllers/mecanum_drive_controller/doc/userdoc.html)。本轮浏览工具连接失败，官方站点与源码直连也超时，未完成在线复核；不引用未经核实的 rolling 版本参数默认值。TankBot 建议的 0.5 s 超时仍须通过控制与失联测试确定。
+参考定义：[Twist](https://docs.ros.org/en/rolling/p/geometry_msgs/msg/Twist.html)、[ROS 2 官方 Twist 源码](https://github.com/ros2/common_interfaces/blob/rolling/geometry_msgs/msg/Twist.msg)、[diff_drive_controller](https://control.ros.org/rolling/doc/ros2_controllers/diff_drive_controller/doc/userdoc.html)、[mecanum_drive_controller](https://control.ros.org/rolling/doc/ros2_controllers/mecanum_drive_controller/doc/userdoc.html)。本轮浏览工具连接失败，官方站点与源码直连也超时，未完成在线复核；不引用未经核实的 rolling 版本参数默认值。TankBot 的 0.5 s 超时已由用户确认并通过 M1 主动制动/生成时间测试；这不是对 ROS rolling 默认值的断言。
 
 ## Acceptance Criteria
 

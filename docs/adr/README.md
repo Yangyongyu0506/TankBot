@@ -2,7 +2,7 @@
 
 ## 目的与状态
 
-ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评审变更。初版日期为 2026-10-20，当前更新到 2026-10-21。`Accepted` 表示当前接受的设计约束；不是实施完成证明。`Proposed` 表示仍需指定实验/审查，不得当成已锁定依赖。`Superseded` 表示被明确编号的新 ADR 完整替代，保留原记录与链接。当前无完整 Superseded 条目；ADR-0014 局部修订 0004/0010 的速度接口表达，其余约束仍有效。
+ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评审变更。初版日期为 2026-10-20，当前更新到 M1（2026-10-21）。`Accepted` 表示当前接受的设计约束；不是实施完成证明。`Proposed` 表示仍需指定实验/审查，不得当成已锁定依赖。`Superseded` 表示被明确编号的新 ADR 完整替代，保留原记录与链接。当前无完整 Superseded 条目；ADR-0014 局部修订 0004/0010 的速度接口表达，其余约束仍有效。
 
 | 编号 | 决策 | Status |
 | --- | --- | --- |
@@ -20,6 +20,8 @@ ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评
 | [0012](0012-edit-test-deploy.md) | 快照测试、不可变部署与状态重置 | Accepted |
 | [0013](0013-python-runtime-isolation.md) | 浏览器/桌面/服务器 Runtime 技术组合 | Proposed |
 | [0014](0014-ros-style-velocity-interface.md) | ROS 惯例、cmd_vel/Twist 与控制器 watchdog | Accepted |
+| [0015](0015-confirmed-m1-physics-profile.md) | 用户确认的受力/接触/观测模型与单文件参数 | Accepted |
+| [0016](0016-wheel-joint-state.md) | 独立 joint_state 类型，保留旧 Encoder 语义 | Accepted |
 
 ## 变更流程与完成条件
 

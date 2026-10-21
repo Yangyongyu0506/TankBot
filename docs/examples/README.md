@@ -2,14 +2,15 @@
 
 ## 目的与范围
 
-这里是可机读的设计样例，不是运行部署或关卡内容。`run-demo-001`、主体 ID、profile 与 SDK `0.1.0` 均为示例值，不代表真实服务器或已发布 SDK。
+这里是可机读的设计/验证样例；实际 M1 多文件机器人例子在根 examples/robot，不把这些夹具当作运行部署或关卡。`run-demo-001`、主体 ID、profile 与 SDK `0.1.0` 均为示例值，不代表真实服务器或已发布 SDK。
 
 | 文件 | 用途 |
 | --- | --- |
 | [pose-message.json](pose-message.json) | odometry 候选位姿，tick 120 / 2 s |
 | [imu-message.json](imu-message.json)、[encoder-message.json](encoder-message.json)、[radar-message.json](radar-message.json) | 类型化测量 |
+| [joint-state-message.json](joint-state-message.json) | M1 按轮名的编码器角/角速度观测 |
 | [cmd-vel-message.json](cmd-vel-message.json) | tick 120 生成的车体 Twist Topic，没有执行起止字段 |
-| [cmd-vel-omni-message.json](cmd-vel-omni-message.json) | 非零 linear.y 的结构正例，仅适用于未来全向模型能力，不代表已实现 |
+| [cmd-vel-omni-message.json](cmd-vel-omni-message.json) | 非零 linear.y 的结构正例；M1 麦克纳姆底盘已实现该能力 |
 | [chassis-controller.json](chassis-controller.json) | 差速底盘与 0.5 s cmd_vel_timeout 的受信配置 |
 | [view-snapshot.json](view-snapshot.json) | tick 126 的授权估计视图，不含完整世界 |
 | [negotiate-request.json](negotiate-request.json)、[negotiate-response.json](negotiate-response.json) | bootstrap 协商 |

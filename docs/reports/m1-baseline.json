@@ -1,0 +1,67 @@
+{
+  "date": "2026-10-21",
+  "os": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+  "python": "3.14.4",
+  "cpu": "AMD Ryzen 9 8945HX with Radeon Graphics",
+  "native_binary_sha256": "9fe0dec14aeaba9101fac0cd872491e20852385021d45d645f75473da5e76b0f",
+  "cargo_lock_sha256": "90d0dfbca67c0a995188a703824c35b9a749da0c8d5959e20e6cf98cbc5dc4a5",
+  "config_sha256": "6583f370dae2f13bb162a834efc7125d89f27f14667051931794f755702ed36b",
+  "scene": {
+    "dynamic_bodies": 1,
+    "static_walls": 5
+  },
+  "runs": [
+    {
+      "chassis": "differential",
+      "ticks": 600,
+      "cold_start_ms": 74.29321499876096,
+      "host_tick_including_ipc_and_validation": {
+        "p50_ms": 2.571190500020748,
+        "p95_ms": 6.184866997500649,
+        "max_ms": 8.579738001571968
+      },
+      "worker_round_trip": {
+        "p50_ms": 1.0258639995299745,
+        "p95_ms": 1.336948000243865,
+        "max_ms": 1.5387960011139512
+      },
+      "max_view_bytes": 1630,
+      "sensor_sampling_ticks": 300,
+      "pose_commits": 98,
+      "rejections": [],
+      "max_estimate_position_error_m": 0.0001252003168525917,
+      "same_build_replay_exact": true,
+      "truth_digest": "e9f61bc8cb1adc02471a23a59f922619bc716b3506f2af1957bdc7c2b55106da"
+    },
+    {
+      "chassis": "omnidirectional",
+      "ticks": 600,
+      "cold_start_ms": 71.27974000104587,
+      "host_tick_including_ipc_and_validation": {
+        "p50_ms": 1.6682164987287251,
+        "p95_ms": 4.929845999868121,
+        "max_ms": 7.058751998556545
+      },
+      "worker_round_trip": {
+        "p50_ms": 1.0347694988013245,
+        "p95_ms": 1.2039659995934926,
+        "max_ms": 1.4414340002986137
+      },
+      "max_view_bytes": 1771,
+      "sensor_sampling_ticks": 300,
+      "pose_commits": 98,
+      "rejections": [],
+      "max_estimate_position_error_m": 0.00665405607793843,
+      "same_build_replay_exact": true,
+      "truth_digest": "b2c8dd7ba88e1a5c126c672804f4f7f71595e85bed49afeceb1e3a97436483ce"
+    }
+  ],
+  "wasm_probe": {
+    "wasm_bytes": 57671316,
+    "final_x_m": 1.5000130521385737,
+    "cold_instantiate_and_run_ms": 1606.2406570017629,
+    "sha256": "776ffcd6a7462da9de4e045db880c358b4baf39aab9ceb099d3fca943250eabc"
+  },
+  "native_probe_x_m": 1.5000130521385737,
+  "native_wasm_probe_equal": true
+}

@@ -2,7 +2,7 @@
 
 ## 阅读方式与规范状态
 
-文档基线：`design-0.2`，更新日期：2026-10-21。初版检查时只有根目录 `AGENTS.md`；当前已存在文档初始化提交，仍没有游戏实现或工具链。本次修订按 ROS 习惯调整速度接口，见 [ADR-0014](adr/0014-ros-style-velocity-interface.md)。本目录描述未来系统，不宣称已经完成开发。
+文档基线：`m1-0.1`，更新日期：2026-10-21。已从设计阶段进入 M1 本机最小闭环：实现与限制见 [运行入口](../README.md)、[M1 验证报告](reports/M1_VALIDATION.md)；物理模型由用户逐项确认，见 [13](13_PHYSICS_MODEL_DECISIONS.md)。其余功能仍为后续设计，不能把目录完整当作开发完成。
 
 “必须／不得”为设计约束；“建议／拟采用”为待验证方案。Accepted ADR 表示接受设计原则或接口方向，不表示实现或平台验证完成；Proposed 技术不得当作既成依赖。协议 `1.0` 是**未发布草案**，首次发布前由兼容性审查冻结；发布后执行版本规则。
 
@@ -24,6 +24,8 @@
 | [10 路线图](10_DEVELOPMENT_ROADMAP.md) | 依赖、交付物、验收、风险与首个 MVP |
 | [11 关键问题](11_CRITICAL_QUESTIONS.md) | Q1–Q15 的结论、理由、风险与追踪 |
 | [12 验证与待办](12_VALIDATION_AND_OPEN_QUESTIONS.md) | 一致性检查、需求追踪、未决项与研究来源 |
+| [13 物理确认记录](13_PHYSICS_MODEL_DECISIONS.md) | 用户逐项确认、伺服/轮组/IMU 方程及未实现武器模型 |
+| [M1 验证报告](reports/M1_VALIDATION.md) | 当前实现范围、实际命令、证据与平台限制 |
 | [ADR 索引](adr/README.md) | 决策状态、替代方案与变更流程 |
 | [Schema 与样例](schemas/README.md) | 可机读的协议、模块、Workspace、底盘配置草案及正反样例 |
 

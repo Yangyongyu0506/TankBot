@@ -183,7 +183,7 @@
         "value": 1999999999
       },
       "expected": "reject",
-      "expected_code": "INVALID_SCHEMA",
+      "expected_code": "INVALID_TIMESTAMP",
       "note": "判断时需要会话的 physics_hz。"
     },
     {

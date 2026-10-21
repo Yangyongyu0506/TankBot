@@ -6,7 +6,7 @@
 
 ## Context
 
-需要原生性能、WASM、长期维护和服务器扩展；目前仓库没有实现、基准或已验证工具链。语言偏好不能代替可行性证据。
+需要原生性能、WASM、长期维护和服务器扩展；M0 时仓库没有实现、基准或已验证工具链。语言偏好不能代替可行性证据。
 
 ## Decision
 
@@ -23,3 +23,9 @@ Rust 若通过验证可减少核心依赖组合；Rapier 的实际目标特性�
 ## Acceptance Gate / Open Questions
 
 M1/M2 提交至少原生 Linux 与浏览器 WASM 的构建/600 tick/CCD/故障探针报告；Windows/macOS 后续独立验证。记录包体、启动、tick 成本、团队可维护性；若失败再试备选并记录原因。接受时锁版本与 feature，不使用浮动最新依赖。
+
+## M1 Evidence / Status Review
+
+M1 已用 Rust 1.99.1、rapier2d-f64 **0.36.1**（enhanced-determinism、serde-serialize，依赖摘要见 Cargo.lock）实现本机两底盘/接触/传感器，并完成 Linux 原生和 wasm32-unknown-unknown 的同核心构建、Node 中 600 tick WASM 执行、原生重放和 Runtime 故障探针。见 [实际报告](../reports/M1_VALIDATION.md)。下载公开镜像只解决本机工具链获取，不构成平台保证。
+
+Status 继续 Proposed：M1 的实验性实现可以使用候选组合，但原接受门包含完整浏览器 WASM 部署；当前浏览器页面连接的是原生 Host，尚无双 Worker/Pyodide 验证。高速弹丸 CCD、发布包体、Windows/macOS 及长期维护成本仍待后续阶段，不能因为一组浮点结果相同就宣称跨平台位级确定。

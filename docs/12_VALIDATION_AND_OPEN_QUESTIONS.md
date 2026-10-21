@@ -2,7 +2,7 @@
 
 ## 目的、范围与完成定义
 
-汇总需求覆盖、检查证据、假设与下一步准入条件，防止“设计接受”被误读成“技术验证完成”。允许的辅助代码仅为离线文档检查工具，不含游戏、SDK、Runtime 或沙箱实现。初版资料核实日期为 2026-10-20；当前基线 `design-0.2`，2026-10-21 按 ROS 习惯修订速度接口。新增 ROS 参考链接因网络不可达尚未在线复核，不能当作已验证的滚动版本默认行为。
+汇总需求覆盖、检查证据、假设与下一步准入条件，防止“设计接受”被误读成“技术验证完成”。M0 原范围为离线文档；用户后续授权 M1，当前已有原生 Core、Host、SDK 子集和 Web 原型，实际证据见 [M1 报告](reports/M1_VALIDATION.md)。完整沙箱仍未实现。初版资料核实日期为 2026-10-20；当前基线 `m1-0.1`，2026-10-21 按 ROS 习惯修订速度接口。新增 ROS 参考链接因网络不可达尚未在线复核，不能当作已验证的滚动版本默认行为。
 
 ## 需求与接口追踪
 
@@ -27,8 +27,8 @@
 - 全部 Envelope 使用 `protocol_version`、`message_type`、`channel`、`sequence_number`、`simulation_tick`、`simulation_time_ns`、`run_id`、`publisher_id`、`request_id`、`frame_id`、`schema`、`payload`；不存在另一套 kind/data 别名。
 - 玩家位姿只写候选；Selector 独占 `/robot/localization/pose`。`/system/pose` 不是公开 Topic，系统源许可不会因候选超时自动恢复。
 - `world` 是私有物理系，`map` 与 `odom` 是公开声明系；显示插值不反馈物理。权威状态不进入 UI/SDK 的通用序列化接口。
-- sample tick、delivery tick、activation tick 和 output commit tick 分开；默认 60 Hz 物理、30 Hz Encoder/IMU、10 Hz 算法、5 Hz Radar 均为待测配置。
-- 连续速度使用 `/robot/cmd_vel` / `twist@1`，保留 vx/vy/wz 对应的 linear.x/y、angular.z；payload 无执行起止时间。Host 决定内部提交时刻，Core 内底盘控制器按生成时间与 cmd_vel_timeout 检查新鲜度。差速模型不能横移，全向模型仅有扩展设计。
+- sample tick、delivery tick、activation tick 和 output commit tick 分开；M1 确认 60 Hz 物理/4 子步、30 Hz 轮组/IMU、10 Hz 算法；5 Hz Radar 仍未实现。
+- 连续速度使用 `/robot/cmd_vel` / `twist@1`，保留 vx/vy/wz 对应的 linear.x/y、angular.z；payload 无执行起止时间。Host 决定内部提交时刻，Core 内底盘控制器按生成时间与 cmd_vel_timeout 检查新鲜度。差速模型不能横移，M1 已实现四轮麦克纳姆的聚合刚体模型与 JointState 观测。
 - Workspace revision 可编辑，DeploymentArtifact 不可变；测试报告绑定摘要；重启/部署不隐含重置 World，reset/seek 才新建 run。
 - JSON Schema 只处理结构；PSD、帧关系、跨字段时间与权限有独立验证责任。文档检查不声称实现这些领域验证器。
 
@@ -40,17 +40,13 @@ git status --short
 git diff --check
 ```
 
-检查工具需要现有 Python 环境具备 `jsonschema` 与 `referencing`；本轮使用已有环境，不安装或新增项目依赖。工具离线注册本地 Schema，不访问 `$id` 示例域名。
+检查工具需要现有 Python 环境具备 `jsonschema` 与 `referencing`；M0 检查使用已有环境；M1 requirements.txt 明确记录 Python 验证依赖。工具离线注册本地 Schema，不访问 `$id` 示例域名。
 
-检查范围：Markdown 本地链接与代码块、ADR 状态和索引、严格 JSON、Draft 2020-12 Schema、自包含正例、结构负例与领域案例分层、Python 示例语法、行尾空白。Python 示例仅 AST 解析，不导入尚不存在的 SDK。当前已有初始化提交，`git diff --check` 检查已跟踪改动；新增文件仍需检查。工具对所有 Markdown 检查空白，JSON 做完整格式检查；也可逐文件运行 `git diff --no-index --check /dev/null <path>`，退出码 1 仅表示文件差异，实际空白告警不能忽略。
+检查范围：Markdown 本地链接与代码块、ADR 状态和索引、严格 JSON、Draft 2020-12 Schema、自包含正例、结构负例与领域案例分层、Python 示例语法、行尾空白。Python 示例仅 AST 解析，此工具不导入 SDK；另由 M1 测试执行 SDK 片段。当前已有初始化提交，`git diff --check` 检查已跟踪改动；新增文件仍需检查。工具对所有 Markdown 检查空白，JSON 做完整格式检查；也可逐文件运行 `git diff --no-index --check /dev/null <path>`，退出码 1 仅表示文件差异，实际空白告警不能忽略。
 
-最终计数和结果如下；若后续文档变化，以重新运行工具的结果为准。本轮环境为 `jsonschema 4.19.2`、`referencing 0.36.2`：
+当前检查计数由工具输出，避免手工统计与文档变更漂移。M1 实际验证包括：22 项单元/集成测试（其中一项接入 10 个文档协议领域案例）、两底盘各 600 tick 测量、同构建执行器重放、原生/WASM 构建与执行、Firefox 页面和按键验证。基准 JSON 记录实际配置和构建摘要，见报告。
 
-- 文档检查通过：32 份 Markdown、126 个本地链接、6 份 Schema、17 个完整正例、19 个结构拒绝案例、9 个 JSON 片段、2 个 Python 语法片段；正文规范示例与独立夹具一致。
-- ADR 索引与状态通过：11 Accepted、3 Proposed、0 完整 Superseded；0014 明确记录局部修订关系。
-- 14 个领域负例确认可以通过结构层，留待真实 Host 实现后验证拒绝结果，未计为已通过的领域测试；其中包含差速拒绝横移、按生成时间超时、未来时间与旧目标覆盖等案例。
-- 游戏/物理/SDK/Adapter 测试：尚无实现，未执行。
-- 浏览器性能、OS 隔离、跨平台确定性、真实玩法：尚未验证。
+剩余 4 个文档领域案例涉及通用 Manifest/event/连线及独立策略配置接口，不混算为 M1 已完成能力。OS 沙箱、完整浏览器双 Worker、多 Adapter 等价、Windows/macOS 与 Arena 仍未验证。
 
 ## 实现阶段如何保持文档与 API 一致
 
@@ -90,7 +86,7 @@ git diff --check
 | O11 | 局部 scan、弹丸/音频效果后补独立 Schema | M4/M5 观测可玩性和泄漏测试 | 关卡与表现权限 |
 | O12 | v1 草案冻结前补齐首发频道/服务 | M2/M3 协商、选源、模块诊断的注册与兼容测试 | 公共 API 发布 |
 | O13 | 其他机器人消息逐项参考 ROS 命名/类型/时间习惯 | SDK 发布前审查现有 Pose2D/IMU 等差异，不冒充完整 ROS 消息 | 学习迁移与接口一致性 |
-| O14 | 全向底盘共用 Twist，新增按轮名状态的传感器 | 单独模型/传感器设计与运动学、碰撞、轮状态测试；本次不实现 | 全向轮扩展可行性 |
+| O14 | 全向底盘共用 Twist，新增按轮名状态的传感器 | M1 两底盘模型、joint_state Schema/SDK 和 600 tick 测试已交付；轮电机/空转仍不在模型内 | 全向轮扩展可行性 |
 
 这些项目都有推荐方向，但没有被文档工作“解决为事实”。参考设备、性能门槛、项目许可证/资产政策、账号/存储服务方案仍需产品与维护者决策；后两项不阻塞 M1。
 
@@ -119,4 +115,10 @@ git diff --check
 
 ## 最终审查准则
 
-所有需求领域有负责人模块、数据流、接口、替代与验收；JSON/Python 例子和术语一致；Accepted/Proposed 不混写；不把设计样例当实现；没有未授权真值路径；现有玩家代码迁移不覆盖。当前阶段到此结束，下一任务只按 M1a 范围开展验证。
+所有需求领域有负责人模块、数据流、接口、替代与验收；JSON/Python 例子和术语一致；Accepted/Proposed 不混写；不把设计样例当实现；没有未授权真值路径；现有玩家代码迁移不覆盖。M0 以此结束；后续 M1 实现已获用户明确授权，下一阶段按 M2a 范围开展。
+
+## M1 更新
+
+新验收入口为 `python3 -m unittest discover -s tests -v`（真实物理/worker/HTTP/SDK），`python3 tools/measure_m1.py`（双底盘 600 tick、同构建重放和原生/WASM 构建探针）。文档工具仍只检查结构/链接，不替代权限或运行测试。M1 的范围与源码路径见报告；Schema 已新增独立 joint_state@1 和 SimulationProfile，旧 encoder@1 含义未改。
+
+O01 已得到 Linux/Node WASM 的部分证据，完整浏览器 Worker 和其他 OS 保持开放；O05 的 60/30/10 Hz 和 20 ms 批次在本机验证，Arena/慢设备需另测；O14 的 M1 聚合全向模型已完成，详细轮电机/轮滑仍需新模型确认。技术 ADR 保持其真实验证状态；13 Accepted / 3 Proposed，其中新增模型/轮组接口为 Accepted，不把三项技术候选提前接受。

@@ -127,7 +127,7 @@ Host 把有效目标放入内部提交计划；Python 输出仍随 Runtime 批�
 
 失去控制租约、断线、reset 或部署切换立即清空旧目标，不等超时；“立即”指下一个权威提交边界，不是异步打断正在积分的物理 tick。无效消息不替换目标、不刷新 watchdog；旧合法目标仅维持到自身超时。手动/自主控制只有一个租约，键盘也必须走该授权入口。Manifest 的模块 config 不能覆盖 Host 的 ControllerProfile 来延长超时或解锁全向能力。
 
-差速模型支持 vx/wz，非零 vy 报 `UNSUPPORTED_MOTION`；未来全向模型可支持 vx/vy/wz，同一 Twist 无需改格式。各轴绝对值不得超过 ControllerProfile 声明的限值，越界拒绝；正常加速度饱和属于物理模型。非零横移不是通过直接改位置模拟，必须由对应底盘模型实现。配置与消息 Schema 可表达未来全向能力不代表该模型已实现。
+差速模型支持 vx/wz，非零 vy 报 `UNSUPPORTED_MOTION`；M1 麦克纳姆全向模型支持 vx/vy/wz，同一 Twist 无需改格式。按用户确认的 ADR-0015，有限目标超过 ControllerProfile 各轴限值时逐轴截断；非平面轴、非有限量与差速非零 vy 仍整条拒绝。真实速度不直接截断，实际响应由受限伺服、阻力与接触决定。
 
 离散 command/service 的去重键仍为 `(run_id, bound_principal, request_id)`；缓存内相同内容返回已记录结果，同 ID 不同内容报 `DUPLICATE_REQUEST`。窗口为会话内最近 256 项，超出窗口不保证识别重复，不支持自动重试。有副作用服务还须按 artifact/revision/step 等业务键幂等。cmd_vel 不使用此请求缓存，重连也不重发旧速度，需新发布当前意图。
 
@@ -169,3 +169,9 @@ Envelope 核心与 payload `@1` 均禁止未知字段。扩展先放 `extensions
 ROS2/DDS 超出部署和学习负担；直接函数调用只允许在模块内部，不能绕过 Host 权限。二进制编码先等待 profile 显示 JSON 成为瓶颈，届时只替换编码，不改变授权与时间语义。
 
 未决：实际负载预算、地图压缩、断线恢复的历史窗口、首发版本号。验收须包含结构正反例、非法帧/协方差/过期数据、伪造发布者、跨机器人订阅、命令重放、队列溢出、重置旧消息，以及多个 Adapter 对同一夹具产生等价接受结果。
+
+## M1 新增的轮组消息与实施范围
+
+`/robot/sensors/joint_states` 使用新增 `joint_state@1`，形状参考 ROS JointState，字段 `name/position/velocity/effort` 均为数组。position 是自 run 重置以来累计轮角（rad），velocity 是采样边界角速度（rad/s），effort 为空表示未建模。位置数组长度必须等于 name；velocity/effort 长度为零或与 name 相同，由领域层校验，不能假设 Schema 已完成跨数组关联。M1 固定车体系 `base_link`；差速 wheel name 为 left/right，全向为 front_left/front_right/rear_left/rear_right。见 [完整样例](examples/joint-state-message.json) 和 [ADR-0016](adr/0016-wheel-joint-state.md)。不修改旧 encoder@1 的米单位与左右轮含义。
+
+M1 实现严格 JSON、Schema、源/频道 grant、run/序号/时间/帧、PSD 和固定提交门；候选为 `/robot/estimates/odometry/pose`，Selector 生成 `/robot/localization/pose`，Gateway 生成 `/view/snapshot`。只开放单机器人、单周期模块和键盘控制租约。通用协商、任意订阅/服务、event、动态 TF、控制权切换与跨 Transport 等价性尚未实现，不能因 Schema 已存在而宣称可用。M1 Runtime 帧上限取更严格的 64 KiB；源码入口与测试见 [报告](reports/M1_VALIDATION.md)。

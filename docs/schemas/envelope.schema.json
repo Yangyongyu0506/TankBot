@@ -79,7 +79,8 @@
         "negotiate_request@1",
         "negotiate_response@1",
         "runtime_step_request@1",
-        "runtime_step_result@1"
+        "runtime_step_result@1",
+        "joint_state@1"
       ]
     },
     "payload": {
@@ -565,6 +566,28 @@
             "enum": [
               null
             ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "joint_state@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "payloads.schema.json#/$defs/joint_state"
+          },
+          "message_type": {
+            "const": "topic"
+          },
+          "frame_id": {
+            "const": "base_link"
           }
         }
       }

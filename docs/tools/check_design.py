@@ -51,6 +51,8 @@ def schema_for(value):
         return "payloads.schema.json", "twist"
     if "controller_profile_version" in value:
         return "chassis-controller.schema.json", None
+    if "config_version" in value:
+        return "simulation-profile.schema.json", None
     if "activation_tick" in value:
         return "payloads.schema.json", "runtime_step_request"
     if "step_id" in value and "results" in value:
@@ -81,6 +83,7 @@ def main():
     for filename, schema in schemas.items():
         Draft202012Validator.check_schema(schema)
         validators[(filename, None)] = Draft202012Validator(schema, registry=registry)
+    validators[("simulation-profile.schema.json", None)].validate(strict_json((ROOT/"config/m1.json").read_text()))
     for name in schemas["payloads.schema.json"]["$defs"]:
         reference = schemas["payloads.schema.json"]["$id"] + "#/$defs/" + name
         validators[("payloads.schema.json", name)] = Draft202012Validator(
@@ -164,7 +167,7 @@ def main():
     print(f"PASS: {len(markdown)} Markdown files, {local_links} local links, {len(schemas)} Schemas")
     print(f"PASS: {len(examples) - 1} positive fixtures, {schema_cases} rejected structural cases")
     print(f"PASS: {json_blocks} JSON blocks, {python_blocks} Python syntax blocks; ADR states: {states}")
-    print(f"PENDING: {domain_cases} domain cases pass structure; actual Host semantic/security tests require implementation")
+    print(f"STRUCTURE ONLY: {domain_cases} domain cases; real M1 coverage is in tests/test_protocol_fixtures.py and tests/test_m1.py")
 
 
 if __name__ == "__main__":

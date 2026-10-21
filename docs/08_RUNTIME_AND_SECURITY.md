@@ -65,3 +65,9 @@ Pyodide 可访问 JS 桥，删除 `import js`、过滤 builtins 或 AST 扫描�
 嵌入 CPython、Python 线程、受限 builtins 和普通 subprocess 均不足以运行互联网不可信代码；容器轻量但共享内核风险更高；microVM 隔离更强但冷启动/内存成本更高。gVisor 兼容性和数学库性能需测试后决定，见 ADR-0013。
 
 未决：浏览器严格网络隔离、桌面安全执行能力、服务器沙箱、真实内存/启动成本、侧信道风险接受范围。验收必须在目标部署上实际测试无限循环、内存炸弹、fork/线程风暴、恶意路径、Host/metadata 网络访问、跨机器人通信、畸形 JSON/日志洪泛、worker 强杀与 Host 连续运行；没有证据前不开放第三方服务器代码执行。
+
+## M1 的实际本机边界
+
+M1 为明确授权的**本人可信代码开发 profile**：原生 Rust Core 的私有管道只给 Host，CPython worker 是另一个进程，仅收到授权传感器和公开初始化数据。外部线程看门狗强制批次墙钟上限，超时强杀 worker；实时 tick 不 await 玩家程序。长度前缀在分配前限长、严格 JSON 深度限制、固定提交门和 Authority 校验都已实现；stdout 中的玩家 print 重定向到丢弃的 stderr，不能混入协议。
+
+该 profile **没有** OS 文件/网络沙箱、硬 CPU/内存/进程配额，不接受第三方上传，也不提供 Arena。完整服务端隔离要求与 ADR-0013 仍有效且 Proposed；不能用本机死循环测试代替沙箱攻击测试。loopback HTTP 限定 Host/Origin、控制 token、POST JSON 大小和控制频率；这些是本地 UI Adapter 的保护，不代表可直接公开到互联网。M1 只保留键盘的单一执行器来源，玩家模块没有 cmd_vel 发布 grant，未来移交须显式实现租约撤回与清缓存。

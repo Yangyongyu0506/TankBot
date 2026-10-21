@@ -1,0 +1,305 @@
+{
+  "config_version": "1.0",
+  "confirmation_status": "confirmed",
+  "body": {
+    "length_m": 0.8,
+    "width_m": 0.6,
+    "corner_radius_m": 0.08,
+    "mass_kg": 20.0,
+    "yaw_inertia_kg_m2": 2.0
+  },
+  "servo": {
+    "tau_x_s": 0.2,
+    "tau_y_s": 0.2,
+    "tau_yaw_s": 0.15,
+    "max_force_x_n": 100.0,
+    "max_force_y_n": 100.0,
+    "max_torque_nm": 20.0,
+    "zero_target_behavior": "active_brake"
+  },
+  "motion_limits": {
+    "max_vx_mps": 3.0,
+    "max_vy_mps": 3.0,
+    "max_wz_radps": 6.0
+  },
+  "chassis": {
+    "differential": {
+      "lateral_actuation": false,
+      "drag_x_n_s_per_m": 4.0,
+      "drag_y_n_s_per_m": 200.0,
+      "drag_yaw_nm_s": 0.8
+    },
+    "omnidirectional": {
+      "lateral_actuation": true,
+      "drag_x_n_s_per_m": 4.0,
+      "drag_y_n_s_per_m": 4.0,
+      "drag_yaw_nm_s": 0.8
+    }
+  },
+  "clock": {
+    "physics_hz": 60,
+    "substeps": 4,
+    "sensor_hz": 30,
+    "algorithm_hz": 10
+  },
+  "contact": {
+    "restitution": 0.0,
+    "friction": 0.4
+  },
+  "wheels": {
+    "radius_m": 0.1,
+    "differential_track_m": 0.5,
+    "mecanum_half_length_m": 0.3,
+    "mecanum_half_width_m": 0.25,
+    "roller_angle_deg": 45.0,
+    "arrangement": "X"
+  },
+  "sensors": {
+    "imu_mount": "center_of_mass",
+    "imu_axes": "base_link",
+    "planar_gravity_mps2": 0.0,
+    "noise_stddev": 0.0,
+    "bias": 0.0,
+    "drift_per_s": 0.0,
+    "latency_ticks": 0,
+    "drop_probability": 0.0,
+    "encoder_model": "ideal_rolling"
+  },
+  "controller": {
+    "cmd_vel_timeout_s": 0.5,
+    "overspeed_target": "clamp_each_axis",
+    "unsupported_lateral": "reject"
+  },
+  "scene": {
+    "default_chassis": "differential",
+    "initial_pose": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "initial_velocity": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "public_initial_pose": true,
+    "public_map": true,
+    "walls": [
+      {
+        "center": [
+          6.1,
+          0.0
+        ],
+        "size": [
+          0.2,
+          8.4
+        ]
+      },
+      {
+        "center": [
+          -6.1,
+          0.0
+        ],
+        "size": [
+          0.2,
+          8.4
+        ]
+      },
+      {
+        "center": [
+          0.0,
+          4.1
+        ],
+        "size": [
+          12.0,
+          0.2
+        ]
+      },
+      {
+        "center": [
+          0.0,
+          -4.1
+        ],
+        "size": [
+          12.0,
+          0.2
+        ]
+      },
+      {
+        "center": [
+          2.0,
+          0.0
+        ],
+        "size": [
+          0.2,
+          3.0
+        ]
+      }
+    ]
+  },
+  "deferred_weapons": {
+    "implemented": false,
+    "turret": {
+      "mass_kg": 2.0,
+      "yaw_inertia_kg_m2": 0.08,
+      "center_m": [
+        0.0,
+        0.0
+      ],
+      "tau_s": 0.1,
+      "max_torque_nm": 2.0,
+      "max_relative_rate_radps": 8.0,
+      "bearing_drag_nm_s": 0.02,
+      "muzzle_offset_m": [
+        0.45,
+        0.0
+      ]
+    },
+    "projectile": {
+      "mass_kg": 0.05,
+      "radius_m": 0.03,
+      "relative_speed_mps": 15.0,
+      "wall_restitution": 1.0,
+      "wall_friction": 0.0,
+      "max_bounces": 3,
+      "lifetime_s": 5.0
+    },
+    "mass_accounting": "fixed_chassis_mass"
+  },
+  "runtime": {
+    "commit_delay_ticks": 6,
+    "batch_budget_ms": 20,
+    "startup_timeout_s": 5.0,
+    "max_message_bytes": 65536,
+    "max_failures": 3,
+    "input_max_age_ticks": 12,
+    "max_log_bytes": 32768,
+    "seed": 0,
+    "history_limit_ticks": 36000,
+    "audit_limit_entries": 4096,
+    "max_cmd_vel_per_sim_second": 60,
+    "max_inbound_per_wall_second": 512,
+    "estimate_history_ticks": 60
+  },
+  "view_policy": {
+    "policy_id": "m1-estimates-only",
+    "system_pose_allowed": false,
+    "player_pose_allowed": true,
+    "allowed_pose_frames": [
+      "map"
+    ],
+    "public_map": "m1-test-map",
+    "local_observation_channels": [
+      "/robot/sensors/joint_states",
+      "/robot/sensors/imu"
+    ],
+    "true_enemy_objects": false,
+    "world_effects": false,
+    "camera_source": "selected_pose_or_manual",
+    "pose_fresh_ticks": 12,
+    "pose_hide_after_ticks": 60
+  },
+  "view": {
+    "pose_source_id": "odometry",
+    "snapshot_hz": 10,
+    "max_visual_trail": 300,
+    "poll_ms": 100,
+    "keyboard_refresh_ms": 100,
+    "keyboard_linear_mps": 1.0,
+    "keyboard_yaw_radps": 1.0,
+    "interpolation_jump_m": 1.0
+  },
+  "host": {
+    "bind": "127.0.0.1",
+    "port": 8765,
+    "max_catchup_ticks": 5
+  },
+  "validation": {
+    "ticks": 600,
+    "probe_target": [
+      0.5,
+      0.0,
+      0.0
+    ],
+    "pose_offset_m": 2.0,
+    "covariance_tolerance": 1e-09,
+    "numeric_tolerance": 1e-08,
+    "contact_measurement_tolerance_m": 0.005,
+    "odom_error_tolerance_m": 0.1,
+    "covariance_max_iterations": 64
+  },
+  "solver": {
+    "dt": 0.004166666666666667,
+    "min_ccd_dt": 0.00016666666666666666,
+    "contact_softness": {
+      "natural_frequency": 30.0,
+      "damping_ratio": 10.0
+    },
+    "static_contact_softness": {
+      "natural_frequency": 60.0,
+      "damping_ratio": 10.0
+    },
+    "warmstart_coefficient": 1.0,
+    "length_unit": 1.0,
+    "soft_bodies": {
+      "recovery": {
+        "authored_velocity_margin": true,
+        "edge_speculation": false,
+        "inverted_cell_detection": true,
+        "self_crossing_detection": true,
+        "detection_motion_gating": true,
+        "cross_body_detection": true,
+        "self_stand_down": true,
+        "cross_body_expel_gate": true,
+        "edge_stand_down": true,
+        "crossing_repulsion": false,
+        "crossing_repulsion_guide": false,
+        "crossing_repulsion_self_guide": false,
+        "recovery_pace": 0.5,
+        "overlap_constraints": true,
+        "overlap_rigid": true,
+        "overlap_skip_self_tangled": true,
+        "overlap_edge_stand_down": true,
+        "overlap_constraint_pace": 1.0,
+        "overlap_patch_constraints": "AlongNormal",
+        "overlap_skin_volume": false,
+        "overlap_kept_depth": 0.0,
+        "overlap_self_regions": false,
+        "overlap_normal_push": true,
+        "overlap_multi_volume": false,
+        "overlap_split": 3,
+        "overlap_patience": 240,
+        "overlap_progress_margin": 0.02
+      },
+      "resweep_strain": 0.75,
+      "max_extra_substeps": 4,
+      "contact_stiffening": 4.0
+    },
+    "normalized_allowed_linear_error": 0.001,
+    "normalized_max_corrective_velocity": 3.0,
+    "normalized_prediction_distance": 0.02,
+    "normalized_max_linear_velocity": 400.0,
+    "num_solver_iterations": 8,
+    "num_internal_pgs_iterations": 4,
+    "num_internal_stabilization_iterations": 1,
+    "max_ccd_substeps": 1,
+    "contact_clustering": true,
+    "contact_recycling": true,
+    "normalized_contact_recycle_distance": 0.05,
+    "friction_in_bias_pass": false,
+    "warmstart_joints": false
+  },
+  "rigid_body": {
+    "ccd_enabled": true,
+    "can_sleep": false,
+    "linear_damping": 0.0,
+    "angular_damping": 0.0
+  },
+  "module": {
+    "module_id": "odometry",
+    "entry_point": "localization.odometry:Odometry",
+    "pose_offset_m": 0.0,
+    "output_frame": "map",
+    "fault": "none"
+  }
+}

@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+.venv/
+.tools/
+target/
+build/
+.m1-cache/
+*.log

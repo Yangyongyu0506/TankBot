@@ -1,0 +1,1017 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tankbot.example/schemas/v1/simulation-profile.schema.json",
+  "title": "TankBot M1 单文件仿真配置",
+  "type": "object",
+  "properties": {
+    "config_version": {
+      "const": "1.0"
+    },
+    "confirmation_status": {
+      "const": "confirmed"
+    },
+    "body": {
+      "type": "object",
+      "properties": {
+        "length_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "width_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "corner_radius_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "mass_kg": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "yaw_inertia_kg_m2": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "length_m",
+        "width_m",
+        "corner_radius_m",
+        "mass_kg",
+        "yaw_inertia_kg_m2"
+      ],
+      "additionalProperties": false
+    },
+    "servo": {
+      "type": "object",
+      "properties": {
+        "tau_x_s": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "tau_y_s": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "tau_yaw_s": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "max_force_x_n": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "max_force_y_n": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "max_torque_nm": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "zero_target_behavior": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "tau_x_s",
+        "tau_y_s",
+        "tau_yaw_s",
+        "max_force_x_n",
+        "max_force_y_n",
+        "max_torque_nm",
+        "zero_target_behavior"
+      ],
+      "additionalProperties": false
+    },
+    "motion_limits": {
+      "type": "object",
+      "properties": {
+        "max_vx_mps": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "max_vy_mps": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "max_wz_radps": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "max_vx_mps",
+        "max_vy_mps",
+        "max_wz_radps"
+      ],
+      "additionalProperties": false
+    },
+    "chassis": {
+      "type": "object",
+      "properties": {
+        "differential": {
+          "type": "object",
+          "properties": {
+            "lateral_actuation": {
+              "type": "boolean"
+            },
+            "drag_x_n_s_per_m": {
+              "type": "number",
+              "minimum": 0
+            },
+            "drag_y_n_s_per_m": {
+              "type": "number",
+              "minimum": 0
+            },
+            "drag_yaw_nm_s": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "lateral_actuation",
+            "drag_x_n_s_per_m",
+            "drag_y_n_s_per_m",
+            "drag_yaw_nm_s"
+          ],
+          "additionalProperties": false
+        },
+        "omnidirectional": {
+          "type": "object",
+          "properties": {
+            "lateral_actuation": {
+              "type": "boolean"
+            },
+            "drag_x_n_s_per_m": {
+              "type": "number",
+              "minimum": 0
+            },
+            "drag_y_n_s_per_m": {
+              "type": "number",
+              "minimum": 0
+            },
+            "drag_yaw_nm_s": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "lateral_actuation",
+            "drag_x_n_s_per_m",
+            "drag_y_n_s_per_m",
+            "drag_yaw_nm_s"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "differential",
+        "omnidirectional"
+      ],
+      "additionalProperties": false
+    },
+    "clock": {
+      "type": "object",
+      "properties": {
+        "physics_hz": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "substeps": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "sensor_hz": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "algorithm_hz": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "physics_hz",
+        "substeps",
+        "sensor_hz",
+        "algorithm_hz"
+      ],
+      "additionalProperties": false
+    },
+    "contact": {
+      "type": "object",
+      "properties": {
+        "restitution": {
+          "type": "number",
+          "minimum": 0
+        },
+        "friction": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "restitution",
+        "friction"
+      ],
+      "additionalProperties": false
+    },
+    "wheels": {
+      "type": "object",
+      "properties": {
+        "radius_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "differential_track_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "mecanum_half_length_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "mecanum_half_width_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "roller_angle_deg": {
+          "type": "number"
+        },
+        "arrangement": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "radius_m",
+        "differential_track_m",
+        "mecanum_half_length_m",
+        "mecanum_half_width_m",
+        "roller_angle_deg",
+        "arrangement"
+      ],
+      "additionalProperties": false
+    },
+    "sensors": {
+      "type": "object",
+      "properties": {
+        "imu_mount": {
+          "type": "string",
+          "minLength": 1
+        },
+        "imu_axes": {
+          "type": "string",
+          "minLength": 1
+        },
+        "planar_gravity_mps2": {
+          "type": "number"
+        },
+        "noise_stddev": {
+          "type": "number"
+        },
+        "bias": {
+          "type": "number"
+        },
+        "drift_per_s": {
+          "type": "number"
+        },
+        "latency_ticks": {
+          "type": "integer"
+        },
+        "drop_probability": {
+          "type": "number"
+        },
+        "encoder_model": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "imu_mount",
+        "imu_axes",
+        "planar_gravity_mps2",
+        "noise_stddev",
+        "bias",
+        "drift_per_s",
+        "latency_ticks",
+        "drop_probability",
+        "encoder_model"
+      ],
+      "additionalProperties": false
+    },
+    "controller": {
+      "type": "object",
+      "properties": {
+        "cmd_vel_timeout_s": {
+          "type": "number"
+        },
+        "overspeed_target": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unsupported_lateral": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "cmd_vel_timeout_s",
+        "overspeed_target",
+        "unsupported_lateral"
+      ],
+      "additionalProperties": false
+    },
+    "scene": {
+      "type": "object",
+      "properties": {
+        "default_chassis": {
+          "enum": [
+            "differential",
+            "omnidirectional"
+          ]
+        },
+        "initial_pose": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "initial_velocity": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "public_initial_pose": {
+          "type": "boolean"
+        },
+        "public_map": {
+          "type": "boolean"
+        },
+        "walls": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "center": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 2,
+                "maxItems": 2
+              },
+              "size": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 2,
+                "maxItems": 2
+              }
+            },
+            "required": [
+              "center",
+              "size"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "default_chassis",
+        "initial_pose",
+        "initial_velocity",
+        "public_initial_pose",
+        "public_map",
+        "walls"
+      ],
+      "additionalProperties": false
+    },
+    "deferred_weapons": {
+      "type": "object",
+      "properties": {
+        "implemented": {
+          "type": "boolean"
+        },
+        "turret": {
+          "type": "object",
+          "properties": {
+            "mass_kg": {
+              "type": "number"
+            },
+            "yaw_inertia_kg_m2": {
+              "type": "number"
+            },
+            "center_m": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "tau_s": {
+              "type": "number"
+            },
+            "max_torque_nm": {
+              "type": "number"
+            },
+            "max_relative_rate_radps": {
+              "type": "number"
+            },
+            "bearing_drag_nm_s": {
+              "type": "number"
+            },
+            "muzzle_offset_m": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "mass_kg",
+            "yaw_inertia_kg_m2",
+            "center_m",
+            "tau_s",
+            "max_torque_nm",
+            "max_relative_rate_radps",
+            "bearing_drag_nm_s",
+            "muzzle_offset_m"
+          ],
+          "additionalProperties": false
+        },
+        "projectile": {
+          "type": "object",
+          "properties": {
+            "mass_kg": {
+              "type": "number"
+            },
+            "radius_m": {
+              "type": "number"
+            },
+            "relative_speed_mps": {
+              "type": "number"
+            },
+            "wall_restitution": {
+              "type": "number"
+            },
+            "wall_friction": {
+              "type": "number"
+            },
+            "max_bounces": {
+              "type": "integer"
+            },
+            "lifetime_s": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "mass_kg",
+            "radius_m",
+            "relative_speed_mps",
+            "wall_restitution",
+            "wall_friction",
+            "max_bounces",
+            "lifetime_s"
+          ],
+          "additionalProperties": false
+        },
+        "mass_accounting": {
+          "const": "fixed_chassis_mass"
+        }
+      },
+      "required": [
+        "implemented",
+        "turret",
+        "projectile",
+        "mass_accounting"
+      ],
+      "additionalProperties": false
+    },
+    "runtime": {
+      "type": "object",
+      "properties": {
+        "commit_delay_ticks": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "batch_budget_ms": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "startup_timeout_s": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "max_message_bytes": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "max_failures": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "input_max_age_ticks": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "max_log_bytes": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "seed": {
+          "type": "integer"
+        },
+        "history_limit_ticks": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "audit_limit_entries": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "max_cmd_vel_per_sim_second": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "max_inbound_per_wall_second": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "estimate_history_ticks": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "commit_delay_ticks",
+        "batch_budget_ms",
+        "startup_timeout_s",
+        "max_message_bytes",
+        "max_failures",
+        "input_max_age_ticks",
+        "max_log_bytes",
+        "seed",
+        "history_limit_ticks",
+        "audit_limit_entries",
+        "max_cmd_vel_per_sim_second",
+        "max_inbound_per_wall_second",
+        "estimate_history_ticks"
+      ],
+      "additionalProperties": false
+    },
+    "view_policy": {
+      "$ref": "view-policy.schema.json"
+    },
+    "view": {
+      "type": "object",
+      "properties": {
+        "pose_source_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "snapshot_hz": {
+          "type": "integer"
+        },
+        "max_visual_trail": {
+          "type": "integer"
+        },
+        "poll_ms": {
+          "type": "integer"
+        },
+        "keyboard_refresh_ms": {
+          "type": "integer"
+        },
+        "keyboard_linear_mps": {
+          "type": "number"
+        },
+        "keyboard_yaw_radps": {
+          "type": "number"
+        },
+        "interpolation_jump_m": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "pose_source_id",
+        "snapshot_hz",
+        "max_visual_trail",
+        "poll_ms",
+        "keyboard_refresh_ms",
+        "keyboard_linear_mps",
+        "keyboard_yaw_radps",
+        "interpolation_jump_m"
+      ],
+      "additionalProperties": false
+    },
+    "host": {
+      "type": "object",
+      "properties": {
+        "bind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "port": {
+          "type": "integer"
+        },
+        "max_catchup_ticks": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "bind",
+        "port",
+        "max_catchup_ticks"
+      ],
+      "additionalProperties": false
+    },
+    "validation": {
+      "type": "object",
+      "properties": {
+        "ticks": {
+          "type": "integer"
+        },
+        "probe_target": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "pose_offset_m": {
+          "type": "number"
+        },
+        "covariance_tolerance": {
+          "type": "number"
+        },
+        "numeric_tolerance": {
+          "type": "number"
+        },
+        "contact_measurement_tolerance_m": {
+          "type": "number"
+        },
+        "odom_error_tolerance_m": {
+          "type": "number"
+        },
+        "covariance_max_iterations": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "ticks",
+        "probe_target",
+        "pose_offset_m",
+        "covariance_tolerance",
+        "numeric_tolerance",
+        "contact_measurement_tolerance_m",
+        "odom_error_tolerance_m",
+        "covariance_max_iterations"
+      ],
+      "additionalProperties": false
+    },
+    "solver": {
+      "type": "object",
+      "properties": {
+        "dt": {
+          "type": "number"
+        },
+        "min_ccd_dt": {
+          "type": "number"
+        },
+        "contact_softness": {
+          "type": "object",
+          "properties": {
+            "natural_frequency": {
+              "type": "number"
+            },
+            "damping_ratio": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "natural_frequency",
+            "damping_ratio"
+          ],
+          "additionalProperties": false
+        },
+        "static_contact_softness": {
+          "type": "object",
+          "properties": {
+            "natural_frequency": {
+              "type": "number"
+            },
+            "damping_ratio": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "natural_frequency",
+            "damping_ratio"
+          ],
+          "additionalProperties": false
+        },
+        "warmstart_coefficient": {
+          "type": "number"
+        },
+        "length_unit": {
+          "type": "number"
+        },
+        "soft_bodies": {
+          "type": "object",
+          "properties": {
+            "recovery": {
+              "type": "object",
+              "properties": {
+                "authored_velocity_margin": {
+                  "type": "boolean"
+                },
+                "edge_speculation": {
+                  "type": "boolean"
+                },
+                "inverted_cell_detection": {
+                  "type": "boolean"
+                },
+                "self_crossing_detection": {
+                  "type": "boolean"
+                },
+                "detection_motion_gating": {
+                  "type": "boolean"
+                },
+                "cross_body_detection": {
+                  "type": "boolean"
+                },
+                "self_stand_down": {
+                  "type": "boolean"
+                },
+                "cross_body_expel_gate": {
+                  "type": "boolean"
+                },
+                "edge_stand_down": {
+                  "type": "boolean"
+                },
+                "crossing_repulsion": {
+                  "type": "boolean"
+                },
+                "crossing_repulsion_guide": {
+                  "type": "boolean"
+                },
+                "crossing_repulsion_self_guide": {
+                  "type": "boolean"
+                },
+                "recovery_pace": {
+                  "type": "number"
+                },
+                "overlap_constraints": {
+                  "type": "boolean"
+                },
+                "overlap_rigid": {
+                  "type": "boolean"
+                },
+                "overlap_skip_self_tangled": {
+                  "type": "boolean"
+                },
+                "overlap_edge_stand_down": {
+                  "type": "boolean"
+                },
+                "overlap_constraint_pace": {
+                  "type": "number"
+                },
+                "overlap_patch_constraints": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "overlap_skin_volume": {
+                  "type": "boolean"
+                },
+                "overlap_kept_depth": {
+                  "type": "number"
+                },
+                "overlap_self_regions": {
+                  "type": "boolean"
+                },
+                "overlap_normal_push": {
+                  "type": "boolean"
+                },
+                "overlap_multi_volume": {
+                  "type": "boolean"
+                },
+                "overlap_split": {
+                  "type": "integer"
+                },
+                "overlap_patience": {
+                  "type": "integer"
+                },
+                "overlap_progress_margin": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "authored_velocity_margin",
+                "edge_speculation",
+                "inverted_cell_detection",
+                "self_crossing_detection",
+                "detection_motion_gating",
+                "cross_body_detection",
+                "self_stand_down",
+                "cross_body_expel_gate",
+                "edge_stand_down",
+                "crossing_repulsion",
+                "crossing_repulsion_guide",
+                "crossing_repulsion_self_guide",
+                "recovery_pace",
+                "overlap_constraints",
+                "overlap_rigid",
+                "overlap_skip_self_tangled",
+                "overlap_edge_stand_down",
+                "overlap_constraint_pace",
+                "overlap_patch_constraints",
+                "overlap_skin_volume",
+                "overlap_kept_depth",
+                "overlap_self_regions",
+                "overlap_normal_push",
+                "overlap_multi_volume",
+                "overlap_split",
+                "overlap_patience",
+                "overlap_progress_margin"
+              ],
+              "additionalProperties": false
+            },
+            "resweep_strain": {
+              "type": "number"
+            },
+            "max_extra_substeps": {
+              "type": "integer"
+            },
+            "contact_stiffening": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "recovery",
+            "resweep_strain",
+            "max_extra_substeps",
+            "contact_stiffening"
+          ],
+          "additionalProperties": false
+        },
+        "normalized_allowed_linear_error": {
+          "type": "number"
+        },
+        "normalized_max_corrective_velocity": {
+          "type": "number"
+        },
+        "normalized_prediction_distance": {
+          "type": "number"
+        },
+        "normalized_max_linear_velocity": {
+          "type": "number"
+        },
+        "num_solver_iterations": {
+          "type": "integer"
+        },
+        "num_internal_pgs_iterations": {
+          "type": "integer"
+        },
+        "num_internal_stabilization_iterations": {
+          "type": "integer"
+        },
+        "max_ccd_substeps": {
+          "type": "integer"
+        },
+        "contact_clustering": {
+          "type": "boolean"
+        },
+        "contact_recycling": {
+          "type": "boolean"
+        },
+        "normalized_contact_recycle_distance": {
+          "type": "number"
+        },
+        "friction_in_bias_pass": {
+          "type": "boolean"
+        },
+        "warmstart_joints": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "dt",
+        "min_ccd_dt",
+        "contact_softness",
+        "static_contact_softness",
+        "warmstart_coefficient",
+        "length_unit",
+        "soft_bodies",
+        "normalized_allowed_linear_error",
+        "normalized_max_corrective_velocity",
+        "normalized_prediction_distance",
+        "normalized_max_linear_velocity",
+        "num_solver_iterations",
+        "num_internal_pgs_iterations",
+        "num_internal_stabilization_iterations",
+        "max_ccd_substeps",
+        "contact_clustering",
+        "contact_recycling",
+        "normalized_contact_recycle_distance",
+        "friction_in_bias_pass",
+        "warmstart_joints"
+      ],
+      "additionalProperties": false
+    },
+    "rigid_body": {
+      "type": "object",
+      "properties": {
+        "ccd_enabled": {
+          "type": "boolean"
+        },
+        "can_sleep": {
+          "type": "boolean"
+        },
+        "linear_damping": {
+          "type": "number",
+          "minimum": 0
+        },
+        "angular_damping": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "ccd_enabled",
+        "can_sleep",
+        "linear_damping",
+        "angular_damping"
+      ],
+      "additionalProperties": false
+    },
+    "module": {
+      "type": "object",
+      "properties": {
+        "module_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "entry_point": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pose_offset_m": {
+          "type": "number"
+        },
+        "output_frame": {
+          "type": "string",
+          "minLength": 1
+        },
+        "fault": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "module_id",
+        "entry_point",
+        "pose_offset_m",
+        "output_frame",
+        "fault"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "config_version",
+    "confirmation_status",
+    "body",
+    "servo",
+    "motion_limits",
+    "chassis",
+    "clock",
+    "contact",
+    "wheels",
+    "sensors",
+    "controller",
+    "scene",
+    "deferred_weapons",
+    "runtime",
+    "view_policy",
+    "view",
+    "host",
+    "validation",
+    "solver",
+    "rigid_body",
+    "module"
+  ],
+  "additionalProperties": false
+}

@@ -53,9 +53,9 @@ flowchart TB
 | Workspace Service | 草稿、模板、快照、迁移和测试报告 | 编辑即热改运行代码 |
 | Web UI | DTO 插值、传感器图层、编辑、调试、工作区操作 | 权威碰撞、评分、ACL 决策 |
 
-建议目录为 `core/`（纯核心）、`host/`（适配与权限）、`web/`、`sdk/python/`、`runtime/`、`content/`、`tests/`、`docs/`；目前仅文档目录存在，不提前创建空实现目录。依赖从 Host 指向 Core、Schema 与适配接口；Core 不反向依赖 Host 或 UI。
+建议目录为 `core/`（纯核心）、`host/`（适配与权限）、`web/`、`sdk/python/`、`runtime/`、`content/`、`tests/`、`docs/`；M1 已创建这些目录中的 `core/host/web/sdk/python/runtime/tests` 及 `protocol/`、`config/`、`examples/robot/`。未创建的后续目录仍只是建议。依赖从 Host 指向 Core、Schema 与适配接口；Core 不反向依赖 Host 或 UI。
 
-机器人接口优先参考 ROS 习惯，见 [ADR-0014](adr/0014-ros-style-velocity-interface.md)。`/robot/cmd_vel` 的 Twist 属于连续设定值 Topic；Host 在提交门转换成 Core 的内部 `BodyVelocityTarget(vx, vy, wz, source_tick)` 或目标失效事件。Core 不解析 Envelope，不关心网络和请求 ID；差速/未来全向模型共享输入形状，分别执行自己的运动学与动力学。
+机器人接口优先参考 ROS 习惯，见 [ADR-0014](adr/0014-ros-style-velocity-interface.md)。`/robot/cmd_vel` 的 Twist 属于连续设定值 Topic；Host 在提交门转换成 Core 的内部 `BodyVelocityTarget(vx, vy, wz, source_tick)` 或目标失效事件。Core 不解析 Envelope，不关心网络和请求 ID；差速/麦克纳姆全向模型共享输入形状，分别执行自己的运动学与动力学。
 
 ## 进程与部署架构
 
@@ -101,3 +101,9 @@ flowchart TB
 完整游戏引擎能加快关卡编辑，却可能引入渲染/物理耦合；先采用小型纯核心，未来在边界外集成编辑工具。全平台强制同进程会损害服务器隔离；采用共享语义与不同 Host。JSON 的分配与编码开销先测量，不能直接跳到自制二进制总线。
 
 开放项：Phaser 与轻量 Canvas renderer 的包体/性能差、编辑器多文件体验、WASM 启动时延、桌面隔离能力。验收需证明：无头运行不加载 UI/Python 库；同一传感器/命令夹具能经过本地、Worker 与网络适配；Renderer 在隐藏位姿时根本收不到私有字段；任一 Runtime 崩溃不停止 Core tick。
+
+## M1 实施映射
+
+`core/` 为 Rust/Rapier2D-f64 0.36.1 固定步长库；`core_worker` 是可信私有长度前缀 IPC 适配器。Python `host/` 驱动核心、校验消息、监督外部 worker；它与 `runtime/worker.py` 是独立进程，后者只收到授权传感器、轮组标定和公开起点。SDK 不获得核心管道。`PoseSelector` 独占标准位姿 Topic，再由不接受 World 参数的 `ViewGateway` 投影。
+
+Web 页面通过 loopback HTTP Adapter 获取 profile/授权 view，提交 Twist；HTTP 不定义新的执行时间语义。该最小 Adapter 是 M1 的本机选择；WebSocket、Pyodide、桌面壳及多 Adapter 等价性留到 M2。`/api/profile` 只返回公开地图/车体外形、ControllerProfile 与 UI 配置，绝不转发完整仿真 profile。技术选择状态见 ADR-0002/0003/0013 与 M1 报告。
