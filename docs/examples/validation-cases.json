@@ -53,16 +53,16 @@
       "note": "yaw 必须处于规范的半开区间。"
     },
     {
-      "case_id": "command-without-request-id",
-      "fixture": "drive-command.json",
+      "case_id": "velocity-topic-with-request-id",
+      "fixture": "cmd-vel-message.json",
       "layer": "schema",
       "mutation": {
         "pointer": "/request_id",
-        "value": null
+        "value": "drive-20"
       },
       "expected": "reject",
       "expected_code": "INVALID_SCHEMA",
-      "note": "Command 必须有请求 ID。"
+      "note": "cmd_vel 是 Topic，request_id 必须为 null，无逐条执行请求 ID。"
     },
     {
       "case_id": "payload-kind-mismatch",
@@ -223,30 +223,6 @@
       "note": "本案例任务只授权 map 帧的位姿输出。"
     },
     {
-      "case_id": "drive-expired",
-      "fixture": "drive-command.json",
-      "layer": "domain",
-      "mutation": {
-        "pointer": "/payload/valid_until_tick",
-        "value": 125
-      },
-      "expected": "reject",
-      "expected_code": "STALE_DATA",
-      "note": "有效期早于 apply_tick=126。"
-    },
-    {
-      "case_id": "drive-too-far-future",
-      "fixture": "drive-command.json",
-      "layer": "domain",
-      "mutation": {
-        "pointer": "/payload/apply_tick",
-        "value": 127
-      },
-      "expected": "reject",
-      "expected_code": "MISSED_DEADLINE",
-      "note": "生成上下文 tick=120，最多超前六个 tick。"
-    },
-    {
       "case_id": "period-before-deadline",
       "fixture": "module-contract.json",
       "layer": "domain",
@@ -295,6 +271,207 @@
       "expected": "reject",
       "expected_code": "INVALID_SCHEMA",
       "note": "隐藏阈值不得早于 fresh 阈值。"
+    },
+    {
+      "case_id": "legacy-start-time-field",
+      "fixture": "cmd-vel-message.json",
+      "layer": "schema",
+      "mutations": [
+        {
+          "pointer": "/payload/apply_tick",
+          "value": 126
+        }
+      ],
+      "expected": "reject",
+      "expected_code": "INVALID_SCHEMA",
+      "note": "速度负载不接受旧起始 tick。"
+    },
+    {
+      "case_id": "legacy-end-time-field",
+      "fixture": "cmd-vel-message.json",
+      "layer": "schema",
+      "mutations": [
+        {
+          "pointer": "/payload/valid_until_tick",
+          "value": 138
+        }
+      ],
+      "expected": "reject",
+      "expected_code": "INVALID_SCHEMA",
+      "note": "速度负载不接受旧终止 tick。"
+    },
+    {
+      "case_id": "twist-needs-vector",
+      "fixture": "cmd-vel-message.json",
+      "layer": "schema",
+      "mutations": [
+        {
+          "pointer": "/payload/linear",
+          "value": 0.5
+        }
+      ],
+      "expected": "reject",
+      "expected_code": "INVALID_SCHEMA",
+      "note": "linear 是完整 Vector3，不能退回标量速度。"
+    },
+    {
+      "case_id": "twist-needs-lateral-component",
+      "fixture": "cmd-vel-message.json",
+      "layer": "schema",
+      "mutations": [
+        {
+          "pointer": "/payload/linear",
+          "value": {
+            "x": 0.5,
+            "z": 0.0
+          }
+        }
+      ],
+      "expected": "reject",
+      "expected_code": "INVALID_SCHEMA",
+      "note": "Vector3 必须保留 y，零值也显式给出。"
+    },
+    {
+      "case_id": "nonplanar-linear-axis",
+      "fixture": "cmd-vel-message.json",
+      "layer": "schema",
+      "mutations": [
+        {
+          "pointer": "/payload/linear/z",
+          "value": 1
+        }
+      ],
+      "expected": "reject",
+      "expected_code": "INVALID_SCHEMA",
+      "note": "二维场景不支持非零 linear.z。"
+    },
+    {
+      "case_id": "nonplanar-angular-axis",
+      "fixture": "cmd-vel-message.json",
+      "layer": "schema",
+      "mutations": [
+        {
+          "pointer": "/payload/angular/x",
+          "value": 1
+        }
+      ],
+      "expected": "reject",
+      "expected_code": "INVALID_SCHEMA",
+      "note": "二维场景不支持非零 angular.x/y。"
+    },
+    {
+      "case_id": "velocity-must-be-topic",
+      "fixture": "cmd-vel-message.json",
+      "layer": "schema",
+      "mutations": [
+        {
+          "pointer": "/message_type",
+          "value": "command"
+        },
+        {
+          "pointer": "/request_id",
+          "value": "drive-20"
+        }
+      ],
+      "expected": "reject",
+      "expected_code": "INVALID_SCHEMA",
+      "note": "即使 request_id 合法，Twist 也不是离散 command。"
+    },
+    {
+      "case_id": "velocity-frame-must-be-body",
+      "fixture": "cmd-vel-message.json",
+      "layer": "schema",
+      "mutations": [
+        {
+          "pointer": "/frame_id",
+          "value": "map"
+        }
+      ],
+      "expected": "reject",
+      "expected_code": "INVALID_SCHEMA",
+      "note": "cmd_vel 固定在 base_link，地图系速度需由算法先转换。"
+    },
+    {
+      "case_id": "controller-timeout-positive",
+      "fixture": "chassis-controller.json",
+      "layer": "schema",
+      "mutations": [
+        {
+          "pointer": "/cmd_vel_timeout",
+          "value": 0
+        }
+      ],
+      "expected": "reject",
+      "expected_code": "INVALID_SCHEMA",
+      "note": "控制器超时配置必须为正秒数，不能关闭失联保护。"
+    },
+    {
+      "case_id": "differential-cannot-strafe",
+      "fixture": "cmd-vel-message.json",
+      "layer": "domain",
+      "mutations": [
+        {
+          "pointer": "/payload/linear/y",
+          "value": 0.25
+        }
+      ],
+      "expected": "reject",
+      "expected_code": "UNSUPPORTED_MOTION",
+      "note": "Schema 支持横向分量，但当前差速底盘不能横移。",
+      "context": {
+        "drive_model": "differential",
+        "controller_tick": 126,
+        "cmd_vel_timeout": 0.5
+      }
+    },
+    {
+      "case_id": "velocity-expired-at-controller",
+      "fixture": "cmd-vel-message.json",
+      "layer": "domain",
+      "mutations": [],
+      "expected": "reject",
+      "expected_code": "STALE_DATA",
+      "note": "生成 tick=120，60 Hz 下到 tick=150 达到配置的 0.5 s 超时；不能从接收时刻重算。",
+      "context": {
+        "controller_tick": 150,
+        "cmd_vel_timeout": 0.5
+      }
+    },
+    {
+      "case_id": "future-velocity-stamp",
+      "fixture": "cmd-vel-message.json",
+      "layer": "domain",
+      "mutations": [
+        {
+          "pointer": "/simulation_tick",
+          "value": 132
+        },
+        {
+          "pointer": "/simulation_time_ns",
+          "value": 2200000000
+        }
+      ],
+      "expected": "reject",
+      "expected_code": "INVALID_TIMESTAMP",
+      "note": "生成时间晚于当前 tick=126，不能用未来时间延长 watchdog。",
+      "context": {
+        "controller_tick": 126,
+        "cmd_vel_timeout": 0.5
+      }
+    },
+    {
+      "case_id": "old-target-cannot-replace-newer",
+      "fixture": "cmd-vel-message.json",
+      "layer": "domain",
+      "mutations": [],
+      "expected": "reject",
+      "expected_code": "OUT_OF_ORDER",
+      "note": "已有 tick=125 的目标，tick=120 的目标即使尚未超时也不能覆盖它。",
+      "context": {
+        "controller_tick": 126,
+        "last_target_tick": 125,
+        "last_sequence_number": 19
+      }
     }
   ]
 }

@@ -12,6 +12,8 @@
 
 采用 JSON Envelope，定义 Topic、Command、有限请求响应 Service 和 Event；使用 JSON Schema Draft 2020-12 描述结构，领域验证处理数值/时间/坐标/权限。版本、单位、序列与资源上限显式化。初期不引入 Action、DDS 或 ROS2。首次发布前冻结 v1 草案，发布后不破坏同 profile 兼容。
 
+2026-10-21 补充：[ADR-0014](0014-ros-style-velocity-interface.md) 明确 Topic 也承载连续设定值，速度采用 cmd_vel/Twist，不以自定义 Command 包装速度流；后续接口优先参考 ROS 习惯，运行依赖约束不变。
+
 ## Alternatives
 
 直接暴露 JSON 给玩家增加样板；ROS2/DDS 超出需要；二进制编码可后续根据 profile 引入，但不得改变语义或削弱校验。

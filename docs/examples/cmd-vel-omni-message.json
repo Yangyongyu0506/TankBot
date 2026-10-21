@@ -1,0 +1,25 @@
+{
+  "protocol_version": "1.0",
+  "message_type": "topic",
+  "channel": "/robot/cmd_vel",
+  "sequence_number": 20,
+  "simulation_tick": 120,
+  "simulation_time_ns": 2000000000,
+  "run_id": "run-demo-001",
+  "publisher_id": "module:controller",
+  "request_id": null,
+  "frame_id": "base_link",
+  "schema": "twist@1",
+  "payload": {
+    "linear": {
+      "x": 0.5,
+      "y": 0.25,
+      "z": 0.0
+    },
+    "angular": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.2
+    }
+  }
+}

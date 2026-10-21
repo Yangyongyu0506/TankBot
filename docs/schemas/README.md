@@ -2,17 +2,18 @@
 
 ## 目的与状态
 
-本目录提供 `TankBot Protocol 1.0`、Module Contract、Workspace 与受信 View Policy 的结构草案，属于文档产物，尚无 Router、SDK 或游戏实现。Dialect 为 JSON Schema Draft 2020-12；`$id` 中的 `tankbot.example` 是命名占位，不是下载或运行端点。验证工具必须将本地 Schema 注册后离线解析 `$ref`。
+本目录提供 `TankBot Protocol 1.0`、Module Contract、Workspace、受信 View Policy 与 ControllerProfile 的结构草案，属于文档产物，尚无 Router、SDK 或游戏实现。Dialect 为 JSON Schema Draft 2020-12；`$id` 中的 `tankbot.example` 是命名占位，不是下载或运行端点。验证工具必须将本地 Schema 注册后离线解析 `$ref`。
 
 | 文件 | 职责 |
 | --- | --- |
 | [envelope.schema.json](envelope.schema.json) | 公共字段、payload/type/frame 静态组合、请求关联规则 |
-| [payloads.schema.json](payloads.schema.json) | 11 个最小负载定义，使用 `$defs`；不单独匹配任意对象 |
+| [payloads.schema.json](payloads.schema.json) | 11 个最小负载定义与 Vector3 辅助结构，使用 `$defs`；不单独匹配任意对象 |
 | [module-contract.schema.json](module-contract.schema.json) | 端口、周期/event 元数据、预算、依赖与状态版本 |
 | [workspace.schema.json](workspace.schema.json) | Manifest、模块引用、连线、精确依赖与位姿来源 |
 | [view-policy.schema.json](view-policy.schema.json) | 受信策略字段；不是玩家授权申请格式 |
+| [chassis-controller.schema.json](chassis-controller.schema.json) | 受信底盘类型、速度轴限值、cmd_vel_timeout；不是逐条速度消息 |
 
-payload 标识为 `pose2d@1`、`imu@1`、`encoder@1`、`radar@1`、`drive_command@1`、`view_snapshot@1`、`error@1`、`negotiate_request@1`、`negotiate_response@1`、`runtime_step_request@1`、`runtime_step_result@1`。首发 `view_snapshot@1` 的 objects/effects 为空；实体/效果、scan、地图瓦片、pose_fix、fire、选源服务仍须补齐结构和权限后才能注册，不以任意 object 扩展绕过审查。
+payload 标识为 `pose2d@1`、`imu@1`、`encoder@1`、`radar@1`、`twist@1`、`view_snapshot@1`、`error@1`、`negotiate_request@1`、`negotiate_response@1`、`runtime_step_request@1`、`runtime_step_result@1`。Twist 保留 linear.x/y/z、angular.x/y/z，二维的 linear.z/angular.x/angular.y 限定为零，底盘是否支持非零 linear.y 由领域层判定。首发 `view_snapshot@1` 的 objects/effects 为空；实体/效果、scan、地图瓦片、pose_fix、fire、选源服务仍须补齐结构和权限后才能注册，不以任意 object 扩展绕过审查。
 
 ## 四层验证职责
 

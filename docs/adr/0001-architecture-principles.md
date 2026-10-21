@@ -10,7 +10,7 @@
 
 ## Decision
 
-采用纯 Game Core 与可替换 Host/Transport/Runtime Adapter。Core 仅处理固定步长物理、规则和已验证命令，不依赖 UI、网络或 Python。玩家代码不可信，永不获得 World 引用或直接写物理状态。UI 只消费授权视图；跨平台与可测试性优先。不引入 ROS2/DDS 运行时依赖，不为过早优化绕过边界。
+采用纯 Game Core 与可替换 Host/Transport/Runtime Adapter。Core 仅处理固定步长物理、规则和已验证执行器输入，不依赖 UI、网络或 Python。玩家代码不可信，永不获得 World 引用或直接写物理状态。UI 只消费授权视图；跨平台与可测试性优先。不引入 ROS2/DDS 运行时依赖，不为过早优化绕过边界。
 
 ## Alternatives
 

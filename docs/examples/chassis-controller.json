@@ -1,0 +1,13 @@
+{
+  "controller_profile_version": "1.0",
+  "controller_id": "base_controller",
+  "drive_model": "differential",
+  "command_topic": "/robot/cmd_vel",
+  "command_frame": "base_link",
+  "cmd_vel_timeout": 0.5,
+  "limits": {
+    "max_vx_mps": 3.0,
+    "max_vy_mps": 0.0,
+    "max_wz_radps": 6.0
+  }
+}

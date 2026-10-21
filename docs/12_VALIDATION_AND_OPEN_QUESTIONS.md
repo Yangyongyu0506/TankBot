@@ -2,7 +2,7 @@
 
 ## 目的、范围与完成定义
 
-汇总需求覆盖、检查证据、假设与下一步准入条件，防止“设计接受”被误读成“技术验证完成”。本轮允许的辅助代码仅为离线文档检查工具，不含游戏、SDK、Runtime 或沙箱实现。基线 `design-0.1`，资料核实日期 2026-10-20。
+汇总需求覆盖、检查证据、假设与下一步准入条件，防止“设计接受”被误读成“技术验证完成”。允许的辅助代码仅为离线文档检查工具，不含游戏、SDK、Runtime 或沙箱实现。初版资料核实日期为 2026-10-20；当前基线 `design-0.2`，2026-10-21 按 ROS 习惯修订速度接口。新增 ROS 参考链接因网络不可达尚未在线复核，不能当作已验证的滚动版本默认行为。
 
 ## 需求与接口追踪
 
@@ -11,12 +11,12 @@
 | 产品愿景、模式、持续学习 | 01、09；0001 | C0–C7 可复用项目，问题驱动评价 |
 | 逻辑/进程/部署、Rust/C++ | 02；0001/0002 | 无头/原生/WASM 探针与平台矩阵 |
 | Web 表现/编辑器 | 02、06；0003 | 只读 DTO、多文件/Vim/焦点测试 |
-| JSON、权限、版本和 Transport | 03；0004/0005 | 结构、时序、授权、Adapter 等价夹具 |
+| JSON、权限、版本和 Transport | 03；0004/0005/0014 | 结构、时序、授权、ROS 风格速度流、Adapter 等价夹具 |
 | 三层状态、选源、初值/帧/显示 | 04；0006/0007 | 错估计、无估计、多源、漂移与泄漏回归 |
 | SDK、Contract、渐进 API | 05；0008 | 函数/类等价、缺输入、依赖/事件/重置测试 |
 | Workspace、模板/Manifest/迁移 | 06；0009 | 文件不覆盖、CAS、回滚、跨平台路径测试 |
 | Edit/Test/Deploy | 06；0012 | 摘要绑定、staging 失败保旧、原子切换 |
-| 物理/传感器/时钟/确定性/Replay | 07；0010/0011 | 固定 tick、乱序/截止、同构建录制重放 |
+| 物理/传感器/时钟/确定性/Replay | 07；0010/0011/0014 | 固定 tick、乱序/截止、底盘 watchdog、同构建录制重放 |
 | 不可信 Python、安全与公平 | 08；0001/0006/0013 | OS 级资源/网络/文件测试与服务器上线门 |
 | 关卡教学、Lab、Arena | 09、10 | 可玩性、输入回放/闭环区分、权威评分 |
 | Q1–Q15 | 11 | 对应领域测试，不留只有问题的条目 |
@@ -28,6 +28,7 @@
 - 玩家位姿只写候选；Selector 独占 `/robot/localization/pose`。`/system/pose` 不是公开 Topic，系统源许可不会因候选超时自动恢复。
 - `world` 是私有物理系，`map` 与 `odom` 是公开声明系；显示插值不反馈物理。权威状态不进入 UI/SDK 的通用序列化接口。
 - sample tick、delivery tick、activation tick 和 output commit tick 分开；默认 60 Hz 物理、30 Hz Encoder/IMU、10 Hz 算法、5 Hz Radar 均为待测配置。
+- 连续速度使用 `/robot/cmd_vel` / `twist@1`，保留 vx/vy/wz 对应的 linear.x/y、angular.z；payload 无执行起止时间。Host 决定内部提交时刻，Core 内底盘控制器按生成时间与 cmd_vel_timeout 检查新鲜度。差速模型不能横移，全向模型仅有扩展设计。
 - Workspace revision 可编辑，DeploymentArtifact 不可变；测试报告绑定摘要；重启/部署不隐含重置 World，reset/seek 才新建 run。
 - JSON Schema 只处理结构；PSD、帧关系、跨字段时间与权限有独立验证责任。文档检查不声称实现这些领域验证器。
 
@@ -41,13 +42,13 @@ git diff --check
 
 检查工具需要现有 Python 环境具备 `jsonschema` 与 `referencing`；本轮使用已有环境，不安装或新增项目依赖。工具离线注册本地 Schema，不访问 `$id` 示例域名。
 
-本轮检查范围：Markdown 本地链接与代码块、ADR 状态和索引、严格 JSON、Draft 2020-12 Schema、自包含正例、结构负例与领域案例分层、Python 示例语法、行尾空白。Python 示例仅 AST 解析，不导入尚不存在的 SDK。Git 尚无提交，`git diff --check` 不覆盖未跟踪文件；工具对所有 Markdown 检查空白，JSON 在解析/格式检查中覆盖。本轮另逐文件运行 `git diff --no-index --check /dev/null <path>`，53 个交付文件均无空白告警；此命令退出码 1 仅表示新文件存在差异，不能误判为空白失败。
+检查范围：Markdown 本地链接与代码块、ADR 状态和索引、严格 JSON、Draft 2020-12 Schema、自包含正例、结构负例与领域案例分层、Python 示例语法、行尾空白。Python 示例仅 AST 解析，不导入尚不存在的 SDK。当前已有初始化提交，`git diff --check` 检查已跟踪改动；新增文件仍需检查。工具对所有 Markdown 检查空白，JSON 做完整格式检查；也可逐文件运行 `git diff --no-index --check /dev/null <path>`，退出码 1 仅表示文件差异，实际空白告警不能忽略。
 
 最终计数和结果如下；若后续文档变化，以重新运行工具的结果为准。本轮环境为 `jsonschema 4.19.2`、`referencing 0.36.2`：
 
-- 文档检查通过：31 份 Markdown、111 个本地链接、5 份 Schema、15 个完整正例、10 个结构拒绝案例、8 个 JSON 片段、1 个 Python 语法片段；正文规范示例与独立夹具一致。
-- ADR 索引与状态通过：10 Accepted、3 Proposed、0 Superseded。
-- 12 个领域负例确认可以通过结构层，留待真实 Host 实现后验证拒绝结果，未计为已通过的领域测试。
+- 文档检查通过：32 份 Markdown、126 个本地链接、6 份 Schema、17 个完整正例、19 个结构拒绝案例、9 个 JSON 片段、2 个 Python 语法片段；正文规范示例与独立夹具一致。
+- ADR 索引与状态通过：11 Accepted、3 Proposed、0 完整 Superseded；0014 明确记录局部修订关系。
+- 14 个领域负例确认可以通过结构层，留待真实 Host 实现后验证拒绝结果，未计为已通过的领域测试；其中包含差速拒绝横移、按生成时间超时、未来时间与旧目标覆盖等案例。
 - 游戏/物理/SDK/Adapter 测试：尚无实现，未执行。
 - 浏览器性能、OS 隔离、跨平台确定性、真实玩法：尚未验证。
 
@@ -88,6 +89,8 @@ git diff --check
 | O10 | 首期只处理公开固定帧与玩家 map/odom | M5 决定是否需要通用动态变换 Topic | 多模块坐标复杂度 |
 | O11 | 局部 scan、弹丸/音频效果后补独立 Schema | M4/M5 观测可玩性和泄漏测试 | 关卡与表现权限 |
 | O12 | v1 草案冻结前补齐首发频道/服务 | M2/M3 协商、选源、模块诊断的注册与兼容测试 | 公共 API 发布 |
+| O13 | 其他机器人消息逐项参考 ROS 命名/类型/时间习惯 | SDK 发布前审查现有 Pose2D/IMU 等差异，不冒充完整 ROS 消息 | 学习迁移与接口一致性 |
+| O14 | 全向底盘共用 Twist，新增按轮名状态的传感器 | 单独模型/传感器设计与运动学、碰撞、轮状态测试；本次不实现 | 全向轮扩展可行性 |
 
 这些项目都有推荐方向，但没有被文档工作“解决为事实”。参考设备、性能门槛、项目许可证/资产政策、账号/存储服务方案仍需产品与维护者决策；后两项不阻塞 M1。
 
@@ -111,6 +114,8 @@ git diff --check
 | [Tokio Tutorial](https://tokio.rs/tokio/tutorial) | Rust Host 的网络运行时可选项；不放入纯 Core |
 | [gVisor Security](https://gvisor.dev/docs/architecture_guide/security/) | 强化隔离仍依赖宿主配额/网络控制，侧信道未消除 |
 | [JSON Schema 2020-12](https://json-schema.org/draft/2020-12) | 结构 dialect 和本地引用组织；语义与权限需另外实现 |
+| [Twist](https://docs.ros.org/en/rolling/p/geometry_msgs/msg/Twist.html)、[官方源码](https://github.com/ros2/common_interfaces/blob/rolling/geometry_msgs/msg/Twist.msg) | 新接口参考 linear/angular Vector3 形状；2026-10-21 浏览工具连接失败且直连超时，待在线复核 |
+| [diff_drive_controller](https://control.ros.org/rolling/doc/ros2_controllers/diff_drive_controller/doc/userdoc.html)、[mecanum_drive_controller](https://control.ros.org/rolling/doc/ros2_controllers/mecanum_drive_controller/doc/userdoc.html) | 底盘适配与控制器超时的参考入口；本轮网络不可达，不据此宣称某版本默认值、支持轴或拒绝行为；TankBot 具体语义见 ADR-0014 |
 
 ## 最终审查准则
 

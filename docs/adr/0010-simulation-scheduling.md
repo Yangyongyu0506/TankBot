@@ -10,7 +10,9 @@
 
 ## Decision
 
-使用整数 tick 和固定 dt；传感器保留采样时刻与单独交付时刻。模块激活先冻结输入，输出固定在 activation + deadline 的提交门生效；早到不提前、迟到拒绝。Core 不等待 Python，实时/受控 Host 有明确预算，控制命令有 TTL。渲染只插值授权样本。
+使用整数 tick 和固定 dt；传感器保留采样时刻与单独交付时刻。模块激活先冻结输入，输出固定在 activation + deadline 的提交门生效；早到不提前、迟到拒绝。Core 不等待 Python，实时/受控 Host 有明确预算，控制器按统一 watchdog 判断速度目标新鲜度。渲染只插值授权样本。
+
+2026-10-21 局部修订：[ADR-0014](0014-ros-style-velocity-interface.md) 将原先“控制 TTL”的表达移到控制器配置，删除速度负载的执行起止字段。定点提交是 Host 内部行为，不要求玩家逐条预约速度；本 ADR 的固定步长、截止与不阻塞原则继续有效。
 
 ## Alternatives
 

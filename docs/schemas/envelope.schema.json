@@ -73,7 +73,7 @@
         "imu@1",
         "encoder@1",
         "radar@1",
-        "drive_command@1",
+        "twist@1",
         "view_snapshot@1",
         "error@1",
         "negotiate_request@1",
@@ -205,14 +205,14 @@
       "if": {
         "properties": {
           "schema": {
-            "const": "drive_command@1"
+            "const": "twist@1"
           }
         }
       },
       "then": {
         "properties": {
           "payload": {
-            "$ref": "payloads.schema.json#/$defs/drive_command"
+            "$ref": "payloads.schema.json#/$defs/twist"
           }
         }
       }
@@ -411,7 +411,7 @@
       "if": {
         "properties": {
           "schema": {
-            "const": "drive_command@1"
+            "const": "twist@1"
           }
         }
       },
@@ -419,7 +419,7 @@
         "properties": {
           "message_type": {
             "enum": [
-              "command"
+              "topic"
             ]
           },
           "frame_id": {

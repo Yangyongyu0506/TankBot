@@ -47,8 +47,10 @@ def schema_for(value):
         return "module-contract.schema.json", None
     if "system_pose_allowed" in value:
         return "view-policy.schema.json", None
-    if "apply_tick" in value:
-        return "payloads.schema.json", "drive_command"
+    if "linear" in value and "angular" in value:
+        return "payloads.schema.json", "twist"
+    if "controller_profile_version" in value:
+        return "chassis-controller.schema.json", None
     if "activation_tick" in value:
         return "payloads.schema.json", "runtime_step_request"
     if "step_id" in value and "results" in value:
@@ -98,13 +100,15 @@ def main():
     for case in examples["validation-cases.json"]["cases"]:
         value = copy.deepcopy(examples[case["fixture"]])
         selected = schema_for(value)
-        keys = [key.replace("~1", "/").replace("~0", "~")
-                for key in case["mutation"]["pointer"].split("/")[1:]]
-        target = value
-        for key in keys[:-1]:
-            target = target[int(key)] if isinstance(target, list) else target[key]
-        final_key = int(keys[-1]) if isinstance(target, list) else keys[-1]
-        target[final_key] = case["mutation"]["value"]
+        mutations = case["mutations"] if "mutations" in case else [case["mutation"]]
+        for mutation in mutations:
+            keys = [key.replace("~1", "/").replace("~0", "~")
+                    for key in mutation["pointer"].split("/")[1:]]
+            target = value
+            for key in keys[:-1]:
+                target = target[int(key)] if isinstance(target, list) else target[key]
+            final_key = int(keys[-1]) if isinstance(target, list) else keys[-1]
+            target[final_key] = mutation["value"]
         errors = list(validators[selected].iter_errors(value))
         if case["layer"] == "schema":
             assert errors, f"结构负例未被拒绝: {case['case_id']}"
@@ -116,7 +120,7 @@ def main():
     markdown = sorted(DOCS.rglob("*.md")) + [ROOT / "README.md", ROOT / "AGENTS.md"]
     json_blocks = python_blocks = local_links = 0
     canonical = {
-        "03_PROTOCOL_SPECIFICATION.md": [("pose-message.json", None), ("drive-command.json", "payload")],
+        "03_PROTOCOL_SPECIFICATION.md": [("pose-message.json", None), ("cmd-vel-message.json", "payload"), ("chassis-controller.json", None)],
         "04_STATE_AND_VIEW_MODEL.md": [("view-policy.json", None)],
         "05_ROBOT_MODULE_SYSTEM.md": [("module-contract.json", None)],
         "06_WORKSPACE_AND_TEMPLATES.md": [("tankbot.json", None)],

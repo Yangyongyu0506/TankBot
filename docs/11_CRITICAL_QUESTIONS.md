@@ -6,7 +6,7 @@
 
 ## Q1 未定位但需要键盘移动，如何设计局部视图？
 
-推荐固定车体图标与 `base_link` 传感器面板，只显示雷达/局部 scan 实际测量和许可接触提示；键盘发送车体线/角速度意图。全局图在没有估计时不显示坦克，Camera 不读真值。这样无需定位也可探索，同时保留真实的遮挡、噪声与延迟。风险是方向感不足，需提示前/左方向并提供练习；验收由关闭所有位姿源后的可玩性测试完成。见 [04](04_STATE_AND_VIEW_MODEL.md)、ADR-0007。
+推荐固定车体图标与 `base_link` 传感器面板，只显示雷达/局部 scan 实际测量和许可接触提示；键盘通过 cmd_vel 发布车体 Twist，分量受底盘能力限制。全局图在没有估计时不显示坦克，Camera 不读真值。这样无需定位也可探索，同时保留真实的遮挡、噪声与延迟。风险是方向感不足，需提示前/左方向并提供练习；验收由关闭所有位姿源后的可玩性测试完成。见 [04](04_STATE_AND_VIEW_MODEL.md)、ADR-0007/0014。
 
 ## Q2 严重错误的估计位姿如何显示？
 
@@ -38,7 +38,7 @@
 
 ## Q9 Python 过慢或崩溃时怎样保持仿真稳定？
 
-Core 从不直接调用玩家函数；Supervisor 管理有界批次、外部 watchdog 和固定生效 tick，迟到丢弃，控制到期中性制动。风险是单 worker 卡死影响本机器人全部模块，初期接受该故障域但不影响其他机器人；通过无限循环、内存越界和强杀测试验证。见 [07](07_SIMULATION_DESIGN.md)、[08](08_RUNTIME_AND_SECURITY.md)，ADR-0010/0013。
+Core 从不直接调用玩家函数；Supervisor 管理有界批次、外部运行预算和固定生效 tick，迟到丢弃。底盘另按配置的 cmd_vel_timeout 将过期速度目标归零，租约撤回无需等超时；两种保护不是速度消息的执行起止字段。风险是单 worker 卡死影响本机器人全部模块，初期接受该故障域但不影响其他机器人；通过无限循环、内存越界和强杀测试验证。见 [07](07_SIMULATION_DESIGN.md)、[08](08_RUNTIME_AND_SECURITY.md)，ADR-0010/0013/0014。
 
 ## Q10 怎样确保文档 API 与实现一致？
 
@@ -46,7 +46,7 @@ Schema 与 JSON 夹具是结构基线；实现时生成/核查 TS 与 Python 类
 
 ## Q11 固定步长、异步消息、程序执行的时间语义？
 
-以整数 tick 表示 sample/estimate 时刻，以日志字段记录 delivery/ingress；激活时冻结输入，输出只能在预定 `output_commit_tick` 提交。早到不提前、迟到不补写过去，reset 更换 run。受控测试可有界等待，实时比赛记录实际超时。代价是可见延迟；同构建物理重放不等于跨硬件重跑 Python 位级一致。见 [03](03_PROTOCOL_SPECIFICATION.md)、[07](07_SIMULATION_DESIGN.md)，ADR-0010/0011。
+以整数 tick 表示 sample/estimate/目标生成时刻，以日志字段记录 delivery/ingress；激活时冻结输入，输出只能在 Host 预定的 `output_commit_tick` 提交。玩家只发布目标，不逐条指定未来生效/终止时间。早到不提前、迟到不补写过去，reset 更换 run。受控测试可有界等待，实时比赛记录实际超时。代价是可见延迟；同构建物理重放不等于跨硬件重跑 Python 位级一致。见 [03](03_PROTOCOL_SPECIFICATION.md)、[07](07_SIMULATION_DESIGN.md)，ADR-0010/0011/0014。
 
 ## Q12 Arena 怎样防未经授权信息/资源并保持公平？
 

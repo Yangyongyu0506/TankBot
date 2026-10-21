@@ -124,31 +124,44 @@
       ],
       "additionalProperties": false
     },
-    "drive_command": {
+    "twist": {
       "type": "object",
       "properties": {
-        "apply_tick": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 9007199254740991
+        "linear": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/vector3"
+            },
+            {
+              "properties": {
+                "z": {
+                  "const": 0
+                }
+              }
+            }
+          ]
         },
-        "valid_until_tick": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 9007199254740991
-        },
-        "linear_velocity_mps": {
-          "type": "number"
-        },
-        "angular_velocity_radps": {
-          "type": "number"
+        "angular": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/vector3"
+            },
+            {
+              "properties": {
+                "x": {
+                  "const": 0
+                },
+                "y": {
+                  "const": 0
+                }
+              }
+            }
+          ]
         }
       },
       "required": [
-        "apply_tick",
-        "valid_until_tick",
-        "linear_velocity_mps",
-        "angular_velocity_radps"
+        "linear",
+        "angular"
       ],
       "additionalProperties": false
     },
@@ -277,7 +290,9 @@
             "INPUT_UNAVAILABLE",
             "MODULE_ERROR",
             "HOST_OVERRUN",
-            "RESOURCE_LIMIT"
+            "RESOURCE_LIMIT",
+            "INVALID_TIMESTAMP",
+            "UNSUPPORTED_MOTION"
           ]
         },
         "message": {
@@ -442,7 +457,8 @@
                       "pose2d@1",
                       "imu@1",
                       "encoder@1",
-                      "radar@1"
+                      "radar@1",
+                      "twist@1"
                     ]
                   }
                 }
@@ -554,7 +570,7 @@
                   "schema": {
                     "enum": [
                       "pose2d@1",
-                      "drive_command@1"
+                      "twist@1"
                     ]
                   }
                 }
@@ -569,6 +585,26 @@
         "step_id",
         "results",
         "outputs"
+      ],
+      "additionalProperties": false
+    },
+    "vector3": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "z": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "z"
       ],
       "additionalProperties": false
     }

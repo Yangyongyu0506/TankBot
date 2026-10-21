@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tankbot.example/schemas/v1/chassis-controller.schema.json",
+  "title": "TankBot 受信底盘控制器配置草案",
+  "type": "object",
+  "properties": {
+    "controller_profile_version": {
+      "const": "1.0"
+    },
+    "controller_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,47}$"
+    },
+    "drive_model": {
+      "enum": [
+        "differential",
+        "omnidirectional"
+      ]
+    },
+    "command_topic": {
+      "const": "/robot/cmd_vel"
+    },
+    "command_frame": {
+      "const": "base_link"
+    },
+    "cmd_vel_timeout": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "limits": {
+      "type": "object",
+      "properties": {
+        "max_vx_mps": {
+          "type": "number",
+          "minimum": 0
+        },
+        "max_vy_mps": {
+          "type": "number",
+          "minimum": 0
+        },
+        "max_wz_radps": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "max_vx_mps",
+        "max_vy_mps",
+        "max_wz_radps"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "controller_profile_version",
+    "controller_id",
+    "drive_model",
+    "command_topic",
+    "command_frame",
+    "cmd_vel_timeout",
+    "limits"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "drive_model": {
+            "const": "differential"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "limits": {
+            "properties": {
+              "max_vy_mps": {
+                "const": 0
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

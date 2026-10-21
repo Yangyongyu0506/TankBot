@@ -13,6 +13,7 @@ flowchart TB
       SENSOR[Sensor Simulator]
       SCHED[Simulation Scheduler]
       BROKER[Protocol Router / Permission Registry]
+      ARB[Actuator Arbiter / 控制租约]
       POSE[System Pose Provider / Pose Selector]
       VIEW[View Gateway / View Policy]
       EVAL[Evaluator / Replay Recorder]
@@ -26,6 +27,8 @@ flowchart TB
       POSE --> VIEW
       CORE --> VIEW
       BROKER <--> SUP
+      BROKER --> ARB
+      ARB --> CORE
     end
     PY[不可信 Robot Runtime / tankbot SDK] <--> SUP
     VIEW --> DTO[PlayerViewSnapshot]
@@ -38,10 +41,12 @@ flowchart TB
 
 | 模块 | 拥有的状态和接口 | 禁止职责 |
 | --- | --- | --- |
-| Game Core | `World`、规则、`step(CommandBatch) -> StepEvents` | I/O、Python 回调、渲染、账号 |
+| Game Core | `World`、规则、底盘控制器、`step(ActuatorInputBatch) -> StepEvents` | I/O、Python 回调、渲染、账号 |
 | Sensor Simulator | 从私有世界快照采样，输出测量与延迟计划 | 给算法传世界引用、公开 RNG 秘密种子 |
 | Scheduler | tick 顺序、采样计划、执行批次与命令提交 | 等待不可信程序无限运行 |
 | Protocol Router | 频道注册、授权、单写者租约、有界队列 | 自动发现所有世界实体 |
+| Actuator Arbiter | 对 cmd_vel Topic/离散操作检查控制租约，产生已验证执行器输入 | 信任 Topic 名称或客户端自报来源 |
+| Chassis Controller（Core 内） | 最新速度目标/生成时刻、watchdog、限幅与底盘运动映射 | 决定网络权限、把估计位姿写回 World |
 | Runtime Supervisor | 不可变部署、预算、进程/Worker 管理、输出入口 | 信任 Python 内部校验或模块自报身份 |
 | Pose Selector | 从许可候选选择标准位姿 | 自动选择最接近真值的算法 |
 | View Gateway | 将私有数据投影为授权 DTO、效果和音频事件 | 转发原始世界 dump |
@@ -49,6 +54,8 @@ flowchart TB
 | Web UI | DTO 插值、传感器图层、编辑、调试、工作区操作 | 权威碰撞、评分、ACL 决策 |
 
 建议目录为 `core/`（纯核心）、`host/`（适配与权限）、`web/`、`sdk/python/`、`runtime/`、`content/`、`tests/`、`docs/`；目前仅文档目录存在，不提前创建空实现目录。依赖从 Host 指向 Core、Schema 与适配接口；Core 不反向依赖 Host 或 UI。
+
+机器人接口优先参考 ROS 习惯，见 [ADR-0014](adr/0014-ros-style-velocity-interface.md)。`/robot/cmd_vel` 的 Twist 属于连续设定值 Topic；Host 在提交门转换成 Core 的内部 `BodyVelocityTarget(vx, vy, wz, source_tick)` 或目标失效事件。Core 不解析 Envelope，不关心网络和请求 ID；差速/未来全向模型共享输入形状，分别执行自己的运动学与动力学。
 
 ## 进程与部署架构
 

@@ -4,18 +4,20 @@
 
 本文件定义不依赖 ROS2/DDS 的 `TankBot Protocol 1.0` **未发布草案**。JSON 是首个编码；协议语义不依赖 WebSocket。ADR-0004 接受轻量语义与版本原则，ADR-0005 接受 Transport 抽象；字段和预算仍须通过 M1/M2 夹具与性能验证后冻结。
 
+[ADR-0014](adr/0014-ros-style-velocity-interface.md) 补充约定：消息语义、Topic 命名、单位与坐标系优先参考 ROS 2 习惯；共享习惯不意味着引入 ROS 运行时或声称线协议兼容。连续速度使用 `cmd_vel` Topic，不包装成带起止时间的离散任务。
+
 必须支持身份绑定、权限、可追踪时间、严格负载类型、有界资源与 Replay。初期不做自动节点发现、分布式一致性、任意 QoS 组合或独立 Action 中间件。
 
 ## 通信语义
 
 | `message_type` | 语义 | 示例与限制 |
 | --- | --- | --- |
-| `topic` | 某时刻的状态/测量；允许按频道策略丢旧数据 | IMU、估计位姿；无执行确认 |
-| `command` | 请求在未来 tick 改变受控执行器 | 速度指令；必须过命令仲裁与有效期验证 |
+| `topic` | 状态、测量或持续更新的设定值；按频道策略保留最新值/历史 | IMU、估计位姿、cmd_vel；无逐条执行确认 |
+| `command` | 确有需要的离散操作请求 | 如后续一次开火；需注册独立 Schema 和仲裁，不用于速度流 |
 | `service_request` / `service_response` | 有关联 ID、有限时长的请求/响应 | 协商、选定位姿源；不在物理线程阻塞等待 |
 | `event` | 已发生的离散事实 | 命令拒绝、模块错误、部署生效；不得隐含秘密坐标 |
 
-Topic 不能因命名为“control”就获得执行器权限。耗时测试和部署先使用 `job_id` + 进度事件 + 查询/取消服务；只有出现多个需要统一取消、反馈与恢复语义的长任务，才用新 ADR 引入 Action。
+Topic 不能因命名为“control”就获得执行器权限。`cmd_vel` 虽是 Topic，仍须经发布授权、单一控制租约、底盘能力/限幅验证与执行器仲裁。耗时测试和部署先使用 `job_id` + 进度事件 + 查询/取消服务；只有出现多个需要统一取消、反馈与恢复语义的长任务，才用新 ADR 引入 Action。
 
 ## Envelope
 
@@ -67,7 +69,7 @@ tick、序号和纳秒计数字段限制在 `0..9007199254740991`，防止 JavaS
 
 `pose2d@1` 表示 envelope `frame_id` 中的 `base_link` 位姿。协方差按 `(x, y, yaw)` 行优先 3×3，单位随分量乘积；`null` 表示未报告不确定度，不能当作零。坐标数值合法不等于坐标系合法：须验证帧注册、允许变换、协方差对称和半正定；容差见 04。
 
-传感器 topic 的 tick 是**采样 tick**，估计 topic 是**被估计状态的 tick**。含延迟的测量可以乱序到达；传输日志另记 `delivery_tick`、`ingress_order`，不改写采样时间。事件/service 是提交 tick；command 是生成上下文 tick，执行 tick 在 payload。禁止把墙钟放入仿真时间字段。
+传感器 topic 的 tick 是**采样 tick**，估计 topic 是**被估计状态的 tick**，cmd_vel 是**目标生成上下文 tick**。含延迟的测量可以乱序到达；传输日志另记 `delivery_tick`、`ingress_order`，不改写采样时间。事件使用发生/提交 tick，service 使用其接口定义的逻辑上下文 tick，离散 command 使用生成上下文 tick。时间戳不表示未来预约执行时间；禁止把墙钟放入仿真时间字段。
 
 合法估计输出不得早于执行 profile 的历史窗口，不得晚于执行上下文 tick；初始 `estimate_history_ticks=60`，即允许 `[max(0, activation_tick-60), activation_tick]`。更旧输出报 `STALE_DATA`；窗口内的旧估计保留在调试历史，不能倒退覆盖较新显示。迟到不是“把时间戳改为现在”的理由。细节与统一顺序见 07。
 
@@ -82,7 +84,7 @@ tick、序号和纳秒计数字段限制在 `0..9007199254740991`，防止 JavaS
 | `/robot/sensors/radar` | topic / `radar@1` | Sensor Simulator | 授权模块/UI；标签不是全局实体 ID |
 | `/robot/estimates/{module_id}/pose` | topic / `pose2d@1` | 已注册候选模块 | 本机器人、Pose Selector、获准调试 UI |
 | `/robot/localization/pose` | topic / `pose2d@1` | Pose Selector | View Gateway、本机器人在策略允许时 |
-| `/robot/commands/drive` | command / `drive_command@1` | 当前控制租约持有者 | Command Arbiter；不转发给对手 |
+| `/robot/cmd_vel` | topic / `twist@1` | 当前控制租约持有者 | Chassis Controller / Actuator Arbiter；不转发给对手 |
 | `/view/snapshot` | topic / `view_snapshot@1` | View Gateway | 对应玩家 UI |
 | `/session/negotiate` | service / 协商 request/response | 连接主体 / Host | 仅本连接 |
 | `/runtime/step` | service / RuntimeStep 类型 | Supervisor / 指定 Runtime | 私有运行控制面，不给玩家通用 service 权限 |
@@ -92,22 +94,42 @@ tick、序号和纳秒计数字段限制在 `0..9007199254740991`，防止 JavaS
 
 Authority 根据主体、机器人、部署、关卡、频道、操作（publish/subscribe/call）检查 grant；所有资源默认拒绝。每个输出端口拥有单写者租约。重连/部署时旧租约失效；一个 Runtime 内的模块不是彼此隔离的安全主体，模块名只用于配置和路由，不能扩大整个机器人获授的能力。
 
-## Command 与服务规则
+## 速度 Topic、控制器与离散请求
 
-`drive_command@1` 负载：
+`/robot/cmd_vel` 使用 `twist@1`，其负载遵循 `Twist` 的 `linear`/`angular` 向量形状：
 
 ```json
 {
-  "apply_tick": 126,
-  "valid_until_tick": 138,
-  "linear_velocity_mps": 0.5,
-  "angular_velocity_radps": 0.2
+  "linear": {"x": 0.5, "y": 0.0, "z": 0.0},
+  "angular": {"x": 0.0, "y": 0.0, "z": 0.2}
 }
 ```
 
-Command Arbiter 在 tick 开始提交已截止批次；`apply_tick` 必须未被提交，初始配置最多超前 6 tick，且 `valid_until_tick > apply_tick`、最多多 12 tick。速度上限由任务公开模型给出，越界拒绝；正常加速度饱和属于物理模型。手动/自主控制只有一个租约，键盘也不能直接改 World。指令有效至 `valid_until_tick` 之前，未收到新指令则到期进入中性制动、禁止开火。
+`linear.x=vx` 向前、`linear.y=vy` 向左（m/s），`angular.z=wz` 逆时针（rad/s）；二维场景要求 `linear.z=angular.x=angular.y=0`。Envelope 的 frame 固定为 `base_link`，tick 是生成时刻，`message_type="topic"`、`request_id=null`。通用 Envelope 已承载时间/帧，相当于 stamped 元数据，不在 payload 再复制 Header。消息只表达当前目标速度，不表达计划运动多久。
 
-去重键为 `(run_id, bound_principal, request_id)`；在缓存内，重复相同内容返回已记录结果，不重复施加；相同 ID 不同内容报 `DUPLICATE_REQUEST`。拒绝/应用生成无秘密信息的事件。服务同样有请求关联、截止、有限去重缓存；窗口为会话内最近 256 项，超出窗口不再保证识别重复，也不支持自动重试。客户端禁止重用已使用的 ID，命令另由单调序号、run、apply tick 和 TTL 拒绝旧执行；有副作用服务必须按 artifact/revision/step 等业务键实现幂等。重连先查询状态，不承诺跨会话或无限期 exactly-once。
+Host 把有效目标放入内部提交计划；Python 输出仍随 Runtime 批次在固定门提交，外部键盘目标在下一可用门提交。Chassis Controller 消费最新合法目标，并在新消息间保持目标；队列深度为 1，按 `(生成 tick, sequence)` 选择，同源旧时间不能覆盖新目标。序号、run、租约与调度上下文防止旧部署/重放消息重新控制机器人；无逐条速度执行确认。
+
+控制器配置与速度消息分开，配置由受信场景加载并在部署报告中公开，例如：
+
+```json
+{
+  "controller_profile_version": "1.0",
+  "controller_id": "base_controller",
+  "drive_model": "differential",
+  "command_topic": "/robot/cmd_vel",
+  "command_frame": "base_link",
+  "cmd_vel_timeout": 0.5,
+  "limits": {"max_vx_mps": 3.0, "max_vy_mps": 0.0, "max_wz_radps": 6.0}
+}
+```
+
+`cmd_vel_timeout` 单位为仿真秒，必须为正。控制器在 `now_tick - target_tick ≥ ceil(cmd_vel_timeout * physics_hz)` 时清空目标并要求零速度；不因晚收到旧消息而刷新其生成时间。以 60 Hz、生成 tick 120、内部提交 tick 126 为例，0.5 s 超时在 tick 150 触发，而非从 126 重新计时。未收到任何目标时保持零目标；主动停车发布零 Twist。实际减速由公开制动/动力学约束决定，不承诺瞬时物理静止。
+
+失去控制租约、断线、reset 或部署切换立即清空旧目标，不等超时；“立即”指下一个权威提交边界，不是异步打断正在积分的物理 tick。无效消息不替换目标、不刷新 watchdog；旧合法目标仅维持到自身超时。手动/自主控制只有一个租约，键盘也必须走该授权入口。Manifest 的模块 config 不能覆盖 Host 的 ControllerProfile 来延长超时或解锁全向能力。
+
+差速模型支持 vx/wz，非零 vy 报 `UNSUPPORTED_MOTION`；未来全向模型可支持 vx/vy/wz，同一 Twist 无需改格式。各轴绝对值不得超过 ControllerProfile 声明的限值，越界拒绝；正常加速度饱和属于物理模型。非零横移不是通过直接改位置模拟，必须由对应底盘模型实现。配置与消息 Schema 可表达未来全向能力不代表该模型已实现。
+
+离散 command/service 的去重键仍为 `(run_id, bound_principal, request_id)`；缓存内相同内容返回已记录结果，同 ID 不同内容报 `DUPLICATE_REQUEST`。窗口为会话内最近 256 项，超出窗口不保证识别重复，不支持自动重试。有副作用服务还须按 artifact/revision/step 等业务键幂等。cmd_vel 不使用此请求缓存，重连也不重发旧速度，需新发布当前意图。
 
 连接先完成 Transport 级认证与角色绑定，再以 `run_id="bootstrap"`、tick/time=0 请求版本协商。选择共同的精确 minor profile，返回真实 `run_id`、`physics_hz` 和能力摘要；请求中的 role 仅为申请。协商前只允许此服务，失败关闭；不公开秘密 seed 或隐藏实体清单。进程内适配也必须显式创建绑定会话。
 
@@ -115,9 +137,9 @@ Command Arbiter 在 tick 开始提交已截止批次；`apply_tick` 必须未被
 
 入口次序：按预绑定会话 profile 的字节/深度限制 → 严格 JSON 解析 → Envelope 头部字段验证 → 身份/run/sequence → channel/type/schema 注册 → publish/call 权限 → 完整 Envelope/Payload Schema → 数值/时间/帧/业务约束 → 有界提交队列。提供的 Envelope Schema 包含负载引用，可用于完整结构验证；不能因此省略身份与领域验证。订阅和出站也校验权限；服务错误不得暴露未授权对象是否存在。
 
-错误码最少包含 `INVALID_JSON`、`INVALID_SCHEMA`、`NON_FINITE`、`UNAUTHORIZED`、`UNKNOWN_CHANNEL`、`OUT_OF_ORDER`、`WRONG_RUN`、`STALE_DATA`、`INVALID_FRAME`、`INVALID_COVARIANCE`、`MISSED_DEADLINE`、`RATE_LIMITED`、`DUPLICATE_REQUEST`、`VERSION_UNSUPPORTED`。`error@1` 使用 `code`、`message`、可空 `field`、可空 `related_request_id`。只传玩家可操作的诊断；详细内部日志不下发。
+错误码最少包含 `INVALID_JSON`、`INVALID_SCHEMA`、`NON_FINITE`、`UNAUTHORIZED`、`UNKNOWN_CHANNEL`、`OUT_OF_ORDER`、`WRONG_RUN`、`STALE_DATA`、`INVALID_TIMESTAMP`、`INVALID_FRAME`、`INVALID_COVARIANCE`、`UNSUPPORTED_MOTION`、`MISSED_DEADLINE`、`RATE_LIMITED`、`DUPLICATE_REQUEST`、`VERSION_UNSUPPORTED`。未来时间或与绑定激活上下文不符报 `INVALID_TIMESTAMP`；过期速度报 `STALE_DATA`。`error@1` 使用 `code`、`message`、可空 `field`、可空 `related_request_id`。只传玩家可操作的诊断；详细内部日志不下发。
 
-初始安全 profile：普通 Envelope ≤64 KiB，Runtime 批次 ≤256 KiB，JSON 深度 ≤16；每机器人 ≤256 topic 消息/仿真秒，command ≤60/仿真秒，service ≤10/墙钟秒。另有墙钟入口上限 512 消息/秒，防止暂停时灌入。topic 队列每频道最多 32 项；事件/服务/命令各 64 项，满时显式拒绝，不能堵住 Core。地图未来分瓦片传输，不通过提高全局限额解决。
+初始安全 profile：普通 Envelope ≤64 KiB，Runtime 批次 ≤256 KiB，JSON 深度 ≤16；每机器人 ≤256 topic 消息/仿真秒，其中 cmd_vel ≤60/仿真秒；离散 command ≤60/仿真秒，service ≤10/墙钟秒。另有墙钟入口上限 512 消息/秒，防止暂停时灌入。普通 topic 队列每频道最多 32 项，cmd_vel 在各提交门仅保留最新目标；事件/服务/离散命令各 64 项，满时显式拒绝，不能堵住 Core。地图未来分瓦片传输，不通过提高全局限额解决。
 
 状态 topic 可丢最旧项并记录计数；可靠事件/服务在会话存活时有序交付，断线不承诺跨会话重传。断线后重新协商和获取授权快照；执行器进入安全状态。TCP/WebSocket 的顺序不能代替逻辑序号和 run 校验。各预算是待测默认值，变更写入执行 profile 并记录 Replay。
 
@@ -139,6 +161,8 @@ interface Transport {
 结构定义见 [Schema 索引](schemas/README.md)，采用 [JSON Schema Draft 2020-12](https://json-schema.org/draft/2020-12)。Schema 不能验证主体权限、PSD、坐标变换或实际截止；必须有领域验证器与负例。
 
 Envelope 核心与 payload `@1` 均禁止未知字段。扩展先放 `extensions.x_*` 并忽略未知键；增加可选频道或功能以 minor 协商，不改变旧 profile。修改单位、字段含义、必填项或现有校验范围必须新 payload 版本，并在无法共存时升级协议 major。禁止“新增必填字段但版本不变”。旧客户端继续选 `1.0`，不得收到只属于新 profile 的 Schema。SDK Version、Protocol Version、Manifest Version、Content Version 分别管理。
+
+2026-10-21 草案修订以 `twist@1` / `/robot/cmd_vel` 替换未发布的旧 drive_command，不作为已发布版本的兼容升级先例；历史决策与理由见 ADR-0014。
 
 ## 替代方案、未决项与验收
 

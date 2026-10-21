@@ -105,7 +105,7 @@ stateDiagram-v2
 
 Edit 只改变草稿，不改变当前机器人。Test 使用选定 revision：严格路径/语法检查 → Contract/连线/依赖验证 → 玩家单元测试 → 合同与数据夹具测试 → 无头仿真 → 资源预算检查。运行任何玩家测试、import 和 setup 都必须在同等级沙箱内，不能在测试服务器主进程执行。
 
-Test 报告绑定源码、SDK、协议、Schema bundle、内容、执行 profile 的摘要；编辑后报告变旧，不能把旧通过状态套到新文件。Schema bundle 摘要保证未发布草案的同版本修订也不会误复用报告。评分器可以私有读取 Ground Truth，但只向 Runtime 注入授权输入，输出聚合指标；初期详细真值对比仅在停止后的独立评估视图，Arena 活跃比赛不下发私有回放。
+Test 报告绑定源码、SDK、协议、Schema bundle、内容、ControllerProfile、执行 profile 的摘要；编辑或运行配置变化后报告变旧，不能把旧通过状态套到新文件/看门狗设置。Schema bundle 摘要保证未发布草案的同版本修订也不会误复用报告。评分器可以私有读取 Ground Truth，但只向 Runtime 注入授权输入，输出聚合指标；初期详细真值对比仅在停止后的独立评估视图，Arena 活跃比赛不下发私有回放。
 
 Deploy 将所有允许代码文件、Manifest、Contract、依赖锁、配置及已绑定环境摘要打包成按 SHA-256 内容寻址的不可变 `DeploymentArtifact`。内容摘要使用规范化相对路径、排序清单和各文件原始字节摘要计算，不把归档 mtime/压缩器差异算成代码版本；Host 生成不可由 Manifest 冒充的 `schema_bundle_sha256` 等元数据。`tests/`、`.incoming`、秘密文件和大 `data/` 默认不进 artifact，白名单规则须出现在报告。多文件加载只能从该快照，不能引用继续编辑的工作区或残留 Python import cache。
 

@@ -6,7 +6,9 @@
 
 ## 类型与 Contract
 
-SDK 核心类型是不可变值：`Pose2D`、`ImuData`、`EncoderData`、`RadarData`、`Sample[T]`、`Inputs`、`ModuleContext`、`Module`。编码映射以 03 和 Schema 为准：`Pose2D(x_m, y_m, yaw_rad, covariance, child_frame_id="base_link")`；`EncoderData(left_distance_m, right_distance_m)` 为自本 run 重置以来的累计轮距；`ImuData(angular_velocity_z_radps, linear_acceleration_x_mps2, linear_acceleration_y_mps2)`；`Sample` 包含 `data`、`simulation_tick`、`frame_id`、`sequence_number`。SDK 解码时保留时间与帧，不只传数值。
+SDK 核心类型是不可变值：`Pose2D`、`ImuData`、`EncoderData`、`RadarData`、`Vector3`、`Twist`、`Sample[T]`、`Inputs`、`ModuleContext`、`Module`。编码映射以 03 和 Schema 为准：`Pose2D(x_m, y_m, yaw_rad, covariance, child_frame_id="base_link")`；`EncoderData(left_distance_m, right_distance_m)` 为自本 run 重置以来的累计轮距；`ImuData(angular_velocity_z_radps, linear_acceleration_x_mps2, linear_acceleration_y_mps2)`；`Sample` 包含 `data`、`simulation_tick`、`frame_id`、`sequence_number`。SDK 解码时保留时间与帧，不只传数值。
+
+`Vector3(x=0.0, y=0.0, z=0.0)` 与 `Twist(linear: Vector3, angular: Vector3)` 参考 ROS 的熟悉形状，`Twist()` 默认为两个零向量，序列化总是给出全部分量。二维使用 linear.x/y 与 angular.z，其他轴显式为零；时间和 frame 由 Sample/Envelope 承载，不加入消息执行起止字段。现有 EncoderData 是差速左右轮接口，并非所有底盘通用；未来全向轮需要按轮名组织状态的独立传感器 Contract/Schema，可参考 JointState，不能伪造左右轮数据或悄悄改变 encoder@1 含义。
 
 每个模块提供可静态检查的 `contracts/<module_id>.json`：
 
@@ -63,6 +65,20 @@ class Odometry(Module):
 
 `ctx.publish(port, value, frame_id, simulation_tick=None)` 在本激活批次收集输出，默认 tick 为激活 tick；候选频道与 publisher 由已验证连接绑定。返回不代表已提交。输入是快照，模块不能修改 Router 缓存。`Inputs.latest(port)` 在允许的历史内选 `(sample_tick, sequence)` 最大的合法样本；过期可选输入返回 `None`。
 
+控制模块声明输出端口 `cmd_vel: twist@1`，由 Manifest 连接 `controller.cmd_vel → /robot/cmd_vel`。在 `Module.update` 内的示例为：
+
+```python
+from tankbot import Twist, Vector3
+
+velocity = Twist(
+    linear=Vector3(x=0.5, y=0.0, z=0.0),
+    angular=Vector3(x=0.0, y=0.0, z=0.2),
+)
+ctx.publish("cmd_vel", velocity, frame_id="base_link")
+```
+
+未来全向底盘可发布非零 `linear.y`，差速底盘只接受零横向分量。Publisher 自动绑定生成 tick；算法无需使用 `output_commit_tick` 填写执行计划，该上下文字段仅供时延诊断/高级补偿。统一看门狗位于控制器配置，玩家发布零 Twist 可主动停车，停止发布则按配置超时。
+
 生命周期为 `created → initializing → ready → running → stopped`；异常可进入 `faulted`。部署时先按依赖调用 `setup`，成功后才能激活。新 run 在 tick 0 调用 `reset` 清空时间相关状态、输入历史和 RNG。调度起点 `origin_tick` 是部署生效 tick，run 重置时归零；第一个周期回调在 `origin_tick + period_ticks`，因此正常 `dt_seconds > 0`。`teardown` 有界且尽力执行，强杀时不保证运行。
 
 模块对象字段只活在当前 Runtime。可选 `ctx.state.get/set` 保存带 `state_version` 的有大小限制 JSON 检查点，写入隔离数据区并由 Host 校验；不得 pickle 任意对象。默认部署不继承旧内存或检查点，跨代码版本恢复需显式迁移并测试。
@@ -83,7 +99,7 @@ class Odometry(Module):
 
 必要输入缺失/过期时跳过该模块，产生 `INPUT_UNAVAILABLE`，不调用玩家函数，也不自动填零。可选输入由玩家处理。缺测跳过不累计为执行失败。输出先整批验证：任一输出非法则该模块本次输出全部拒绝；共享 Runtime 内其他已完成模块的合法子批次可以提交。整个 worker 超时/崩溃时未返回的批次全部丢弃。
 
-输出数值非法、错误帧或错误时间不进入 Topic。普通异常、`NotImplementedError`、依赖失败、超时分别诊断；超过连续 3 次失败或一次硬资源越界，模块/worker 进入 faulted。共享 worker 的死循环必须由 Supervisor 在外部终止，不能只靠 Python `try/except`。控制输出按 03 到期中性制动；位姿按 04 变旧并消失。
+输出数值非法、错误帧或错误时间不进入 Topic。普通异常、`NotImplementedError`、依赖失败、超时分别诊断；超过连续 3 次失败或一次硬资源越界，模块/worker 进入 faulted。共享 worker 的死循环必须由 Supervisor 在外部终止，不能只靠 Python `try/except`。控制器按 03 的 cmd_vel_timeout 清空过期目标，租约撤回时立即要求零目标；位姿按 04 变旧并消失。
 
 ## 直接调用与 Topic 的混合方案
 
