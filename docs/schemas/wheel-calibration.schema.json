@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tankbot.example/schemas/v1/wheel-calibration.schema.json",
+  "title": "TankBot radial_omni@1 公开轮组标定",
+  "$defs": {
+    "radial_geometry": {
+      "type": "object",
+      "properties": {
+        "geometry_version": {
+          "const": "radial_omni@1"
+        },
+        "center_radius_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "wheels": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]{0,47}$"
+              },
+              "azimuth_deg": {
+                "type": "number",
+                "minimum": 0,
+                "exclusiveMaximum": 360
+              }
+            },
+            "required": [
+              "name",
+              "azimuth_deg"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 4,
+          "maxItems": 4
+        }
+      },
+      "required": [
+        "geometry_version",
+        "center_radius_m",
+        "wheels"
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/$defs/radial_geometry"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "radius_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "radius_m"
+      ]
+    }
+  ],
+  "unevaluatedProperties": false
+}

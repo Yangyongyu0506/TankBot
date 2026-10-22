@@ -127,7 +127,7 @@ Host 把有效目标放入内部提交计划；Python 输出仍随 Runtime 批�
 
 失去控制租约、断线、reset 或部署切换立即清空旧目标，不等超时；“立即”指下一个权威提交边界，不是异步打断正在积分的物理 tick。无效消息不替换目标、不刷新 watchdog；旧合法目标仅维持到自身超时。手动/自主控制只有一个租约，键盘也必须走该授权入口。Manifest 的模块 config 不能覆盖 Host 的 ControllerProfile 来延长超时或解锁全向能力。
 
-差速模型支持 vx/wz，非零 vy 报 `UNSUPPORTED_MOTION`；M1 麦克纳姆全向模型支持 vx/vy/wz，同一 Twist 无需改格式。按用户确认的 ADR-0015，有限目标超过 ControllerProfile 各轴限值时逐轴截断；非平面轴、非有限量与差速非零 vy 仍整条拒绝。真实速度不直接截断，实际响应由受限伺服、阻力与接触决定。
+差速模型支持 vx/wz，非零 vy 报 `UNSUPPORTED_MOTION`；M1 径向全向轮模型支持 vx/vy/wz，同一 Twist 无需改格式。按用户确认的 ADR-0015，有限目标超过 ControllerProfile 各轴限值时逐轴截断；非平面轴、非有限量与差速非零 vy 仍整条拒绝。真实速度不直接截断，实际响应由受限伺服、阻力与接触决定。
 
 离散 command/service 的去重键仍为 `(run_id, bound_principal, request_id)`；缓存内相同内容返回已记录结果，同 ID 不同内容报 `DUPLICATE_REQUEST`。通用请求窗口为会话内最近 256 项，超出窗口不保证识别重复，不支持自动重试。有副作用服务还须按 artifact/revision/step 等业务键幂等。M1b 开火使用整个 run 的有界、不淘汰业务日志，详见下节与 ADR-0017；不受通用短窗口淘汰规则限制。cmd_vel 不使用此请求缓存，重连也不重发旧速度，需新发布当前意图。
 
@@ -185,3 +185,7 @@ M1 实现严格 JSON、Schema、源/频道 grant、run/序号/时间/帧、PSD �
 开火业务去重键为 run/绑定主体/ID，保存成功及拒绝结果，不因冷却结束重试改变。日志容量来自 weapons.firing.request_cache_capacity，满后拒绝新 ID；pending 队列和活跃弹丸也有配置上限。当前 payload 恒为空，同 ID 携带其他内容会被结构层拒绝。人工重试重新经过绑定身份/结构校验再查询缓存；程序可以在新的合法批次中复用原 ID 获取原结果，不能重发过期 Runtime 批次。运行时输出每频道每批最多一个；整批验证后在固定门处理，命令没有插队特权。
 
 控制源在启动时按执行器配置为 keyboard/robot；只为被授予的输出派生 Contract/grant，运行中动态切换尚未实现。默认 view_snapshot@1 的 objects/effects 仍为空。新增 view_snapshot@2 仅在显式 weapons-practice 策略下携带严格 projectiles/targets 对象，不新增任意 World 字段；不向 Robot Runtime 转发该快照。Protocol 仍为未发布的 1.0 草案；新增 Schema ID 不改变旧 @1 结构。
+
+## 全向轮几何版本修订
+
+当前全向轮为 radial_omni@1：轮序 FL/FR/RL/RR 对应方位 45°/315°/135°/225°，正轴径向向内，正轮转驱动逆时针切向。JointState 数组/单位/频道不变，但不得将旧平行麦轮的符号与反解套到新模型。Host 初始化授予公开轮组标定，UI 的 wheel_calibration 使用同一配置派生；结构/样例见 [Schema](schemas/wheel-calibration.schema.json) 与 [标定夹具](examples/omni-wheel-calibration.json)。不提供真值。内部配置升为 1.3，旧 Workspace 源码不自动改写。

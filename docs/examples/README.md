@@ -8,9 +8,10 @@
 | --- | --- |
 | [pose-message.json](pose-message.json) | odometry 候选位姿，tick 120 / 2 s |
 | [imu-message.json](imu-message.json)、[encoder-message.json](encoder-message.json)、[radar-message.json](radar-message.json) | 类型化测量 |
+| [omni-wheel-calibration.json](omni-wheel-calibration.json) | 当前固定全向轮 radial_omni@1 公开标定，R=0.25 m/r=0.10 m |
 | [joint-state-message.json](joint-state-message.json) | M1 按轮名的编码器角/角速度观测 |
 | [cmd-vel-message.json](cmd-vel-message.json) | tick 120 生成的车体 Twist Topic，没有执行起止字段 |
-| [cmd-vel-omni-message.json](cmd-vel-omni-message.json) | 非零 linear.y 的结构正例；M1 麦克纳姆底盘已实现该能力 |
+| [cmd-vel-omni-message.json](cmd-vel-omni-message.json) | 非零 linear.y 的结构正例；当前全向轮底盘已实现该能力 |
 | [chassis-controller.json](chassis-controller.json) | 差速底盘与 0.5 s cmd_vel_timeout 的受信配置 |
 | [turret-velocity-message.json](turret-velocity-message.json)、[fire-command.json](fire-command.json)、[weapon-state-message.json](weapon-state-message.json) | M1b 炮台速度、幂等单发与自身反馈 |
 | [weapons-practice-view.json](weapons-practice-view.json) | 显式真值练习的严格 view_snapshot@2 |

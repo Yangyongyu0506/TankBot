@@ -55,7 +55,7 @@ flowchart TB
 
 建议目录为 `core/`（纯核心）、`host/`（适配与权限）、`web/`、`sdk/python/`、`runtime/`、`content/`、`tests/`、`docs/`；M1 已创建这些目录中的 `core/host/web/sdk/python/runtime/tests` 及 `protocol/`、`config/`、`examples/robot/`。未创建的后续目录仍只是建议。依赖从 Host 指向 Core、Schema 与适配接口；Core 不反向依赖 Host 或 UI。
 
-机器人接口优先参考 ROS 习惯，见 [ADR-0014](adr/0014-ros-style-velocity-interface.md)。`/robot/cmd_vel` 的 Twist 属于连续设定值 Topic；Host 在提交门转换成 Core 的内部 `BodyVelocityTarget(vx, vy, wz, source_tick)` 或目标失效事件。Core 不解析 Envelope，不关心网络和请求 ID；差速/麦克纳姆全向模型共享输入形状，分别执行自己的运动学与动力学。
+机器人接口优先参考 ROS 习惯，见 [ADR-0014](adr/0014-ros-style-velocity-interface.md)。`/robot/cmd_vel` 的 Twist 属于连续设定值 Topic；Host 在提交门转换成 Core 的内部 `BodyVelocityTarget(vx, vy, wz, source_tick)` 或目标失效事件。Core 不解析 Envelope，不关心网络和请求 ID；差速/径向全向轮模型共享输入形状，分别执行自己的运动学与动力学。
 
 ## 进程与部署架构
 

@@ -10,6 +10,7 @@ from tankbot_protocol.validation import Validator, Rejected, envelope
 from tankbot_protocol.wire import send, receive, strict_loads
 from .supervisor import Supervisor
 from .view import PoseSelector, ViewGateway, SystemPoseProvider
+from .wheel_geometry import validate_wheels, public_calibration
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -41,6 +42,10 @@ def load_config(path):
         raise ValueError("View frequency must divide physics frequency")
     if config["view_policy"]["pose_fresh_ticks"] > config["view_policy"]["pose_hide_after_ticks"]:
         raise ValueError("Invalid pose age limits")
+    rendering = config["rendering"]
+    if rendering["history_ms"] <= max(rendering["interpolation_delay_ms"], rendering["estimate_interpolation_delay_ms"]) + 1000/config["view"]["snapshot_hz"]:
+        raise ValueError("Render history must cover interpolation delay and a snapshot interval")
+    validate_wheels(config["wheels"])
     return config
 
 
@@ -77,6 +82,7 @@ class Authority:
             raise ValueError("Estimated view cannot grant truth")
         if config["view_mode"]=="weapons-practice" and (not config["view_policy"]["system_pose_allowed"] or not config["view_policy"]["world_effects"]):
             raise ValueError("Practice view requires explicit authority policy")
+        validate_wheels(config["wheels"])
         self.config = copy.deepcopy(config)
         self.run_id = uuid.uuid4().hex
         self.controlled = controlled
@@ -359,13 +365,19 @@ class Authority:
                       "command_topic":"/robot/cmd_vel", "command_frame":"base_link",
                       "cmd_vel_timeout":self.config["controller"]["cmd_vel_timeout_s"], "limits":limits}
         self.validator.structure(controller, "chassis-controller.schema.json")
+        calibration=public_calibration(self.config["wheels"]) if chassis=="omnidirectional" else None
+        if calibration is not None:
+            self.validator.structure(calibration,"wheel-calibration.schema.json")
         return {"run_id": self.run_id, "physics_hz": self.hz, "chassis": self.config["scene"]["default_chassis"],
                 "controller_profile":controller,"view_mode":self.config["view_mode"],
                 "control_sources":copy.deepcopy(self.config["control_sources"]),
                 "turret_muzzle_offset_m":copy.deepcopy(self.config["weapons"]["turret"]["muzzle_offset_m"]),
                 "body": {k: self.config["body"][k] for k in ("length_m", "width_m", "corner_radius_m")},
                 "walls": copy.deepcopy(self.config["scene"]["walls"]) if self.config["scene"]["public_map"] and self.config["view_policy"]["public_map"] else [],
-                "view": copy.deepcopy(self.config["view"])}
+                "view": copy.deepcopy(self.config["view"]),
+                "rendering": {k:copy.deepcopy(v) for k,v in self.config["rendering"].items() if k != "chassis_models"},
+                "wheel_calibration":calibration,
+                "chassis_visual":copy.deepcopy(self.config["rendering"]["chassis_models"][chassis])}
 
     def truth_digest(self):
         import json

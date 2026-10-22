@@ -111,7 +111,9 @@ class WeaponTests(unittest.TestCase):
         c["scene"]["initial_pose"][2]=-math.pi
         core=self.core(c)
         out=self.shot(core,"at-target")
-        for _ in range(20):out=core.call({"op":"step"})
+        distance=abs(c["weapons"]["targets"][0]["pose"][0]-c["scene"]["initial_pose"][0])
+        flight_ticks=math.ceil(distance/c["weapons"]["projectile"]["relative_speed_mps"]*c["clock"]["physics_hz"])
+        for _ in range(flight_ticks):out=core.call({"op":"step"})
         self.assertEqual(out["target_hits"]["target_01"],1)
         self.assertEqual(out["projectiles"],[])
         for tick in range(out["tick"],240):

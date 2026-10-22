@@ -22,8 +22,9 @@ ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评
 | [0014](0014-ros-style-velocity-interface.md) | ROS 惯例、cmd_vel/Twist 与控制器 watchdog | Accepted |
 | [0015](0015-confirmed-m1-physics-profile.md) | 用户确认的受力/接触/观测模型与单文件参数 | Accepted |
 | [0016](0016-wheel-joint-state.md) | 独立 joint_state 类型，保留旧 Encoder 语义 | Accepted |
-
 | [0017](0017-confirmed-weapons-loop.md) | 用户确认的武器物理、幂等单发与授权练习视图 | Accepted |
+| [0018](0018-authorized-rendering-timeline.md) | 授权数据时间插值、平移跟随相机与独立外观 | Accepted |
+| [0019](0019-fourfold-omni-wheel-layout.md) | 四轮 90° 旋转对称固定全向轮与统一运动学 | Accepted |
 
 ## 变更流程与完成条件
 

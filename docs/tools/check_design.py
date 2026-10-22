@@ -41,6 +41,8 @@ def strict_json(text):
 def schema_for(value):
     if "message_type" in value:
         return "envelope.schema.json", None
+    if "geometry_version" in value:
+        return "wheel-calibration.schema.json", None
     if "manifest_version" in value:
         return "workspace.schema.json", None
     if "contract_version" in value:

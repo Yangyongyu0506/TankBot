@@ -5,7 +5,7 @@
   "type": "object",
   "properties": {
     "config_version": {
-      "const": "1.1"
+      "const": "1.3"
     },
     "confirmation_status": {
       "const": "confirmed"
@@ -230,29 +230,15 @@
           "type": "number",
           "exclusiveMinimum": 0
         },
-        "mecanum_half_length_m": {
-          "type": "number",
-          "exclusiveMinimum": 0
-        },
-        "mecanum_half_width_m": {
-          "type": "number",
-          "exclusiveMinimum": 0
-        },
-        "roller_angle_deg": {
-          "type": "number"
-        },
-        "arrangement": {
-          "type": "string",
-          "minLength": 1
+        "omnidirectional": {
+          "$ref": "wheel-calibration.schema.json#/$defs/radial_geometry",
+          "unevaluatedProperties": false
         }
       },
       "required": [
         "radius_m",
         "differential_track_m",
-        "mecanum_half_length_m",
-        "mecanum_half_width_m",
-        "roller_angle_deg",
-        "arrangement"
+        "omnidirectional"
       ],
       "additionalProperties": false
     },
@@ -1230,6 +1216,490 @@
     },
     "practice_view_policy": {
       "$ref": "view-policy.schema.json"
+    },
+    "rendering": {
+      "type": "object",
+      "properties": {
+        "viewport_width_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "grid_spacing_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "camera_origin_m": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "interpolation_delay_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "estimate_interpolation_delay_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "history_ms": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "stats_interval_ms": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "barrel_width_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "chassis_models": {
+          "type": "object",
+          "properties": {
+            "differential": {
+              "type": "object",
+              "properties": {
+                "model_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "kind": {
+                  "const": "tracked"
+                },
+                "hull": {
+                  "type": "object",
+                  "properties": {
+                    "length_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "width_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "radius_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    }
+                  },
+                  "required": [
+                    "length_m",
+                    "width_m",
+                    "radius_m"
+                  ],
+                  "additionalProperties": false
+                },
+                "track": {
+                  "type": "object",
+                  "properties": {
+                    "length_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "width_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "center_y_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "radius_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "tread_count": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0
+                    }
+                  },
+                  "required": [
+                    "length_m",
+                    "width_m",
+                    "center_y_m",
+                    "radius_m",
+                    "tread_count"
+                  ],
+                  "additionalProperties": false
+                },
+                "panel": {
+                  "type": "object",
+                  "properties": {
+                    "length_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "width_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "center_y_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "radius_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    }
+                  },
+                  "required": [
+                    "length_m",
+                    "width_m",
+                    "center_y_m",
+                    "radius_m"
+                  ],
+                  "additionalProperties": false
+                },
+                "forward_marker_m": {
+                  "type": "array",
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    },
+                    "minItems": 2,
+                    "maxItems": 2
+                  },
+                  "minItems": 3,
+                  "maxItems": 3
+                },
+                "turret_radius_m": {
+                  "type": "number"
+                },
+                "colors": {
+                  "type": "object",
+                  "properties": {
+                    "shell": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "stale": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "panel": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "rubber": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "roller": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "edge": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "mark": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "turret": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "barrel": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "shell",
+                    "stale",
+                    "panel",
+                    "rubber",
+                    "roller",
+                    "edge",
+                    "mark",
+                    "turret",
+                    "barrel"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "model_id",
+                "kind",
+                "hull",
+                "track",
+                "panel",
+                "forward_marker_m",
+                "turret_radius_m",
+                "colors"
+              ],
+              "additionalProperties": false
+            },
+            "omnidirectional": {
+              "type": "object",
+              "properties": {
+                "model_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "kind": {
+                  "const": "radial_omni"
+                },
+                "hull": {
+                  "type": "object",
+                  "properties": {
+                    "length_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "width_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "radius_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    }
+                  },
+                  "required": [
+                    "length_m",
+                    "width_m",
+                    "radius_m"
+                  ],
+                  "additionalProperties": false
+                },
+                "deck": {
+                  "type": "object",
+                  "properties": {
+                    "length_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "width_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "radius_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    }
+                  },
+                  "required": [
+                    "length_m",
+                    "width_m",
+                    "radius_m"
+                  ],
+                  "additionalProperties": false
+                },
+                "suspension_width_m": {
+                  "type": "number"
+                },
+                "wheel": {
+                  "type": "object",
+                  "properties": {
+                    "width_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "roller_count": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0
+                    },
+                    "roller_width_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "hub_length_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "hub_width_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "hub_radius_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "corner_radius_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    }
+                  },
+                  "required": [
+                    "width_m",
+                    "corner_radius_m",
+                    "roller_count",
+                    "roller_width_m",
+                    "hub_length_m",
+                    "hub_width_m",
+                    "hub_radius_m"
+                  ],
+                  "additionalProperties": false
+                },
+                "armor": {
+                  "type": "object",
+                  "properties": {
+                    "front_center_x_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "front_length_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "front_width_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "side_center_y_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "side_length_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "side_width_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "radius_m": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    }
+                  },
+                  "required": [
+                    "front_center_x_m",
+                    "front_length_m",
+                    "front_width_m",
+                    "side_center_y_m",
+                    "side_length_m",
+                    "side_width_m",
+                    "radius_m"
+                  ],
+                  "additionalProperties": false
+                },
+                "forward_marker_m": {
+                  "type": "array",
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    },
+                    "minItems": 2,
+                    "maxItems": 2
+                  },
+                  "minItems": 3,
+                  "maxItems": 3
+                },
+                "turret_radius_m": {
+                  "type": "number"
+                },
+                "colors": {
+                  "type": "object",
+                  "properties": {
+                    "shell": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "stale": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "frame": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "deck": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "rubber": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "roller": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "hub": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "edge": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "mark": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "turret": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "barrel": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "shell",
+                    "stale",
+                    "frame",
+                    "deck",
+                    "rubber",
+                    "roller",
+                    "hub",
+                    "edge",
+                    "mark",
+                    "turret",
+                    "barrel"
+                  ],
+                  "additionalProperties": false
+                },
+                "suspension_inner_ratio": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "exclusiveMaximum": 1
+                }
+              },
+              "required": [
+                "model_id",
+                "kind",
+                "hull",
+                "deck",
+                "suspension_width_m",
+                "wheel",
+                "armor",
+                "forward_marker_m",
+                "turret_radius_m",
+                "colors",
+                "suspension_inner_ratio"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "differential",
+            "omnidirectional"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "viewport_width_m",
+        "grid_spacing_m",
+        "camera_origin_m",
+        "interpolation_delay_ms",
+        "estimate_interpolation_delay_ms",
+        "history_ms",
+        "stats_interval_ms",
+        "barrel_width_m",
+        "chassis_models"
+      ],
+      "additionalProperties": false
     }
   },
   "required": [
@@ -1256,7 +1726,8 @@
     "weapons",
     "control_sources",
     "view_mode",
-    "practice_view_policy"
+    "practice_view_policy",
+    "rendering"
   ],
   "additionalProperties": false
 }

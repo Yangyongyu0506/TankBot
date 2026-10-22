@@ -25,3 +25,7 @@ Odometry 需要获授轮组标定；轮速来自实际运动，差速横滑仍�
 ## Evidence / Acceptance Criteria
 
 两底盘轮速反算和多文件 SDK 里程计均经 600 tick 探针，Schema 正例见 [joint-state-message.json](../examples/joint-state-message.json)，实现及限制见 [M1 报告](../reports/M1_VALIDATION.md)。此决定不引入 ROS2/DDS 运行时。
+
+## 后续布局修订
+
+[ADR-0019](0019-fourfold-omni-wheel-layout.md) 已按用户明确确认，将平行麦轮替换为四组 90° 旋转对称的固定普通全向轮；几何版本 radial_omni@1、R=0.25 m、r=0.10 m。本文的历史轮型/安装描述以新 ADR 为准；其他权限、单位、调度与模型边界继续有效。

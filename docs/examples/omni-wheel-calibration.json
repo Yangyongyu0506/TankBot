@@ -1,0 +1,23 @@
+{
+  "radius_m": 0.1,
+  "geometry_version": "radial_omni@1",
+  "center_radius_m": 0.25,
+  "wheels": [
+    {
+      "name": "front_left",
+      "azimuth_deg": 45.0
+    },
+    {
+      "name": "front_right",
+      "azimuth_deg": 315.0
+    },
+    {
+      "name": "rear_left",
+      "azimuth_deg": 135.0
+    },
+    {
+      "name": "rear_right",
+      "azimuth_deg": 225.0
+    }
+  ]
+}

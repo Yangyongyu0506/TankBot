@@ -77,7 +77,7 @@ velocity = Twist(
 ctx.publish("cmd_vel", velocity, frame_id="base_link")
 ```
 
-M1 麦克纳姆底盘支持非零 `linear.y`，差速底盘只接受零横向分量。Publisher 自动绑定生成 tick；算法无需使用 `output_commit_tick` 填写执行计划，该上下文字段仅供时延诊断/高级补偿。统一看门狗位于控制器配置，玩家发布零 Twist 可主动停车，停止发布则按配置超时。
+当前全向轮底盘支持非零 `linear.y`，差速底盘只接受零横向分量。Publisher 自动绑定生成 tick；算法无需使用 `output_commit_tick` 填写执行计划，该上下文字段仅供时延诊断/高级补偿。统一看门狗位于控制器配置，玩家发布零 Twist 可主动停车，停止发布则按配置超时。
 
 生命周期为 `created → initializing → ready → running → stopped`；异常可进入 `faulted`。部署时先按依赖调用 `setup`，成功后才能激活。新 run 在 tick 0 调用 `reset` 清空时间相关状态、输入历史和 RNG。调度起点 `origin_tick` 是部署生效 tick，run 重置时归零；第一个周期回调在 `origin_tick + period_ticks`，因此正常 `dt_seconds > 0`。`teardown` 有界且尽力执行，强杀时不保证运行。
 

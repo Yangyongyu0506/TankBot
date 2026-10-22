@@ -26,6 +26,9 @@
 | [12 验证与待办](12_VALIDATION_AND_OPEN_QUESTIONS.md) | 一致性检查、需求追踪、未决项与研究来源 |
 | [13 物理确认记录](13_PHYSICS_MODEL_DECISIONS.md) | 用户逐项确认、伺服/轮组/IMU 方程、历史武器模型与 M1b 修订 |
 | [14 武器设计与确认](14_WEAPONS_DESIGN.md) | M1b 范围、控制/开火接口、共同确认、数值近似及验收 |
+| [15 渲染设计](15_RENDERING_DESIGN.md) | 多频率时间插值、固定世界朝向相机、独立底盘外观 |
+| [全向轮验收](reports/OMNI_VALIDATION.md) | 90° 固定全向轮几何、正反解、闭环与浏览器证据 |
+| [渲染验收](reports/RENDERING_VALIDATION.md) | 实际显示帧、相机与两底盘对比 |
 | [M1 验证报告](reports/M1_VALIDATION.md) | 当前实现范围、实际命令、证据与平台限制 |
 | [M1b 验证报告](reports/M1B_VALIDATION.md) | 武器、SDK、浏览器与原生/WASM 证据及限制 |
 | [ADR 索引](adr/README.md) | 决策状态、替代方案与变更流程 |

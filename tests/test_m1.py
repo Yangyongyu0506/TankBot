@@ -76,7 +76,7 @@ class M1Tests(unittest.TestCase):
             expected += moment/inertia*dt
         self.assertAlmostEqual(out["truth_velocity"][2], expected, delta=c["validation"]["numeric_tolerance"])
 
-    def test_both_chassis_and_mecanum_inverse(self):
+    def test_both_chassis_and_radial_omni_inverse(self):
         core = self.core(chassis="omnidirectional")
         out = core.call({"op": "step", "target": {"vx": 0, "vy": 1, "wz": 0, "source_tick": 0}})
         out = core.call({"op": "step"})

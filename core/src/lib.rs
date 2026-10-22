@@ -1,6 +1,7 @@
 //! Pure fixed-step authority. Private snapshots belong only to the trusted host.
 mod cannon;
 mod turret;
+mod wheels;
 use cannon::CannonSystem;
 pub use cannon::{FiringConfig, Numerics, ProjectileConfig, ShotRequest, TargetConfig};
 use rapier2d_f64::prelude::*;
@@ -12,6 +13,7 @@ use std::{
 };
 use turret::TurretSystem;
 pub use turret::{TurretConfig, TurretTarget};
+pub use wheels::Wheels;
 
 #[derive(Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -48,16 +50,6 @@ pub struct Clock {
     pub substeps: u64,
     pub sensor_hz: u64,
     pub algorithm_hz: u64,
-}
-#[derive(Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Wheels {
-    pub radius_m: f64,
-    pub differential_track_m: f64,
-    pub mecanum_half_length_m: f64,
-    pub mecanum_half_width_m: f64,
-    pub roller_angle_deg: f64,
-    pub arrangement: String,
 }
 #[derive(Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -189,6 +181,7 @@ impl GameCore {
         {
             return Err("Invalid clock ratios".into());
         }
+        config.wheels.validate()?;
         let b = &config.body;
         let s = &config.servo;
         if [
@@ -210,10 +203,6 @@ impl GameCore {
         .any(|x| !x.is_finite() || *x <= 0.0)
             || 2.0 * b.corner_radius_m >= b.length_m.min(b.width_m)
             || s.zero_target_behavior != "active_brake"
-            || config.wheels.arrangement != "X"
-            || !config.wheels.roller_angle_deg.is_finite()
-            || !(0.0..PI / 2.0).contains(&config.wheels.roller_angle_deg.to_radians())
-            || config.wheels.roller_angle_deg == 0.0
         {
             return Err("Unsupported/invalid physical profile".into());
         }
@@ -357,31 +346,10 @@ impl GameCore {
         [v.x, v.y, b.angvel()]
     }
     fn rates(&self, v: [f64; 3]) -> Vec<f64> {
-        let w = &self.config.wheels;
-        let [x, y, z] = v;
-        if self.chassis.lateral_actuation {
-            let beta = w.roller_angle_deg.to_radians();
-            let lateral = beta.cos() / beta.sin();
-            let k = w.mecanum_half_length_m * lateral + w.mecanum_half_width_m;
-            vec![
-                (x - lateral * y - k * z) / w.radius_m,
-                (x + lateral * y + k * z) / w.radius_m,
-                (x + lateral * y - k * z) / w.radius_m,
-                (x - lateral * y + k * z) / w.radius_m,
-            ]
-        } else {
-            vec![
-                (x - z * w.differential_track_m / 2.0) / w.radius_m,
-                (x + z * w.differential_track_m / 2.0) / w.radius_m,
-            ]
-        }
+        self.config.wheels.rates(v, self.chassis.lateral_actuation)
     }
     fn sensor_payload(&self, a: Vector, wz: f64) -> Value {
-        let names = if self.chassis.lateral_actuation {
-            vec!["front_left", "front_right", "rear_left", "rear_right"]
-        } else {
-            vec!["left", "right"]
-        };
+        let names = self.config.wheels.names(self.chassis.lateral_actuation);
         let mut sample = json!({"joint_states":{"name":names,"position":self.wheel_positions,"velocity":self.wheel_rates,"effort":[]},"imu":{"angular_velocity_z_radps":wz,"linear_acceleration_x_mps2":a.x,"linear_acceleration_y_mps2":a.y}});
         if let Some(t) = &self.turret {
             sample["turret_joint_states"] = t.sample(&self.world, self.tank);
@@ -572,6 +540,14 @@ pub fn run_build_probe(text: &str) -> Result<f64, String> {
     }
     Ok(c.private_snapshot().truth_pose[0])
 }
+pub fn run_wheel_probe(text: &str) -> Result<Vec<f64>, String> {
+    let raw: Value = serde_json::from_str(text).map_err(|e| e.to_string())?;
+    let config: Config = serde_json::from_value(raw.clone()).map_err(|e| e.to_string())?;
+    config.wheels.validate()?;
+    let target: [f64; 3] = serde_json::from_value(raw["validation"]["probe_target"].clone())
+        .map_err(|e| e.to_string())?;
+    Ok(config.wheels.rates(target, true))
+}
 pub fn run_weapon_probe(text: &str) -> Result<Value, String> {
     let raw: Value = serde_json::from_str(text).map_err(|e| e.to_string())?;
     let config: Config = serde_json::from_value(raw.clone()).map_err(|e| e.to_string())?;
@@ -609,6 +585,11 @@ pub fn run_weapon_probe(text: &str) -> Result<Value, String> {
 #[unsafe(no_mangle)]
 pub extern "C" fn tankbot_m1_probe() -> f64 {
     run_build_probe(include_str!("../../config/m1.json")).expect("Invalid profile")
+}
+#[cfg(target_arch = "wasm32")]
+#[unsafe(no_mangle)]
+pub extern "C" fn tankbot_omni_wheel_probe() -> f64 {
+    run_wheel_probe(include_str!("../../config/m1.json")).expect("Invalid wheel calibration")[0]
 }
 #[cfg(target_arch = "wasm32")]
 #[unsafe(no_mangle)]

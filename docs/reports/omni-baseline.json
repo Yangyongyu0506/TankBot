@@ -1,0 +1,65 @@
+{
+  "date": "2026-10-22",
+  "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+  "geometry": {
+    "radius_m": 0.1,
+    "differential_track_m": 0.5,
+    "omnidirectional": {
+      "geometry_version": "radial_omni@1",
+      "center_radius_m": 0.25,
+      "wheels": [
+        {
+          "name": "front_left",
+          "azimuth_deg": 45.0
+        },
+        {
+          "name": "front_right",
+          "azimuth_deg": 315.0
+        },
+        {
+          "name": "rear_left",
+          "azimuth_deg": 135.0
+        },
+        {
+          "name": "rear_right",
+          "azimuth_deg": 225.0
+        }
+      ]
+    }
+  },
+  "target": {
+    "linear": {
+      "x": 0.5,
+      "y": 0.5,
+      "z": 0
+    },
+    "angular": {
+      "x": 0,
+      "y": 0,
+      "z": 1.0
+    }
+  },
+  "ticks": 600,
+  "pose_commits": 98,
+  "max_position_error_m": 0.0006381493318800631,
+  "max_yaw_error_rad": 0.00024556973663791837,
+  "rejections": [],
+  "same_build_replay_exact": true,
+  "native_wheel_rates_radps": [
+    -3.5355339059327373,
+    3.535533905932738,
+    -3.5355339059327378,
+    3.5355339059327373
+  ],
+  "wasm_probe": {
+    "wasm_bytes": 61138448,
+    "final_x_m": 1.5000130521385737,
+    "shots_fired": 34,
+    "relative_angle_rad": 19.32608917396584,
+    "omni_first_wheel_radps": -3.5355339059327373
+  },
+  "native_wasm_first_wheel_absolute_error_radps": 0.0,
+  "config_sha256": "c4f63ce8f57ced6f97a75fbc3dd60868b0c5d7a9496bb3da327f2d83bd6d2332",
+  "native_binary_sha256": "b5ece0eba1206037d56f15584f0f723f17f70d69c11e5d129faf479cde7a4192",
+  "wasm_sha256": "e7e755a415ad41d85fb63bb6a9c53480b9540f5de86bdea13b98de52e2b9e541"
+}

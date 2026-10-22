@@ -2,7 +2,7 @@
 
 TankBot 将二维坦克运动、机器人算法学习与多文件 Python 编程结合。玩家通过传感器和自己的算法重建世界认知。
 
-当前完成 **M1 + M1b 本机闭环原型**：Rust/Rapier2D 权威物理、差速/四轮麦克纳姆底盘、理想轮编码器与质心 IMU、外部 Python 里程计、固定 tick 提交、Pose Selector、View Policy 和 Canvas 页面。M1b 增加双刚体炮台、单发/冷却、连续弹道/反弹/弹丸互毁、后坐/受击冲量、靶标与 Python 武器接口；尚无完整战斗关卡、编辑器或 Arena。
+当前完成 **M1 + M1b 本机闭环原型**：Rust/Rapier2D 权威物理、差速/四轮径向全向轮底盘、理想轮编码器与质心 IMU、外部 Python 里程计、固定 tick 提交、Pose Selector、View Policy 和 Canvas 页面。M1b 增加双刚体炮台、单发/冷却、连续弹道/反弹/弹丸互毁、后坐/受击冲量、靶标与 Python 武器接口；尚无完整战斗关卡、编辑器或 Arena。
 
 ## 构建与运行
 
@@ -35,14 +35,25 @@ python3 tools/tankbot.py headless --ticks 600 --robot-demo
 ```bash
 cargo test --locked
 python3 -m unittest discover -s tests -v
+node tests/test_rendering.mjs  # Node 22+，浏览器表现行为测试
 python3 docs/tools/check_design.py
 python3 tools/build.py --format-check
 python3 tools/build.py --wasm
 node tools/wasm_probe.mjs
-python3 tools/measure_m1b.py
+python3 tools/measure_omni.py
 ```
 
 单元/集成测试包含临时 loopback HTTP 服务；受限环境需允许本地套接字。`measure_m1b.py` 更新私有武器评估基准 JSON，报告实际机器/摘要/时延/误差；不要把本机测量当成所有平台性能保证。运行说明与边界见 [M1b 验证报告](docs/reports/M1B_VALIDATION.md)，旧 [M1 报告](docs/reports/M1_VALIDATION.md) 与基线保留为历史证据。
+
+## 当前全向底盘
+
+采用四个固定普通全向轮 X-drive，轮轴径向、滚动切向；轮心方位 45°/135°/225°/315°，R=0.25 m、轮半径 0.10 m。Core 编码器、Python 里程计和四组旋转安装的显示轮组共用 `wheels.omnidirectional` 标定，已替换旧平行麦轮。受力伺服/碰撞模型保持原约定。详见 [ADR-0019](docs/adr/0019-fourfold-omni-wheel-layout.md) 和 [验收](docs/reports/OMNI_VALIDATION.md)。
+
+## 显示与相机
+
+物理 60 Hz（4 子步）、视图快照 30 Hz、显示 requestAnimationFrame 独立运行；面板分别显示 SIM / VIEW / FPS。车体、炮台与授权弹丸按仿真时间缓存插值，断流不外推。相机跟随显示车体 x/y，世界 +x 向右、+y 向上，不跟随 yaw。没有合法估计时不显示全局车体，也不转为跟随真实位置。
+
+显示参数在 `config/m1.json` 的 rendering，默认练习缓存 80 ms、估计缓存 220 ms；差速 tracked 与全向 radial_omni 使用独立部件/颜色配置。配置内部版本现为 1.3，旧自定义文件需显式迁移轮组/显示字段，启动不会自动覆盖。设计与浏览器证据见 [显示设计](docs/15_RENDERING_DESIGN.md) 和 [验收报告](docs/reports/RENDERING_VALIDATION.md)。
 
 ## 当前边界与设计入口
 

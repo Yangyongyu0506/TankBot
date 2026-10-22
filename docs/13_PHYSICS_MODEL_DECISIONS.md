@@ -41,7 +41,7 @@ Mz_drag = -cw * wz
 | P09 | cx=4 N·s/m；差速 cy=200、全向 cy=4 N·s/m；cw=0.8 N·m·s；零目标主动制动，不直接归零真实速度 | Confirmed：第三轮用户答复 |
 | P10 | 静态不可破坏墙体、非弹性接触 e=0、接触摩擦 0.4，偏心接触交换角动量 | Confirmed：第四轮用户答复 |
 | P11 | Physics 60 Hz、每 tick 4 子步重新计算力、传感器 30 Hz、算法 10 Hz；数值为每子步 8 次求解、每次 4 次内部 PGS、1 次稳定化、CCD、容差 0.001 m | Confirmed：第四轮用户答复 |
-| P12 | 四轮麦克纳姆、X 布置、45°滚子；理想滚动编码器，半径 0.10 m、差速轮距 0.50 m、麦轮中心 x=±0.30/y=±0.25 m | Confirmed：第四、五轮用户答复 |
+| P12 | 四轮麦克纳姆、X 布置、45°滚子；理想滚动编码器，半径 0.10 m、差速轮距 0.50 m、麦轮中心 x=±0.30/y=±0.25 m | 历史确认；已由 ADR-0019 修订为径向固定全向轮 |
 | P13 | 质心安装、base_link 对齐；Rᵀa_world 含向心/接触加速度，采样窗口平均；平面重力零；所有噪声/偏置/漂移/延迟/丢失为零 | Confirmed：第五轮用户答复 |
 | P14 | 相对角速度输入、受限力矩伺服、连续旋转；双刚体转动关节，伺服与轴承阻力等大反向力矩 | Confirmed：第六、七轮；数值见单文件配置 |
 | P15 | 弹丸速度继承炮口世界速度，加相对初速度；二维无重力/空气阻力 | Confirmed：第六、七轮；墙面 e=1、无摩擦、最多 3 次反弹、寿命 5 s、击中坦克销毁 |
@@ -64,16 +64,20 @@ Mz_drag = -cw * wz
 
 ## 轮组与 IMU 接口
 
-四轮顺序固定为 `front_left, front_right, rear_left, rear_right`；车体系 x 前、y 左、正 yaw 逆时针，`k = half_length + half_width`：
+当前四轮顺序为 `front_left, front_right, rear_left, rear_right`，轮心角依次为 45°/315°/135°/225°；车体系 x 前、y 左、正 yaw 逆时针。按 [ADR-0019](adr/0019-fourfold-omni-wheel-layout.md) 采用径向向内正轮轴、逆时针切向正滚动：
 
 ```text
-omega_FL = (vx - vy - k*wz)/r
-omega_FR = (vx + vy + k*wz)/r
-omega_RL = (vx + vy - k*wz)/r
-omega_RR = (vx - vy + k*wz)/r
+R = wheels.omnidirectional.center_radius_m
+r = wheels.radius_m
+omega_i = (-sin(alpha_i)*vx + cos(alpha_i)*vy + R*wz)/r
+vx = -(r/2)*sum(sin(alpha_i)*omega_i)
+vy =  (r/2)*sum(cos(alpha_i)*omega_i)
+wz =  r*sum(omega_i)/(4*R)
 omega_L = (vx - track*wz/2)/r
 omega_R = (vx + track*wz/2)/r
 ```
+
+R=0.25 m、r=0.10 m 已由用户确认；旧麦克纳姆公式为历史模型，不再用于当前编码器或里程计。完整标定见 `wheels.omnidirectional` / `radial_omni@1`，渲染轮心与滚动方向也从此派生。
 
 每子步对实际轮速作梯形积分获得累计轮角；当前为理想运动观测模型，不假设有未实现的轮电机。所有底盘发布 `/robot/sensors/joint_states` / `joint_state@1`，单位 rad/rad·s⁻¹；旧 `encoder@1` 左右累计距离接口保持不变。IMU 将每子步真实世界速度差按区间中间姿态转换，再累加到 30 Hz 窗口；角速度为各子步前后真实 wz 的梯形积分除以窗口时间，避免将接触位置纠正误认为陀螺测量。接触冲量包含在加速度观测中，tick 0 无前一窗口时输出零加速度。
 
@@ -99,3 +103,7 @@ P20 弹药质量记账：Confirmed，用户最后答复“采用”。弹药不�
 ## M1b 后续修订
 
 以上 P17–P20 为 M1 阶段“仅记录武器模型”的历史；M1b 已按用户新增确认实现，见 [14](14_WEAPONS_DESIGN.md) 与 [ADR-0017](adr/0017-confirmed-weapons-loop.md)。新规则明确：后坐施加到底盘，差速投影车体 x、全向保留方向，实际炮口力臂保留；受击使用弹丸世界动量并遵循相同投影。此项替代前文最初作用炮台的描述。当前配置命名为 weapons、内部版本 1.1；不把旧 deferred 配置静默当成新格式。
+
+## 四轮布局修订
+
+用户进一步明确需要四组轮子每 90° 旋转对称，随后确认固定普通全向轮、对角 X、R=0.25 m/r=0.10 m。配置升级为 1.3，替换原 P12 麦轮几何；见 ADR-0019。其余车体/伺服、接触、理想观测与武器约定未改变。

@@ -69,6 +69,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Some("weapons_probe") => {
                     return tankbot_core::run_weapon_probe(&r["config"].to_string());
                 }
+                Some("wheel_probe") => {
+                    return Ok(json!(tankbot_core::run_wheel_probe(
+                        &r["config"].to_string()
+                    )?));
+                }
                 _ => return Err("Unknown operation".into()),
             }
             serde_json::to_value(core.as_ref().ok_or("Not initialized")?.private_snapshot())

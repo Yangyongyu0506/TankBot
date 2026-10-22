@@ -6,7 +6,7 @@
 
 ## 物理模型与核心接口
 
-目标 `World` 设计保存静态墙体/碰撞几何、坦克刚体状态，并在后续增加炮塔朝向、弹丸、生命与规则状态；M1 只实现静态地图/车体。公共控制目标采用车体 Twist（vx/vy/wz），M1 Chassis Controller 同时实现差速 vx/wz 与麦克纳姆全向 vx/vy/wz，由场景选择。ControllerProfile 公开能力、各轴限值和 watchdog，叠加有上限的加速度、转动与碰撞响应；Encoder 来自相应轮子运动模型而非直接读取全局位姿。后续可增加独立轮电机、空转/轮滑与不同地面参数，但必须版本化模型和传感器，不能仅开放横向瞬移。
+目标 `World` 设计保存静态墙体/碰撞几何、坦克刚体状态，并在后续增加炮塔朝向、弹丸、生命与规则状态；M1 只实现静态地图/车体。公共控制目标采用车体 Twist（vx/vy/wz），M1 Chassis Controller 同时实现差速 vx/wz 与径向全向轮 vx/vy/wz，由场景选择。ControllerProfile 公开能力、各轴限值和 watchdog，叠加有上限的加速度、转动与碰撞响应；Encoder 来自相应轮子运动模型而非直接读取全局位姿。后续可增加独立轮电机、空转/轮滑与不同地面参数，但必须版本化模型和传感器，不能仅开放横向瞬移。
 
 `GameCore.step(actuator_inputs) -> StepEvents` 只处理已验证执行器输入，固定 dt 来自不可变 SimulationProfile；不持有网络、Renderer、Python 或墙钟。Host 将获准的 Twist/离散操作转换为 `ActuatorInputBatch`，包含目标、原始生成 tick 与失效事件；Core 内 Controller 保存最新目标并按仿真时钟检查超时、执行运动映射。地图只在场景构建/明确规则事件时改变。Physics Adapter 封装 Rapier2D 或备选 Box2D，支持静态几何、接触、射线、shape cast 和必要的连续碰撞。弹丸速度高时须使用 swept test/CCD，定义同 tick 多碰撞的稳定排序和反弹上限，不能仅依靠离散位置重叠。
 
@@ -20,7 +20,7 @@
 | Encoder / IMU | 30 Hz | 每 2 tick，易对齐测试与模块 |
 | Radar | 5 Hz | 每 12 tick，独立含噪/延迟模型 |
 | Odometry / Control | 10 Hz | 每 6 tick，默认 deadline 为 6 tick |
-| View Snapshot | 10–20 Hz | 固定 profile，先测消息开销 |
+| View Snapshot | 30 Hz（当前 profile） | 与 Physics/Render 独立配置，授权裁剪后发送 |
 | Render | 浏览器可用刷新率，目标 60 FPS | 插值授权样本，不推进物理 |
 
 首发频率必须能用整数 tick 表示；不支持的频率在配置时拒绝，不静默四舍五入。未来需要非整数比率再引入有理数调度器。周期相位从模块的 `origin_tick` 计算，热部署不用旧 run 起点计算首次 dt；见 05。`simulation_time_ns = floor(tick × 10⁹ / physics_hz)`，时间差计算保留 tick 的精确比率，不能累计 16,666,666 ns 产生漂移。
@@ -126,3 +126,7 @@ Authority 的有界私有记录保留 tick、执行器实际提交、真实位�
 ## M1b 子步增量
 
 每个主 tick 先执行当前门的幂等发射请求（先采样炮口速度再施加后坐），每个物理子步重算底盘/炮台伺服后推进 Rapier。弹丸按子步首尾车体轨迹作连续查询，稳定顺序处理最早事件，受击冲量集中到子步末，再计入 IMU 真实速度差。传感器在 S_n 的 30 Hz 边界采样；Runtime 在 10 Hz 激活、延迟 6 tick 提交。weapon_state 在采样间保持上一样本，不能把轮询频率当作新物理事件。私有 Replay 新增完整 actuators（底盘、炮台、单发和撤销），仅重放底盘不足以复现 M1b。近似、寿命/冷却边界及验证见 [14](14_WEAPONS_DESIGN.md)。
+
+## 显示时间层
+
+当前 `web/rendering.js` 不推进世界；SceneTimeline 按授权快照时间与选中位姿/关节实际采样时间插值，独立 RAF 驱动绘制，相机只跟随显示 x/y。时延、丢帧/跳变/失源与模型配置见 [15](15_RENDERING_DESIGN.md)。提高视图频率不改变传感器或 Python 算法频率；重复旧估计不能制造新估计样本。

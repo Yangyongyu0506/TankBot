@@ -1,5 +1,5 @@
 {
-  "config_version": "1.1",
+  "config_version": "1.3",
   "confirmation_status": "confirmed",
   "body": {
     "length_m": 0.8,
@@ -49,10 +49,28 @@
   "wheels": {
     "radius_m": 0.1,
     "differential_track_m": 0.5,
-    "mecanum_half_length_m": 0.3,
-    "mecanum_half_width_m": 0.25,
-    "roller_angle_deg": 45.0,
-    "arrangement": "X"
+    "omnidirectional": {
+      "geometry_version": "radial_omni@1",
+      "center_radius_m": 0.25,
+      "wheels": [
+        {
+          "name": "front_left",
+          "azimuth_deg": 45.0
+        },
+        {
+          "name": "front_right",
+          "azimuth_deg": 315.0
+        },
+        {
+          "name": "rear_left",
+          "azimuth_deg": 135.0
+        },
+        {
+          "name": "rear_right",
+          "azimuth_deg": 225.0
+        }
+      ]
+    }
   },
   "sensors": {
     "imu_mount": "center_of_mass",
@@ -174,9 +192,9 @@
   },
   "view": {
     "pose_source_id": "odometry",
-    "snapshot_hz": 10,
+    "snapshot_hz": 30,
     "max_visual_trail": 300,
-    "poll_ms": 100,
+    "poll_ms": 33,
     "keyboard_refresh_ms": 100,
     "keyboard_linear_mps": 1.0,
     "keyboard_yaw_radps": 1.0,
@@ -375,5 +393,130 @@
     "camera_source": "selected_pose_or_manual",
     "pose_fresh_ticks": 12,
     "pose_hide_after_ticks": 60
+  },
+  "rendering": {
+    "viewport_width_m": 12.0,
+    "grid_spacing_m": 1.0,
+    "camera_origin_m": [
+      0.0,
+      0.0
+    ],
+    "interpolation_delay_ms": 80,
+    "estimate_interpolation_delay_ms": 220,
+    "history_ms": 2000,
+    "stats_interval_ms": 1000,
+    "barrel_width_m": 0.035,
+    "chassis_models": {
+      "differential": {
+        "model_id": "tracked-differential-v1",
+        "kind": "tracked",
+        "hull": {
+          "length_m": 0.72,
+          "width_m": 0.4,
+          "radius_m": 0.065
+        },
+        "track": {
+          "length_m": 0.8,
+          "width_m": 0.12,
+          "center_y_m": 0.24,
+          "radius_m": 0.045,
+          "tread_count": 12
+        },
+        "panel": {
+          "length_m": 0.5,
+          "width_m": 0.055,
+          "center_y_m": 0.14,
+          "radius_m": 0.015
+        },
+        "forward_marker_m": [
+          [
+            0.3,
+            0
+          ],
+          [
+            0.19,
+            0.065
+          ],
+          [
+            0.19,
+            -0.065
+          ]
+        ],
+        "turret_radius_m": 0.105,
+        "colors": {
+          "shell": "#8fe3b5",
+          "stale": "#ba9a50",
+          "panel": "#356856",
+          "rubber": "#162724",
+          "roller": "#649380",
+          "edge": "#527c69",
+          "mark": "#d7f7df",
+          "turret": "#416b50",
+          "barrel": "#f1f7c5"
+        }
+      },
+      "omnidirectional": {
+        "model_id": "radial-omni-x-v1",
+        "kind": "radial_omni",
+        "hull": {
+          "length_m": 0.34,
+          "width_m": 0.34,
+          "radius_m": 0.045
+        },
+        "deck": {
+          "length_m": 0.25,
+          "width_m": 0.25,
+          "radius_m": 0.035
+        },
+        "suspension_width_m": 0.045,
+        "wheel": {
+          "width_m": 0.08,
+          "roller_count": 7,
+          "roller_width_m": 0.012,
+          "hub_length_m": 0.035,
+          "hub_width_m": 0.025,
+          "hub_radius_m": 0.008,
+          "corner_radius_m": 0.02
+        },
+        "armor": {
+          "front_center_x_m": 0.18,
+          "front_length_m": 0.06,
+          "front_width_m": 0.2,
+          "side_center_y_m": 0.18,
+          "side_length_m": 0.2,
+          "side_width_m": 0.06,
+          "radius_m": 0.015
+        },
+        "forward_marker_m": [
+          [
+            0.16,
+            0
+          ],
+          [
+            0.09,
+            0.04
+          ],
+          [
+            0.09,
+            -0.04
+          ]
+        ],
+        "turret_radius_m": 0.1,
+        "colors": {
+          "shell": "#65baf0",
+          "stale": "#ba9a50",
+          "frame": "#426176",
+          "deck": "#b7cbd2",
+          "rubber": "#14242e",
+          "roller": "#8aa3ae",
+          "hub": "#d9edf3",
+          "edge": "#355568",
+          "mark": "#e1f6ff",
+          "turret": "#337ba6",
+          "barrel": "#d6eeff"
+        },
+        "suspension_inner_ratio": 0.55
+      }
+    }
   }
 }
