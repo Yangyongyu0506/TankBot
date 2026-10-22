@@ -7,7 +7,7 @@ ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评
 | 编号 | 决策 | Status |
 | --- | --- | --- |
 | [0001](0001-architecture-principles.md) | 纯核心、边界与跨平台原则 | Accepted |
-| [0002](0002-core-language-and-physics.md) | 优先验证 Rust/Rapier，保留 C++/Box2D | Proposed |
+| [0002](0002-core-language-and-physics.md) | 采用经本机原生/浏览器验证的 Rust/Rapier | Accepted |
 | [0003](0003-web-frontend.md) | TypeScript、Phaser、CodeMirror 6、可选 Vim | Proposed |
 | [0004](0004-json-protocol.md) | JSON、类型化 Envelope 与版本规则 | Accepted |
 | [0005](0005-transport-abstraction.md) | 与 Transport 无关的语义与校验 | Accepted |
@@ -25,9 +25,10 @@ ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评
 | [0017](0017-confirmed-weapons-loop.md) | 用户确认的武器物理、幂等单发与授权练习视图 | Accepted |
 | [0018](0018-authorized-rendering-timeline.md) | 授权数据时间插值、平移跟随相机与独立外观 | Accepted |
 | [0019](0019-fourfold-omni-wheel-layout.md) | 四轮 90° 旋转对称固定全向轮与统一运动学 | Accepted |
+| [0020](0020-shared-browser-authority.md) | 浏览器复用 Authority、双 origin 与独立玩家 Worker | Accepted |
 
 ## 变更流程与完成条件
 
 新决策使用递增四位编号和英文描述文件名；记录 Context、Decision、Alternatives、Consequences、Status，并给验证或接受条件。修改核心权威、信息边界、调度或公共接口前先定位相关 ADR。重大变更新增替代 ADR，并同步链接、领域规范、Schema、夹具和测试计划；不得只把旧决定悄悄改成另一种含义。
 
-本轮接受来自明确需求的边界与管理原则，候选技术因尚无构建/安全/性能证据保持 Proposed。后续将 Proposed 变成 Accepted 必须引用实验报告、目标平台和限制，不能仅凭“文档已写好”。开放项统一追踪于 [12](../12_VALIDATION_AND_OPEN_QUESTIONS.md)。
+当前接受边界原则和已有证据的 Rust/Rapier 与本地浏览器适配；前端编辑器和完整平台安全组合保持 Proposed。后续将 Proposed 变成 Accepted 必须引用实验报告、目标平台和限制，不能仅凭“文档已写好”。开放项统一追踪于 [12](../12_VALIDATION_AND_OPEN_QUESTIONS.md)。

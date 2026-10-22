@@ -6,7 +6,7 @@ from .authority import Authority, load_config, ROOT
 
 def main():
     parser = argparse.ArgumentParser(description="TankBot M1 trusted-local prototype")
-    parser.add_argument("mode", choices=("serve", "headless", "probe"))
+    parser.add_argument("mode", choices=("serve", "browser", "headless", "probe"))
     parser.add_argument("--config", type=Path, default=ROOT / "config/m1.json")
     parser.add_argument("--chassis", choices=("differential", "omnidirectional"))
     parser.add_argument("--core-binary", type=Path)
@@ -14,6 +14,8 @@ def main():
     parser.add_argument("--ticks", type=int)
     parser.add_argument("--view", choices=("estimated", "weapons-practice"))
     parser.add_argument("--robot-demo", action="store_true", help="Run the separate SDK turret/fire example")
+    parser.add_argument("--fault", choices=("none","infinite_loop","exception","bad_covariance","no_output"), help="Local failure probe")
+    parser.add_argument("--browser-qa", action="store_true", help="Run explicit M2 browser security/fixture probes")
     args = parser.parse_args()
     config = load_config(args.config)
     if args.chassis:
@@ -26,6 +28,17 @@ def main():
         config["control_sources"].update(turret="robot", weapon="robot")
         config["module"]["entry_point"] = "weapon_demo:WeaponDemo"
         config["module"]["weapon_demo"]["enabled"] = True
+    if args.fault:
+        config["module"]["fault"] = args.fault
+    if args.browser_qa:
+        config["browser"]["probe_enabled"] = True
+    if args.mode == "browser":
+        from .browser_server import BrowserServer
+        try:
+            BrowserServer(config, args.workspace).serve()
+        except KeyboardInterrupt:
+            pass
+        return
     if args.mode == "probe":
         from .authority import CoreAdapter
         core = CoreAdapter(config, config["scene"]["default_chassis"], args.core_binary)

@@ -1,0 +1,70 @@
+{
+  "date": "2026-10-22",
+  "os": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+  "python": "3.14.4",
+  "cpu": "AMD Ryzen 9 8945HX with Radeon Graphics",
+  "native_binary_sha256": "a0e95d3e97d9ddb065caa8d9d7722b6fd83913d9464b8891ea7a72a05238a1a7",
+  "cargo_lock_sha256": "90d0dfbca67c0a995188a703824c35b9a749da0c8d5959e20e6cf98cbc5dc4a5",
+  "config_sha256": "b5fe0a45468bc7220ead69a8170e9faa1a27ee02e3f6b3ddf7e62763df946bb0",
+  "scene": {
+    "dynamic_bodies": 2,
+    "static_walls": 5
+  },
+  "runs": [
+    {
+      "chassis": "differential",
+      "ticks": 600,
+      "cold_start_ms": 35.774612000750494,
+      "host_tick_including_ipc_and_validation": {
+        "p50_ms": 3.2092784995256807,
+        "p95_ms": 8.524831999238813,
+        "max_ms": 9.453302998736035
+      },
+      "worker_round_trip": {
+        "p50_ms": 1.7845155007307767,
+        "p95_ms": 1.8581289987196214,
+        "max_ms": 2.0421600002009654
+      },
+      "max_view_bytes": 2511,
+      "sensor_sampling_ticks": 300,
+      "pose_commits": 98,
+      "rejections": [],
+      "max_estimate_position_error_m": 0.001045561087286373,
+      "same_build_replay_exact": true,
+      "truth_digest": "7258b024a456a41f4043ae281a6dbb0973923705c1e8a36aa0b0ccc2c4240c19"
+    },
+    {
+      "chassis": "omnidirectional",
+      "ticks": 600,
+      "cold_start_ms": 35.330561999217025,
+      "host_tick_including_ipc_and_validation": {
+        "p50_ms": 3.113106999080628,
+        "p95_ms": 7.579740000437596,
+        "max_ms": 9.5257289995061
+      },
+      "worker_round_trip": {
+        "p50_ms": 1.80529349927383,
+        "p95_ms": 2.0825289993808838,
+        "max_ms": 2.759291999609559
+      },
+      "max_view_bytes": 2666,
+      "sensor_sampling_ticks": 300,
+      "pose_commits": 98,
+      "rejections": [],
+      "max_estimate_position_error_m": 0.01126389984181289,
+      "same_build_replay_exact": true,
+      "truth_digest": "a575ad718db4ed3eb831eb1df4c4976464984977a41c773deb23f03f3f28fa48"
+    }
+  ],
+  "wasm_probe": {
+    "wasm_bytes": 62656220,
+    "final_x_m": 1.5000130521385737,
+    "shots_fired": 34,
+    "relative_angle_rad": 19.32608917396584,
+    "omni_first_wheel_radps": -3.5355339059327373,
+    "cold_instantiate_and_run_ms": 6540.198127000622,
+    "sha256": "44377847b0acb1aeb4180a13be5a2e8457d0d0f53b9bd0428f9079485ef8bbca"
+  },
+  "native_probe_x_m": 1.5000130521385737,
+  "native_wasm_probe_equal": true
+}

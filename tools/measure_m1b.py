@@ -64,7 +64,7 @@ def main():
             'wall_toi_absolute_error_s':toi_error,'wall_reflection_speed_absolute_error_mps':speed_error,
             'impact_gate_max_delay_s':config['solver']['dt'],'native_weapon_probe':native,'wasm_probe':wasm,
             'native_wasm_weapon_probe_equal':equal,'runs':[measure(config,n) for n in config['chassis']]}
-    path=ROOT/'docs/reports/m1b-baseline.json';path.write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+    path=ROOT/'docs/reports/m1b-current-profile.json';path.write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
     print(path.relative_to(ROOT))
 
 

@@ -1,4 +1,5 @@
 import {SceneTimeline, FollowCamera, drawChassis, drawTurret} from "/rendering.js";
+import {connectBrowser} from "/browser-client.js";
 
 const $ = id => document.getElementById(id);
 const canvas = $("arena"), ctx = canvas.getContext("2d");
@@ -6,6 +7,7 @@ let profile, snapshot, timeline, camera, trail = [], keys = new Set(), online = 
 let frames = 0, statsSince = 0, renderFps = 0;
 let controlBusy = false;
 let controlQueued = false;
+let browser;
 const point = (x, y) => camera.project(x, y, canvas.width, canvas.height, profile.rendering.viewport_width_m);
 
 async function command() {
@@ -24,6 +26,7 @@ async function command() {
   finally { controlBusy=false;if(controlQueued){controlQueued=false;command();} }
 }
 function post(path,value){
+  if(browser)return browser.post(path,value);
   return fetch(path,{method:"POST",headers:{"Content-Type":"application/json","X-TankBot-Control":profile.control_token},body:JSON.stringify(value)});
 }
 async function fire(){
@@ -53,11 +56,18 @@ document.querySelectorAll("button[data-key]").forEach(button=>{
 async function poll() {
   const started = performance.now();
   try {
-    const r = await fetch("/api/view"); if (!r.ok) throw Error("view");
-    const message = await r.json();
+    const message = browser ? await browser.view() : await (async()=>{const r=await fetch("/api/view");if(!r.ok)throw Error("view");return r.json();})();
     if (message.run_id !== profile.run_id) { location.reload(); return; }
     online = true;
-    $("connection").textContent = "● 本地仿真在线";
+    $("connection").textContent = browser ? "● 浏览器 WASM / Pyodide 在线" : "● 本地仿真在线";
+    if(browser){
+      const health=browser.health();
+      canvas.dataset.runtimeTick=health?.tick??"";
+      canvas.dataset.runtimeFault=health?.runtime_fault??"";
+      canvas.dataset.poseCommits=health?.pose_commits??0;
+      canvas.dataset.runtimeHealth=JSON.stringify(health??{});
+      if(health?.runtime_fault)$("connection").textContent="● 仿真在线 · Python 已停止，可刷新重新开始";
+    }
     const result = timeline.push(message, performance.now());
     if (result.accepted) {
       if (result.reset || result.poseJump) trail = [];
@@ -171,7 +181,12 @@ function draw(now) {
 }
 
 try {
-  const response = await fetch("/api/profile"); if (!response.ok) throw Error("profile"); profile = await response.json();
+  if(new URLSearchParams(location.search).get("runtime")==="browser"){
+    $("connection").textContent="正在加载浏览器运行环境…";
+    browser=await connectBrowser();profile=browser.profile;
+  }else{
+    const response = await fetch("/api/profile"); if (!response.ok) throw Error("profile"); profile = await response.json();
+  }
   timeline = new SceneTimeline(profile.physics_hz, profile.rendering, profile.view.interpolation_jump_m);
   camera = new FollowCamera(profile.rendering.camera_origin_m);
   statsSince = performance.now();
@@ -189,5 +204,5 @@ try {
   $("weapon-control").textContent = `炮台：${profile.control_sources.turret} · 武器：${profile.control_sources.weapon} · J/L 旋转，空格单发`;
   poll();
   setInterval(() => { if (keys.size) command(); }, profile.view.keyboard_refresh_ms);
-} catch { $("connection").textContent = "无法连接本地 Host"; }
+} catch(error) { $("connection").textContent = `启动失败：${error.message}`; }
 requestAnimationFrame(draw);

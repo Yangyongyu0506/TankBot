@@ -6,7 +6,7 @@
 
 ## 物理模型与核心接口
 
-目标 `World` 设计保存静态墙体/碰撞几何、坦克刚体状态，并在后续增加炮塔朝向、弹丸、生命与规则状态；M1 只实现静态地图/车体。公共控制目标采用车体 Twist（vx/vy/wz），M1 Chassis Controller 同时实现差速 vx/wz 与径向全向轮 vx/vy/wz，由场景选择。ControllerProfile 公开能力、各轴限值和 watchdog，叠加有上限的加速度、转动与碰撞响应；Encoder 来自相应轮子运动模型而非直接读取全局位姿。后续可增加独立轮电机、空转/轮滑与不同地面参数，但必须版本化模型和传感器，不能仅开放横向瞬移。
+目标 `World` 设计保存静态墙体/碰撞几何、坦克刚体状态，并在后续增加炮塔朝向、弹丸、生命与规则状态；M1 原范围为静态地图/车体；M1b 已增加双刚体炮台、弹丸和命中记录，生命/完整规则仍未实现。公共控制目标采用车体 Twist（vx/vy/wz），M1 Chassis Controller 同时实现差速 vx/wz 与径向全向轮 vx/vy/wz，由场景选择。ControllerProfile 公开能力、各轴限值和 watchdog，叠加有上限的加速度、转动与碰撞响应；Encoder 来自相应轮子运动模型而非直接读取全局位姿。后续可增加独立轮电机、空转/轮滑与不同地面参数，但必须版本化模型和传感器，不能仅开放横向瞬移。
 
 `GameCore.step(actuator_inputs) -> StepEvents` 只处理已验证执行器输入，固定 dt 来自不可变 SimulationProfile；不持有网络、Renderer、Python 或墙钟。Host 将获准的 Twist/离散操作转换为 `ActuatorInputBatch`，包含目标、原始生成 tick 与失效事件；Core 内 Controller 保存最新目标并按仿真时钟检查超时、执行运动映射。地图只在场景构建/明确规则事件时改变。Physics Adapter 封装 Rapier2D 或备选 Box2D，支持静态几何、接触、射线、shape cast 和必要的连续碰撞。弹丸速度高时须使用 swept test/CCD，定义同 tick 多碰撞的稳定排序和反弹上限，不能仅依靠离散位置重叠。
 
@@ -121,7 +121,7 @@ seek 后新建 `run_id` 并清空消息/插值历史。初期从初态重新执�
 
 M1 编码器采用理想轮速反算与积分，IMU 对质心世界速度变化作旋转后窗口平均，含碰撞冲量；公式见 13。差速横滑是不可由左右轮编码器恢复的误差来源，不能回读真实位姿消除漂移。
 
-Authority 的有界私有记录保留 tick、执行器实际提交、真实位姿/速度；测试将实际提交的目标重新注入全新同构建 Core，逐 tick 比较。环形记录达到配置上限后丢弃旧历史，当前没有完整持久化/seek/checkpoint 产品接口；不要把短程验证说成完整 Replay 系统。报告同时区分实时不等待和受控测试提交门的有界等待。炮台、弹道、后坐力仅登记设计参数，M1 世界未加载它们。
+Authority 的有界私有记录保留 tick、执行器实际提交、真实位姿/速度；测试将实际提交的目标重新注入全新同构建 Core，逐 tick 比较。环形记录达到配置上限后丢弃旧历史，当前没有完整持久化/seek/checkpoint 产品接口；不要把短程验证说成完整 Replay 系统。报告同时区分实时不等待和受控测试提交门的有界等待。M1 原阶段没有武器；M1b 已按下节加载炮台、弹道与冲量，并扩展执行器录制。
 
 ## M1b 子步增量
 
@@ -130,3 +130,7 @@ Authority 的有界私有记录保留 tick、执行器实际提交、真实位�
 ## 显示时间层
 
 当前 `web/rendering.js` 不推进世界；SceneTimeline 按授权快照时间与选中位姿/关节实际采样时间插值，独立 RAF 驱动绘制，相机只跟随显示 x/y。时延、丢帧/跳变/失源与模型配置见 [15](15_RENDERING_DESIGN.md)。提高视图频率不改变传感器或 Python 算法频率；重复旧估计不能制造新估计样本。
+
+## M2 浏览器时间适配
+
+浏览器运行同一 Authority.advance()，固定提交不因 MessagePort 到达提前。Core Worker timer 与 rAF 独立；每个边界让出事件循环但不等待 Python。外部 iframe watchdog 终止超预算玩家 Worker，缺/晚响应在原门丢弃；tab 后台降频或设备过载影响墙钟进度，不能改 simulation_time_ns 公式或伪造补偿 tick。平台差异与测量见 [16](16_BROWSER_RUNTIME.md)。

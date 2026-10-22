@@ -1,6 +1,9 @@
 //! Pure fixed-step authority. Private snapshots belong only to the trusted host.
 mod cannon;
+pub mod session;
 mod turret;
+#[cfg(target_arch = "wasm32")]
+mod wasm;
 mod wheels;
 use cannon::CannonSystem;
 pub use cannon::{FiringConfig, Numerics, ProjectileConfig, ShotRequest, TargetConfig};

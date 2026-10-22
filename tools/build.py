@@ -11,6 +11,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--wasm", action="store_true", help="Build the WASM library probe")
     parser.add_argument("--offline", action="store_true")
+    parser.add_argument("--release", action="store_true")
     parser.add_argument("--format-check", action="store_true")
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
@@ -25,6 +26,8 @@ def main():
         env["CARGO_HOME"] = str(root / ".tools/cargo")
     command = [cargo, "fmt", "--all", "--check"] if args.format_check else [cargo, "build", "--locked"]
     if not args.format_check:
+        if args.release:
+            command.append("--release")
         if args.offline:
             command.append("--offline")
         if args.wasm:

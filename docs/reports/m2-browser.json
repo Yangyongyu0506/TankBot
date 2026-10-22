@@ -1,0 +1,350 @@
+{
+  "browser": {
+    "browserName": "firefox",
+    "browserVersion": "157.0.1",
+    "platformName": "linux",
+    "moz:buildID": "20261006030843",
+    "moz:headless": true
+  },
+  "date": "2026-10-22",
+  "health": {
+    "tick": 600,
+    "run_id": "f68b786229ab49cf9494aff8dd8ad015",
+    "runtime_fault": null,
+    "profile": {
+      "chassis": "omnidirectional",
+      "view_mode": "estimated",
+      "entry_point": "localization.odometry:Odometry",
+      "fault": "none",
+      "control_sources": {
+        "chassis": "keyboard",
+        "turret": "keyboard",
+        "weapon": "keyboard"
+      }
+    },
+    "effective_config_sha256": "1cb18c24ee4ba2b627a4750c52d7071209b18c1fba79f5b862b02d92ea5935df",
+    "pose_commits": 98,
+    "rejections": [],
+    "tick_cost": {
+      "count": 600,
+      "p50_ms": 5.999999999999783,
+      "p95_ms": 16.000000000000014,
+      "max_ms": 19.000000000000128
+    },
+    "batch_cost": {
+      "count": 99,
+      "p50_ms": 1,
+      "p95_ms": 2,
+      "max_ms": 2
+    },
+    "max_view_bytes": 2660,
+    "fixed_commit_gates": true,
+    "shots_fired": 0,
+    "worker_startup_ms": 2390,
+    "security": {
+      "no_core_handle": true,
+      "no_authority_files": true,
+      "no_private_config": true,
+      "no_host_files": true,
+      "ui_network_blocked": true,
+      "external_network_blocked": true,
+      "nested_worker_blocked": true,
+      "fork_unavailable": true
+    },
+    "player_memory_bytes": 20971520,
+    "fixtures": [
+      {
+        "id": "cmd-vel-message",
+        "verdict": "accepted",
+        "expected": "accepted"
+      },
+      {
+        "id": "cmd-vel-omni-message",
+        "verdict": "accepted",
+        "expected": "accepted"
+      },
+      {
+        "id": "encoder-message",
+        "verdict": "accepted",
+        "expected": "accepted"
+      },
+      {
+        "id": "error-event",
+        "verdict": "accepted",
+        "expected": "accepted"
+      },
+      {
+        "id": "fire-command",
+        "verdict": "accepted",
+        "expected": "accepted"
+      },
+      {
+        "id": "imu-message",
+        "verdict": "accepted",
+        "expected": "accepted"
+      },
+      {
+        "id": "joint-state-message",
+        "verdict": "accepted",
+        "expected": "accepted"
+      },
+      {
+        "id": "negotiate-request",
+        "verdict": "accepted",
+        "expected": "accepted"
+      },
+      {
+        "id": "negotiate-response",
+        "verdict": "accepted",
+        "expected": "accepted"
+      },
+      {
+        "id": "pose-message",
+        "verdict": "accepted",
+        "expected": "accepted"
+      },
+      {
+        "id": "radar-message",
+        "verdict": "accepted",
+        "expected": "accepted"
+      },
+      {
+        "id": "runtime-step-request",
+        "verdict": "accepted",
+        "expected": "accepted"
+      },
+      {
+        "id": "runtime-step-result",
+        "verdict": "accepted",
+        "expected": "accepted"
+      },
+      {
+        "id": "turret-velocity-message",
+        "verdict": "accepted",
+        "expected": "accepted"
+      },
+      {
+        "id": "view-snapshot",
+        "verdict": "accepted",
+        "expected": "accepted"
+      },
+      {
+        "id": "weapon-state-message",
+        "verdict": "accepted",
+        "expected": "accepted"
+      },
+      {
+        "id": "weapons-practice-view",
+        "verdict": "accepted",
+        "expected": "accepted"
+      },
+      {
+        "id": "unknown-field",
+        "verdict": "INVALID_SCHEMA",
+        "expected": "INVALID_SCHEMA"
+      },
+      {
+        "id": "unsafe-integer",
+        "verdict": "INVALID_SCHEMA",
+        "expected": "INVALID_SCHEMA"
+      },
+      {
+        "id": "bad-covariance-shape",
+        "verdict": "INVALID_SCHEMA",
+        "expected": "INVALID_SCHEMA"
+      },
+      {
+        "id": "invalid-yaw",
+        "verdict": "INVALID_SCHEMA",
+        "expected": "INVALID_SCHEMA"
+      },
+      {
+        "id": "velocity-topic-with-request-id",
+        "verdict": "INVALID_SCHEMA",
+        "expected": "INVALID_SCHEMA"
+      },
+      {
+        "id": "payload-kind-mismatch",
+        "verdict": "INVALID_SCHEMA",
+        "expected": "INVALID_SCHEMA"
+      },
+      {
+        "id": "invalid-extension-name",
+        "verdict": "INVALID_SCHEMA",
+        "expected": "INVALID_SCHEMA"
+      },
+      {
+        "id": "hidden-object-in-view",
+        "verdict": "INVALID_SCHEMA",
+        "expected": "INVALID_SCHEMA"
+      },
+      {
+        "id": "asymmetric-covariance",
+        "verdict": "INVALID_COVARIANCE",
+        "expected": "INVALID_COVARIANCE"
+      },
+      {
+        "id": "indefinite-covariance",
+        "verdict": "INVALID_COVARIANCE",
+        "expected": "INVALID_COVARIANCE"
+      },
+      {
+        "id": "wrong-time-formula",
+        "verdict": "INVALID_TIMESTAMP",
+        "expected": "INVALID_TIMESTAMP"
+      },
+      {
+        "id": "wrong-run",
+        "verdict": "WRONG_RUN",
+        "expected": "WRONG_RUN"
+      },
+      {
+        "id": "ungranted-publisher",
+        "verdict": "UNAUTHORIZED",
+        "expected": "UNAUTHORIZED"
+      },
+      {
+        "id": "forbidden-frame",
+        "verdict": "INVALID_FRAME",
+        "expected": "INVALID_FRAME"
+      },
+      {
+        "id": "legacy-start-time-field",
+        "verdict": "INVALID_SCHEMA",
+        "expected": "INVALID_SCHEMA"
+      },
+      {
+        "id": "legacy-end-time-field",
+        "verdict": "INVALID_SCHEMA",
+        "expected": "INVALID_SCHEMA"
+      },
+      {
+        "id": "twist-needs-vector",
+        "verdict": "INVALID_SCHEMA",
+        "expected": "INVALID_SCHEMA"
+      },
+      {
+        "id": "twist-needs-lateral-component",
+        "verdict": "INVALID_SCHEMA",
+        "expected": "INVALID_SCHEMA"
+      },
+      {
+        "id": "nonplanar-linear-axis",
+        "verdict": "INVALID_SCHEMA",
+        "expected": "INVALID_SCHEMA"
+      },
+      {
+        "id": "nonplanar-angular-axis",
+        "verdict": "INVALID_SCHEMA",
+        "expected": "INVALID_SCHEMA"
+      },
+      {
+        "id": "velocity-must-be-topic",
+        "verdict": "INVALID_SCHEMA",
+        "expected": "INVALID_SCHEMA"
+      },
+      {
+        "id": "velocity-frame-must-be-body",
+        "verdict": "INVALID_SCHEMA",
+        "expected": "INVALID_SCHEMA"
+      },
+      {
+        "id": "differential-cannot-strafe",
+        "verdict": "UNSUPPORTED_MOTION",
+        "expected": "UNSUPPORTED_MOTION"
+      },
+      {
+        "id": "velocity-expired-at-controller",
+        "verdict": "STALE_DATA",
+        "expected": "STALE_DATA"
+      },
+      {
+        "id": "future-velocity-stamp",
+        "verdict": "INVALID_TIMESTAMP",
+        "expected": "INVALID_TIMESTAMP"
+      },
+      {
+        "id": "old-target-cannot-replace-newer",
+        "verdict": "OUT_OF_ORDER",
+        "expected": "OUT_OF_ORDER"
+      },
+      {
+        "id": "fire-needs-request-id",
+        "verdict": "INVALID_SCHEMA",
+        "expected": "INVALID_SCHEMA"
+      },
+      {
+        "id": "fire-rejects-payload-fields",
+        "verdict": "INVALID_SCHEMA",
+        "expected": "INVALID_SCHEMA"
+      },
+      {
+        "id": "fire-frame-is-null",
+        "verdict": "INVALID_SCHEMA",
+        "expected": "INVALID_SCHEMA"
+      },
+      {
+        "id": "turret-rejects-global-frame",
+        "verdict": "INVALID_SCHEMA",
+        "expected": "INVALID_SCHEMA"
+      },
+      {
+        "id": "weapon-feedback-no-hit-location",
+        "verdict": "INVALID_SCHEMA",
+        "expected": "INVALID_SCHEMA"
+      },
+      {
+        "id": "view-v1-does-not-admit-projectiles",
+        "verdict": "INVALID_SCHEMA",
+        "expected": "INVALID_SCHEMA"
+      }
+    ],
+    "core_call_cost": {
+      "count": 600,
+      "p50_ms": 0,
+      "p95_ms": 1,
+      "max_ms": 1
+    },
+    "core_memory_bytes": 1310720,
+    "authority_memory_bytes": 25165824
+  },
+  "expect_fault": false,
+  "display": {
+    "frames": 749,
+    "gap_p50_ms": 17.0600000000004,
+    "gap_p95_ms": 17.100000000000364,
+    "gap_max_ms": 17.1200000000008
+  },
+  "ui": {
+    "model": "radial-omni-x-v1",
+    "x": "1.499",
+    "connection": "● 浏览器 WASM / Pyodide 在线"
+  },
+  "os": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+  "artifacts": {
+    "config/m1.json": {
+      "bytes": 12444,
+      "sha256": "b5fe0a45468bc7220ead69a8170e9faa1a27ee02e3f6b3ddf7e62763df946bb0"
+    },
+    "config/browser-assets.lock.json": {
+      "bytes": 2247,
+      "sha256": "6562871bd0269aee0a99b441a182e87236387828bc052f50bb1aa359713436b7"
+    },
+    "Cargo.lock": {
+      "bytes": 14286,
+      "sha256": "90d0dfbca67c0a995188a703824c35b9a749da0c8d5959e20e6cf98cbc5dc4a5"
+    },
+    "target/wasm32-unknown-unknown/release/tankbot_core.wasm": {
+      "bytes": 2160057,
+      "sha256": "ba1fff00b2c8044bd05143684f76fa24aac444859ec7f3c5b679b2cb90e13d1c"
+    },
+    "build/browser/authority-bundle.json": {
+      "bytes": 224113,
+      "sha256": "e9a746b73ef34852e516309fda990c8d0fa4f0cd27a4e0537cd58bd1e5d0e8b4"
+    },
+    "build/browser/player-bundle.json": {
+      "bytes": 11684,
+      "sha256": "bf097b3beb9ce4ef2463f418f32b39b309a45e3d0163956f8b51a30b596a8b7c"
+    }
+  }
+}

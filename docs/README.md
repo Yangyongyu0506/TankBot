@@ -2,7 +2,7 @@
 
 ## 阅读方式与规范状态
 
-文档基线：`m1b-0.1`，更新日期：2026-10-22。已完成 M1/M1b 本机闭环：实现与限制见 [运行入口](../README.md)、[M1b 验证报告](reports/M1B_VALIDATION.md)；物理模型由用户逐项确认，见 [13](13_PHYSICS_MODEL_DECISIONS.md)。其余功能仍为后续设计，不能把目录完整当作开发完成。
+文档基线：`m2-0.1`，更新日期：2026-10-22。已完成 M1/M1b 收尾及 M2 本机浏览器/Transport 验收：实现与限制见 [运行入口](../README.md)、[M1b 验证报告](reports/M1B_VALIDATION.md)；物理模型由用户逐项确认，见 [13](13_PHYSICS_MODEL_DECISIONS.md)。其余功能仍为后续设计，不能把目录完整当作开发完成。
 
 “必须／不得”为设计约束；“建议／拟采用”为待验证方案。Accepted ADR 表示接受设计原则或接口方向，不表示实现或平台验证完成；Proposed 技术不得当作既成依赖。协议 `1.0` 是**未发布草案**，首次发布前由兼容性审查冻结；发布后执行版本规则。
 
@@ -27,6 +27,9 @@
 | [13 物理确认记录](13_PHYSICS_MODEL_DECISIONS.md) | 用户逐项确认、伺服/轮组/IMU 方程、历史武器模型与 M1b 修订 |
 | [14 武器设计与确认](14_WEAPONS_DESIGN.md) | M1b 范围、控制/开火接口、共同确认、数值近似及验收 |
 | [15 渲染设计](15_RENDERING_DESIGN.md) | 多频率时间插值、固定世界朝向相机、独立底盘外观 |
+| [16 浏览器 Runtime](16_BROWSER_RUNTIME.md) | 共享 Authority、私有 WASM ABI、独立 origin、加载/截止与平台限制 |
+| [M1 收尾复核](reports/M1_CLOSEOUT.md) | 路线图逐项检查、当前配置与历史证据范围 |
+| [M2 验收](reports/M2_VALIDATION.md) | 真实浏览器双 Worker、故障、49 个夹具与平台矩阵 |
 | [全向轮验收](reports/OMNI_VALIDATION.md) | 90° 固定全向轮几何、正反解、闭环与浏览器证据 |
 | [渲染验收](reports/RENDERING_VALIDATION.md) | 实际显示帧、相机与两底盘对比 |
 | [M1 验证报告](reports/M1_VALIDATION.md) | 当前实现范围、实际命令、证据与平台限制 |

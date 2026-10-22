@@ -1,79 +1,22 @@
-"""External trusted-local CPython worker; this process is NOT an OS security sandbox."""
-import contextlib
-import importlib
+"""Trusted-local CPython transport entry point; NOT an OS security sandbox."""
 import sys
 from pathlib import Path
-
 ROOT = Path(__file__).resolve().parents[1]
-sys.path[:0] = [str(ROOT / "sdk/python"), str(ROOT / "protocol")]
-from dataclasses import asdict
-from tankbot import Module, ModuleContext, Inputs, Sample, ImuData, JointState, WeaponState, FireCommand
+sys.path[:0] = [str(ROOT / "runtime"), str(ROOT / "sdk/python"), str(ROOT / "protocol")]
+from module_runner import ModuleRunner
 from tankbot_protocol.wire import receive, send
-from tankbot_protocol.validation import envelope
 
 
 def main():
     limit = int(sys.argv[1])
     source, sink = sys.stdin.buffer, sys.stdout.buffer
-    init = receive(source, limit)
-    # No World, private profile, map seed or core pipe in this initialization object.
-    sys.path.insert(0, init["workspace"])
-    config = init["config"]
-    contract = init["contract"]
-    context = ModuleContext(0, 0.0, 0, config)
-    with contextlib.redirect_stdout(sys.stderr):
-        path, name = contract["entry_point"].split(":")
-        module = getattr(importlib.import_module(path), name)()
-        if not isinstance(module, Module):
-            raise TypeError("Entry point must implement Module")
-        module.setup(context)
-        module.reset(context, "new_run")
+    runner = ModuleRunner(receive(source, limit))
     send(sink, {"ready": True}, limit)
-    sequence = 0
-    converters = {"imu@1": ImuData, "joint_state@1": lambda **p: JointState(**{k: tuple(v) for k, v in p.items()}), "weapon_state@1": WeaponState}
     try:
         while True:
-            request = receive(source, limit)
-            p = request["payload"]
-            tick = p["activation_tick"]
-            context = ModuleContext(tick, p["modules"][0]["dt_ticks"] / init["physics_hz"], p["output_commit_tick"], config)
-            samples = {}
-            for port, channel in init["input_channels"].items():
-                candidates = [m for m in p["inputs"] if m["channel"] == channel]
-                if candidates:
-                    m = max(candidates, key=lambda x: (x["simulation_tick"], x["sequence_number"]))
-                    samples[port] = Sample(converters[m["schema"]](**m["payload"]), m["simulation_tick"], m["frame_id"], m["sequence_number"])
-            outputs = []
-            try:
-                with contextlib.redirect_stdout(sys.stderr):
-                    module.update(Inputs(samples), context)
-                for port, schema, payload, frame, sample_tick in context._outputs:
-                    if port not in init["output_channels"] or contract["outputs"][port]["schema"] != schema:
-                        raise ValueError("Undeclared output port/type")
-                    outputs.append(envelope(schema, init["output_channels"][port], payload, tick=sample_tick,
-                                            hz=init["physics_hz"], run_id=init["run_id"], publisher_id=init["publisher_id"],
-                                            sequence=sequence, frame_id=frame))
-                    sequence += 1
-                for port, request_id in context._commands:
-                    if port not in init["output_channels"] or contract["outputs"][port]["schema"] != "fire_command@1":
-                        raise ValueError("Undeclared fire port")
-                    outputs.append(envelope("fire_command@1", init["output_channels"][port], asdict(FireCommand()), tick=tick,
-                                            hz=init["physics_hz"], run_id=init["run_id"], publisher_id=init["publisher_id"],
-                                            sequence=sequence, message_type="command", request_id=request_id))
-                    sequence += 1
-                status, error = "completed", None
-            except Exception:
-                outputs = []
-                status, error = "failed", "MODULE_ERROR"
-            result = {"step_id": p["step_id"], "results": [{"module_id": contract["module_id"], "status": status, "error_code": error}], "outputs": outputs}
-            response = envelope("runtime_step_result@1", "/runtime/step", result, tick=tick,
-                                hz=init["physics_hz"], run_id=init["run_id"], publisher_id="runtime",
-                                sequence=sequence, message_type="service_response", request_id=p["step_id"])
-            sequence += 1
-            send(sink, response, limit)
+            send(sink, runner.step(receive(source, limit)), limit)
     except EOFError:
-        with contextlib.redirect_stdout(sys.stderr):
-            module.teardown(context)
+        runner.close()
 
 
 if __name__ == "__main__":

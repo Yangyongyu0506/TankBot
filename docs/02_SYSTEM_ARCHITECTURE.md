@@ -71,7 +71,7 @@ flowchart TB
 
 ## 核心语言比较与建议
 
-下表是项目推断而非性能测量。两个候选都必须通过相同原型和维护成本验证。
+下表保留最初的候选比较，属于项目推断而非测量；M2 已验证并接受 Rust 路线，证据见 ADR-0002。
 
 | 维度 | Rust | C++ |
 | --- | --- | --- |
@@ -84,7 +84,7 @@ flowchart TB
 | 长期维护 | 类型与所有权增强边界；编译时间、学习曲线及生态更新有成本 | 人才与库广；模板、构建矩阵和 UB 排查有成本 |
 | 开发复杂度 | 借用与跨平台 feature 需要前期设计 | 上手取决于经验；长期内存、ABI 和并发纪律要求高 |
 
-建议优先验证 **Rust + Rapier2D**；C++/C API 的 Box2D 是备选。若小型运动学与碰撞原型足够，不为选定引擎而引入复杂 ECS。最终需比较原生/WASM 构建、炮弹高速碰撞、回放和实际 profiling，再接受 ADR-0002。
+当前采用经 M1/M2 验证的 **Rust + Rapier2D**，不同时维护 C++ 引擎。C++/C API Box2D 比较保留为历史备选；若未来遇到明确技术失败，再以同类探针评估并更新 ADR。当前不因采用物理库引入复杂 ECS。
 
 依据：Rust 最小 WASM 目标的部分 `std` API 不可用，需适配线程与文件系统（[rustc target 文档](https://doc.rust-lang.org/stable/rustc/platform-support/wasm32-unknown-unknown.html)）；C++ 可通过 [Emscripten JS 互操作](https://emscripten.org/docs/porting/connecting_cpp_and_javascript/) 接入；Rust 所有权提供无需 GC 的安全保证（[Rust Book](https://doc.rust-lang.org/book/ch04-00-understanding-ownership.html)）。物理候选依据 [Rapier 介绍](https://www.rapier.rs/docs/) 和 [Box2D FAQ](https://box2d.org/documentation/md_faq.html)。这些资料不证明 TankBot 已跨平台可用。
 
@@ -107,3 +107,7 @@ flowchart TB
 `core/` 为 Rust/Rapier2D-f64 0.36.1 固定步长库；`core_worker` 是可信私有长度前缀 IPC 适配器。Python `host/` 驱动核心、校验消息、监督外部 worker；它与 `runtime/worker.py` 是独立进程，后者只收到授权传感器、轮组标定和公开起点。SDK 不获得核心管道。`PoseSelector` 独占标准位姿 Topic，再由不接受 World 参数的 `ViewGateway` 投影。
 
 Web 页面通过 loopback HTTP Adapter 获取 profile/授权 view，提交 Twist；HTTP 不定义新的执行时间语义。该最小 Adapter 是 M1 的本机选择；WebSocket、Pyodide、桌面壳及多 Adapter 等价性留到 M2。`/api/profile` 只返回公开地图/车体外形、ControllerProfile 与 UI 配置，绝不转发完整仿真 profile。技术选择状态见 ADR-0002/0003/0013 与 M1 报告。
+
+## M2 实施映射
+
+本地浏览器的可信 Core Worker 同时运行 Rust/WASM 和 Pyodide 内的共享 Python Authority；另一无凭据 origin 的 iframe 管理独立 Pyodide Robot Worker。主线程只处理授权 View、公开 Profile 与控制请求。原生模式继续使用外部 CPython/stdio；不要求相同进程拓扑。Rust/Rapier 已按证据接受，完整前端技术与服务器隔离组合保持 Proposed。接口、启动资源公开范围与成本见 [16](16_BROWSER_RUNTIME.md) 和 [ADR-0020](adr/0020-shared-browser-authority.md)。

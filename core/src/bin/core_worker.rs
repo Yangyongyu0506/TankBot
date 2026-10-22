@@ -1,11 +1,10 @@
 //! Private stdio adapter, never connected to the player worker or browser.
-use serde_json::{Value, json};
 use std::io::{self, Read, Write};
-use tankbot_core::{Config, GameCore, TurretTarget, VelocityTarget};
+use tankbot_core::session::CoreSession;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut input = io::stdin().lock();
     let mut output = io::stdout().lock();
-    let mut core: Option<GameCore> = None;
+    let mut session = CoreSession::default();
     loop {
         let mut length = [0u8; 4];
         match input.read_exact(&mut length) {
@@ -20,70 +19,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         let mut bytes = vec![0; size];
         input.read_exact(&mut bytes)?;
-        let result = (|| -> Result<Value, String> {
-            let r: Value = serde_json::from_slice(&bytes).map_err(|e| e.to_string())?;
-            match r["op"].as_str() {
-                Some("init") => {
-                    let c: Config =
-                        serde_json::from_value(r["config"].clone()).map_err(|e| e.to_string())?;
-                    core = Some(GameCore::new(
-                        c,
-                        r["chassis"].as_str().ok_or("Missing chassis")?,
-                    )?);
-                }
-                Some("step") => {
-                    let c = core.as_mut().ok_or("Not initialized")?;
-                    if r["revoke"] == true {
-                        c.revoke_target();
-                    }
-                    if !r["target"].is_null() {
-                        let t: VelocityTarget = serde_json::from_value(r["target"].clone())
-                            .map_err(|e| e.to_string())?;
-                        c.set_target(t)?;
-                    }
-                    if r["revoke_turret"] == true {
-                        c.revoke_turret_target();
-                    }
-                    if !r["turret_target"].is_null() {
-                        let target: TurretTarget =
-                            serde_json::from_value(r["turret_target"].clone())
-                                .map_err(|e| e.to_string())?;
-                        c.set_turret_target(target)?;
-                    }
-                    if let Some(requests) = r["fire_requests"].as_array() {
-                        for request in requests {
-                            c.queue_fire(
-                                serde_json::from_value(request.clone())
-                                    .map_err(|e| e.to_string())?,
-                            )?;
-                        }
-                    }
-                    c.step()?;
-                }
-                Some("snapshot") => {}
-                Some("probe") => {
-                    return Ok(json!(tankbot_core::run_build_probe(
-                        &r["config"].to_string()
-                    )?));
-                }
-                Some("weapons_probe") => {
-                    return tankbot_core::run_weapon_probe(&r["config"].to_string());
-                }
-                Some("wheel_probe") => {
-                    return Ok(json!(tankbot_core::run_wheel_probe(
-                        &r["config"].to_string()
-                    )?));
-                }
-                _ => return Err("Unknown operation".into()),
-            }
-            serde_json::to_value(core.as_ref().ok_or("Not initialized")?.private_snapshot())
-                .map_err(|e| e.to_string())
-        })();
-        let r = match result {
-            Ok(v) => json!({"ok":true,"data":v}),
-            Err(e) => json!({"ok":false,"error":e}),
-        };
-        let raw = serde_json::to_vec(&r)?;
+        let raw = session.exchange(&bytes);
         output.write_all(&(raw.len() as u32).to_be_bytes())?;
         output.write_all(&raw)?;
         output.flush()?;

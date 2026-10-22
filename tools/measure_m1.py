@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Private evaluator report for the 600-tick M1 profile; never served to the browser."""
 import copy
+from datetime import date
 import hashlib
 import json
 import platform
@@ -62,7 +63,7 @@ def measure(config):
 
 def main():
     config = load_config(ROOT/"config/m1.json")
-    report = {"date":"2026-10-21", "os":platform.platform(), "python":platform.python_version(),
+    report = {"date":date.today().isoformat(), "os":platform.platform(), "python":platform.python_version(),
               "cpu":next((line.split(":",1)[1].strip() for line in Path('/proc/cpuinfo').read_text().splitlines() if line.startswith('model name')),platform.processor()) if sys.platform=="linux" else platform.processor(),
               "native_binary_sha256":digest(ROOT/"target/debug/core_worker"), "cargo_lock_sha256":digest(ROOT/"Cargo.lock"),
               "config_sha256":digest(ROOT/"config/m1.json"), "scene":{"dynamic_bodies":1+int(config["weapons"]["enabled"]),"static_walls":len(config["scene"]["walls"])}, "runs":[]}

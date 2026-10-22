@@ -53,3 +53,7 @@ SimulationProfile 内部版本升为 1.2，新增必填 rendering：显示缓冲
 ## 全向轮组修订
 
 当前 SimulationProfile 为 1.3，wheels.omnidirectional 显式声明 radial_omni@1、center_radius_m 和四组 name/azimuth_deg；移除旧麦轮几何字段。公开 wheel_calibration 添加共同 radius_m，结构由 wheel-calibration.schema.json 验证，90° 等距/唯一命名另由 Host/Core 验证。协议 JointState/Twist 结构、单位与权限不变，旧配置和物理回放不能忽略模型版本；参见 [ADR-0019](../adr/0019-fourfold-omni-wheel-layout.md)。
+
+## M2 配置增量
+
+内部 SimulationProfile 版本 1.4 必填 browser 段（资源 origin 端口、独立初始化预算、UI 待处理控制请求上限与显式 QA 开关）；物理/SDK/协议消息未变。旧 1.3 文件须显式迁移，工具不覆盖。49 个 Envelope 夹具已接入真实多 Adapter 及浏览器同源验证器，见 16 与 M2 报告；Manifest/event 等非协议执行能力仍未实现。

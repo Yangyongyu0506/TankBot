@@ -77,7 +77,8 @@ class CoreAdapter:
 
 
 class Authority:
-    def __init__(self, config, *, workspace=None, binary=None, controlled=False):
+    def __init__(self, config, *, workspace=None, binary=None, controlled=False,
+                 core_factory=CoreAdapter, worker_factory=Supervisor):
         if config["view_mode"]=="estimated" and (config["view_policy"]["system_pose_allowed"] or config["view_policy"]["world_effects"]):
             raise ValueError("Estimated view cannot grant truth")
         if config["view_mode"]=="weapons-practice" and (not config["view_policy"]["system_pose_allowed"] or not config["view_policy"]["world_effects"]):
@@ -95,7 +96,7 @@ class Authority:
         self.validator.structure(config["view_policy"], "view-policy.schema.json")
         self.selector = PoseSelector("system" if config["view_mode"]=="weapons-practice" else config["view"]["pose_source_id"])
         self.gateway = ViewGateway(config["view_policy"])
-        self.core = CoreAdapter(config, config["scene"]["default_chassis"], binary)
+        self.core = core_factory(config, config["scene"]["default_chassis"], binary)
         self._private = self.core.snapshot
         self._sensors = {}
         self._sampled_tick = None
@@ -147,7 +148,7 @@ class Authority:
             "contract": self.contract, "physics_hz": self.hz, "run_id": self.run_id,
             "publisher_id": self.publisher_id, "input_channels": self.input_channels, "output_channels": self.output_channels}
         try:
-            self.worker = Supervisor(config, init)
+            self.worker = worker_factory(config, init)
         except BaseException:
             self.core.close()
             raise

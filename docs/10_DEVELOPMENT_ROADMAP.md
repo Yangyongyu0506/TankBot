@@ -2,7 +2,7 @@
 
 ## 目的与执行原则
 
-先验证本项目独特的端到端数据流，再扩展内容。M0 已交付文档；本轮按用户新增授权完成 M1 本机闭环，证据与限制见 [报告](reports/M1_VALIDATION.md)。M2 及以后仍为未来计划。Accepted 安全/状态边界从 M1 开始，不把三层状态分离推迟到画面完成以后。
+先验证本项目独特的端到端数据流，再扩展内容。M0、M1/M1b 已交付并完成[收尾复核](reports/M1_CLOSEOUT.md)；本轮按用户授权推进 M2，已完成浏览器双 Worker、Adapter 一致性及本机资源验收，见 [M2 报告](reports/M2_VALIDATION.md)。其他 OS/浏览器验证仍待执行；M3 以后尚未实施。Accepted 安全/状态边界从 M1 开始，不把三层状态分离推迟到画面完成以后。
 
 ```mermaid
 flowchart LR
@@ -26,9 +26,9 @@ flowchart LR
 | 阶段 | 目标、依赖与关键交付物 | 完成标准 | 主要风险 |
 | --- | --- | --- | --- |
 | M0 Architecture and Documentation | 本文档集、ADR、Schema、正反样例；无实现依赖 | 所有领域有接口与验收；链接/结构/样例检查通过，未验证选择标 Proposed | 文档之间隐性矛盾、虚假的完成声明 |
-| M1 Minimal Vertical Slice | 依赖 M0；最小地图、坦克运动/碰撞、Encoder/IMU、受控 Python worker、位姿发布、Selector、Gateway、简单 Web 视图 | 完成下述闭环；错误估计与碰撞分离；worker 卡死物理不停；原生/WASM 编译探针形成选型证据 | Rust/WASM 库兼容、批次延迟、信息泄漏 |
+| M1 Minimal Vertical Slice（本机完成） | 依赖 M0；最小地图、坦克运动/碰撞、Encoder/IMU、受控 Python worker、位姿发布、Selector、Gateway、简单 Web 视图 | 完成下述闭环；错误估计与碰撞分离；worker 卡死物理不停；原生/WASM 编译探针形成选型证据 | Rust/WASM 库兼容、批次延迟、信息泄漏 |
 | M1b Minimal Weapon Loop（本机完成） | 依赖 M1；已确认炮台/弹丸/后坐模型，程序控制接口、单发、靶标和授权表现 | 完成武器物理、Python 调用、冷却/幂等、命中/反弹、权限/泄漏与重放测试；见 [14](14_WEAPONS_DESIGN.md) | 高速连续碰撞、反作用耦合、信息泄漏 |
-| M2 Platform and Runtime Profiles | 依赖 M1b；浏览器 Pyodide 双 Worker、IPC/WebSocket/Test Adapter 一致性、构建矩阵、资源测量 | 同一协议夹具跨 Adapter 等价；浏览器主 UI 无长任务；明确平台保证范围；更新 ADR-0002/0003/0013 状态 | 冷启动、存储、CSP、OS 安全差异 |
+| M2 Platform and Runtime Profiles（本机 profile 已验收） | 依赖 M1b；浏览器 Pyodide 双 Worker、IPC/WebSocket/Test Adapter 一致性、构建矩阵、资源测量 | 同一协议夹具跨 Adapter 等价；算法/物理不进入主 UI，并测量帧间隔；明确平台保证范围；复审 ADR-0002/0003/0013 状态 | 冷启动、存储、CSP、OS 安全差异 |
 | M3 Editor and Deployment | 依赖 M1；CodeMirror 原型、多文件 Workspace、模板 ledger、Manifest、Edit/Test/Deploy、失败回滚 | 不覆盖玩家文件；编辑不改变 Active；快照测试/部署摘要一致；Vim 焦点不误触控制 | 迁移冲突、多文件 import、安全打包 |
 | M4 First Three Playable Levels | 依赖 M2/M3；C0–C2、坐标/理想 Radar/噪声跟踪、函数到类 | 初学者可从问题完成任务；非唯一算法可通关；摄像机/声音/弹丸无未授权定位泄漏 | 难度曲线、反馈与保密冲突 |
 | M5 Multi-Module Robot Software | 依赖 M4；完整 Contract 图、C3/C4、候选选源、Encoder/IMU/scan、估计地图 | 多模块项目复用旧代码；无系统定位仍可玩；错帧/过期/PSD 负例通过；迁移无损 | 帧对齐、积累漂移、主题图复杂度 |
@@ -56,7 +56,7 @@ M1 验收场景包括：正常估计、故意偏移 2 m 的合法估计、没有
 
 建议记录 600 tick，验证精确 tick 时间公式、采样与内部提交时刻、cmd_vel 最新目标替换/控制器 watchdog、差速拒绝非零 vy 和同构建重放；M1 同时验证差速和四轮径向全向轮全向模型。性能报告至少包含 Host/浏览器版本、构建摘要、地图/实体规模、tick p50/p95/max、Python 批次耗时、消息大小与冷启动；没有基准设备前不规定虚假的绝对 FPS 保证。
 
-## 建议的第一个具体开发任务：M1a
+## 首个 MVP 任务：M1a（已完成，保留验收定义）
 
 任务名：**建立最小可重复的 Authority → Python → 授权视图闭环探针**。
 
@@ -64,7 +64,7 @@ M1 验收场景包括：正常估计、故意偏移 2 m 的合法估计、没有
 
 并行于同一个探针做 Rust/Rapier 与原生/WASM 的构建可行性；只有遇到明确失败或成本超标再验证 C++/Box2D 备选，不把两个正式引擎一起实现。选型根据结果更新 Proposed ADR，不能先接受再补证据。
 
-范围不含完整战斗、复杂美术、账号、Arena、全功能编辑器或模板迁移 UI。完成标准是上述端到端数据链与错误/超时行为可检查，而非“能画出坦克”。M1 原阶段到此为止；用户随后授权 M1b 武器实现，已完成范围与证据见 14 和 M1b 报告，不自动开始 M2。
+范围不含完整战斗、复杂美术、账号、Arena、全功能编辑器或模板迁移 UI。完成标准是上述端到端数据链与错误/超时行为可检查，而非“能画出坦克”。M1 原阶段到此为止；后续用户已授权并完成 M1b，本轮继续授权 M2。阶段范围不随文档中的未来建议自动扩大。
 
 ## 计划取舍与复审
 
@@ -72,8 +72,10 @@ M1 验收场景包括：正常估计、故意偏移 2 m 的合法估计、没有
 
 开放项与技术准入门见 [12](12_VALIDATION_AND_OPEN_QUESTIONS.md)。每阶段结束复审风险、实际性能和教学反馈，更新路线图与相关 ADR；不以修改验收阈值掩盖边界失效。
 
-## M1 完成与下一任务
+## 当前完成状态与下一任务
 
-M1 交付：两底盘/静态接触/理想 joint_states 与 IMU、外部 Python 多文件里程计、固定 tick/预算、候选→标准位姿→授权视图、键盘控制和简单 Canvas。物理建模由用户逐项确认，参数在唯一文件；正常/错估计/无输出/错帧/PSD/迟到/死循环及同构建重放有测试。Rust 原生与 WASM 均已构建并执行同一个探针；完整浏览器 WASM Runtime 尚属 M2。
+M1/M1b 本机功能、最新配置测量和回归已完成，见收尾表。M2 已实现 Rust 显式 init/step WASM ABI、共享 Authority 的 Core Worker、独立 origin 的 Pyodide Robot Worker、双向 MessagePort、固定提交/截止强制终止及同 SDK 武器程序。49 个协议夹具经过 IPC/WebSocket/In-Process/Replay 与浏览器 Authority，具备本机真实运行证据。
 
-**M1b 最小武器闭环已完成本机验收**，见 [报告](reports/M1B_VALIDATION.md)。下一任务仍为 **M2a 浏览器双 Worker 可行性探针**：将当前 Core 编译为带显式初始化/step DTO 的 WASM Worker，同时在独立 Pyodide Worker 运行同一授权输入与里程计例子，比较固定提交/异常终止行为。先验证模块加载、预算和包体，再决定是否接受 ADR-0002/0013；不把 Node WASM 探针当作浏览器隔离证据。
+M2 仍需其他 OS/浏览器执行构建与安全检查；CI 的 Linux/Windows/macOS 构建矩阵已配置，尚未在远程 Runner 运行，不声称这些平台已受支持。服务端 OS 沙箱和公平配额仍是 M8 的上线门；ADR-0013 保持 Proposed。Rust/Rapier 在已验证范围接受，ADR-0003 编辑器技术仍 Proposed。
+
+下一项可独立推进的是 **M3a 多文件 Workspace 的 Edit/Test/Deploy 最小闭环**：先实现非覆盖模板 ledger、不可变部署快照和失败保留旧版本，再接 CodeMirror/Vim；先用既有 ModuleRunner/Authority Adapter，继续复用权限与固定提交边界。发布支持范围扩大前须完成 M2 平台矩阵，不能只靠 CI 文件存在即宣称验证通过。

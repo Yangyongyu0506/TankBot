@@ -1,0 +1,62 @@
+{
+  "version": "0.29.5",
+  "base_url": "https://cdn.jsdelivr.net/pyodide/v0.29.5/full/",
+  "files": {
+    "attrs-25.2.0-py3-none-any.whl": {
+      "sha256": "fbcea5f678a6aa7a31d2c525fa8ad28db3b3e372777477929d3b67c207691ebe",
+      "bytes": 64016
+    },
+    "jsonschema-4.23.0-py3-none-any.whl": {
+      "sha256": "63ab394acb0e7574b2921e594c08f7a2fca3da47bf4649b6689c1b209ecbc3ef",
+      "bytes": 54538
+    },
+    "jsonschema_specifications-2024.10.1-py3-none-any.whl": {
+      "sha256": "feb7668f9254eb2edb38633d8d1a2686e2b246880bb24c7b406ac3628607787a",
+      "bytes": 17487
+    },
+    "pyodide-lock.json": {
+      "sha256": "14d2c2dba101277999e17135e653d8f15389ad1437f53eae213bf0c3cdff723d",
+      "bytes": 122027
+    },
+    "pyodide.asm.js": {
+      "sha256": "356c42f69e1695397e9d8670bd3c2e678248cde76e18bdae1731e848537b47d7",
+      "bytes": 1074322
+    },
+    "pyodide.asm.wasm": {
+      "sha256": "54309a5a2cfd757b1f0fdbc9093c92503f7b341500110329d932487183912718",
+      "bytes": 8647684
+    },
+    "pyodide.mjs": {
+      "sha256": "510ca14305230018f50c40fb81be673afd68080e70ce7733fcce6600dd6a1714",
+      "bytes": 17616
+    },
+    "pyrsistent-0.20.0-cp313-cp313-pyemscripten_2025_0_wasm32.whl": {
+      "sha256": "d92909b12bfcb364cc328661dc7e9ca33773d7979027fb945aa7ca4fa2fbd19f",
+      "bytes": 58222
+    },
+    "python_stdlib.zip": {
+      "sha256": "831fd1e535084b972f87c6a35275de3d236efd5166f5e77ce89497710635e73c",
+      "bytes": 2424003
+    },
+    "referencing-0.36.2-py3-none-any.whl": {
+      "sha256": "e86a23443ffc873b6ee75b050fdb9f57d1e937d9f7e1e1e87b439c8c97e56899",
+      "bytes": 16916
+    },
+    "rpds_py-0.30.0-cp313-cp313-pyemscripten_2025_0_wasm32.whl": {
+      "sha256": "ceaa03603678cc8550b7fc5c9d88b21bbd6d10523db19b5aeb22bb693f3896e7",
+      "bytes": 137858
+    },
+    "six-1.17.0-py2.py3-none-any.whl": {
+      "sha256": "bc830cfdc71a224b6d0e4337183a87ea53f21b6623deca5771ee3bc866fd8da2",
+      "bytes": 11050
+    },
+    "typing_extensions-4.15.0-py3-none-any.whl": {
+      "sha256": "42190f892f6219350c50e107954f57cb6196acac818fece4a7d21689c94f71de",
+      "bytes": 44613
+    },
+    "pyodide.js": {
+      "sha256": "7f832a350240263d9946a9c3c877f7bcdab6c37d6dc65f72cd3be5905dca62dd",
+      "bytes": 18597
+    }
+  }
+}

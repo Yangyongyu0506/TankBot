@@ -8,7 +8,7 @@
 
 SDK 核心类型是不可变值：`Pose2D`、`ImuData`、`EncoderData`、`RadarData`、`Vector3`、`Twist`、`Sample[T]`、`Inputs`、`ModuleContext`、`Module`。编码映射以 03 和 Schema 为准：`Pose2D(x_m, y_m, yaw_rad, covariance, child_frame_id="base_link")`；`EncoderData(left_distance_m, right_distance_m)` 为自本 run 重置以来的累计轮距；`ImuData(angular_velocity_z_radps, linear_acceleration_x_mps2, linear_acceleration_y_mps2)`；`Sample` 包含 `data`、`simulation_tick`、`frame_id`、`sequence_number`。SDK 解码时保留时间与帧，不只传数值。
 
-`Vector3(x=0.0, y=0.0, z=0.0)` 与 `Twist(linear: Vector3, angular: Vector3)` 参考 ROS 的熟悉形状，`Twist()` 默认为两个零向量，序列化总是给出全部分量。二维使用 linear.x/y 与 angular.z，其他轴显式为零；时间和 frame 由 Sample/Envelope 承载，不加入消息执行起止字段。现有 EncoderData 是差速左右轮接口，并非所有底盘通用；M1 新增独立 `JointState(name, position, velocity, effort=())`，数组为不可变 tuple，单位 rad/rad·s⁻¹，频道 `/robot/sensors/joint_states`；差速/麦轮共用该新 Contract。不能伪造左右轮数据或悄悄改变 encoder@1 含义。
+`Vector3(x=0.0, y=0.0, z=0.0)` 与 `Twist(linear: Vector3, angular: Vector3)` 参考 ROS 的熟悉形状，`Twist()` 默认为两个零向量，序列化总是给出全部分量。二维使用 linear.x/y 与 angular.z，其他轴显式为零；时间和 frame 由 Sample/Envelope 承载，不加入消息执行起止字段。现有 EncoderData 是差速左右轮接口，并非所有底盘通用；M1 新增独立 `JointState(name, position, velocity, effort=())`，数组为不可变 tuple，单位 rad/rad·s⁻¹，频道 `/robot/sensors/joint_states`；差速/径向全向轮共用该新 Contract。不能伪造左右轮数据或悄悄改变 encoder@1 含义。
 
 每个模块提供可静态检查的 `contracts/<module_id>.json`：
 
@@ -134,3 +134,7 @@ M1 仅运行一个 periodic Module，支持多文件 import；event、多模块�
 ## M1b 增量 API
 
 已增加不可变 `TurretVelocity`、`FireCommand`、`FireResult`、`WeaponState` 与 `ctx.fire(port="fire", request_id=None)`。ctx.publish 收集炮台速度 Topic；ctx.fire 收集离散命令并返回 ID，结果从后续武器状态读取，不阻塞算法。只有启动配置授予 robot 控制源时，对应输出端口才出现在 Contract；声明端口不等于自动获得权限。新示例单独位于 [weapon_demo.py](../examples/robot/weapon_demo.py)，保留原定位源码；接口、时序、反馈字段与可执行片段见 [14](14_WEAPONS_DESIGN.md)。炮台/武器输入为可选授权观测；新增功能仍复用单 periodic Module，不代表完整模块图已实现。
+
+## M2 运行适配
+
+`runtime/module_runner.py` 是原生 CPython 与浏览器 Pyodide 共用的生命周期和类型化输入/输出实现；仅运输与外部截止管理不同。浏览器多文件部署复制到独立 MEMFS，不挂载宿主目录、不加载 Authority 包。API 形状和固定提交门不变；完整安全限制见 [16](16_BROWSER_RUNTIME.md)。

@@ -2,7 +2,7 @@
 
 ## 目的、范围与完成定义
 
-汇总需求覆盖、检查证据、假设与下一步准入条件，防止“设计接受”被误读成“技术验证完成”。M0 原范围为离线文档；用户后续授权 M1，当前已有原生 Core、Host、SDK 子集和 Web 原型，实际证据见 [M1 报告](reports/M1_VALIDATION.md)。完整沙箱仍未实现。初版资料核实日期为 2026-10-20；当前基线 `m1-0.1`，2026-10-21 按 ROS 习惯修订速度接口。新增 ROS 参考链接因网络不可达尚未在线复核，不能当作已验证的滚动版本默认行为。
+汇总需求覆盖、检查证据、假设与下一步准入条件，防止“设计接受”被误读成“技术验证完成”。M0 原范围为离线文档；用户后续授权 M1，当前已有原生 Core、Host、SDK 子集和 Web 原型，实际证据见 [M1 报告](reports/M1_VALIDATION.md)。完整沙箱仍未实现；本轮 M1 收尾与 M2 本机浏览器范围见 [报告](reports/M2_VALIDATION.md)。初版资料核实日期为 2026-10-20；当前基线 `m1-0.1`，2026-10-21 按 ROS 习惯修订速度接口。新增 ROS 参考链接因网络不可达尚未在线复核，不能当作已验证的滚动版本默认行为。
 
 ## 需求与接口追踪
 
@@ -42,11 +42,11 @@ git diff --check
 
 检查工具需要现有 Python 环境具备 `jsonschema` 与 `referencing`；M0 检查使用已有环境；M1 requirements.txt 明确记录 Python 验证依赖。工具离线注册本地 Schema，不访问 `$id` 示例域名。
 
-检查范围：Markdown 本地链接与代码块、ADR 状态和索引、严格 JSON、Draft 2020-12 Schema、自包含正例、结构负例与领域案例分层、Python 示例语法、行尾空白。Python 示例仅 AST 解析，此工具不导入 SDK；另由 M1 测试执行 SDK 片段。当前已有初始化提交，`git diff --check` 检查已跟踪改动；新增文件仍需检查。工具对所有 Markdown 检查空白，JSON 做完整格式检查；也可逐文件运行 `git diff --no-index --check /dev/null <path>`，退出码 1 仅表示文件差异，实际空白告警不能忽略。
+检查范围：Markdown 本地链接与代码块、ADR 状态和索引、严格 JSON、Draft 2020-12 Schema、自包含正例、结构负例与领域案例分层、Python 示例语法、行尾空白。Python 示例仅 AST 解析，此工具不导入 SDK；另由 M1 测试执行 SDK 片段。早期检查仅针对初始化后的文档；当前`git diff --check` 检查已跟踪改动；新增文件仍需检查。工具对所有 Markdown 检查空白，JSON 做完整格式检查；也可逐文件运行 `git diff --no-index --check /dev/null <path>`，退出码 1 仅表示文件差异，实际空白告警不能忽略。
 
-当前检查计数由工具输出，避免手工统计与文档变更漂移。M1 实际验证包括：22 项单元/集成测试（其中一项接入 10 个文档协议领域案例）、两底盘各 600 tick 测量、同构建执行器重放、原生/WASM 构建与执行、Firefox 页面和按键验证。基准 JSON 记录实际配置和构建摘要，见报告。
+当前检查计数由工具输出，避免手工统计与文档变更漂移。M1 初版历史验证包括：22 项单元/集成测试（其中一项接入 10 个文档协议领域案例）、两底盘各 600 tick 测量、同构建执行器重放、原生/WASM 构建与执行、Firefox 页面和按键验证。基准 JSON 记录实际配置和构建摘要，见报告。
 
-剩余 4 个文档领域案例涉及通用 Manifest/event/连线及独立策略配置接口，不混算为 M1 已完成能力。OS 沙箱、完整浏览器双 Worker、多 Adapter 等价、Windows/macOS 与 Arena 仍未验证。
+剩余 4 个文档领域案例涉及通用 Manifest/event/连线及独立策略配置接口，不混算为 M1 已完成能力。OS 沙箱、Windows/macOS 与 Arena 仍未验证；浏览器双 Worker 与多 Adapter 等价已在下方 M2 更新给出证据。
 
 ## 实现阶段如何保持文档与 API 一致
 
@@ -121,4 +121,12 @@ git diff --check
 
 新验收入口为 `python3 -m unittest discover -s tests -v`（真实物理/worker/HTTP/SDK），`python3 tools/measure_m1.py`（双底盘 600 tick、同构建重放和原生/WASM 构建探针）。文档工具仍只检查结构/链接，不替代权限或运行测试。M1 的范围与源码路径见报告；Schema 已新增独立 joint_state@1 和 SimulationProfile，旧 encoder@1 含义未改。
 
-O01 已得到 Linux/Node WASM 的部分证据，完整浏览器 Worker 和其他 OS 保持开放；O05 的 60/30/10 Hz 和 20 ms 批次在本机验证，Arena/慢设备需另测；O14 的 M1 聚合全向模型已完成，详细轮电机/轮滑仍需新模型确认。技术 ADR 保持其真实验证状态；13 Accepted / 3 Proposed，其中新增模型/轮组接口为 Accepted，不把三项技术候选提前接受。
+O01 已得到 Linux/Node WASM 的部分证据，完整浏览器 Worker 和其他 OS 保持开放；O05 的 60/30/10 Hz 和 20 ms 批次在本机验证，Arena/慢设备需另测；O14 的 M1 聚合全向模型已完成，详细轮电机/轮滑仍需新模型确认。以上为 M1 阶段历史结论；当前 ADR 状态以索引和以下 M2 证据为准，不以历史计数推断实现。
+
+## M2 更新与剩余门槛
+
+M1/M1b [收尾](reports/M1_CLOSEOUT.md) 后，M2 已完成共享 Authority / ModuleRunner 的浏览器双 Worker、49 个 Envelope 正反夹具在真实 MessagePort/IPC/WebSocket/In-Process/Replay 的一致性、实际文件/网络/宿主句柄负例、死循环终止与新 run 恢复、程序炮台/开火、资源与 UI 帧间隔测量。配置内部升级 1.4，没有改变已确认物理和公共协议。
+
+O01 已在 Linux 原生与 Firefox WASM 范围接受，ADR-0002 改 Accepted；O03 的本地原型路径由 ADR-0020 接受，但 ADR-0013 的完整安全组合仍 Proposed。O02 在 M3 编辑器验证前保持 Proposed。O05 单机器人 20 ms 批次已测，Authority 视图校验的时间长尾仍需性能预算；O06 的夹具相等不代表大规模 scan/地图已测。
+
+本轮 Python 53 项、Rust 10 项、渲染 JS 9 项及两底盘各 600 tick WASM/原生全快照比较通过。具体命令、摘要、平台矩阵与测量限制见 M2 报告。Windows/macOS 和 Chromium/WebKit 未实际执行；CI 矩阵是待运行的自动化入口。浏览器无硬内存/磁盘配额，未做破坏性 OOM 压力测试；服务端 gVisor/microVM、安全依赖准入、公平配额仍是 M8 上线门。

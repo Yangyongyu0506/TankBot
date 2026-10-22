@@ -1,0 +1,112 @@
+{
+  "date": "2026-10-22",
+  "os": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+  "python": "3.14.4",
+  "native_binary_sha256": "a0e95d3e97d9ddb065caa8d9d7722b6fd83913d9464b8891ea7a72a05238a1a7",
+  "config_sha256": "b5fe0a45468bc7220ead69a8170e9faa1a27ee02e3f6b3ddf7e62763df946bb0",
+  "cargo_lock_sha256": "90d0dfbca67c0a995188a703824c35b9a749da0c8d5959e20e6cf98cbc5dc4a5",
+  "wasm_sha256": "44377847b0acb1aeb4180a13be5a2e8457d0d0f53b9bd0428f9079485ef8bbca",
+  "scene": {
+    "dynamic_bodies": 2,
+    "static_walls": 5,
+    "static_targets": 1
+  },
+  "wall_toi_absolute_error_s": 4.440892098500626e-16,
+  "wall_reflection_speed_absolute_error_mps": 0.0,
+  "impact_gate_max_delay_s": 0.004166666666666667,
+  "native_weapon_probe": {
+    "relative_angle_rad": 19.32608917396584,
+    "truth_pose": [
+      -0.0011325945197109188,
+      -7.37389786063413e-06,
+      -0.00806964587669734
+    ],
+    "weapon_state": {
+      "cooldown_remaining_ticks": 9,
+      "hits_received": 3,
+      "last_result": {
+        "processed_tick": 594,
+        "request_id": "probe-594",
+        "status": "fired"
+      },
+      "ready": false,
+      "shots_fired": 34
+    }
+  },
+  "wasm_probe": {
+    "wasm_bytes": 62656220,
+    "final_x_m": 1.5000130521385737,
+    "shots_fired": 34,
+    "relative_angle_rad": 19.32608917396584,
+    "omni_first_wheel_radps": -3.5355339059327373
+  },
+  "native_wasm_weapon_probe_equal": true,
+  "runs": [
+    {
+      "chassis": "differential",
+      "ticks": 600,
+      "cold_start_ms": 37.1827540002414,
+      "host_tick_ms": {
+        "p50_ms": 2.610284999718715,
+        "p95_ms": 8.662559999720543,
+        "max_ms": 11.110777999419952
+      },
+      "worker_round_trip_ms": {
+        "p50_ms": 1.8189475003964617,
+        "p95_ms": 2.0777800000360003,
+        "max_ms": 2.4541539987694705
+      },
+      "max_view_bytes": 2627,
+      "weapon_state": {
+        "cooldown_remaining_ticks": 0,
+        "hits_received": 3,
+        "last_result": {
+          "processed_tick": 582,
+          "request_id": "demo-576",
+          "status": "fired"
+        },
+        "ready": true,
+        "shots_fired": 32
+      },
+      "target_hits": {
+        "target_01": 2
+      },
+      "relative_angle_rad": 18.93676646900017,
+      "same_build_all_actuator_replay_exact": true,
+      "rejections": []
+    },
+    {
+      "chassis": "omnidirectional",
+      "ticks": 600,
+      "cold_start_ms": 38.345124999978,
+      "host_tick_ms": {
+        "p50_ms": 2.3597634990437655,
+        "p95_ms": 8.955823999713175,
+        "max_ms": 15.16779099983978
+      },
+      "worker_round_trip_ms": {
+        "p50_ms": 1.8486304998077685,
+        "p95_ms": 2.0777789995918283,
+        "max_ms": 3.469298999334569
+      },
+      "max_view_bytes": 2753,
+      "weapon_state": {
+        "cooldown_remaining_ticks": 0,
+        "hits_received": 4,
+        "last_result": {
+          "processed_tick": 582,
+          "request_id": "demo-576",
+          "status": "fired"
+        },
+        "ready": true,
+        "shots_fired": 32
+      },
+      "target_hits": {
+        "target_01": 2
+      },
+      "relative_angle_rad": 18.93617998401412,
+      "same_build_all_actuator_replay_exact": true,
+      "rejections": []
+    }
+  ]
+}
