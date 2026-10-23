@@ -1,5 +1,5 @@
 import {SceneTimeline, FollowCamera, drawChassis, drawTurret} from "/rendering.js";
-import {mountWorkspace} from "/workspace-ui.js";
+import {mountWorkspace, setupWorkspaceDialog} from "/workspace-ui.js";
 import {connectBrowser} from "/browser-client.js";
 
 const $ = id => document.getElementById(id);
@@ -31,7 +31,7 @@ function post(path,value){
   return fetch(path,{method:"POST",headers:{"Content-Type":"application/json","X-TankBot-Control":profile.control_token},body:JSON.stringify(value)});
 }
 async function fire(){
-  if(!profile||profile.control_sources.weapon!=="keyboard")return;
+  if($("workspace-dialog").open||!profile||profile.control_sources.weapon!=="keyboard")return;
   try{
     const response=await post("/api/fire",{request_id:crypto.randomUUID()});
     const result=await response.json();
@@ -40,17 +40,39 @@ async function fire(){
 }
 $("fire").addEventListener("click",fire);
 function key(code, down) {
+  if(down&&$("workspace-dialog").open)return;
   if(code==="Space"){if(down)fire();return;}
   if (!["KeyW","KeyA","KeyS","KeyD","KeyQ","KeyE","KeyJ","KeyL"].includes(code)) return;
   if (down) keys.add(code); else keys.delete(code);
   document.querySelectorAll(`[data-key="${code}"]`).forEach(e=>e.classList.toggle("active",down));
   command();
 }
-const editing = target => target?.closest?.("#workspace-panel, input, textarea, select, [contenteditable]");
-window.addEventListener("keydown", e=>{if (!e.repeat && !editing(e.target)){key(e.code,true);if(keys.has(e.code)||e.code==="Space")e.preventDefault();}});
+function releaseControls(){keys.clear();document.querySelectorAll("button[data-key].active").forEach(e=>e.classList.remove("active"));command();}
+setupWorkspaceDialog(releaseControls);
+const editing = target => $("workspace-dialog").open||target?.closest?.("input, textarea, select, [contenteditable]");
+window.addEventListener("keydown", e=>{
+  if(e.code==="Space"&&e.target?.closest?.("button, a"))return;
+  if (!e.repeat && !editing(e.target)){key(e.code,true);if(keys.has(e.code)||e.code==="Space")e.preventDefault();}
+});
 window.addEventListener("keyup", e=>{if(keys.has(e.code))key(e.code,false);});
-window.addEventListener("focusin", e=>{if(editing(e.target)){keys.clear();document.querySelectorAll("button[data-key].active").forEach(e=>e.classList.remove("active"));command();}});
-window.addEventListener("blur", ()=>{keys.clear();document.querySelectorAll(".active").forEach(e=>e.classList.remove("active"));command();});
+window.addEventListener("focusin", e=>{if(editing(e.target))releaseControls();});
+window.addEventListener("blur", releaseControls);
+const hudTabs=[...document.querySelectorAll(".hud-tabs [role=tab]")];
+function selectHud(tab){
+  for(const item of hudTabs){
+    const selected=item===tab;item.setAttribute("aria-selected",String(selected));item.tabIndex=selected?0:-1;
+    $(item.getAttribute("aria-controls")).hidden=!selected;
+  }
+}
+for(const [index,tab] of hudTabs.entries()){
+  tab.addEventListener("click",()=>selectHud(tab));
+  tab.addEventListener("keydown",event=>{
+    if(!["ArrowLeft","ArrowRight","Home","End"].includes(event.key))return;
+    event.preventDefault();
+    const next=event.key==="Home"?0:event.key==="End"?hudTabs.length-1:(index+(event.key==="ArrowRight"?1:-1)+hudTabs.length)%hudTabs.length;
+    selectHud(hudTabs[next]);hudTabs[next].focus();
+  });
+}
 document.querySelectorAll("button[data-key]").forEach(button=>{
   button.addEventListener("pointerdown",e=>{button.setPointerCapture(e.pointerId);key(button.dataset.key,true);});
   for(const event of ["pointerup","pointercancel"])button.addEventListener(event,()=>key(button.dataset.key,false));

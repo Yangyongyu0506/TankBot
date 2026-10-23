@@ -34,6 +34,7 @@ def main():
         b.until("return document.getElementById('workspace-panel').dataset.deployment;")
         if args.inspect:
             print(b.script("return document.body.innerText;"));return
+        click('open-workspace')
         # First test + deployment through real UI, including multi-file imports and player tests.
         previous=state().get('last',{});previous=previous.get('id') if previous else None
         click('test-workspace');tested=wait_last('test',previous)
@@ -92,7 +93,7 @@ def main():
         edit('import unittest\nclass ProjectTest(unittest.TestCase):\n def test_import(self):\n  from localization.kinematics import body_increment\n  self.assertTrue(callable(body_increment))\n')
         click('save-workspace');b.until("return document.getElementById('save-workspace').disabled&&document.getElementById('workspace-panel').dataset.busy==='false';")
         revision=b.script("return document.getElementById('workspace-panel').dataset.revision;")
-        b.script("document.getElementById('workspace-panel').scrollIntoView();return true;")
+        assert b.script("return document.getElementById('workspace-dialog').open&&document.scrollingElement.scrollTop===0;")
         shot=b.call('WebDriver:TakeScreenshot',{})['value']
         path=Path('.m1-cache')/(args.output.stem+'.png');path.write_bytes(base64.b64decode(shot))
         b.navigate(args.url);b.until("return document.getElementById('workspace-panel').dataset.ready==='true';",timeout=90)

@@ -10,7 +10,7 @@ export function createEditor(parent, changed, save){
   const language=new Compartment(), mode=new Compartment();
   let current="",states=new Map(),vimEnabled=false;
   const theme=EditorView.theme({
-    "&":{height:"440px",backgroundColor:"#10191d",color:"#d8e9df",fontSize:"13px"},
+    "&":{height:"100%",minHeight:"0",backgroundColor:"#10191d",color:"#d8e9df",fontSize:"13px"},
     ".cm-scroller":{overflow:"auto",fontFamily:"ui-monospace, SFMono-Regular, Consolas, monospace"},
     ".cm-content":{caretColor:"#8fe3b5"},".cm-gutters":{backgroundColor:"#10191d",color:"#6f8c80",border:"none"},
     ".cm-activeLine, .cm-activeLineGutter":{backgroundColor:"#183029"},

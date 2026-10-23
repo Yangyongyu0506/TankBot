@@ -1,4 +1,38 @@
 // Workspace changes are explicit revisions; renderer and input controls do not own player code.
+export function setupWorkspaceDialog(releaseControls){
+  const dialog=document.getElementById("workspace-dialog"),toggle=document.getElementById("open-workspace");
+  let previousFocus,editorFocus;
+  function show(){
+    previousFocus=document.activeElement;
+    releaseControls();
+    dialog.showModal();
+    toggle.setAttribute("aria-expanded","true");
+    const focus=editorFocus?.isConnected?editorFocus:dialog.querySelector(".cm-content");
+    focus?.focus({preventScroll:true});
+  }
+  function hide(){if(dialog.open)dialog.close();}
+  toggle.addEventListener("click",()=>dialog.open?hide():show());
+  document.getElementById("close-workspace").addEventListener("click",hide);
+  dialog.addEventListener("beforetoggle",event=>{
+    if(event.newState==="closed"&&dialog.contains(document.activeElement))editorFocus=document.activeElement;
+  });
+  dialog.addEventListener("close",()=>{
+    toggle.setAttribute("aria-expanded","false");
+    const focus=previousFocus?.isConnected&&previousFocus!==document.body?previousFocus:document.getElementById("arena");
+    focus.focus({preventScroll:true});
+  });
+  dialog.addEventListener("cancel",event=>{
+    event.preventDefault();
+    // Escape belongs to CodeMirror/Vim while editing; F2 always toggles the dialog.
+    if(!document.activeElement?.closest(".cm-editor"))hide();
+  });
+  window.addEventListener("keydown",event=>{
+    if(event.code!=="F2"||event.ctrlKey||event.metaKey||event.altKey||event.shiftKey||event.isComposing)return;
+    event.preventDefault();event.stopImmediatePropagation();
+    if(!event.repeat)(dialog.open?hide():show());
+  },{capture:true});
+}
+
 export async function mountWorkspace(browser){
   const $=id=>document.getElementById(id),root=$("workspace-panel");
   let snapshot,files,selected,editor,plan,status,busy=false,token;

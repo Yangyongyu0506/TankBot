@@ -89,6 +89,10 @@ UI 看到的测试/部署结果连同对应源码快照保存在 `archive-<sha25
 
 CodeMirror 6 + Python/JSON 扩展 + 可切换 Vim，通过 esbuild 本地打包；沿用 ES module JavaScript 与现有 Canvas，不在本阶段引入 Phaser/全仓 TypeScript 转换。确切版本、传递依赖、integrity 在 `package-lock.json`；许可证随构建生成并由页面链接。UI 允许 CodeMirror 动态样式；不放宽脚本或 Runtime 网络/Worker 权限。
 
-编辑器、文件名/Manifest 输入、下拉框获得焦点时清除游戏按键并发送零目标；keydown/keyup 不把 Vim 的 W/J/L/Space 转为执行器指令。Ctrl/⌘S 和 Vim `:w` 保存，不自动部署。离开有未保存草稿的页面会提示。
+主游戏页面固定在视口内，信息栏用驾驶/状态/传感器/武器页签切换，不通过页面滚动访问功能。Workspace 默认为关闭的原生 modal dialog；顶部按钮或 F2 打开，再次 F2 或右上角 × 收起，焦点限制在弹窗内。关闭仅改变可见性，保留未保存草稿、光标、文件选择和运行中的测试/部署。代码与文件列表在面板内部滚动。
+
+弹窗打开时清除游戏按键并发送零目标，整个打开期间屏蔽游戏输入；keydown/keyup 不把 Vim 的 W/J/L/Space 转为执行器指令。F2 在捕获阶段处理，编辑器内 Escape 保留给 CodeMirror/Vim，不用它强制关闭编辑器；其他弹窗控件的 Escape 可关闭。Ctrl/⌘S 和 Vim `:w` 保存，不自动部署。离开有未保存草稿的页面会提示。
 
 验收追踪见 [M3 报告](reports/M3_VALIDATION.md)：多文件/测试真实执行，非覆盖/冲突/磁盘错误、摘要与环境匹配、旧版本保留、部署门/World 连续、回滚新实例、浏览器刷新持久化和焦点隔离。未决项为其他浏览器/OS、独立浏览器存储、完整模块图、长时资源/磁盘回收及强服务端沙箱；不作为本机 M3 已验证能力宣传。
+
+弹窗交互补充验证：`tools/browser_dialog.py` 在真实 Firefox 中检查顶部按钮、F2 切换、× 关闭、草稿/文件选择保留、焦点限制、打开时释放按键及 HUD 页签；实测 1440×814、1280×634、1024×526、500×654 的内容视口无页面滚动。代码、文件列表及工具区仅在各自面板内部滚动。运行 `tools/browser_m3.py` 继续验证弹窗内完整 Edit/Test/Deploy/回滚流程；截图与布局记录保存在 `.m1-cache/`。
