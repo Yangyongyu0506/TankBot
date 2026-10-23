@@ -1,0 +1,92 @@
+{
+  "date": "2026-10-23",
+  "url": "http://127.0.0.1:8765",
+  "browser": {
+    "browserName": "firefox",
+    "browserVersion": "157.0.1",
+    "platformName": "linux"
+  },
+  "tested": {
+    "status": "Ready",
+    "sha256": "1c0b1ba98fddfd6cf62b6a5cd0a65f44a4ce156ed30d4fdd072f1dd5109fb397",
+    "revision": "b50db0ace963dc5fdff73ce8cdb910c56c184553e68b5a37038d542ae5974406",
+    "environment": "2226acf5630b9fef233771d1377aeb90ecce1f4ff826d98eb057676e8e0fdb2c",
+    "unit_tests": 1,
+    "simulation_batches": 6,
+    "max_batch_ms": 4.685174000769621,
+    "checks": [
+      "paths",
+      "syntax",
+      "manifest",
+      "contract",
+      "unit_tests",
+      "authorized_sensor_simulation",
+      "output_permissions",
+      "runtime_budget"
+    ],
+    "kind": "test",
+    "id": "5c74062f28794f5182150423afc03853"
+  },
+  "first_deployment": {
+    "deployment_id": "224766b2f7c54d23b28d8bea28c72912",
+    "sha256": "1c0b1ba98fddfd6cf62b6a5cd0a65f44a4ce156ed30d4fdd072f1dd5109fb397",
+    "revision": "b50db0ace963dc5fdff73ce8cdb910c56c184553e68b5a37038d542ae5974406",
+    "activated_tick": 138
+  },
+  "second_deployment": {
+    "deployment_id": "b89ae288c2464bb8a8704f771ca733ae",
+    "sha256": "0969db15d493d9165e0b3e5e3a39b09de0f32ad89518e4dc9f32f5ee06b536b0",
+    "revision": "411dde48ed9dfb4b0ba24ed61fd2e139beacbd95b344c9747dd2503f334abc19",
+    "activated_tick": 228
+  },
+  "failed_test": {
+    "id": "414e87005f9449acaf9d26431a1faf89",
+    "kind": "test",
+    "sha256": "0969db15d493d9165e0b3e5e3a39b09de0f32ad89518e4dc9f32f5ee06b536b0",
+    "revision": "0ea036616dc19a65bd938aa5b7b3c41055fea490e3248cdd9e48abd1f2122ebb",
+    "status": "Failed",
+    "error": "MODULE_ERROR: ValueError: PLAYER_TEST_FAILED tests/test_project.py:3: AssertionError: M3 fixture"
+  },
+  "rollback": {
+    "deployment_id": "c8ceae6cf9db4141b4b24e2eb5ef6f1e",
+    "sha256": "1c0b1ba98fddfd6cf62b6a5cd0a65f44a4ce156ed30d4fdd072f1dd5109fb397",
+    "revision": "b50db0ace963dc5fdff73ce8cdb910c56c184553e68b5a37038d542ae5974406",
+    "activated_tick": 318
+  },
+  "run_unchanged": true,
+  "world_ticks_advanced": 181,
+  "edit_preserves_active": true,
+  "vim_focus_isolated": true,
+  "template_defaults_keep": true,
+  "syntax_diagnostic": true,
+  "persistent_file": "helper_m3_1792741633.py",
+  "revision": "8200e5053d44a3649b99a29e5421d900d1e8de10c680f15e467ff17704c965bf",
+  "screenshot": ".m1-cache/m3-native-ui.png",
+  "archived_records": 6,
+  "artifacts": {
+    "config/m1.json": {
+      "bytes": 12633,
+      "sha256": "2a910268bfc23e0e93a864c897aab0abfd0c0051e14931e2c2b307441b0ad97c"
+    },
+    "package-lock.json": {
+      "bytes": 22858,
+      "sha256": "1328e9b32337711192989a6a3f8c423e29da911aa3e4b02ed630e788f792921d"
+    },
+    "build/web/editor-bundle.js": {
+      "bytes": 1201711,
+      "sha256": "01d0d38ec73b41188b039ed903518f62d7f5a2e919c20316d2fa31860ec588db"
+    },
+    "build/browser/authority-bundle.json": {
+      "bytes": 266618,
+      "sha256": "2f747edf87a8120d1d590cf11cf7c963ae8a1a19a99a701c152002a9de23a2ea"
+    },
+    "build/browser/player-bundle.json": {
+      "bytes": 13924,
+      "sha256": "15db6f880b0a0a83c40c11e3aaa9f28bbc61924dbdfc2cecb6887d2983d4801b"
+    },
+    "target/wasm32-unknown-unknown/release/tankbot_core.wasm": {
+      "bytes": 2160057,
+      "sha256": "ba1fff00b2c8044bd05143684f76fa24aac444859ec7f3c5b679b2cb90e13d1c"
+    }
+  }
+}

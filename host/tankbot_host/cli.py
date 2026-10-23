@@ -11,6 +11,7 @@ def main():
     parser.add_argument("--chassis", choices=("differential", "omnidirectional"))
     parser.add_argument("--core-binary", type=Path)
     parser.add_argument("--workspace", type=Path)
+    parser.add_argument("--workspace-store", type=Path, help="Persistent versioned editor store; --workspace remains a read-only seed")
     parser.add_argument("--ticks", type=int)
     parser.add_argument("--view", choices=("estimated", "weapons-practice"))
     parser.add_argument("--robot-demo", action="store_true", help="Run the separate SDK turret/fire example")
@@ -35,7 +36,7 @@ def main():
     if args.mode == "browser":
         from .browser_server import BrowserServer
         try:
-            BrowserServer(config, args.workspace).serve()
+            BrowserServer(config, args.workspace, args.workspace_store).serve()
         except KeyboardInterrupt:
             pass
         return
@@ -52,7 +53,7 @@ def main():
         if args.mode == "serve":
             from .server import LocalServer
             try:
-                LocalServer(authority).serve()
+                LocalServer(authority, args.workspace, args.workspace_store).serve()
             except KeyboardInterrupt:
                 pass
         else:

@@ -2,7 +2,7 @@
 
 ## 目的、范围与约束
 
-支持持久化、多文件 Python 项目、无损解锁新模块和不可变部署。ADR-0009 接受非覆盖式 Workspace 管理；ADR-0012 接受编辑/运行分离。本设计不实现文件服务、模板引擎或部署系统。
+支持持久化、多文件 Python 项目、无损解锁新模块和不可变部署。ADR-0009 接受非覆盖式 Workspace 管理；ADR-0012 接受编辑/运行分离。M3 已实现本机单模块 profile，文件服务、模板预览和部署状态机见 [17](17_EDITOR_AND_DEPLOYMENT.md)；本文其余多模块/独立 Web 存储仍为扩展设计。
 
 ## Workspace 目录与所有权
 
@@ -51,7 +51,7 @@ workspace/
 }
 ```
 
-示例 SDK `0.1.0` 是规划中的 API profile，不代表已经发布此包。模块 entry point 以 Contract 为准；项目 `build_robot` 是高级图组装入口，初学者由模板生成。高级组装结果必须与 Manifest 声明端口和权限兼容，不能运行时偷偷增加特权连接。
+示例 SDK `0.1.0` 是规划中的 API profile，不代表已经发布此包。M3 的项目 entry point 直接等于唯一 Module Contract 的类入口，实际夹具见 [M3 Manifest](examples/m3-workspace.json)；下述项目 `build_robot` 是后续高级图组装入口，初学者由模板生成。高级组装结果必须与 Manifest 声明端口和权限兼容，不能运行时偷偷增加特权连接。
 
 依赖只能引用受控注册表中的精确版本与内容摘要，不在运行时联网 `pip install`。首次实现允许空依赖列表、SDK 与标准库；数学扩展经原生/Pyodide 兼容性测试后开放。版本锁定与部署记录分开：`sdk_version` 不等于 Protocol 或模板版本。
 

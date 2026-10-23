@@ -28,6 +28,8 @@ jobs:
       - name: Protocol, runtime, rendering and documentation
         if: runner.os == 'Linux'
         run: |
+          npm ci --ignore-scripts
+          npm run build
           python -m pip install -r requirements.txt
           python -m unittest discover -s tests -v
           node tests/test_rendering.mjs

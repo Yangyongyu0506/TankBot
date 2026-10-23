@@ -2,13 +2,13 @@
 
 ## 目的与状态
 
-ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评审变更。初版日期为 2026-10-20，当前更新到 M1b（2026-10-22）。`Accepted` 表示当前接受的设计约束；不是实施完成证明。`Proposed` 表示仍需指定实验/审查，不得当成已锁定依赖。`Superseded` 表示被明确编号的新 ADR 完整替代，保留原记录与链接。当前无完整 Superseded 条目；ADR-0014 局部修订 0004/0010 的速度接口表达，其余约束仍有效。ADR-0017 局部修订武器阶段与后坐作用模型，未整体废弃 ADR-0015。
+ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评审变更。初版日期为 2026-10-20，当前更新到 M3（2026-10-23）。`Accepted` 表示当前接受的设计约束；不是实施完成证明。`Proposed` 表示仍需指定实验/审查，不得当成已锁定依赖。`Superseded` 表示被明确编号的新 ADR 完整替代，保留原记录与链接。ADR-0003 已由 M3 实证后的 ADR-0021 替代；ADR-0014 局部修订 0004/0010 的速度接口表达，其余约束仍有效。ADR-0017 局部修订武器阶段与后坐作用模型，未整体废弃 ADR-0015。
 
 | 编号 | 决策 | Status |
 | --- | --- | --- |
 | [0001](0001-architecture-principles.md) | 纯核心、边界与跨平台原则 | Accepted |
 | [0002](0002-core-language-and-physics.md) | 采用经本机原生/浏览器验证的 Rust/Rapier | Accepted |
-| [0003](0003-web-frontend.md) | TypeScript、Phaser、CodeMirror 6、可选 Vim | Proposed |
+| [0003](0003-web-frontend.md) | 原 TypeScript/Phaser/CodeMirror 候选，由 0021 替代 | Superseded |
 | [0004](0004-json-protocol.md) | JSON、类型化 Envelope 与版本规则 | Accepted |
 | [0005](0005-transport-abstraction.md) | 与 Transport 无关的语义与校验 | Accepted |
 | [0006](0006-ground-truth-separation.md) | 三层状态与唯一物理权威 | Accepted |
@@ -27,8 +27,10 @@ ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评
 | [0019](0019-fourfold-omni-wheel-layout.md) | 四轮 90° 旋转对称固定全向轮与统一运动学 | Accepted |
 | [0020](0020-shared-browser-authority.md) | 浏览器复用 Authority、双 origin 与独立玩家 Worker | Accepted |
 
+| [0021](0021-editor-and-deployment-profile.md) | M3 CodeMirror/Vim、本机版本库与共享部署生命周期 | Accepted |
+
 ## 变更流程与完成条件
 
 新决策使用递增四位编号和英文描述文件名；记录 Context、Decision、Alternatives、Consequences、Status，并给验证或接受条件。修改核心权威、信息边界、调度或公共接口前先定位相关 ADR。重大变更新增替代 ADR，并同步链接、领域规范、Schema、夹具和测试计划；不得只把旧决定悄悄改成另一种含义。
 
-当前接受边界原则和已有证据的 Rust/Rapier 与本地浏览器适配；前端编辑器和完整平台安全组合保持 Proposed。后续将 Proposed 变成 Accepted 必须引用实验报告、目标平台和限制，不能仅凭“文档已写好”。开放项统一追踪于 [12](../12_VALIDATION_AND_OPEN_QUESTIONS.md)。
+当前接受边界原则和已有证据的 Rust/Rapier 与本地浏览器适配；M3 编辑器在本机 profile 接受，完整平台安全组合保持 Proposed。后续将 Proposed 变成 Accepted 必须引用实验报告、目标平台和限制，不能仅凭“文档已写好”。开放项统一追踪于 [12](../12_VALIDATION_AND_OPEN_QUESTIONS.md)。

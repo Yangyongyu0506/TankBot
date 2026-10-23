@@ -31,3 +31,5 @@
 `validation-cases.json` 使用 `mutation` 表示单次修改，`mutations` 数组表示按顺序修改多处（空数组表示只改变测试上下文）；pointer 使用 JSON Pointer。`context` 给出控制器当前 tick、底盘能力或上一个目标等假设，属于未来测试装置，不会成为线上消息。`layer="schema"` 必须结构拒绝，`layer="domain"` 应结构通过但未来 Host 拒绝；后者不算已完成语义测试。未用结构验证器假装测试 watchdog 或真实全向运动。
 
 示例与正文变更应一起提交。检查命令见 [Schema 说明](../schemas/README.md)；完整语义与时间规则见 [03](../03_PROTOCOL_SPECIFICATION.md)、[07](../07_SIMULATION_DESIGN.md)。
+
+M3 可运行单模块 Manifest/Contract 对应 [m3-workspace.json](m3-workspace.json) 和 [m3-module-contract.json](m3-module-contract.json)，模板与 Schema 一致；通用 `tankbot.json` 的 build_robot 图组装留待 M5。

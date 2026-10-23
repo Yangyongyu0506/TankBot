@@ -39,11 +39,11 @@ flowchart LR
 
 ## Python 加载、时序与失败
 
-`runtime/module_runner.py` 复用 CPython/Pyodide 的 Module 生命周期、传感器类型转换、输出收集与 Envelope 构造。玩家源码单独复制到 `/workspace`，不挂载宿主目录；只打包 `.py`，拒绝越界路径/符号链接和超长快照。M2 不改写 Workspace，也没有编辑器或热部署。
+`runtime/module_runner.py` 复用 CPython/Pyodide 的 Module 生命周期、传感器类型转换、输出收集与 Envelope 构造。玩家源码单独复制到 `/workspace`，不挂载宿主目录；只打包 `.py`，拒绝越界路径/符号链接和超长快照。M2 的启动种子路径继续只读；M3 的多文件编辑/部署和允许的 Manifest/Contract 文件见 [17](17_EDITOR_AND_DEPLOYMENT.md)。
 
 Authority Worker 在每个固定边界调用同一 `advance()`：先提交上一批→采样→激活→裁剪视图→推进物理。60 Hz/4 子步、30 Hz 观测、10 Hz 算法和 6 tick 提交延迟保持原约定。Worker 的墙钟 timer 只负责调度，Python 响应绝不改变提交 tick。每次边界之间让出事件循环，不 await 玩家。
 
-iframe 以独立 timer 执行 20 ms 批次截止，超时 `Worker.terminate()`；可信 Authority 再检查接收时间、关联 ID 和完整批次。缺结果在原定门丢弃，撤销程序执行器目标；晚到、重复或无对应激活的结果不能恢复控制。浏览器后台降频和系统调度可能延迟 timer，不能声称硬实时 CPU 配额。初始化单独使用配置的 45 s 上限；失败不开始世界时钟。玩家源码修改后须重启 browser 服务生成新快照，再刷新页面创建新 run、重置模块；SDK/Authority 修改须重新 prepare bundle。M3 前没有原地热替换。
+iframe 以独立 timer 执行 20 ms 批次截止，超时 `Worker.terminate()`；可信 Authority 再检查接收时间、关联 ID 和完整批次。缺结果在原定门丢弃，撤销程序执行器目标；晚到、重复或无对应激活的结果不能恢复控制。浏览器后台降频和系统调度可能延迟 timer，不能声称硬实时 CPU 配额。初始化单独使用配置的 45 s 上限；失败不开始世界时钟。M3 编辑器通过共享 Authority 启动候选 Worker，在 tick 边界替换旧 Runtime；用 worker_id 隔离并存与旧消息，最多两个玩家 Worker。候选启动失败不停止世界。SDK/Authority 修改仍须重新 prepare bundle。
 
 ## 资源、网络与数据权限
 
@@ -58,7 +58,7 @@ iframe 以独立 timer 执行 20 ms 批次截止，超时 `Worker.terminate()`�
 
 `tools/prepare_browser.py` 校验 `config/browser-assets.lock.json` 的每个 SHA-256，首次下载固定文件，之后可 `--offline` 重建两份 bundle；不运行浏览器时联网安装包。底层资源和生成 bundle 放在忽略的 `build/browser/`，不提交第三方二进制。
 
-内部 `config_version` 从 1.3 升为 **1.4**，仅新增 `browser.runtime_port/startup_timeout_s/max_pending_requests/probe_enabled`，物理参数未变。旧自定义配置须显式补齐 browser 段并升级版本；工具不会自动覆盖文件。公共 Protocol 仍为 `1.0` 草案，没有改变任何消息含义。
+M2 内部 `config_version` 从 1.3 升为 **1.4**，仅新增 `browser.runtime_port/startup_timeout_s/max_pending_requests/probe_enabled`，物理参数未变。旧自定义配置须显式补齐 browser 段并升级版本；工具不会自动覆盖文件。公共 Protocol 仍为 `1.0` 草案，没有改变任何消息含义。
 
 曾比较：JS 重写 Authority（少一个解释器但易发生权限/调度漂移）、把完整 Authority 移植 Rust（长期可评估，当前扩大重构范围）、仅做 Node WASM 探针（不能验证浏览器运行）。当前先以共享 Python 源码减少语义分叉，记录性能后再决定优化。
 
@@ -69,3 +69,5 @@ iframe 以独立 timer 执行 20 ms 批次截止，超时 `Worker.terminate()`�
 Windows/macOS 与 Chromium/WebKit 尚无本机执行证据；CI 构建矩阵已配置，运行结果不在此次本机报告内。强 OS 沙箱、数学扩展库准入、移动端、持久化/多项目存储、正式网络会话协商与 Arena 公平配额仍未完成。
 
 官方依据：[Pyodide 0.29.5 发布](https://github.com/pyodide/pyodide/releases/tag/0.29.5)、[Worker CSP](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy)、[websockets 官方 API](https://websockets.readthedocs.io/en/stable/reference/asyncio/server.html)。这些来源用于接口研究，具体能力以上述锁定版本的实测为准。
+
+M3 在此基础上升为 `1.5`，增加 workspace 限额；UI origin 提供带 Host/Origin/token 校验的管理 API，Runtime origin 仍无 Workspace 路由。源码持久化由本机启动器提供，独立静态 Web 存储仍未验证。候选启动期间可信 Core + Active + candidate 共三个解释器。

@@ -56,4 +56,6 @@ SimulationProfile 内部版本升为 1.2，新增必填 rendering：显示缓冲
 
 ## M2 配置增量
 
-内部 SimulationProfile 版本 1.4 必填 browser 段（资源 origin 端口、独立初始化预算、UI 待处理控制请求上限与显式 QA 开关）；物理/SDK/协议消息未变。旧 1.3 文件须显式迁移，工具不覆盖。49 个 Envelope 夹具已接入真实多 Adapter 及浏览器同源验证器，见 16 与 M2 报告；Manifest/event 等非协议执行能力仍未实现。
+内部 SimulationProfile 版本 1.4 必填 browser 段（资源 origin 端口、独立初始化预算、UI 待处理控制请求上限与显式 QA 开关）；物理/SDK/协议消息未变。旧 1.3 文件须显式迁移，工具不覆盖。49 个 Envelope 夹具已接入真实多 Adapter 及浏览器同源验证器，见 16 与 M2 报告；M3 已实现单模块 Manifest profile；event/完整模块图仍未实现。
+
+M3 内部 SimulationProfile 为 **1.5**，新增必填 workspace 限额；未改变已确认物理或 Protocol 1.0。实际单模块夹具为 `m3-workspace.json` 与 `m3-module-contract.json`，通用 `tankbot.json` / `module-contract-event.json` 保留为未来图组装示例，不能混用为当前可运行项目。

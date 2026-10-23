@@ -2,6 +2,7 @@
 import copy
 from collections import deque
 import hashlib
+import os
 from pathlib import Path
 import subprocess
 import time
@@ -54,7 +55,9 @@ class CoreAdapter:
     def __init__(self, config, chassis, binary=None):
         self.limit = config["runtime"]["max_message_bytes"]
         binary = binary or ROOT / "target/debug/core_worker"
-        self.proc = subprocess.Popen([str(binary)], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        self.build_sha256 = hashlib.sha256(Path(binary).read_bytes()).hexdigest()
+        self.proc = subprocess.Popen([str(binary)], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                                     start_new_session=(os.name == "posix"))
         try:
             self.snapshot = self.call({"op": "init", "config": config, "chassis": chassis})
         except BaseException:
@@ -118,27 +121,9 @@ class Authority:
         self.tick_times_ms = deque(maxlen=config["runtime"]["history_limit_ticks"])
         self.max_view_bytes = 0
         self._sample()
-        module_id = config["module"]["module_id"]
-        self.publisher_id = "module:" + module_id
-        self.input_channels = {"wheels": "/robot/sensors/joint_states", "imu": "/robot/sensors/imu"}
-        self.output_channels = {"pose": f"/robot/estimates/{module_id}/pose"}
-        if config["weapons"]["enabled"]:
-            self.input_channels.update(turret="/robot/turret/joint_states", weapon="/robot/weapons/cannon/state")
-        self.contract = {"contract_version": "1.0", "module_id": module_id, "entry_point": config["module"]["entry_point"],
-                         "inputs": {"wheels": {"schema": "joint_state@1", "required": True, "max_age_ticks": config["runtime"]["input_max_age_ticks"]},
-                                    "imu": {"schema": "imu@1", "required": False, "max_age_ticks": config["runtime"]["input_max_age_ticks"]}},
-                         "outputs": {"pose": {"schema": "pose2d@1"}},
-                         "execution": {"mode": "periodic", "period_ticks": self.period, "deadline_ticks": self.delay, "budget_ms": config["runtime"]["batch_budget_ms"]},
-                         "dependencies": [], "state_version": "1"}
-        if config["weapons"]["enabled"]:
-            for port, schema in (("turret", "joint_state@1"), ("weapon", "weapon_state@1")):
-                self.contract["inputs"][port] = {"schema":schema,"required":False,"max_age_ticks":config["runtime"]["input_max_age_ticks"]}
-        for actuator, port, schema, channel in (("chassis","cmd_vel","twist@1","/robot/cmd_vel"),
-                ("turret","turret_velocity","turret_velocity@1","/robot/turret/cmd_vel"),
-                ("weapon","fire","fire_command@1","/robot/weapons/cannon/fire")):
-            if config["control_sources"][actuator] == "robot" and (actuator == "chassis" or config["weapons"]["enabled"]):
-                self.contract["outputs"][port] = {"schema":schema}
-                self.output_channels[port] = channel
+        from .module_profile import module_profile
+        self.contract, self.input_channels, self.output_channels = module_profile(config)
+        self.publisher_id = "module:" + self.contract["module_id"]
         self.validator.structure(self.contract, "module-contract.schema.json")
         if not config["scene"]["public_initial_pose"]:
             self.core.close()
@@ -147,6 +132,9 @@ class Authority:
             "initial_pose": config["scene"]["initial_pose"], "wheels": config["wheels"], "module": config["module"]},
             "contract": self.contract, "physics_hz": self.hz, "run_id": self.run_id,
             "publisher_id": self.publisher_id, "input_channels": self.input_channels, "output_channels": self.output_channels}
+        self.worker_factory = worker_factory
+        self.worker_init = copy.deepcopy(init)
+        self.deployment = None
         try:
             self.worker = worker_factory(config, init)
         except BaseException:
@@ -333,6 +321,8 @@ class Authority:
     def advance(self):
         """Process boundary n, then advance to S_(n+1). Player computation is never awaited in real time."""
         started = time.monotonic()
+        if self.deployment is not None:
+            self.deployment.advance()
         self._commit()
         self._sample()
         self._activate()
@@ -385,5 +375,7 @@ class Authority:
         return hashlib.sha256(json.dumps(list(self.replay), sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
     def close(self):
+        if self.deployment is not None:
+            self.deployment.close()
         self.worker.close()
         self.core.close()

@@ -3,12 +3,15 @@ from collections import deque
 import json
 import hashlib
 import time
+import uuid
 from tankbot_protocol.wire import strict_loads
 from tankbot_host.authority import Authority, load_config
 
 
 class WasmCore:
     def __init__(self, config, chassis, binary=None):
+        from js import core_build_sha256
+        self.build_sha256 = str(core_build_sha256)
         self.snapshot = self.call({"op":"init", "config":config, "chassis":chassis})
 
     def call(self, request):
@@ -24,7 +27,14 @@ class WasmCore:
 
 
 class BrowserSupervisor:
-    def __init__(self, config, init):
+    workers = {}
+
+    def __init__(self, config, init, *, deferred=False):
+        self.worker_id = uuid.uuid4().hex
+        self.workers[self.worker_id] = self
+        self.ready = False
+        self.startup_result = None
+        self.detail = None
         self.limit = config["runtime"]["max_message_bytes"]
         self.budget = config["runtime"]["batch_budget_ms"]/1000
         self.batch_times_ms = deque(maxlen=config["runtime"]["history_limit_ticks"])
@@ -37,7 +47,10 @@ class BrowserSupervisor:
 
     def send(self, op, value):
         from js import runtime_send
-        runtime_send(json.dumps({"op":op,"value":value}, allow_nan=False))
+        runtime_send(json.dumps({"op":op,"value":value,"worker_id":self.worker_id}, allow_nan=False))
+
+    def poll_ready(self):
+        return self.ready
 
     def submit(self, request):
         if self.closed or self.fault or self.active:
@@ -76,11 +89,30 @@ class BrowserSupervisor:
         if not self.closed:
             self.closed = True
             self.send("close", {})
+            self.workers.pop(self.worker_id, None)
+
+
+def runtime_event(event):
+    worker = BrowserSupervisor.workers.get(event.get("worker_id"))
+    if worker is None:
+        return
+    if event["op"] == "ready":
+        worker.ready = True
+        worker.startup_result = {"ready": True, "unit_tests": event.get("unit_tests", 0)}
+    elif event["op"] == "result":
+        worker.receive(event["raw"], event["elapsed_ms"])
+    elif event["op"] == "fault":
+        worker.fault = event.get("code", "MODULE_ERROR")
+        worker.detail = event.get("detail", "")
+        worker.close()
 
 
 def start():
-    return Authority(load_config("/tankbot/config/m1.json"), workspace="/workspace",
-                     core_factory=WasmCore, worker_factory=BrowserSupervisor)
+    from tankbot_host.deployment import DeploymentManager
+    authority = Authority(load_config("/tankbot/config/m1.json"), workspace="/workspace",
+                          core_factory=WasmCore, worker_factory=BrowserSupervisor)
+    authority.deployment = DeploymentManager(authority)
+    return authority
 
 
 def diagnostics(authority):
@@ -91,7 +123,7 @@ def diagnostics(authority):
                 "max_ms":max(values,default=None)}
     return {"tick":authority.tick,"run_id":authority.run_id,"runtime_fault":authority.worker.fault,
             "profile":{"chassis":authority.config["scene"]["default_chassis"],"view_mode":authority.config["view_mode"],
-                       "entry_point":authority.config["module"]["entry_point"],"fault":authority.config["module"]["fault"],
+                       "entry_point":authority.contract["entry_point"],"fault":authority.config["module"]["fault"],
                        "control_sources":authority.config["control_sources"]},
             "effective_config_sha256":hashlib.sha256(json.dumps(authority.config,sort_keys=True,separators=(",",":")).encode()).hexdigest(),
             "pose_commits":sum(e["event"]=="pose_commit" for e in authority.audit),

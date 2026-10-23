@@ -14,12 +14,16 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class LocalServer:
-    def __init__(self, authority):
+    def __init__(self, authority, workspace=None, workspace_store=None):
         self.authority = authority
         self.lock = threading.Lock()
         self.stopped = threading.Event()
         self.token = secrets.token_urlsafe()
         config = authority.config
+        from .workspace_api import WorkspaceAPI
+        from .deployment import DeploymentManager
+        self.workspace = WorkspaceAPI(config, workspace, workspace_store)
+        authority.deployment = DeploymentManager(authority)
         if config["host"]["bind"] != "127.0.0.1":
             raise ValueError("M1 supports loopback only")
         owner = self
@@ -38,16 +42,30 @@ class LocalServer:
                 self.send_header("Content-Length", str(len(raw)))
                 self.send_header("Cache-Control", "no-store")
                 self.send_header("X-Content-Type-Options", "nosniff")
-                self.send_header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; frame-ancestors 'none'")
+                self.send_header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'")
                 self.end_headers()
-                self.wfile.write(raw)
+                try:
+                    self.wfile.write(raw)
+                except (BrokenPipeError, ConnectionResetError):
+                    pass  # Navigation can close a polling request after its response was prepared.
 
             def do_GET(self):
                 if not self.valid_host():
                     self.reply(403, b'{}')
                     return
                 path = urlsplit(self.path).path
-                if path in ("/api/profile", "/api/view"):
+                if path == "/api/workspace":
+                    value = owner.workspace.get()
+                    value["control_token"] = owner.token
+                    self.reply(200, json.dumps(value).encode())
+                elif path == "/api/deployment":
+                    with owner.lock:
+                        value = owner.authority.deployment.status()
+                    self.reply(200, json.dumps(value).encode())
+                elif path in ("/editor-bundle.js", "/THIRD_PARTY_NOTICES.txt"):
+                    file = ROOT / "build/web" / path[1:]
+                    self.reply(200 if file.exists() else 404, file.read_bytes() if file.exists() else b"", "text/javascript" if path.endswith(".js") else "text/plain; charset=utf-8")
+                elif path in ("/api/profile", "/api/view"):
                     with owner.lock:
                         if path == "/api/profile":
                             value = owner.authority.public_profile()
@@ -55,7 +73,7 @@ class LocalServer:
                         else:
                             value = copy.deepcopy(owner.authority.view)
                     self.reply(200, json.dumps(value, allow_nan=False).encode())
-                elif path in ("/", "/index.html", "/app.js", "/rendering.js", "/browser-client.js", "/style.css"):
+                elif path in ("/", "/index.html", "/app.js", "/rendering.js", "/browser-client.js", "/style.css", "/workspace-ui.js"):
                     file = ROOT / "web" / ("index.html" if path == "/" else path[1:])
                     kind = {".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css"}[file.suffix]
                     self.reply(200, file.read_bytes(), kind)
@@ -68,7 +86,7 @@ class LocalServer:
                 if not self.valid_host() or self.headers.get("Origin") not in origins or self.headers.get("X-TankBot-Control") != owner.token:
                     self.reply(403, b'{}')
                     return
-                if self.path not in ("/api/cmd_vel", "/api/turret_cmd_vel", "/api/fire"):
+                if self.path not in ("/api/cmd_vel", "/api/turret_cmd_vel", "/api/fire") and not self.path.startswith(("/api/workspace/", "/api/deployment/")):
                     self.reply(404, b'{}')
                     return
                 try:
@@ -77,8 +95,16 @@ class LocalServer:
                         raise ValueError("Invalid frame size/type")
                     self.connection.settimeout(config["runtime"]["startup_timeout_s"])
                     value = strict_loads(self.rfile.read(size))
+                    if self.path.startswith("/api/workspace/"):
+                        result = owner.workspace.post(self.path.rsplit("/", 1)[1], value)
+                        self.reply(200, json.dumps(result).encode())
+                        return
                     with owner.lock:
-                        if self.path == "/api/cmd_vel":
+                        if self.path.startswith("/api/deployment/"):
+                            operation = self.path.rsplit("/", 1)[1]
+                            snapshot = owner.workspace.store.read(value["revision"]) if operation in ("test", "deploy") else None
+                            result = owner.authority.deployment.start(operation, snapshot=snapshot, sha256=value.get("sha256"))
+                        elif self.path == "/api/cmd_vel":
                             owner.authority.keyboard(value)
                             result = {"accepted": True}
                         elif self.path == "/api/turret_cmd_vel":
@@ -87,8 +113,8 @@ class LocalServer:
                         else:
                             result = owner.authority.fire_keyboard(value)
                     self.reply(200, json.dumps(result).encode())
-                except (ValueError, Rejected, RecursionError):
-                    self.reply(400, b'{"accepted":false}')
+                except (ValueError, Rejected, RecursionError, KeyError, TypeError, OSError) as error:
+                    self.reply(400, json.dumps({"accepted": False, "error": str(error)[:512]}).encode())
 
         self.http = ThreadingHTTPServer((config["host"]["bind"], config["host"]["port"]), Handler)
         self.http.daemon_threads = True

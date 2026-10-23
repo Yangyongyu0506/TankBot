@@ -10,7 +10,7 @@
 | --- | --- | --- |
 | 产品愿景、模式、持续学习 | 01、09；0001 | C0–C7 可复用项目，问题驱动评价 |
 | 逻辑/进程/部署、Rust/C++ | 02；0001/0002 | 无头/原生/WASM 探针与平台矩阵 |
-| Web 表现/编辑器 | 02、06；0003 | 只读 DTO、多文件/Vim/焦点测试 |
+| Web 表现/编辑器 | 02、06、17；0021 | 只读 DTO、多文件/Vim/焦点测试 |
 | JSON、权限、版本和 Transport | 03；0004/0005/0014 | 结构、时序、授权、ROS 风格速度流、Adapter 等价夹具 |
 | 三层状态、选源、初值/帧/显示 | 04；0006/0007 | 错估计、无估计、多源、漂移与泄漏回归 |
 | SDK、Contract、渐进 API | 05；0008 | 函数/类等价、缺输入、依赖/事件/重置测试 |
@@ -74,7 +74,7 @@ git diff --check
 | ID | 推荐假设或暂定方案 | 证据/决定门 | 影响 |
 | --- | --- | --- | --- |
 | O01 | Rust/Rapier2D 优先，C++/Box2D 备选 | M1 构建、CCD、600 tick 和维护成本报告；ADR-0002 | 核心工具链与物理 |
-| O02 | TS/Phaser/CodeMirror 6 + 可选 Vim | M2/M3 包体、渲染/编辑、迁移仓库来源与许可证；ADR-0003 | 前端依赖与浏览器矩阵 |
+| O02 | M3 Canvas/CodeMirror/Vim 本机组合已接受 | 17、M3 报告、ADR-0021；其他浏览器/独立 Web 存储仍待验证 | 平台矩阵与后续迁移 |
 | O03 | Pyodide 独立 origin/Worker | M2 CSP/网络/JS 桥/终止/启动探针；ADR-0013 | 浏览器安全与性能 |
 | O04 | gVisor 或 microVM，桌面按 OS 验证 | M8 前文件/网络/CPU/内存攻击与成本报告；ADR-0013 | 第三方代码上线硬门 |
 | O05 | 60/30/10/5 Hz，单机器人批次 20 ms 起测 | M1/M2/M6 延迟、控制效果、资源准入报告 | 预算和教学参数 |
@@ -127,6 +127,10 @@ O01 已得到 Linux/Node WASM 的部分证据，完整浏览器 Worker 和其他
 
 M1/M1b [收尾](reports/M1_CLOSEOUT.md) 后，M2 已完成共享 Authority / ModuleRunner 的浏览器双 Worker、49 个 Envelope 正反夹具在真实 MessagePort/IPC/WebSocket/In-Process/Replay 的一致性、实际文件/网络/宿主句柄负例、死循环终止与新 run 恢复、程序炮台/开火、资源与 UI 帧间隔测量。配置内部升级 1.4，没有改变已确认物理和公共协议。
 
-O01 已在 Linux 原生与 Firefox WASM 范围接受，ADR-0002 改 Accepted；O03 的本地原型路径由 ADR-0020 接受，但 ADR-0013 的完整安全组合仍 Proposed。O02 在 M3 编辑器验证前保持 Proposed。O05 单机器人 20 ms 批次已测，Authority 视图校验的时间长尾仍需性能预算；O06 的夹具相等不代表大规模 scan/地图已测。
+O01 已在 Linux 原生与 Firefox WASM 范围接受，ADR-0002 改 Accepted；O03 的本地原型路径由 ADR-0020 接受，但 ADR-0013 的完整安全组合仍 Proposed。O02 的本机组合已由 M3 实验接受（ADR-0021），其他平台仍待验收。O05 单机器人 20 ms 批次已测，Authority 视图校验的时间长尾仍需性能预算；O06 的夹具相等不代表大规模 scan/地图已测。
 
 本轮 Python 53 项、Rust 10 项、渲染 JS 9 项及两底盘各 600 tick WASM/原生全快照比较通过。具体命令、摘要、平台矩阵与测量限制见 M2 报告。Windows/macOS 和 Chromium/WebKit 未实际执行；CI 矩阵是待运行的自动化入口。浏览器无硬内存/磁盘配额，未做破坏性 OOM 压力测试；服务端 gVisor/microVM、安全依赖准入、公平配额仍是 M8 上线门。
+
+## M3 实施状态
+
+M3 多文件编辑、非覆盖模板、CAS/文件锁、快照报告、独立 Test Runtime、tick 边界部署与显式回滚已验证。61 项 Python 测试与原生/Firefox UI 记录见 [M3 报告](reports/M3_VALIDATION.md)。单模块 profile、观察式仿真测试、会话内 Ready 和启动器存储限制见 [17](17_EDITOR_AND_DEPLOYMENT.md)。M4 新增传感器模型仍须用户确认。

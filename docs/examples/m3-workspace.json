@@ -1,0 +1,42 @@
+{
+  "manifest_version": "1.0",
+  "sdk_version": "0.1.0",
+  "protocol_version": "1.0",
+  "project_id": "my-first-robot",
+  "entry_point": "localization.odometry:Odometry",
+  "modules": [
+    {
+      "module_id": "odometry",
+      "contract": "contracts/odometry.json",
+      "config": {}
+    }
+  ],
+  "connections": [
+    {
+      "from": "/robot/sensors/joint_states",
+      "to": "odometry.wheels"
+    },
+    {
+      "from": "/robot/sensors/imu",
+      "to": "odometry.imu"
+    },
+    {
+      "from": "/robot/turret/joint_states",
+      "to": "odometry.turret"
+    },
+    {
+      "from": "/robot/weapons/cannon/state",
+      "to": "odometry.weapon"
+    },
+    {
+      "from": "odometry.pose",
+      "to": "/robot/estimates/odometry/pose"
+    }
+  ],
+  "dependencies": [],
+  "pose_source": {
+    "mode": "player",
+    "module_id": "odometry",
+    "fallback": "none"
+  }
+}

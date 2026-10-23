@@ -1,5 +1,5 @@
 {
-  "config_version": "1.4",
+  "config_version": "1.5",
   "confirmation_status": "confirmed",
   "body": {
     "length_m": 0.8,
@@ -524,5 +524,14 @@
     "startup_timeout_s": 45,
     "max_pending_requests": 16,
     "probe_enabled": false
+  },
+  "workspace": {
+    "max_files": 64,
+    "max_source_bytes": 32768,
+    "max_plans": 16,
+    "test_batches": 6,
+    "max_deployments": 32,
+    "poll_ms": 500,
+    "max_archives": 128
   }
 }

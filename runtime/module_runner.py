@@ -13,14 +13,15 @@ class ModuleRunner:
         self.sequence = 0
         config = init["config"]
         self.contract = contract = init["contract"]
-        context = ModuleContext(0, 0.0, 0, config)
+        start_tick = init.get("start_tick", 0)
+        context = ModuleContext(start_tick, 0.0, start_tick, config)
         with contextlib.redirect_stdout(sys.stderr):
             path, name = contract["entry_point"].split(":")
             self.module = module = getattr(importlib.import_module(path), name)()
             if not isinstance(module, Module):
                 raise TypeError("Entry point must implement Module")
             module.setup(context)
-            module.reset(context, "new_run")
+            module.reset(context, init.get("reset_reason", "new_run"))
 
     def step(self, request):
         init, contract, config = self.init, self.contract, self.init["config"]

@@ -90,17 +90,17 @@ flowchart TB
 
 ## 前端架构与接口
 
-建议 TypeScript + Phaser 负责场景/精灵/Canvas 或 WebGL，CodeMirror 6 负责编辑器；Vim 模式为可切换扩展，焦点在编辑器时停止游戏按键捕获。UI 面板框架与图表库暂不冻结。Phaser 的 `update` 只进行表现更新，不推进权威模拟（[Phaser Game 文档](https://docs.phaser.io/phaser/concepts/game)）。Vim 扩展是独立社区组件，需许可证与兼容性验证（[扩展仓库](https://github.com/replit/codemirror-vim)）。CodeMirror 官网抓取受限，故其打包与扩展组合仍列技术验证项。
+M3 接受现有 ES module JavaScript/Canvas + CodeMirror 6 + 可选 Vim 的本机组合，见 [ADR-0021](adr/0021-editor-and-deployment-profile.md)。多文件、焦点、错误定位和原生/浏览器部署已验证；不为编辑器替换渲染器。Phaser/TypeScript 仍可在后续有明确需求时重新评估，不能将其建议当成当前依赖。确切 npm 版本与许可见 [M3 设计](17_EDITOR_AND_DEPLOYMENT.md)。
 
 前端划分 `ConnectionAdapter`、`AuthorizedViewStore`、`RendererAdapter`、`WorkspaceStore`、`EditorAdapter`、`DiagnosticsStore`。连接模块只向渲染器交付 `PlayerViewSnapshot`，不提供 `getWorld()`。草稿缓冲、相机缩放、面板布局由客户端维护；碰撞、命中、能力、部署生效、计分均由 Authority 决定。
 
-逻辑接口草案：`CoreHost.advance(tick_inputs) -> AuthorizedOutputs`；`ViewGateway.build(principal, policy, tick) -> PlayerViewSnapshot`；`RuntimeSupervisor.submit(step_request) -> StepHandle`；`WorkspaceService.snapshot(revision) -> DeploymentArtifact`。其语言实现待选型后补齐，输入输出语义以 03–08 为准。
+逻辑接口草案：`CoreHost.advance(tick_inputs) -> AuthorizedOutputs`；`ViewGateway.build(principal, policy, tick) -> PlayerViewSnapshot`；`RuntimeSupervisor.submit(step_request) -> StepHandle`；`WorkspaceService.snapshot(revision) -> DeploymentArtifact`。现有 Python/Worker 映射见 16/17，未来扩展应保留这些边界，输入输出语义以 03–08 为准。
 
 ## 替代方案、风险与验收
 
 完整游戏引擎能加快关卡编辑，却可能引入渲染/物理耦合；先采用小型纯核心，未来在边界外集成编辑工具。全平台强制同进程会损害服务器隔离；采用共享语义与不同 Host。JSON 的分配与编码开销先测量，不能直接跳到自制二进制总线。
 
-开放项：Phaser 与轻量 Canvas renderer 的包体/性能差、编辑器多文件体验、WASM 启动时延、桌面隔离能力。验收需证明：无头运行不加载 UI/Python 库；同一传感器/命令夹具能经过本地、Worker 与网络适配；Renderer 在隐藏位姿时根本收不到私有字段；任一 Runtime 崩溃不停止 Core tick。
+开放项：独立 Web 持久化、其他浏览器编辑体验、更多实体时的 WASM 启动/运行成本、桌面隔离能力。验收需证明：无头运行不加载 UI/Python 库；同一传感器/命令夹具能经过本地、Worker 与网络适配；Renderer 在隐藏位姿时根本收不到私有字段；任一 Runtime 崩溃不停止 Core tick。
 
 ## M1 实施映射
 

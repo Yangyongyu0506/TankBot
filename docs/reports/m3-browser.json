@@ -1,0 +1,92 @@
+{
+  "date": "2026-10-23",
+  "url": "http://127.0.0.1:8765/?runtime=browser",
+  "browser": {
+    "browserName": "firefox",
+    "browserVersion": "157.0.1",
+    "platformName": "linux"
+  },
+  "tested": {
+    "status": "Ready",
+    "sha256": "09558f056268c606127b307f982fb98740e0c19f0af7478e1dfae4ec12430dba",
+    "revision": "df839904600d745676ccabc245ddfc234ec85c72adb67ddd5d61cf293ebb8e62",
+    "environment": "67a33a16a4adcb55716bc95698b7a1d8e7c2a36e319c342d82a473abd4f3d707",
+    "unit_tests": 1,
+    "simulation_batches": 6,
+    "max_batch_ms": 2,
+    "checks": [
+      "paths",
+      "syntax",
+      "manifest",
+      "contract",
+      "unit_tests",
+      "authorized_sensor_simulation",
+      "output_permissions",
+      "runtime_budget"
+    ],
+    "kind": "test",
+    "id": "816f47dcf2d44b37b12a9b2fe556dc88"
+  },
+  "first_deployment": {
+    "deployment_id": "7a678a0b561c416d948bc7d13675386a",
+    "sha256": "09558f056268c606127b307f982fb98740e0c19f0af7478e1dfae4ec12430dba",
+    "revision": "df839904600d745676ccabc245ddfc234ec85c72adb67ddd5d61cf293ebb8e62",
+    "activated_tick": 198
+  },
+  "second_deployment": {
+    "deployment_id": "d1529fa1eb1540c9ab8b352697f0528c",
+    "sha256": "7e748f85a4bc211053003ffafc2f6175338b09701b06c9b15099a029b0e64136",
+    "revision": "839934777687e63a3e2257745045289ca999ce9f6da289bfc5bf352f87a94523",
+    "activated_tick": 438
+  },
+  "failed_test": {
+    "id": "1afd874e33e64917a6642f93bf8ea852",
+    "kind": "test",
+    "sha256": "7e748f85a4bc211053003ffafc2f6175338b09701b06c9b15099a029b0e64136",
+    "revision": "baf1ee849f51107c37ca35155f41a9c25550d7551f6784a18cae9e000dc5b4dd",
+    "status": "Failed",
+    "error": "MODULE_ERROR: module>\n  File \"/tankbot/runtime/source_loader.py\", line 42, in prepare\n    raise ValueError(\"PLAYER_TEST_FAILED \" + location + \": \" + trace.strip().splitlines()[-1][:160])\nValueError: PLAYER_TEST_FAILED tests/test_project.py:3: AssertionError: M3 fixture\n"
+  },
+  "rollback": {
+    "deployment_id": "8279b8b704d84b65ae3425c77a9ae30b",
+    "sha256": "09558f056268c606127b307f982fb98740e0c19f0af7478e1dfae4ec12430dba",
+    "revision": "df839904600d745676ccabc245ddfc234ec85c72adb67ddd5d61cf293ebb8e62",
+    "activated_tick": 648
+  },
+  "run_unchanged": true,
+  "world_ticks_advanced": 452,
+  "edit_preserves_active": true,
+  "vim_focus_isolated": true,
+  "template_defaults_keep": true,
+  "syntax_diagnostic": true,
+  "persistent_file": "helper_m3_1792735523.py",
+  "revision": "839934777687e63a3e2257745045289ca999ce9f6da289bfc5bf352f87a94523",
+  "screenshot": ".m1-cache/m3-browser.png",
+  "archived_records": 12,
+  "artifacts": {
+    "config/m1.json": {
+      "bytes": 12633,
+      "sha256": "2a910268bfc23e0e93a864c897aab0abfd0c0051e14931e2c2b307441b0ad97c"
+    },
+    "package-lock.json": {
+      "bytes": 22858,
+      "sha256": "1328e9b32337711192989a6a3f8c423e29da911aa3e4b02ed630e788f792921d"
+    },
+    "build/web/editor-bundle.js": {
+      "bytes": 1201711,
+      "sha256": "01d0d38ec73b41188b039ed903518f62d7f5a2e919c20316d2fa31860ec588db"
+    },
+    "build/browser/authority-bundle.json": {
+      "bytes": 266618,
+      "sha256": "2f747edf87a8120d1d590cf11cf7c963ae8a1a19a99a701c152002a9de23a2ea"
+    },
+    "build/browser/player-bundle.json": {
+      "bytes": 13924,
+      "sha256": "15db6f880b0a0a83c40c11e3aaa9f28bbc61924dbdfc2cecb6887d2983d4801b"
+    },
+    "target/wasm32-unknown-unknown/release/tankbot_core.wasm": {
+      "bytes": 2160057,
+      "sha256": "ba1fff00b2c8044bd05143684f76fa24aac444859ec7f3c5b679b2cb90e13d1c"
+    }
+  }
+}

@@ -52,16 +52,11 @@ json.dumps(checks)
 `));
       }
       self.postMessage({op:"progress",phase:"Module initialization"});
-      // Immutable deployment snapshot, never an OS mount or a Core object.
-      for(const [relative,source] of Object.entries(data.sources)) {
-        if(!/^[a-zA-Z0-9_/]+\.py$/.test(relative)||relative.split("/").includes(".."))throw Error("Invalid deployment path");
-        const path="/workspace/"+relative;
-        py.FS.mkdirTree(path.slice(0,path.lastIndexOf("/")));py.FS.writeFile(path,source);
-      }
-      py.globals.set("_init_json",JSON.stringify(data.value.init));
-      py.runPython("from module_runner import ModuleRunner\nrunner=ModuleRunner(json.loads(_init_json))\ndel _init_json");
+      const init={...data.value.init,sources:data.value.init.sources??data.sources};
+      py.globals.set("_init_json",JSON.stringify(init));
+      py.runPython("from module_runner import ModuleRunner\nfrom source_loader import prepare\n_init=json.loads(_init_json)\n_temporary,_tests=prepare(_init)\nrunner=ModuleRunner(_init)\ndel _init_json");
       runner = py.globals.get("runner");
-      self.postMessage({op:"ready",security,memory_bytes:py._module.HEAPU8.buffer.byteLength});
+      self.postMessage({op:"ready",security,unit_tests:py.runPython("_tests"),memory_bytes:py._module.HEAPU8.buffer.byteLength});
     } else if(data.op==="probe_ping") {
       self.postMessage({op:"probe_pong"});
     } else if(data.op==="step") {
@@ -69,5 +64,5 @@ json.dumps(checks)
       const raw=py.runPython("json.dumps(runner.step(json.loads(_step_json)),allow_nan=False)");
       self.postMessage({op:"result",raw});
     }
-  } catch(error) { self.postMessage({op:"fault",code:"MODULE_ERROR",detail:String(error).slice(0,256)}); }
+  } catch(error) { self.postMessage({op:"fault",code:"MODULE_ERROR",detail:String(error).slice(-256)}); }
 };

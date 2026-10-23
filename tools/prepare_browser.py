@@ -58,7 +58,7 @@ def main():
         list(pool.map(verify, lock["files"].items()))
     common = list((ROOT/"protocol/tankbot_protocol").glob("*.py"))
     common = [p for p in common if p.name in ("__init__.py","message.py","wire.py")]
-    common += [ROOT/"sdk/python/tankbot/__init__.py", ROOT/"runtime/module_runner.py"]
+    common += [ROOT/"sdk/python/tankbot/__init__.py", ROOT/"runtime/module_runner.py", ROOT/"runtime/source_loader.py"]
     # Player bundle contains SDK/runner only. Workspace sources are a separate deployment snapshot.
     (DEST/"player-bundle.json").write_text(json.dumps(bundle(common)))
     trusted = common + list((ROOT/"host/tankbot_host").glob("*.py"))

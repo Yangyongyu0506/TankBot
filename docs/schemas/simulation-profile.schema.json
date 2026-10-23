@@ -5,7 +5,7 @@
   "type": "object",
   "properties": {
     "config_version": {
-      "const": "1.4"
+      "const": "1.5"
     },
     "confirmation_status": {
       "const": "confirmed"
@@ -1729,6 +1729,56 @@
         "probe_enabled"
       ],
       "additionalProperties": false
+    },
+    "workspace": {
+      "type": "object",
+      "properties": {
+        "max_files": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1048576
+        },
+        "max_source_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1048576
+        },
+        "max_plans": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1048576
+        },
+        "test_batches": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1048576
+        },
+        "max_deployments": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1048576
+        },
+        "poll_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1048576
+        },
+        "max_archives": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4096
+        }
+      },
+      "required": [
+        "max_files",
+        "max_source_bytes",
+        "max_plans",
+        "test_batches",
+        "max_deployments",
+        "poll_ms",
+        "max_archives"
+      ],
+      "additionalProperties": false
     }
   },
   "required": [
@@ -1757,7 +1807,8 @@
     "view_mode",
     "practice_view_policy",
     "rendering",
-    "browser"
+    "browser",
+    "workspace"
   ],
   "additionalProperties": false
 }

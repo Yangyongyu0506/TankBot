@@ -1,4 +1,5 @@
 import {SceneTimeline, FollowCamera, drawChassis, drawTurret} from "/rendering.js";
+import {mountWorkspace} from "/workspace-ui.js";
 import {connectBrowser} from "/browser-client.js";
 
 const $ = id => document.getElementById(id);
@@ -45,8 +46,10 @@ function key(code, down) {
   document.querySelectorAll(`[data-key="${code}"]`).forEach(e=>e.classList.toggle("active",down));
   command();
 }
-window.addEventListener("keydown", e=>{if (!e.repeat && !["INPUT","TEXTAREA"].includes(e.target.tagName)){key(e.code,true);if(keys.has(e.code)||e.code==="Space")e.preventDefault();}});
-window.addEventListener("keyup", e=>key(e.code,false));
+const editing = target => target?.closest?.("#workspace-panel, input, textarea, select, [contenteditable]");
+window.addEventListener("keydown", e=>{if (!e.repeat && !editing(e.target)){key(e.code,true);if(keys.has(e.code)||e.code==="Space")e.preventDefault();}});
+window.addEventListener("keyup", e=>{if(keys.has(e.code))key(e.code,false);});
+window.addEventListener("focusin", e=>{if(editing(e.target)){keys.clear();document.querySelectorAll("button[data-key].active").forEach(e=>e.classList.remove("active"));command();}});
 window.addEventListener("blur", ()=>{keys.clear();document.querySelectorAll(".active").forEach(e=>e.classList.remove("active"));command();});
 document.querySelectorAll("button[data-key]").forEach(button=>{
   button.addEventListener("pointerdown",e=>{button.setPointerCapture(e.pointerId);key(button.dataset.key,true);});
@@ -66,7 +69,7 @@ async function poll() {
       canvas.dataset.runtimeFault=health?.runtime_fault??"";
       canvas.dataset.poseCommits=health?.pose_commits??0;
       canvas.dataset.runtimeHealth=JSON.stringify(health??{});
-      if(health?.runtime_fault)$("connection").textContent="● 仿真在线 · Python 已停止，可刷新重新开始";
+      if(health?.runtime_fault)$("connection").textContent="● 仿真在线 · Python 已停止，可测试并重新部署";
     }
     const result = timeline.push(message, performance.now());
     if (result.accepted) {
@@ -202,6 +205,7 @@ try {
   $("mode-label").textContent = profile.view_mode === "weapons-practice" ? "真值练习视图 / Ground Truth · 跟随平移，世界方向固定" : "估计视图 / Estimated State · 相机跟随授权估计";
   $("fire").disabled = profile.control_sources.weapon !== "keyboard";
   $("weapon-control").textContent = `炮台：${profile.control_sources.turret} · 武器：${profile.control_sources.weapon} · J/L 旋转，空格单发`;
+  mountWorkspace(browser).catch(error=>$("workspace-message").textContent="编辑器加载失败："+error.message+"。请先运行 npm ci 和 npm run build。");
   poll();
   setInterval(() => { if (keys.size) command(); }, profile.view.keyboard_refresh_ms);
 } catch(error) { $("connection").textContent = `启动失败：${error.message}`; }

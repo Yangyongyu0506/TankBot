@@ -6,13 +6,27 @@ import subprocess
 import sys
 import threading
 import time
+import copy
+import tempfile
 from tankbot_protocol.wire import send, receive
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
 class Supervisor:
-    def __init__(self, config, init):
+    def __init__(self, config, init, *, deferred=False):
+        init = copy.deepcopy(init)
+        self.workspace_temp = None
+        if "sources" in init:
+            from .workspace import validate_files
+            sources = init.pop("sources")
+            validate_files(sources, config["workspace"])
+            self.workspace_temp = tempfile.TemporaryDirectory(prefix="tankbot-deployment-")
+            for relative, source in sources.items():
+                path = Path(self.workspace_temp.name) / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(source, encoding="utf-8")
+            init["workspace"] = self.workspace_temp.name
         self.limit = config["runtime"]["max_message_bytes"]
         self.budget = config["runtime"]["batch_budget_ms"] / 1000
         self.condition = threading.Condition()
@@ -21,6 +35,9 @@ class Supervisor:
         self.expires = None
         self.closed = False
         self.fault = None
+        self.ready = False
+        self.startup_result = None
+        self.detail = None
         self.batch_times_ms = deque(maxlen=config["runtime"]["history_limit_ticks"])
         self.proc = subprocess.Popen([sys.executable, "-I", str(ROOT / "runtime/worker.py"), str(self.limit)],
                                      stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
@@ -30,6 +47,10 @@ class Supervisor:
         self.reader.start()
         send(self.proc.stdin, init, self.limit)
         deadline = time.monotonic() + config["runtime"]["startup_timeout_s"]
+        self.startup_deadline = deadline
+        if deferred:
+            self.watchdog.start()
+            return
         with self.condition:
             while self.result is None and not self.fault:
                 remaining = deadline-time.monotonic()
@@ -38,10 +59,31 @@ class Supervisor:
                     break
                 self.condition.wait(remaining)
             ready, self.result = self.result, None
-        if self.fault or not ready or ready[0] != {"ready": True}:
+        if self.fault or not ready or ready[0].get("ready") is not True:
             self.close()
             raise RuntimeError("Worker initialization failed")
+        self.ready = True
+        self.startup_result = ready[0]
         self.watchdog.start()
+
+    def poll_ready(self):
+        with self.condition:
+            if self.ready or self.fault:
+                return self.ready
+            if self.result is not None:
+                value, received = self.result
+                self.result = None
+                if value.get("ready") is True and received <= self.startup_deadline:
+                    self.ready = True
+                    self.startup_result = value
+                else:
+                    self.fault = "MODULE_ERROR"
+                    self.detail = str(value.get("error", "Startup handshake rejected"))[:256]
+            elif time.monotonic() > self.startup_deadline:
+                self.fault = "RESOURCE_LIMIT"
+            if self.fault:
+                self._kill()
+            return self.ready
 
     def _read(self):
         try:
@@ -50,6 +92,11 @@ class Supervisor:
                 received = time.monotonic()
                 with self.condition:
                     if self.closed:
+                        return
+                    if isinstance(value, dict) and value.get("ready") is False:
+                        self.detail = str(value.get("error", "Startup failed"))[:256]
+                        self.fault = "MODULE_ERROR"
+                        self.condition.notify_all()
                         return
                     if self.result is not None:
                         self.fault = "RESOURCE_LIMIT"
@@ -134,3 +181,5 @@ class Supervisor:
             self.reader.join(timeout=1)
         if self.watchdog.is_alive():
             self.watchdog.join(timeout=1)
+        if self.workspace_temp is not None:
+            self.workspace_temp.cleanup()

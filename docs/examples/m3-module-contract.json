@@ -1,0 +1,40 @@
+{
+  "contract_version": "1.0",
+  "module_id": "odometry",
+  "entry_point": "localization.odometry:Odometry",
+  "inputs": {
+    "wheels": {
+      "schema": "joint_state@1",
+      "required": true,
+      "max_age_ticks": 12
+    },
+    "imu": {
+      "schema": "imu@1",
+      "required": false,
+      "max_age_ticks": 12
+    },
+    "turret": {
+      "schema": "joint_state@1",
+      "required": false,
+      "max_age_ticks": 12
+    },
+    "weapon": {
+      "schema": "weapon_state@1",
+      "required": false,
+      "max_age_ticks": 12
+    }
+  },
+  "outputs": {
+    "pose": {
+      "schema": "pose2d@1"
+    }
+  },
+  "execution": {
+    "mode": "periodic",
+    "period_ticks": 6,
+    "deadline_ticks": 6,
+    "budget_ms": 20
+  },
+  "dependencies": [],
+  "state_version": "1"
+}

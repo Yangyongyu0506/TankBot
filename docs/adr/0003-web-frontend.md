@@ -1,8 +1,9 @@
 # ADR-0003 Web 前端组合
 
-- Status: Proposed
+- Status: Superseded
 - Date: 2026-10-20
 - Scope: 表现、编辑器和桌面 UI 候选
+- Superseded by: [ADR-0021](0021-editor-and-deployment-profile.md)，基于 M3 的 Canvas/CodeMirror/Vim 实证；以下保留原提案背景。
 
 ## Context
 
