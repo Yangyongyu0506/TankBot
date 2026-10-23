@@ -227,7 +227,7 @@ try {
   $("mode-label").textContent = profile.view_mode === "weapons-practice" ? "真值练习视图 / Ground Truth · 跟随平移，世界方向固定" : "估计视图 / Estimated State · 相机跟随授权估计";
   $("fire").disabled = profile.control_sources.weapon !== "keyboard";
   $("weapon-control").textContent = `炮台：${profile.control_sources.turret} · 武器：${profile.control_sources.weapon} · J/L 旋转，空格单发`;
-  mountWorkspace(browser).catch(error=>$("workspace-message").textContent="编辑器加载失败："+error.message+"。请先运行 npm ci 和 npm run build。");
+  mountWorkspace(browser).catch(error=>$("workspace-message").textContent="编辑器加载失败："+error.message+"。请运行 python3 tools/build.py 后刷新页面。");
   poll();
   setInterval(() => { if (keys.size) command(); }, profile.view.keyboard_refresh_ms);
 } catch(error) { $("connection").textContent = `启动失败：${error.message}`; }

@@ -89,6 +89,8 @@ UI 看到的测试/部署结果连同对应源码快照保存在 `archive-<sha25
 
 CodeMirror 6 + Python/JSON 扩展 + 可切换 Vim，通过 esbuild 本地打包；沿用 ES module JavaScript 与现有 Canvas，不在本阶段引入 Phaser/全仓 TypeScript 转换。确切版本、传递依赖、integrity 在 `package-lock.json`；许可证随构建生成并由页面链接。UI 允许 CodeMirror 动态样式；不放宽脚本或 Runtime 网络/Worker 权限。
 
+统一入口 `python3 tools/build.py` 构建 Core 与编辑器；发现本平台所需的锁定 npm 包缺失或版本不符时自动执行 `npm ci`，随后执行编辑器打包并检查 bundle 与许可证产物。`--web-only` 可单独修复 UI，`--core-only` 供无头构建，`--offline` 需要本地依赖缓存；`--format-check` 仅检查 Rust。构建机需 Node.js 22+ 与 npm，运行时静态页面不执行 npm。npm 安装固定使用锁文件、包含开发依赖和本平台可选 esbuild 二进制，不修改玩家 Workspace。
+
 主游戏页面固定在视口内，信息栏用驾驶/状态/传感器/武器页签切换，不通过页面滚动访问功能。Workspace 默认为关闭的原生 modal dialog；顶部按钮或 F2 打开，再次 F2 或右上角 × 收起，焦点限制在弹窗内。关闭仅改变可见性，保留未保存草稿、光标、文件选择和运行中的测试/部署。代码与文件列表在面板内部滚动。
 
 弹窗打开时清除游戏按键并发送零目标，整个打开期间屏蔽游戏输入；keydown/keyup 不把 Vim 的 W/J/L/Space 转为执行器指令。F2 在捕获阶段处理，编辑器内 Escape 保留给 CodeMirror/Vim，不用它强制关闭编辑器；其他弹窗控件的 Escape 可关闭。Ctrl/⌘S 和 Vim `:w` 保存，不自动部署。离开有未保存草稿的页面会提示。

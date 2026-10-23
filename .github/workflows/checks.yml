@@ -18,18 +18,16 @@ jobs:
           cargo +1.99.1 build --locked --release --target wasm32-unknown-unknown --lib
           cargo +1.99.1 test --locked
       - uses: actions/setup-python@v5
-        if: runner.os == 'Linux'
         with:
           python-version: '3.13'
       - uses: actions/setup-node@v4
-        if: runner.os == 'Linux'
         with:
           node-version: '22'
+      - name: Build editor from locked npm dependencies
+        run: python tools/build.py --web-only
       - name: Protocol, runtime, rendering and documentation
         if: runner.os == 'Linux'
         run: |
-          npm ci --ignore-scripts
-          npm run build
           python -m pip install -r requirements.txt
           python -m unittest discover -s tests -v
           node tests/test_rendering.mjs

@@ -6,15 +6,13 @@ TankBot 将二维坦克运动、机器人算法学习与多文件 Python 编程�
 
 ## 构建与运行
 
-需要 Rust **1.99.1**、Python **3.11+**（本机实测 3.14.4）；WASM 探针另需 `wasm32-unknown-unknown` 和 Node 22+；编辑器使用 npm 锁定依赖。Python 依赖安装到自己的虚拟环境：
+需要 Rust **1.99.1**、Python **3.11+**（本机实测 3.14.4）、Node.js **22+** 与 npm；WASM 探针另需 `wasm32-unknown-unknown`。编辑器使用 npm 锁定依赖。Python 依赖安装到自己的虚拟环境：
 
 ```bash
 python3 -m venv .venv
 . .venv/bin/activate
 python -m pip install -r requirements.txt
 python3 tools/build.py
-npm ci --ignore-scripts
-npm run build
 python3 tools/tankbot.py serve
 ```
 
@@ -30,7 +28,7 @@ python3 tools/tankbot.py headless --ticks 600 --robot-demo
 
 所有可调模型、控制、场景及运行 profile 集中在 [config/m1.json](config/m1.json)，缺项报错，不补隐藏默认值。底盘只能在场景启动时选择。可在网页中保存、测试并部署 Python 项目；编辑与部署分离，成功部署不重置物理世界。示例算法在 [examples/robot](examples/robot/localization/odometry.py)，支持多文件 import，启动不会改写源码。
 
-`tools/build.py` 优先使用正常 Cargo；未安装时可使用本机已有的 `.tools/rust` 工具链与 `.tools/cargo` 缓存。这些目录被忽略，不是分发依赖。常规 Rust 环境也可直接 `cargo build --locked`。
+`tools/build.py` 构建 Rust Core，并自动检查 `package-lock.json` 和已安装的 npm 依赖：缺失或版本不匹配时执行锁定安装，然后每次重新构建编辑器及许可证文件。`--web-only` 只修复/构建编辑器，`--core-only` 用于无需 Node.js 的无头核心构建；`--offline` 要求 Cargo 与 npm 依赖已在本机缓存。缺少 Node.js/npm 时会报出安装要求，不会假装 UI 已构建。脚本优先使用正常 Cargo；未安装时可使用本机已有的 `.tools/rust` 工具链与 `.tools/cargo` 缓存。这些目录被忽略，不是分发依赖。常规 Rust 环境也可直接 `cargo build --locked`，但它不生成编辑器资源。
 
 ## 浏览器单机（M2 本机验收）
 
