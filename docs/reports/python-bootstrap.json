@@ -1,0 +1,64 @@
+{
+  "date": "2026-10-24",
+  "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+  "system_python": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+  "system_missing": [
+    "pip",
+    "ensurepip",
+    "numpy"
+  ],
+  "managed_environment": ".m1-cache/python/envs/c7e3b0685d32edccf2a58f26",
+  "versions": {
+    "jsonschema": "4.19.2",
+    "referencing": "0.36.2",
+    "websockets": "17.2",
+    "numpy": "2.3.3"
+  },
+  "cached_offline_headless": {
+    "tick": 12,
+    "truth_digest": "d498889c422fc90b4ebf5b758e45085780bce68f77e4a9f16b9d8c1de127e830",
+    "pose_commits": 0,
+    "rejections": [],
+    "campaign": {
+      "run_id": "1cca62029296433d9e1c9c027363406a",
+      "attempt": {
+        "level_id": "c0",
+        "status": "active",
+        "enemy_hp": null,
+        "enemy_max_hp": null,
+        "progress": {
+          "moved": false,
+          "turned": false,
+          "has_estimate": false,
+          "hit": false
+        },
+        "result": null
+      }
+    }
+  },
+  "cached_launch_installed_packages": false,
+  "native_worker": {
+    "host_python": "/home/yangy/Academics/TankBot/.m1-cache/python/envs/c7e3b0685d32edccf2a58f26/bin/python",
+    "worker_python": "/home/yangy/Academics/TankBot/.m1-cache/python/envs/c7e3b0685d32edccf2a58f26/bin/python",
+    "worker_ready": {
+      "ready": true,
+      "unit_tests": 0,
+      "runtime_packages": {
+        "numpy": "2.3.3"
+      }
+    }
+  },
+  "c0_http": {
+    "level": "c0",
+    "sdk_types": 18
+  },
+  "sources": {
+    "tools/tankbot.py": "d5631d718ab9a6c3e564e1f826d562aa2384f24fdc88ad0671904110e2641099",
+    "tools/python_env.py": "e0c2e2ceb879229f6bf4487501b1017a2413146832bbbf7ab30afc6b6881696a",
+    "host/tankbot_host/cli.py": "9dbb82b25a45231d6dc5bc16a3acdf978f82a652a415126a14acf4c4e5366062",
+    "host/tankbot_host/campaign.py": "c55e0bd9a39ac197a13c8f502eb5aed47083bab8c23972b98dc7d588c54b3866",
+    "requirements.txt": "119f893bd0e81657a4c345d345e5ee95f262594bc995697821de5a0325ac7ba6",
+    "config/python-bootstrap.lock.json": "9271577544b0c646f33f002ac96b4ab4209ddc9ac2527e4b32f647c80eb798d4",
+    "tests/test_python_env.py": "f07f0b95c111be543766e0ea5cdd94cc88b0c2cc7b25a6f425cf4f0c42bb7f10"
+  }
+}

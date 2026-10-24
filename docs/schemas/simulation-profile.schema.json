@@ -463,6 +463,9 @@
     "view": {
       "type": "object",
       "properties": {
+        "gamepad": {
+          "$ref": "gamepad-input.schema.json"
+        },
         "pose_source_id": {
           "type": "string",
           "minLength": 1

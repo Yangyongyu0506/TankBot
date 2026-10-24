@@ -199,7 +199,37 @@
     "keyboard_linear_mps": 1.0,
     "keyboard_yaw_radps": 1.0,
     "interpolation_jump_m": 1.0,
-    "keyboard_turret_radps": 2.0
+    "keyboard_turret_radps": 2.0,
+    "gamepad": {
+      "enabled": true,
+      "standard_mapping_only": true,
+      "deadzone": 0.18,
+      "button_threshold": 0.5,
+      "refresh_ms": 50,
+      "linear_mps": 1.0,
+      "yaw_radps": 1.0,
+      "turret_radps": 2.0,
+      "axes": {
+        "forward": {
+          "index": 1,
+          "sign": -1
+        },
+        "horizontal": {
+          "index": 0,
+          "sign": -1
+        },
+        "turret": {
+          "index": 2,
+          "sign": -1
+        }
+      },
+      "buttons": {
+        "yaw_left": 4,
+        "yaw_right": 5,
+        "fire": 7,
+        "editor": 9
+      }
+    }
   },
   "host": {
     "bind": "127.0.0.1",

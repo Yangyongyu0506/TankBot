@@ -11,7 +11,7 @@ def active(config):
 
 def ensure_native_numpy() -> None:
     if importlib.util.find_spec("numpy") is None:
-        raise ValueError("教学关卡需要 NumPy。请在运行游戏的 Python 虚拟环境执行：python -m pip install -r requirements.txt")
+        raise ValueError("教学 Runtime 缺少 NumPy；请使用 python3 tools/tankbot.py 启动，启动器会自动准备 Python 依赖。")
 
 
 def validate_profile(config):

@@ -60,11 +60,27 @@ F2 打开代码工作区，默认显示当前关卡说明；F1 或「关卡说�
 
 ## 模板升级与依赖
 
-教学模板版本 `1.2.0`。新关只补不存在的文件；已有算法保留。旧 C1 的 `coordinates.py` 不会被覆盖或删除。旧脚手架测试/部署会提示 `TEACHING_TEMPLATE_UPGRADE_REQUIRED`；玩家在预览中选择「系统脚手架更新」，核对后应用，可一次更新 wrapper/Manifest/Contract/生成测试，算法文件默认 keep，旧 revision 仍可恢复。
+教学模板版本 `1.2.0`。新关只补不存在的文件；已有算法保留。旧 C1 的 `coordinates.py` 不会被覆盖或删除。旧项目若保留了旧 `campaign_robot.py`，Test 前的兼容性检查会阻止使用旧调用方式；这不表示算法测试失败。编辑器在按钮附近显示原因，点击「测试快照」先保存草稿并打开专用预览，玩家确认「保留算法，更新框架并继续测试」后创建新 revision 并启动测试。预览可以取消，确认前不替换文件。
+
+专用 `POST /api/workspace/upgrade` 计划只包含运行 wrapper、Manifest、Contract、生成测试，以及尚不存在的文件；已有 perception/ 等算法和玩家自行编写的测试文件不进入替换计划。上述运行文件也可能被玩家改过，预览明确列出将替换的内容，旧 revision 逐字保留。普通基础模板/导入的 keep/incoming 流程继续可用。
+
+UI 与 Test 共用 framework_upgrade 检查，版本注释不必位于文件第一行；删除注释或纯格式修改后，若 AST 与当前运行框架一致也接受。框架语法错误优先显示文件/行号。版本提示只是兼容性帮助，不能替代权限、Contract、摘要与输出验证。应用升级后立即刷新两处提示，避免已经更新仍显示待升级。
+
+## 测试快照与部署按钮
+
+Test 自动检查语法、导入、项目/Contract/连线/发布权限，运行 `tests/test_*.py` 单元测试，然后用获授权的传感器输入试运行配置数量的批次（当前 6）。C1 生成测试验证返回值为合法 SE(3)，以及已知样例下的旋转、平移和方向向量；C2 继续复用这些坐标变换测试，不强制某种滤波算法或误差阈值。
+
+试运行结果不提交给执行器或正式画面，也不让玩家程序获得真值。Ready 表示这个快照通过这些样例与短时间运行检查，不表示算法效果全面正确或已经通关。
+
+部署按钮仅对当前已保存且拥有 Ready 报告的 revision 启用；正在处理、尚未测试、测试失败、需要更新框架或代码有改动时禁用，并在旁边显示具体原因。修改代码后必须重新测试，不能通过修改按钮状态绕过 Authority 的报告/环境校验。教学说明与测试按钮悬停文本均列出实际检查范围。流程验收见 [教学升级验收](reports/TEACHING_UPGRADE_VALIDATION.md)。
+
+## NumPy 依赖准备
 
 原生 NumPy 固定 `2.3.3`，随 `requirements.txt` 安装；其官方支持范围包含 Python 3.11–3.14，满足当前原生解释器。浏览器使用锁定 Pyodide 0.29.5 提供的 NumPy `2.2.5` wheel；摘要及字节数加入 browser-assets.lock，prepare 工具下载并验证，玩家 Worker 自动加载。本机与浏览器版本分别验证，不承诺 NumPy 跨版本位级相同。[NumPy 发行说明](https://numpy.org/doc/stable/release/2.3.3-notes.html)、[Pyodide 包加载](https://pyodide.org/en/latest/usage/loading-packages.html)。
 
 玩家不配置 pip、网络或 Workspace 依赖。NumPy 是应用预装能力；Manifest 的 dependencies 仍为空，不授予联网安装权限。启动握手记录实际 NumPy 版本，测试环境摘要包含运行包版本和依赖锁文件，版本变化会使旧 Ready 失效。
+
+原生应用预装现由 [启动引导](21_DEPENDENCY_BOOTSTRAP.md) 自动完成：缺少 pip/ensurepip 也可创建专用环境，使用原命令启动。引导只处理可信仓库依赖，不在玩家 Runtime 内执行安装。
 
 ## 取舍、未决项与验收
 

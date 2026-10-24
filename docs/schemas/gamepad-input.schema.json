@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tankbot.example/schemas/v1/gamepad-input.schema.json",
+  "title": "TankBot 手柄输入配置",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean"
+    },
+    "standard_mapping_only": {
+      "type": "boolean"
+    },
+    "deadzone": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 0.8
+    },
+    "button_threshold": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 1
+    },
+    "refresh_ms": {
+      "type": "integer",
+      "minimum": 50,
+      "maximum": 200
+    },
+    "linear_mps": {
+      "type": "number",
+      "minimum": 0
+    },
+    "yaw_radps": {
+      "type": "number",
+      "minimum": 0
+    },
+    "turret_radps": {
+      "type": "number",
+      "minimum": 0
+    },
+    "axes": {
+      "type": "object",
+      "properties": {
+        "forward": {
+          "$ref": "#/$defs/axis"
+        },
+        "horizontal": {
+          "$ref": "#/$defs/axis"
+        },
+        "turret": {
+          "$ref": "#/$defs/axis"
+        }
+      },
+      "required": [
+        "forward",
+        "horizontal",
+        "turret"
+      ],
+      "additionalProperties": false
+    },
+    "buttons": {
+      "type": "object",
+      "properties": {
+        "yaw_left": {
+          "$ref": "#/$defs/button"
+        },
+        "yaw_right": {
+          "$ref": "#/$defs/button"
+        },
+        "fire": {
+          "$ref": "#/$defs/button"
+        },
+        "editor": {
+          "$ref": "#/$defs/button"
+        }
+      },
+      "required": [
+        "yaw_left",
+        "yaw_right",
+        "fire",
+        "editor"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "enabled",
+    "standard_mapping_only",
+    "deadzone",
+    "button_threshold",
+    "refresh_ms",
+    "linear_mps",
+    "yaw_radps",
+    "turret_radps",
+    "axes",
+    "buttons"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "axis": {
+      "type": "object",
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 31
+        },
+        "sign": {
+          "enum": [
+            -1,
+            1
+          ]
+        }
+      },
+      "required": [
+        "index",
+        "sign"
+      ],
+      "additionalProperties": false
+    },
+    "button": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 63
+    }
+  }
+}

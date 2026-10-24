@@ -10,7 +10,8 @@ from browser_driver import Browser
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--url',default='http://127.0.0.1:8765')
-    args=parser.parse_args();b=Browser()
+    parser.add_argument('--browser-port',type=int,default=2828)
+    args=parser.parse_args();b=Browser(args.browser_port)
     def press(code,key=None):
         b.script("const target=document.activeElement;target.dispatchEvent(new KeyboardEvent('keydown',{key:"+json.dumps(key or code)+",code:"+json.dumps(code)+",bubbles:true}));target.dispatchEvent(new KeyboardEvent('keyup',{key:"+json.dumps(key or code)+",code:"+json.dumps(code)+",bubbles:true}));return true;")
     def opened(): return b.script("return document.getElementById('workspace-dialog').open;")

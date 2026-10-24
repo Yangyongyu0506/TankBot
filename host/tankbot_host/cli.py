@@ -1,10 +1,10 @@
 import argparse
 import json
 from pathlib import Path
-from .authority import Authority, load_config, ROOT
+ROOT = Path(__file__).resolve().parents[2]
 
 
-def main():
+def make_parser():
     parser = argparse.ArgumentParser(description="TankBot trusted-local simulation and teaching levels")
     parser.add_argument("mode", choices=("serve", "browser", "headless", "probe"))
     parser.add_argument("--config", type=Path, default=ROOT / "config/m1.json")
@@ -18,11 +18,23 @@ def main():
     parser.add_argument("--robot-demo", action="store_true", help="Run the separate SDK turret/fire example")
     parser.add_argument("--fault", choices=("none","infinite_loop","exception","bad_covariance","no_output"), help="Local failure probe")
     parser.add_argument("--browser-qa", action="store_true", help="Run explicit M2 browser security/fixture probes")
-    args = parser.parse_args()
+    parser.add_argument("--offline", action="store_true", help="Prepare Python dependencies only from the local cache")
+    return parser
+
+
+def parse_args(argv=None):
+    parser = make_parser()
+    args = parser.parse_args(argv)
+    if args.level and (args.view or args.robot_demo):
+        parser.error("--level 不可与 --view 或 --robot-demo 合用")
+    return parser, args
+
+
+def main():
+    parser, args = parse_args()
+    from .authority import Authority, load_config
     config = load_config(args.config)
     if args.level:
-        if args.view or args.robot_demo:
-            parser.error("--level 不可与 --view 或 --robot-demo 合用")
         from .campaign import configure
         config = configure(config, args.level)
     if args.chassis:

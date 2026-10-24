@@ -33,10 +33,17 @@ export function mountLearning(reference,openFile,previewTemplate){
   lesson.append(element("h4","文件已准备好"),element("p","只编辑算法文件中的 TODO。导入、检测列表展开、矩阵乘法、消息发布、测试和部署由系统脚手架承担；框架文件与 JSON 配置可保持原样。"));
   lesson.append(element("h4","常见问题"));
   for(const text of reference.lesson.common_errors)lesson.append(element("p",text));
-  if(reference.upgrade_required){
-    const notice=element("section",undefined,"learning-upgrade");notice.append(element("strong","此工作区使用旧版教学脚手架"),element("p","预览 SE(3) / 类型注解模板升级。只采用系统脚手架即可保留你的算法；旧文件仍可从历史 revision 恢复。"));
-    const button=element("button","预览教学模板升级");button.onclick=()=>{show(false);previewTemplate();};notice.append(button);lesson.prepend(notice);
+  lesson.append(element("h4","测试快照会检查什么？"));
+  for(const text of reference.testing.checks)lesson.append(element("p",text));
+  lesson.append(element("p",reference.testing.meaning));
+  let upgradeNotice;
+  function updateUpgrade(required){
+    upgradeNotice?.remove();upgradeNotice=null;
+    if(!required)return;
+    upgradeNotice=element("section",undefined,"learning-upgrade");upgradeNotice.append(element("strong","需要更新课程运行框架"),element("p","这是项目兼容性检查，尚未测试你的算法。预览后可保留 perception/ 等算法文件，更新运行框架并继续测试。"));
+    const button=element("button","预览更新（保留算法）");button.onclick=()=>{show(false);previewTemplate();};upgradeNotice.append(button);lesson.prepend(upgradeNotice);
   }
+  updateUpgrade(reference.upgrade_required);
   function selectType(name){
     if(!reference.types.some(type=>type.name===name))return;
     currentType=name;tab("types");show(true);renderType();
@@ -64,6 +71,7 @@ export function mountLearning(reference,openFile,previewTemplate){
   return {
     open:()=>{show(true);tab("lesson");},
     selectType,
+    updateUpgrade,
     file(path){
       const fn=reference.lesson.functions.find(item=>item.path===path);
       $("editor-contract").textContent=fn?.signature??"F1 · 关卡说明、类型与 Python 速查";

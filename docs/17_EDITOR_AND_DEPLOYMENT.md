@@ -75,6 +75,7 @@ UI 看到的测试/部署结果连同对应源码快照保存在 `archive-<sha25
 | `GET /api/workspace` | 当前 snapshot、limits、CSRF token |
 | `POST /api/workspace/save` | `{revision, changes}`；路径映射到新文本，null 为显式删除；CAS 保存 |
 | `POST /api/workspace/template` | `{revision}`；基础模板预览，现有文件默认 keep |
+| `POST /api/workspace/upgrade` | `{revision}`；教学运行框架专用预览，排除已有算法和非系统测试文件；不自动应用 |
 | `POST /api/workspace/import` | `{revision, files}`；只导入文本，生成冲突 plan |
 | `POST /api/workspace/apply` | `{revision, plan_id, resolutions}`；每路径 keep/incoming |
 | `POST /api/workspace/revision` | `{revision}`；读取本库历史源码 |
@@ -102,3 +103,5 @@ CodeMirror 6 + Python/JSON 扩展 + 可切换 Vim，通过 esbuild 本地打包�
 M4 新增独立的 Campaign 单模块 profile：标准输入是授权系统自身位姿和可选 Radar，输出是目标估计。三关共用一个 Contract，阶段解锁只补缺失文件，并为每个阶段保留独立 ledger；Manifest 的系统位姿来源由 Authority 校验。继续复用本文件定义的 Test/Deploy/回滚边界，具体接口与课堂函数/类见 [18](18_CAMPAIGN_DESIGN.md)。
 
 学习工具增量见 [19](19_LEARNING_GUIDES_AND_SE3.md)：每关默认说明、函数签名、类型搜索/悬停/补全、矩阵实验和 Python 速查共用 Workspace 弹窗；页面不滚动。测试环境摘要另绑定 NumPy 实际包版本、requirements 与浏览器资源锁。旧教学脚手架通过显式预览升级，算法文件不自动替换。
+
+教学升级交互修复：Test 遇到旧框架时先保存草稿并打开只含运行文件/缺失文件的预览，确认后更新并继续 Test；取消不更新源码。兼容性提示不作为算法测试结论。部署按钮旁说明未启用原因，当前 revision 通过 Ready 后才启用，继续编辑会再次禁用；测试范围及证据见 [19](19_LEARNING_GUIDES_AND_SE3.md) 与 [教学升级报告](reports/TEACHING_UPGRADE_VALIDATION.md)。

@@ -25,10 +25,6 @@ def environment(config, core_sha256, runtime_packages=None):
 def inspect_snapshot(snapshot, authority):
     files = snapshot["files"]
     validate_files(files, authority.config["workspace"])
-    if authority.config.get("campaign", {}).get("active_level"):
-        from .campaign_templates import TEMPLATE_VERSION
-        if not files.get("campaign_robot.py", "").startswith("# TankBot managed scaffold " + TEMPLATE_VERSION):
-            raise ValueError("TEACHING_TEMPLATE_UPGRADE_REQUIRED: 请预览教学模板升级并采用系统脚手架；算法文件会保留")
     revision = snapshot["revision"]
     if revision != digest({"files": files, "ledger": snapshot["ledger"]}):
         raise ValueError("SNAPSHOT_DIGEST_MISMATCH")
@@ -41,6 +37,10 @@ def inspect_snapshot(snapshot, authority):
                 ast.parse(source, filename=path)
             except SyntaxError as error:
                 raise ValueError(f"{path}:{error.lineno}:{error.offset}: {error.msg}") from error
+    from .campaign_templates import framework_upgrade
+    upgrade = framework_upgrade(authority.config, files)
+    if upgrade["required"]:
+        raise ValueError("TEACHING_TEMPLATE_UPGRADE_REQUIRED: " + upgrade["message"])
     manifest = strict_loads(files["tankbot.json"])
     validator = authority.validator
     validator.structure(manifest, "workspace.schema.json")

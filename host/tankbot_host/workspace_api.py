@@ -1,7 +1,7 @@
 """Local editor API. Storage does not execute player files or grant runtime permissions."""
 from .workspace import open_store, starter, digest
 from .learning import learning_bundle
-from .campaign_templates import TEMPLATE_VERSION
+from .campaign_templates import TEMPLATE_VERSION, framework_upgrade, MANAGED_FILES
 
 
 class WorkspaceAPI:
@@ -14,8 +14,8 @@ class WorkspaceAPI:
     def get(self):
         snapshot = self.store.read()
         learning = learning_bundle(self.config)
-        learning["upgrade_required"] = bool(self.config.get("campaign", {}).get("active_level")
-            and not snapshot["files"].get("campaign_robot.py", "").startswith("# TankBot managed scaffold " + TEMPLATE_VERSION))
+        learning["upgrade"] = framework_upgrade(self.config, snapshot["files"])
+        learning["upgrade_required"] = learning["upgrade"]["required"]
         return {"snapshot": snapshot, "limits": self.config["workspace"], "storage": "local-versioned-store",
                 "level_id": self.config.get("campaign", {}).get("active_level"), "learning": learning}
 
@@ -35,6 +35,18 @@ class WorkspaceAPI:
     def post(self, operation, value):
         if operation == "save":
             return self.store.edit(value["revision"], value["changes"])
+        if operation == "upgrade":
+            if not self.config.get("campaign", {}).get("active_level"):
+                raise ValueError("NO_TEACHING_UPGRADE")
+            snapshot = self.store.read()
+            sources = starter(self.config)
+            # Existing algorithms never enter the replacement plan, including user tests outside managed paths.
+            sources = {path: source for path, source in sources.items()
+                       if path in MANAGED_FILES or path not in snapshot["files"]}
+            plan = self.store.plan("campaign-starter", TEMPLATE_VERSION, sources, value["revision"],
+                                   {"purpose": "teaching-framework-upgrade", "preserve_existing_algorithms": True})
+            plan["purpose"] = "teaching-framework-upgrade"
+            return plan
         if operation == "template":
             template_id = "campaign-starter" if self.config.get("campaign", {}).get("active_level") else "odometry-starter"
             return self.store.plan(template_id, TEMPLATE_VERSION, starter(self.config), value["revision"],

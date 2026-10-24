@@ -31,7 +31,12 @@
 | [17 编辑器与部署](17_EDITOR_AND_DEPLOYMENT.md) | M3 存储、Manifest profile、测试、原子激活、回滚和管理 API |
 | [18 教学关卡](18_CAMPAIGN_DESIGN.md) | M4 C0–C2、Radar、目标估计、巡逻敌车与血量通关 |
 | [19 学习说明与 SE(3)](19_LEARNING_GUIDES_AND_SE3.md) | 所有关卡的类型/步骤、编辑器帮助、矩阵实验、NumPy 与模板升级 |
+| [20 手柄驱动](20_GAMEPAD_INPUT.md) | 标准/自定义映射、模拟量、人工仲裁、回中、断连与编辑隔离 |
+| [21 首次启动依赖](21_DEPENDENCY_BOOTSTRAP.md) | 无 pip 环境引导、专用解释器、缓存/离线、并发与重试 |
+| [Python 启动验收](reports/PYTHON_BOOTSTRAP_VALIDATION.md) | 缺包系统直启 C0、原生 Worker、离线新环境与 92 项回归 |
+| [手柄验收](reports/GAMEPAD_VALIDATION.md) | 两种 Runtime / 两种底盘的输入闭环、模拟设备及硬件验证边界 |
 | [学习工具验收](reports/LEARNING_VALIDATION.md) | SE(3) 真实运算、逐关说明、类型补全、矩阵实验与无损升级 |
+| [教学升级验收](reports/TEACHING_UPGRADE_VALIDATION.md) | 旧框架引导、测试范围说明、Ready 点亮部署与算法保留 |
 | [M4 验收](reports/M4_VALIDATION.md) | 原生/Firefox 三关通关、两种跟踪法、来源保留与权限证据 |
 | [M3 验收](reports/M3_VALIDATION.md) | 原生/Firefox 多文件编辑、快照摘要、失败恢复和焦点证据 |
 | [M1 收尾复核](reports/M1_CLOSEOUT.md) | 路线图逐项检查、当前配置与历史证据范围 |

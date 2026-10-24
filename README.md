@@ -8,15 +8,14 @@ M4 增加 C0–C2 教学关卡：真值驾驶练习、理想雷达 SE(3) 矩阵�
 
 ## 构建与运行
 
-需要 Rust **1.99.1**、Python **3.11+**（本机实测 3.14.4）、Node.js **22+** 与 npm；WASM 探针另需 `wasm32-unknown-unknown`。编辑器使用 npm 锁定依赖。Python 依赖安装到自己的虚拟环境：
+需要 Rust **1.99.1**、Python **3.11+**（本机实测 3.14.4）、Node.js **22+** 与 npm；WASM 探针另需 `wasm32-unknown-unknown`。编辑器构建会自动安装锁定的 npm 依赖，游戏启动器会自动准备 Python 依赖：
 
 ```bash
-python3 -m venv .venv
-. .venv/bin/activate
-python -m pip install -r requirements.txt
 python3 tools/build.py
 python3 tools/tankbot.py serve
 ```
+
+首次启动检查 `requirements.txt`：缺少 NumPy 等依赖、版本不符或导入失败时，自动创建 `.m1-cache/python/` 下的专用环境、下载并安装，再继续运行原命令；宿主没有 pip/ensurepip 也可引导。系统 Python 和已有虚拟环境保持原样，玩家无需手动激活。后续启动复用缓存；完整缓存可用 `--offline`，安装失败后重新运行同一命令重试。说明见 [首次运行设计](docs/21_DEPENDENCY_BOOTSTRAP.md)。
 
 打开 `http://127.0.0.1:8765`。差速：W/S 前后，A/D 转向。全向：W/S 前后，A/D 横移，Q/E 转向；启动时选择：
 
@@ -38,13 +37,29 @@ python3 tools/tankbot.py browser --level c0
 
 前三关保留系统自定位、公开地图与手动控制。Radar 是车体系局部观测，地图上的目标标记来自玩家 Python；C1/C2 不显示真实敌车、真实弹道或命中特效位置。C2 显示授权 HP。通关或点击「结束并评估」后关闭玩家程序，再显示估计误差；物理与已有弹丸继续运行。重试建立新场景，新关只补缺失文件，已有源码保留；保存的草稿须重新 Test/Deploy。任务进度按会话保存，可自由选择关卡练习。
 
-F1 或编辑器中的「关卡说明 / 类型」可随时查看每关步骤、输入输出签名、SDK 字段/单位、Python 速查与交互矩阵实验；悬停及 Ctrl+Space 提供类型提示。新模板显式标注变量和返回类型。旧工作区可预览模板升级并选择系统脚手架，已有算法默认保留。已有原生安装需在同一虚拟环境重新安装 `requirements.txt`（加入 NumPy）；浏览器重新运行 `prepare_browser.py` 准备锁定的 NumPy。
+F1 或编辑器中的「关卡说明 / 类型」可随时查看每关步骤、输入输出签名、SDK 字段/单位、Python 速查与交互矩阵实验；悬停及 Ctrl+Space 提供类型提示。新模板显式标注变量和返回类型。旧工作区可预览模板升级并选择系统脚手架，已有算法默认保留。原生 NumPy 随首次启动自动准备；浏览器运行 `prepare_browser.py` 准备锁定的 Pyodide/NumPy 资源。
+
+旧工作区点击「测试快照」时，若运行框架仍为旧版，会先打开更新预览；确认「保留算法，更新框架并继续测试」后继续。已有算法文件排除在替换计划之外，旧运行文件可从历史版本恢复。测试检查语法/导入/接口、项目单元测试和默认 6 批授权传感器试运行；C1 包含 SE(3) 样例，不要求先通关。当前快照通过测试后部署按钮才会亮；旁边会说明等待、失败或重新测试的原因。
 
 完整模型和接口见 [M4 设计](docs/18_CAMPAIGN_DESIGN.md) 与 [学习说明设计](docs/19_LEARNING_GUIDES_AND_SE3.md)，验证见 [M4 报告](docs/reports/M4_VALIDATION.md) 及 [SE(3) 学习工具验收](docs/reports/LEARNING_VALIDATION.md)。
 
 炮台 J/L 转动，空格或按钮单发（长按不连射）。默认估计视图隐藏真实弹丸，保留炮台与武器局部反馈；`--view weapons-practice` 明确授权显示真实车体、弹丸和靶标。Python 输入权限不增加。`--robot-demo` 使用独立的 [weapon_demo.py](examples/robot/weapon_demo.py) 控制炮台/开火，人工底盘仍可用；对应人工武器入口会拒绝。想观察程序控制可运行 `python3 tools/tankbot.py serve --robot-demo --view weapons-practice`。
 
 所有可调模型、控制、场景及运行 profile 集中在 [config/m1.json](config/m1.json)，缺项报错，不补隐藏默认值。底盘只能在场景启动时选择。可在网页中保存、测试并部署 Python 项目；编辑与部署分离，成功部署不重置物理世界。示例算法在 [examples/robot](examples/robot/localization/odometry.py)，支持多文件 import，启动不会改写源码。
+
+## 手柄操控
+
+两种运行方式均接入浏览器 Gamepad API。连接标准手柄后点击游戏页面，按任意手柄键，再松开摇杆和按键；顶部显示连接状态，「驾驶」页可启停或选择手柄。
+
+| 操作 | 默认映射 |
+| --- | --- |
+| 驾驶 | 左摇杆；差速横轴转向，全向横轴横移 |
+| 车体左/右转 | LB/RB（L1/R1） |
+| 炮台旋转 | 右摇杆横轴 |
+| 单发 | RT（R2），长按不连发 |
+| 打开/收起编辑器 | Start（Options/+） |
+
+摇杆控制目标速度比例，松开后主动制动。键盘按住时按执行器优先；编辑、切出页面或断连会清除手柄目标，返回后需先回中。程序接管的执行器不接受人工指令。映射、方向、死区和速度均在 `config/m1.json` 的 `view.gamepad`；非标准手柄可显式配置索引。远程网页需 HTTPS，本机 localhost 可用。设计及硬件验证边界见 [手柄设计](docs/20_GAMEPAD_INPUT.md) 与 [验收报告](docs/reports/GAMEPAD_VALIDATION.md)。
 
 `tools/build.py` 构建 Rust Core，并自动检查 `package-lock.json` 和已安装的 npm 依赖：缺失或版本不匹配时执行锁定安装，然后每次重新构建编辑器及许可证文件。`--web-only` 只修复/构建编辑器，`--core-only` 用于无需 Node.js 的无头核心构建；`--offline` 要求 Cargo 与 npm 依赖已在本机缓存。缺少 Node.js/npm 时会报出安装要求，不会假装 UI 已构建。脚本优先使用正常 Cargo；未安装时可使用本机已有的 `.tools/rust` 工具链与 `.tools/cargo` 缓存。这些目录被忽略，不是分发依赖。常规 Rust 环境也可直接 `cargo build --locked`，但它不生成编辑器资源。
 
@@ -79,11 +94,14 @@ python3 tools/tankbot.py browser --workspace /path/to/robot-seed --workspace-sto
 
 ## 验证
 
+独立测试工具使用已具备 `requirements.txt` 的解释器；可用开发虚拟环境，或 `.m1-cache/python/envs/*/ready.json` 记录的专用解释器。
+
 ```bash
 cargo test --locked
 python3 -m unittest discover -s tests -v
 node tests/test_rendering.mjs  # Node 22+，浏览器表现行为测试
 node tests/test_sdk_hints.mjs  # 学习类型与成员提示
+node tests/test_gamepad.mjs    # 模拟量、按键、设备切换和恢复边界
 node tests/test_wasm.mjs       # 先构建原生 debug 与 WASM release
 python3 docs/tools/check_design.py
 python3 tools/build.py --format-check

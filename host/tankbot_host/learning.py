@@ -6,7 +6,7 @@ import inspect
 from functools import lru_cache
 from typing import Any, get_type_hints
 import tankbot
-from .campaign_templates import TEMPLATE_VERSION, TRANSFORMS, TRACKER
+from .campaign_templates import TEMPLATE_VERSION, TRANSFORMS, TRACKER, MANAGED_FILES
 
 
 TYPE_TEXT: dict[str, tuple[str, dict[str, str]]] = {
@@ -152,4 +152,8 @@ def learning_bundle(config: dict[str, Any]) -> dict[str, Any]:
                                           "状态保存在 self 的字段中；dt 单位是秒，不要用真实时间或每次调用都清空状态。"])
     return {"version": "1.0", "template_version": TEMPLATE_VERSION, "lesson": lesson,
             "types": copy.deepcopy(sdk_reference()), "python": copy.deepcopy(PYTHON_BASICS),
-            "managed_files": ["campaign_robot.py", "tankbot.json", "contracts/perception.json", "tests/test_coordinates.py"]}
+            "testing": {"checks": ["Python 语法与导入；项目接口、连线和发布权限。",
+                                     "tests/test_*.py 中的单元测试；C1/C2 默认包含 SE(3) 合法性、旋转/平移与方向样例。",
+                                     f"使用获授权传感器输入试运行 {config['workspace']['test_batches']} 个批次，检查异常、超时和输出消息。"],
+                        "meaning": "通过表示此快照可以加载并通过这些样例和短时间试运行，不代表算法效果完美或关卡通关。测试输出不会控制坦克，也不会进入正式画面。"},
+            "managed_files": list(MANAGED_FILES)}

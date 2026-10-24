@@ -20,7 +20,8 @@ from tankbot_host.campaign import configure
 from tankbot_host.learning import learning_bundle
 from tankbot_host.workspace import WorkspaceStore, starter
 from tankbot_host.workspace_api import WorkspaceAPI
-from tankbot_host.deployment import inspect_snapshot
+from tankbot_host.deployment import inspect_snapshot, DeploymentManager
+from tankbot_host.campaign_templates import WRAPPER, framework_upgrade, MANAGED_FILES
 from campaign_support import TRANSFORMS, solutions
 
 
@@ -132,6 +133,50 @@ def radar_to_map(own_pose: Pose2D) -> NDArray[np.float64]:
             self.assertEqual(upgraded["files"]["perception/coordinates.py"], old_files["perception/coordinates.py"])
             self.assertFalse(api.get()["learning"]["upgrade_required"])
             self.assertEqual(api.store.read(original["revision"])["files"], old_files)
+
+    def test_guided_upgrade_only_replaces_framework_and_can_test_saved_algorithm(self):
+        config = self.config()
+        old_files = solutions(config)
+        old_files["campaign_robot.py"] = "# old teaching wrapper\n"
+        old_files["perception/coordinates.py"] = "# preserved old solution\n"
+        old_files["tests/test_player_algorithm.py"] = "# user tests\n"
+        with tempfile.TemporaryDirectory() as directory:
+            before = WorkspaceStore(directory, old_files, config["workspace"]).read()
+            api = WorkspaceAPI(config, directory=directory)
+            plan = api.post("upgrade", {"revision": api.get()["snapshot"]["revision"]})
+            self.assertEqual(plan["purpose"], "teaching-framework-upgrade")
+            self.assertTrue(all(entry["path"] in MANAGED_FILES for entry in plan["entries"]))
+            self.assertTrue(api.get()["learning"]["upgrade_required"], "preview must not modify sources")
+            upgraded = api.post("apply", {"revision": plan["base_revision"], "plan_id": plan["plan_id"],
+                                          "resolutions": {entry["path"]: "incoming" for entry in plan["entries"]}})
+            for path, source in before["files"].items():
+                if path not in MANAGED_FILES:
+                    self.assertEqual(upgraded["files"][path], source)
+            self.assertEqual(api.store.read(before["revision"])["files"], before["files"])
+            self.assertFalse(api.get()["learning"]["upgrade_required"])
+            a = Authority(config, controlled=True)
+            a.deployment = DeploymentManager(a)
+            self.addCleanup(a.close)
+            self.assertEqual(inspect_snapshot(upgraded, a)["revision"], upgraded["revision"])
+            a.deployment.start("test", snapshot=upgraded)
+            for _ in range(180):
+                a.advance()
+                if a.deployment.last:
+                    break
+            self.assertEqual(a.deployment.last["status"], "Ready", a.deployment.last)
+
+    def test_framework_comments_are_not_a_version_contract_and_syntax_errors_stay_syntax_errors(self):
+        config = self.config()
+        for source in ("# my note\n" + WRAPPER, "\n".join(WRAPPER.splitlines()[1:])):
+            self.assertFalse(framework_upgrade(config, {"campaign_robot.py": source})["required"])
+        files = solutions(config)
+        files["campaign_robot.py"] = "def broken(:\n"
+        self.assertFalse(framework_upgrade(config, files)["required"])
+        snapshot = {"files": files, "ledger": {}}
+        from tankbot_host.workspace import digest
+        snapshot["revision"] = digest(snapshot)
+        with self.assertRaisesRegex(ValueError, "campaign_robot.py:1:"):
+            inspect_snapshot(snapshot, SimpleNamespace(config=config))
 
 
 if __name__ == "__main__":

@@ -1,0 +1,53 @@
+{
+  "date": "2026-10-24",
+  "url": "http://127.0.0.1:8765/?runtime=browser",
+  "input_source": "simulated Gamepad API; no physical controller certification",
+  "browser": "157.0.1",
+  "chassis": "omnidirectional",
+  "checks": {
+    "forward_distance_m": 0.207641611159913,
+    "lateral_distance_m": 0.23600657644107598,
+    "turret_change_rad": 0.2017276264117731,
+    "single_shot_on_hold": true,
+    "editor_blocks_motion_and_fire": true,
+    "disconnect_brakes_and_reconnect_requires_neutral": true,
+    "api_failure_preserves_keyboard": true,
+    "blur_handler_requires_neutral": true
+  },
+  "layout": [
+    {
+      "width": 1280,
+      "height": 814,
+      "scrollWidth": 1280,
+      "clientWidth": 1280,
+      "scrollHeight": 814,
+      "clientHeight": 814
+    },
+    {
+      "width": 500,
+      "height": 654,
+      "scrollWidth": 500,
+      "clientWidth": 500,
+      "scrollHeight": 654,
+      "clientHeight": 654
+    },
+    {
+      "width": 500,
+      "height": 654,
+      "scrollWidth": 500,
+      "clientWidth": 500,
+      "scrollHeight": 654,
+      "clientHeight": 654
+    }
+  ],
+  "screenshot": ".m1-cache/gamepad-browser.png",
+  "sources": {
+    "web/gamepad.js": "24d76cc0aa50418e56f294b566d8f16b71325d9bd872e817f10094559c6ec6ca",
+    "web/app.js": "90ffddb13dc05af5943c05467c0bf4096ef43cc177211dda04879476cf7748aa",
+    "web/index.html": "8b6506561b9c0bfdc184a38b81868eefed5718774de7671e4f148ebc2218743d",
+    "web/style.css": "c6a659667f1eeeded8284442b5bf52cacec278d638ebcb6837e8763ce2dc16b5",
+    "config/m1.json": "bc14965688ae6148821e9456ada769ee4c6551c92facaacdae133b82a6c98211",
+    "docs/schemas/gamepad-input.schema.json": "8115307edb6d0fffb3684553f23571f287d6d69e22d25e4b9bca8ceb6b13cd0c",
+    "tools/browser_gamepad.py": "15bc580de5cb8de22fd1ec18ccd85dbb45373a9eb3f9ad050e7fbe7ec5846c62"
+  }
+}

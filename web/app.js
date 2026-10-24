@@ -2,6 +2,7 @@ import {SceneTimeline, FollowCamera, drawChassis, drawTurret} from "/rendering.j
 import {mountWorkspace, setupWorkspaceDialog} from "/workspace-ui.js";
 import {connectBrowser} from "/browser-client.js";
 import {mountCampaign, drawRadar} from "/campaign-ui.js";
+import {GamepadDriver, neutralControls, moving, manualTargets} from "/gamepad.js";
 
 const $ = id => document.getElementById(id);
 const canvas = $("arena"), ctx = canvas.getContext("2d");
@@ -11,19 +12,19 @@ let controlBusy = false;
 let controlQueued = false;
 let browser;
 let campaignEnded = false;
+let joy,joyControls=neutralControls(),lastControlAt=-Infinity,lastManualActive=false,lastJoyList="";
 const point = (x, y) => camera.project(x, y, canvas.width, canvas.height, profile.rendering.viewport_width_m);
 
 async function command() {
   if (!profile || campaignEnded) return;
   if (controlBusy) {controlQueued = true;return;}
   controlBusy = true;
-  const axis = (a,b) => Number(keys.has(a))-Number(keys.has(b));
-  const omni = profile.chassis === "omnidirectional";
-  const twist = {linear:{x:axis("KeyW","KeyS")*profile.view.keyboard_linear_mps,y:omni?axis("KeyA","KeyD")*profile.view.keyboard_linear_mps:0,z:0},angular:{x:0,y:0,z:(omni?axis("KeyQ","KeyE"):axis("KeyA","KeyD"))*profile.view.keyboard_yaw_radps}};
+  const targets=manualTargets(profile,keys,joyControls,canDrive());
+  lastControlAt=performance.now();lastManualActive=targets.active;
   try {
     const requests=[];
-    if(profile.control_sources.chassis==="keyboard")requests.push(post("/api/cmd_vel",twist));
-    if(profile.control_sources.turret==="keyboard")requests.push(post("/api/turret_cmd_vel",{velocity_radps:axis("KeyJ","KeyL")*profile.view.keyboard_turret_radps}));
+    if(profile.control_sources.chassis==="keyboard")requests.push(post("/api/cmd_vel",targets.twist));
+    if(profile.control_sources.turret==="keyboard")requests.push(post("/api/turret_cmd_vel",targets.turret));
     if((await Promise.all(requests)).some(response=>!response.ok))$("connection").textContent="控制指令被拒绝";
   } catch { $("connection").textContent = "连接中断"; }
   finally { controlBusy=false;if(controlQueued){controlQueued=false;command();} }
@@ -33,7 +34,7 @@ function post(path,value){
   return fetch(path,{method:"POST",headers:{"Content-Type":"application/json","X-TankBot-Control":profile.control_token},body:JSON.stringify(value)});
 }
 async function fire(){
-  if($("workspace-dialog").open||!profile||campaignEnded||profile.control_sources.weapon!=="keyboard")return;
+  if(!profile||!canDrive()||profile.control_sources.weapon!=="keyboard")return;
   try{
     const response=await post("/api/fire",{request_id:crypto.randomUUID()});
     const result=await response.json();
@@ -49,16 +50,60 @@ function key(code, down) {
   document.querySelectorAll(`[data-key="${code}"]`).forEach(e=>e.classList.toggle("active",down));
   command();
 }
-function releaseControls(){keys.clear();document.querySelectorAll("button[data-key].active").forEach(e=>e.classList.remove("active"));command();}
+function releaseControls(){keys.clear();joy?.suspend();joyControls=neutralControls();document.querySelectorAll("button[data-key].active").forEach(e=>e.classList.remove("active"));command();}
 setupWorkspaceDialog(releaseControls);
 const editing = target => $("workspace-dialog").open||target?.closest?.("input, textarea, select, [contenteditable]");
+const visibleFocused=()=>!document.hidden&&document.hasFocus();
+const canDrive=()=>visibleFocused()&&!campaignEnded&&!editing(document.activeElement);
 window.addEventListener("keydown", e=>{
   if(e.code==="Space"&&e.target?.closest?.("button, a"))return;
   if (!e.repeat && !editing(e.target)){key(e.code,true);if(keys.has(e.code)||e.code==="Space")e.preventDefault();}
 });
 window.addEventListener("keyup", e=>{if(keys.has(e.code))key(e.code,false);});
 window.addEventListener("focusin", e=>{if(editing(e.target))releaseControls();});
-window.addEventListener("blur", releaseControls);
+window.addEventListener("blur",()=>{joy?.suspend(true);releaseControls();});
+document.addEventListener("visibilitychange",()=>{if(document.hidden){joy?.suspend(true);releaseControls();}});
+window.addEventListener("gamepaddisconnected",()=>{joy?.suspend(true);releaseControls();});
+window.addEventListener("gamepadconnected",()=>joy?.suspend(true));
+
+function sampleGamepad(now){
+  if(!joy)return;
+  let frame,error="";
+  try{
+    if(joy.enabled&&typeof navigator.getGamepads!=="function")throw Error("浏览器不支持手柄 API");
+    frame=joy.sample(joy.enabled?navigator.getGamepads():[],{motionAllowed:canDrive(),uiAllowed:visibleFocused()});
+  }catch{
+    joy.suspend(true);frame={...neutralControls(),devices:[],device:null,status:"unavailable"};
+    error=isSecureContext?"浏览器未开放手柄访问；请检查浏览器设置。":"手柄需要 HTTPS 或 localhost；请使用安全地址。";
+  }
+  const previous=joyControls;joyControls=frame;
+  const list=JSON.stringify([frame.devices.map(p=>[p.index,p.id,p.mapping]),joy.preferred]);
+  if(list!==lastJoyList){
+    lastJoyList=list;
+    const auto=document.createElement("option");auto.value="auto";auto.textContent="自动选择手柄";
+    $("gamepad-select").replaceChildren(auto,...frame.devices.map(p=>{
+      const option=document.createElement("option");option.value=p.index;option.textContent=`${p.index+1} · ${p.id}${p.mapping==="standard"?"":"（自定义映射）"}`;return option;
+    }));
+    if(joy.preferred!==null&&!frame.devices.some(p=>p.index===joy.preferred)){
+      const missing=document.createElement("option");missing.value=joy.preferred;missing.textContent=`手柄 ${joy.preferred+1} · 已断开`;$("gamepad-select").append(missing);
+    }
+    $("gamepad-select").value=joy.preferred??"auto";
+  }
+  const status={waiting:"连接手柄后按任意键，再松开摇杆和按键。",disabled:"手柄已停用，可继续用键盘。",
+    unsupported:"映射不匹配；请切到标准手柄模式，或在配置中设置自定义轴/按键。",
+    neutral:"请松开摇杆、肩键和扳机，回中后接管。",paused:"操控暂停；返回游戏后先松开摇杆与按键。",
+    ready:"手柄就绪 · RT 单发 · Start 打开 / 收起编辑器",unavailable:error}[frame.status];
+  const label=(frame.device?frame.device.id+" · ":"")+status;
+  if($("gamepad-status").textContent!==label)$("gamepad-status").textContent=label;
+  $("gamepad-status").dataset.status=frame.status;
+  const indicator=frame.status==="ready"?"手柄：已连接":frame.status==="neutral"?"手柄：请回中":frame.status==="paused"?"手柄：暂停":frame.status==="unsupported"?"手柄：映射待配置":frame.status==="disabled"?"手柄：已停用":"手柄：未连接";
+  if($("gamepad-indicator").textContent!==indicator)$("gamepad-indicator").textContent=indicator;
+  if(frame.editor){$("open-workspace").click();joy.suspend();joyControls=neutralControls();command();return;}
+  if(frame.fire)fire();
+  if(moving(previous)&&!moving(frame))command();
+  const period=moving(frame)?joy.config.refresh_ms:profile.view.keyboard_refresh_ms;
+  if((keys.size||moving(frame)||lastManualActive)&&now-lastControlAt>=period)command();
+}
 const hudTabs=[...document.querySelectorAll(".hud-tabs [role=tab]")];
 function selectHud(tab){
   for(const item of hudTabs){
@@ -142,6 +187,7 @@ async function poll() {
 }
 
 function draw(now) {
+  sampleGamepad(now);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   if (profile) {
     const frame = online ? timeline.sample(now) : {pose: null, objects: [], turretAngle: 0};
@@ -231,6 +277,13 @@ try {
   camera = new FollowCamera(profile.rendering.camera_origin_m);
   statsSince = performance.now();
   const omni = profile.chassis === "omnidirectional";
+  joy=new GamepadDriver(profile.view.gamepad,profile.chassis);
+  $("gamepad-enabled").checked=joy.enabled;
+  $("gamepad-enabled").disabled=!profile.view.gamepad;
+  $("gamepad-enabled").onchange=()=>{releaseControls();joy.setEnabled($("gamepad-enabled").checked);$("arena").focus();};
+  $("gamepad-select").onchange=()=>{releaseControls();joy.select($("gamepad-select").value==="auto"?null:Number($("gamepad-select").value));$("arena").focus();};
+  $("gamepad-indicator").onclick=()=>selectHud($("tab-chassis"));
+  $("gamepad-mapping").textContent=omni?"左摇杆：前后 / 横移；LB/RB：车体左 / 右转；右摇杆横轴：炮台；RT：单发；Start：编辑器。":"左摇杆：前后 / 车体转向；LB/RB 也可转向；右摇杆横轴：炮台；RT：单发；Start：编辑器。";
   for (const key of ["KeyQ", "KeyE"]) document.querySelector(`[data-key="${key}"]`).hidden = !omni;
   $("chassis").textContent = omni ? "四全向轮 / X-drive · 90°" : "差速底盘 / Differential";
   $("controls").textContent = omni ? "W/S 前后 · A/D 横移 · Q/E 转向" : "W/S 前后 · A/D 转向";
@@ -249,6 +302,5 @@ try {
     $("fire").disabled=ended||profile.control_sources.weapon!=="keyboard";
   },releaseControls).catch(error=>$("task-message").textContent=error.message);
   poll();
-  setInterval(() => { if (keys.size) command(); }, profile.view.keyboard_refresh_ms);
 } catch(error) { $("connection").textContent = `启动失败：${error.message}`; }
 requestAnimationFrame(draw);

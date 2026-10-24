@@ -90,7 +90,7 @@ SDK 无参数时生成 `fire-{activation_tick}-{command_index}`，在当前单�
 
 人工 HTTP 适配器为 `POST /api/turret_cmd_vel`（上述速度 payload）和 `POST /api/fire`（仅 `{request_id}`）。服务绑定会话身份并校验 Origin/token/结构/限额，返回 queued 或已有结果；queued 不表示物理发射成功。机器人输出随整批验证在固定提交门生效，不能通过 Command 绕过延迟。过期新命令拒绝，生成时间不改写为接收时间。
 
-`control_sources.{chassis,turret,weapon}` 各为 keyboard/robot；启动派生 Contract 与 grant，未授予的输出/人工入口拒绝，无运行中争写或动态租约切换。故障撤销程序控制目标，之后仍按伺服制动。所有执行器输入及边界时刻进入私有 Replay。
+`control_sources.{chassis,turret,weapon}` 各为 keyboard/robot；其中 keyboard 是现有 UI 人工租约，现支持键盘、屏幕按钮与手柄，仲裁见 [20](20_GAMEPAD_INPUT.md)。启动派生 Contract 与 grant，未授予的输出/人工入口拒绝，无运行中争写或动态租约切换。故障撤销程序控制目标，之后仍按伺服制动。所有执行器输入及边界时刻进入私有 Replay。
 
 ## 状态与视图边界
 

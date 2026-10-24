@@ -1,4 +1,6 @@
 """Bundled teaching scaffolds. Never execute these helpers in a player Runtime."""
+import ast
+import re
 
 TEMPLATE_VERSION: str = "1.2.0"
 
@@ -130,3 +132,23 @@ def teaching_sources(level_id: str) -> dict[str, str]:
     if level_id == "c2":
         files["perception/tracker.py"] = TRACKER
     return files
+
+
+MANAGED_FILES: tuple[str, ...] = ("campaign_robot.py", "tankbot.json", "contracts/perception.json", "tests/test_coordinates.py")
+
+
+def framework_upgrade(config: dict, files: dict[str, str]) -> dict:
+    """One compatibility check for the editor and Test; comments are not an API."""
+    source: str = files.get("campaign_robot.py", "")
+    marker: re.Match | None = re.search(r"^\s*# TankBot managed scaffold ([0-9.]+)(?:\s|$)", source, re.MULTILINE)
+    current: bool = marker is not None and marker.group(1) == TEMPLATE_VERSION
+    if not current:
+        try:
+            # A deleted version comment or formatting-only edit must not block valid code.
+            current = ast.dump(ast.parse(source)) == ast.dump(ast.parse(WRAPPER))
+        except SyntaxError:
+            current = True  # Let Test report the syntax error before classifying framework compatibility.
+    required: bool = bool(config.get("campaign", {}).get("active_level") and not current)
+    return {"required": required, "current_version": marker.group(1) if marker else None,
+            "target_version": TEMPLATE_VERSION, "managed_files": list(MANAGED_FILES),
+            "message": "当前项目的课程运行框架需要更新，算法尚未开始测试。预览后可保留算法文件，更新框架并继续测试。" if required else ""}
