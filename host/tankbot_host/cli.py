@@ -19,6 +19,11 @@ def make_parser():
     parser.add_argument("--fault", choices=("none","infinite_loop","exception","bad_covariance","no_output"), help="Local failure probe")
     parser.add_argument("--browser-qa", action="store_true", help="Run explicit M2 browser security/fixture probes")
     parser.add_argument("--offline", action="store_true", help="Prepare Python dependencies only from the local cache")
+    parser.add_argument("--settings-file", type=Path, help="Persistent YAML settings (default: userdata/settings.yaml)")
+    parser.add_argument("--save-file", type=Path, help="Campaign save (default: userdata/progress.json)")
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument("--developer", dest="developer_mode", action="store_true", default=None, help="Enable local developer mode; practice does not award progress")
+    modes.add_argument("--player", dest="developer_mode", action="store_false", help="Use saved campaign unlocks and lesson View Policy")
     return parser
 
 
@@ -34,6 +39,25 @@ def main():
     parser, args = parse_args()
     from .authority import Authority, load_config
     config = load_config(args.config)
+    application = None
+    if args.mode in ("serve", "browser"):
+        from .application import ApplicationState
+        try:
+            application = ApplicationState(config, args.settings_file, args.save_file)
+            if args.developer_mode is not None:
+                value = application.public_settings()
+                value["settings"]["developer_mode"] = args.developer_mode
+                application.update_settings({"revision": value["revision"], "settings": value["settings"]})
+            if not application.developer:
+                if not application.levels:
+                    parser.error("此配置不含教学关卡；请使用 --developer 运行自由试验场，或选择教学配置。")
+                if args.view or args.robot_demo:
+                    parser.error("真值练习和机器人演示需要开发者模式；请使用 --developer 或在设置中开启。")
+                args.level = args.level or application.progress()["current_level"] or application.levels[0]
+            if args.level:
+                application.select_level(args.level)
+        except (ValueError, OSError) as error:
+            parser.error(str(error))
     if args.level:
         from .campaign import configure
         config = configure(config, args.level)
@@ -54,7 +78,7 @@ def main():
     if args.mode == "browser":
         from .browser_server import BrowserServer
         try:
-            BrowserServer(config, args.workspace, args.workspace_store).serve()
+            BrowserServer(config, args.workspace, args.workspace_store, application=application).serve()
         except KeyboardInterrupt:
             pass
         return
@@ -72,12 +96,13 @@ def main():
             ensure_native_numpy()
         except ValueError as error:
             parser.error(str(error))
-    authority = Authority(config, workspace=args.workspace, binary=args.core_binary, controlled=args.mode=="headless")
+    authority = Authority(config, workspace=args.workspace, binary=args.core_binary, controlled=args.mode=="headless",
+                          developer_mode=bool(application and application.developer))
     try:
         if args.mode == "serve":
             from .server import LocalServer
             try:
-                LocalServer(authority, args.workspace, args.workspace_store).serve()
+                LocalServer(authority, args.workspace, args.workspace_store, application=application).serve()
             except KeyboardInterrupt:
                 pass
         else:

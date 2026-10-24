@@ -11,6 +11,9 @@ function tick(){
   try{
     py.runPython("authority.advance()");
     const n=evaluate("authority.tick");
+    if(!completed&&evaluate("authority.campaign is not None and authority.campaign.status == 'passed'")){
+      completed=true;notify("completed",evaluate("authority.campaign_status()"));
+    }
     if(n%(config.clock.physics_hz/config.view.snapshot_hz)===0)notify("view",evaluate("authority.view"));
     if(n%config.clock.physics_hz===0)notify("health",{...evaluate("diagnostics(authority)"),worker_startup_ms:coldStart,security,player_memory_bytes:playerMemory,fixtures,core_call_cost:distribution(coreTimes),
       core_memory_bytes:core.exports.memory.buffer.byteLength,authority_memory_bytes:py._module.HEAPU8.buffer.byteLength});
@@ -22,12 +25,14 @@ function tick(){
 }
 let core,deadline;
 let starting=false;
+let developerMode=false,completed=false;
 self.onmessage=async({data})=>{
   if(!data||typeof data!=="object")return;
   try{
     if(data.op==="start"){
       if(starting)throw Error("Core Worker already initialized");
       starting=true;
+      developerMode=data.developerMode===true;
       const started=performance.now();runtimePort=data.port;
       runtimePort.onmessage=({data:result})=>{
         if(!py)return;
@@ -63,12 +68,18 @@ self.onmessage=async({data})=>{
       py.FS.mkdirTree("/tankbot/config");py.FS.writeFile("/tankbot/config/m1.json",JSON.stringify(config));
       py.globals.set("_startup_sources_json",JSON.stringify(sources));
       py.runPython("from browser_authority import start, diagnostics, runtime_event\nauthority=start(json.loads(_startup_sources_json))");
+      py.globals.set("_developer_mode",developerMode);
+      py.runPython("authority.developer_mode=bool(_developer_mode)");
       if(config.browser.probe_enabled){
         py.runPython("from tankbot_protocol.conformance import cases, verdict\nfrom tankbot_protocol.wire import strict_loads\n_fixture_cases=cases('/tankbot/docs/examples')");
         runtimePort.postMessage(JSON.stringify({op:"conformance",value:evaluate("[json.dumps(c['message']) for c in _fixture_cases]")}));
       }
       authority=true;
     }else if(data.op==="command"&&authority){
+      if(data.path==="/api/developer"){
+        if(!developerMode)throw Error("UNAUTHORIZED");
+        self.postMessage({kind:"response",id:data.id,ok:true,value:evaluate("authority.developer_snapshot()")});return;
+      }
       py.globals.set("_command",JSON.stringify(data.value));
       if(data.path==="/api/campaign"||data.path==="/api/campaign/finish"){
         py.runPython(data.path.endsWith("/finish")?"_reply=authority.finish_campaign()":"_reply=authority.campaign_status()");

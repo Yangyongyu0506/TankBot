@@ -21,7 +21,7 @@ python3 tools/tankbot.py serve
 
 ```bash
 python3 tools/tankbot.py serve --chassis omnidirectional
-python3 tools/tankbot.py serve --view weapons-practice
+python3 tools/tankbot.py serve --developer --view weapons-practice
 python3 tools/tankbot.py headless --ticks 600 --robot-demo
 ```
 
@@ -35,7 +35,7 @@ python3 tools/tankbot.py browser --level c0
 
 在「任务」面板选择 C0/C1/C2，点击「开始 / 重试」。C0 先移动至少 1 m、转动车体至少 0.5 rad，并命中可见靶标。C1 隐藏敌车，F2 打开编辑器，完成自动生成的 `perception/transforms.py`，返回 `NDArray[np.float64]` 形式的 4×4 SE(3) 矩阵，测试并部署，利用目标估计瞄准命中。C2 保留该矩阵函数，追加 `perception/tracker.py`；处理带噪声和 10% 丢失的雷达，跟踪巡逻敌车，击中三次使其 HP 归零即可通关。
 
-前三关保留系统自定位、公开地图与手动控制。Radar 是车体系局部观测，地图上的目标标记来自玩家 Python；C1/C2 不显示真实敌车、真实弹道或命中特效位置。C2 显示授权 HP。通关或点击「结束并评估」后关闭玩家程序，再显示估计误差；物理与已有弹丸继续运行。重试建立新场景，新关只补缺失文件，已有源码保留；保存的草稿须重新 Test/Deploy。任务进度按会话保存，可自由选择关卡练习。
+前三关保留系统自定位、公开地图与手动控制。Radar 是车体系局部观测，地图上的目标标记来自玩家 Python；玩家 C1/C2 不显示真实敌车、真实弹道或命中特效位置。C2 显示授权 HP。通关或点击「结束并评估」后关闭玩家程序，再显示估计误差；物理与已有弹丸继续运行。重试建立新场景，新关只补缺失文件，已有源码保留；保存的草稿须重新 Test/Deploy。玩家按 C0 → C1 → C2 解锁，通关写入存档；开发者模式可自由选关练习。
 
 F1 或编辑器中的「关卡说明 / 类型」可随时查看每关步骤、输入输出签名、SDK 字段/单位、Python 速查与交互矩阵实验；悬停及 Ctrl+Space 提供类型提示。新模板显式标注变量和返回类型。旧工作区可预览模板升级并选择系统脚手架，已有算法默认保留。原生 NumPy 随首次启动自动准备；浏览器运行 `prepare_browser.py` 准备锁定的 Pyodide/NumPy 资源。
 
@@ -43,9 +43,17 @@ F1 或编辑器中的「关卡说明 / 类型」可随时查看每关步骤、�
 
 完整模型和接口见 [M4 设计](docs/18_CAMPAIGN_DESIGN.md) 与 [学习说明设计](docs/19_LEARNING_GUIDES_AND_SE3.md)，验证见 [M4 报告](docs/reports/M4_VALIDATION.md) 及 [SE(3) 学习工具验收](docs/reports/LEARNING_VALIDATION.md)。
 
-炮台 J/L 转动，空格或按钮单发（长按不连射）。默认估计视图隐藏真实弹丸，保留炮台与武器局部反馈；`--view weapons-practice` 明确授权显示真实车体、弹丸和靶标。Python 输入权限不增加。`--robot-demo` 使用独立的 [weapon_demo.py](examples/robot/weapon_demo.py) 控制炮台/开火，人工底盘仍可用；对应人工武器入口会拒绝。想观察程序控制可运行 `python3 tools/tankbot.py serve --robot-demo --view weapons-practice`。
+默认炮台 J/L 转动，空格或按钮单发（长按不连射）。开发者自由试验场的估计视图隐藏真实弹丸，保留炮台与武器局部反馈；`--developer --view weapons-practice` 明确授权练习图层。Python 输入权限不增加。`--robot-demo` 使用独立的 [weapon_demo.py](examples/robot/weapon_demo.py) 控制炮台/开火，人工底盘仍可用；对应人工武器入口会拒绝。想观察程序控制可运行 `python3 tools/tankbot.py serve --developer --robot-demo --view weapons-practice`。
 
-所有可调模型、控制、场景及运行 profile 集中在 [config/m1.json](config/m1.json)，缺项报错，不补隐藏默认值。底盘只能在场景启动时选择。可在网页中保存、测试并部署 Python 项目；编辑与部署分离，成功部署不重置物理世界。示例算法在 [examples/robot](examples/robot/localization/odometry.py)，支持多文件 import，启动不会改写源码。
+所有物理模型、控制器数值、场景及运行 profile 集中在 [config/m1.json](config/m1.json)，缺项报错，不补隐藏默认值。底盘只能在场景启动时选择。可在网页中保存、测试并部署 Python 项目；编辑与部署分离，成功部署不重置物理世界。示例算法在 [examples/robot](examples/robot/localization/odometry.py)，支持多文件 import，启动不会改写源码。
+
+## 设置、玩家存档与开发者图层
+
+点击顶部「设置」或默认 **F10** 打开设置页面，× 关闭。可修改键盘绑定、恢复默认键位，并切换开发者模式；编辑器默认 F2、说明默认 F1，也可改键。设置界面打开期间暂停驾驶与开火。模式切换会重新开始关卡，先保存代码并等待测试/部署结束。
+
+首次创建 `userdata/settings.yaml`，保存键盘映射、开发者开关和图层选择；默认模板在 [config/settings.yaml](config/settings.yaml)。玩家通关记录在 `userdata/progress.json`，刷新或重启后保留；首次只开放 C0，完成后解锁下一关，CLI/API 同样检查存档。可以用 `--settings-file /path/settings.yaml --save-file /path/progress.json` 指定自己的文件。损坏或未知版本的文件报错并保留原件。
+
+开发者模式通过设置开关或 `--developer` 开启，`--player` 切回玩家模式。「图层」页可独立显示/隐藏真实车体、目标、弹丸、玩家估计、轨迹、Radar、IMU、坐标系、速度箭头与碰撞外形，并选择消息查看器中的 Topic。开发者练习不计入玩家进度；关闭模式后撤回真值并返回玩家关卡。玩家只列出本关授权图层，Python 算法的数据权限保持关卡约定。设计和单机信任范围见 [22](docs/22_SETTINGS_MODES_AND_PROGRESS.md)，实测见 [验收报告](docs/reports/SETTINGS_VALIDATION.md)。
 
 ## 手柄操控
 
@@ -79,7 +87,7 @@ python3 tools/tankbot.py browser --chassis omnidirectional
 
 ## 多文件编辑与部署（M3）
 
-游戏界面固定在视口内，无需滚动网页。点击顶部「代码编辑器」或按 **F2** 弹出 Workspace；再次按 F2 或点击右上角 **×** 收起。草稿、光标与选中文件会保留。Workspace 支持 Python/JSON 编辑、Vim、文件切换、新建文件、Ctrl/⌘S 或 `:w` 保存。依次点击 **测试快照 → 部署已测试版本**；测试或候选启动失败会保留当前机器人。历史部署可显式回滚，产生新 Runtime 并清空算法状态，物理世界继续运行。编辑器焦点不会把 W/J/L/空格传给坦克。
+游戏界面固定在视口内，无需滚动网页。点击顶部「代码编辑器」或按默认 **F2** 弹出 Workspace；再次按对应快捷键 或点击右上角 **×** 收起。草稿、光标与选中文件会保留。Workspace 支持 Python/JSON 编辑、Vim、文件切换、新建文件、Ctrl/⌘S 或 `:w` 保存。依次点击 **测试快照 → 部署已测试版本**；测试或候选启动失败会保留当前机器人。历史部署可显式回滚，产生新 Runtime 并清空算法状态，物理世界继续运行。编辑器焦点不会把 W/J/L/空格传给坦克。
 
 默认编辑库保存在 `.m1-cache/workspaces/`，源码、模板 ledger 和测试/部署归档跨刷新保留。建议长期项目指定自己的持久目录，并定期导出备份：
 
@@ -102,6 +110,7 @@ python3 -m unittest discover -s tests -v
 node tests/test_rendering.mjs  # Node 22+，浏览器表现行为测试
 node tests/test_sdk_hints.mjs  # 学习类型与成员提示
 node tests/test_gamepad.mjs    # 模拟量、按键、设备切换和恢复边界
+node tests/test_settings.mjs   # 改键语义、图层权限和真值/估计独立
 node tests/test_wasm.mjs       # 先构建原生 debug 与 WASM release
 python3 docs/tools/check_design.py
 python3 tools/build.py --format-check

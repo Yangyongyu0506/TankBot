@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tankbot.example/schemas/local/settings.schema.json",
+  "title": "本机设置（YAML 解析后的结构）",
+  "type": "object",
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "developer_mode": {
+      "type": "boolean"
+    },
+    "keyboard": {
+      "type": "object",
+      "properties": {
+        "forward": {
+          "type": "string",
+          "pattern": "^(Key[A-Z]|Digit[0-9]|Arrow(Up|Down|Left|Right)|Space|F([1-9]|1[0-2])|Numpad[0-9])$"
+        },
+        "backward": {
+          "type": "string",
+          "pattern": "^(Key[A-Z]|Digit[0-9]|Arrow(Up|Down|Left|Right)|Space|F([1-9]|1[0-2])|Numpad[0-9])$"
+        },
+        "left": {
+          "type": "string",
+          "pattern": "^(Key[A-Z]|Digit[0-9]|Arrow(Up|Down|Left|Right)|Space|F([1-9]|1[0-2])|Numpad[0-9])$"
+        },
+        "right": {
+          "type": "string",
+          "pattern": "^(Key[A-Z]|Digit[0-9]|Arrow(Up|Down|Left|Right)|Space|F([1-9]|1[0-2])|Numpad[0-9])$"
+        },
+        "turn_left": {
+          "type": "string",
+          "pattern": "^(Key[A-Z]|Digit[0-9]|Arrow(Up|Down|Left|Right)|Space|F([1-9]|1[0-2])|Numpad[0-9])$"
+        },
+        "turn_right": {
+          "type": "string",
+          "pattern": "^(Key[A-Z]|Digit[0-9]|Arrow(Up|Down|Left|Right)|Space|F([1-9]|1[0-2])|Numpad[0-9])$"
+        },
+        "turret_left": {
+          "type": "string",
+          "pattern": "^(Key[A-Z]|Digit[0-9]|Arrow(Up|Down|Left|Right)|Space|F([1-9]|1[0-2])|Numpad[0-9])$"
+        },
+        "turret_right": {
+          "type": "string",
+          "pattern": "^(Key[A-Z]|Digit[0-9]|Arrow(Up|Down|Left|Right)|Space|F([1-9]|1[0-2])|Numpad[0-9])$"
+        },
+        "fire": {
+          "type": "string",
+          "pattern": "^(Key[A-Z]|Digit[0-9]|Arrow(Up|Down|Left|Right)|Space|F([1-9]|1[0-2])|Numpad[0-9])$"
+        },
+        "editor": {
+          "type": "string",
+          "pattern": "^(Key[A-Z]|Digit[0-9]|Arrow(Up|Down|Left|Right)|Space|F([1-9]|1[0-2])|Numpad[0-9])$"
+        },
+        "help": {
+          "type": "string",
+          "pattern": "^(Key[A-Z]|Digit[0-9]|Arrow(Up|Down|Left|Right)|Space|F([1-9]|1[0-2])|Numpad[0-9])$"
+        },
+        "settings": {
+          "type": "string",
+          "pattern": "^(Key[A-Z]|Digit[0-9]|Arrow(Up|Down|Left|Right)|Space|F([1-9]|1[0-2])|Numpad[0-9])$"
+        }
+      },
+      "required": [
+        "forward",
+        "backward",
+        "left",
+        "right",
+        "turn_left",
+        "turn_right",
+        "turret_left",
+        "turret_right",
+        "fire",
+        "editor",
+        "help",
+        "settings"
+      ],
+      "additionalProperties": false
+    },
+    "layers": {
+      "type": "object",
+      "properties": {
+        "map": {
+          "type": "boolean"
+        },
+        "robot": {
+          "type": "boolean"
+        },
+        "trail": {
+          "type": "boolean"
+        },
+        "target_estimates": {
+          "type": "boolean"
+        },
+        "radar": {
+          "type": "boolean"
+        },
+        "imu": {
+          "type": "boolean"
+        },
+        "encoders": {
+          "type": "boolean"
+        },
+        "turret": {
+          "type": "boolean"
+        },
+        "truth_robot": {
+          "type": "boolean"
+        },
+        "truth_targets": {
+          "type": "boolean"
+        },
+        "projectiles": {
+          "type": "boolean"
+        },
+        "frames": {
+          "type": "boolean"
+        },
+        "velocities": {
+          "type": "boolean"
+        },
+        "colliders": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "map",
+        "robot",
+        "trail",
+        "target_estimates",
+        "radar",
+        "imu",
+        "encoders",
+        "turret",
+        "truth_robot",
+        "truth_targets",
+        "projectiles",
+        "frames",
+        "velocities",
+        "colliders"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "version",
+    "developer_mode",
+    "keyboard",
+    "layers"
+  ],
+  "additionalProperties": false
+}

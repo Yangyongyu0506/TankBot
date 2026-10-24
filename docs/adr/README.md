@@ -31,6 +31,7 @@ ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评
 | [0023](0023-typed-learning-and-se3-exercise.md) | 带类型的逐关说明、NumPy SE(3) 与矩阵实验 | Accepted |
 | [0024](0024-gamepad-manual-input.md) | Gamepad API、逐执行器人工仲裁与回中后接管 | Accepted |
 | [0025](0025-automatic-python-environment.md) | 首启准备专用 Python 环境、缓存与隔离 Worker 共享解释器 | Accepted |
+| [0026](0026-settings-modes-and-campaign-progress.md) | YAML 设置、玩家关卡存档与独立授权的开发者图层 | Accepted |
 
 ## 变更流程与完成条件
 

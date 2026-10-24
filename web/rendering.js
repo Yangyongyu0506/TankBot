@@ -95,6 +95,9 @@ export class SceneTimeline {
     const nextObjects = new Map(b.payload.objects.map(o => [`${o.kind}:${o.projectile_id ?? o.target_id}`, o]));
     const objects = a.payload.objects.map(o => {
       const next = nextObjects.get(`${o.kind}:${o.projectile_id ?? o.target_id}`);
+      if (o.kind === "target" && next) return {...o, pose: {...o.pose,
+        x_m: lerp(o.pose.x_m, next.pose.x_m, alpha), y_m: lerp(o.pose.y_m, next.pose.y_m, alpha),
+        yaw_rad: o.pose.yaw_rad + shortAngle(next.pose.yaw_rad - o.pose.yaw_rad) * alpha}};
       if (o.kind !== "projectile" || !next) return {...o};
       return {...o, x_m: lerp(o.x_m, next.x_m, alpha), y_m: lerp(o.y_m, next.y_m, alpha)};
     });

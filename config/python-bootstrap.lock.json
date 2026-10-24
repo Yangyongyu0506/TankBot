@@ -11,6 +11,7 @@
     "jsonschema",
     "referencing",
     "websockets",
-    "numpy"
+    "numpy",
+    "yaml"
   ]
 }

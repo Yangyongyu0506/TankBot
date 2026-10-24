@@ -10,8 +10,9 @@ from .authority import ROOT
 
 
 class BrowserServer:
-    def __init__(self, config, workspace=None, workspace_store=None):
+    def __init__(self, config, workspace=None, workspace_store=None, *, application=None):
         self.config = config
+        self.application = application
         from .workspace_api import WorkspaceAPI
         self.workspace = WorkspaceAPI(config, workspace, workspace_store)
         self.campaign_directory = (Path(workspace_store) / "campaign" if workspace_store and not config.get("campaign", {}).get("active_level") else workspace_store)
@@ -36,7 +37,7 @@ class BrowserServer:
         runtime_files["/player-bundle.json"]=assets/"player-bundle.json"
         shared={"/pyodide/"+name:assets/"pyodide"/name for name in meta["files"]}
         runtime_files.update(shared)
-        ui_files={"/"+name:ROOT/"web"/name for name in ("index.html","app.js","style.css","rendering.js","browser-client.js","core-worker.js","wasm-core.js","python-loader.js","python-bootstrap.js","workspace-ui.js","campaign-ui.js","learning-ui.js","gamepad.js")}
+        ui_files={"/"+name:ROOT/"web"/name for name in ("index.html","app.js","style.css","rendering.js","browser-client.js","core-worker.js","wasm-core.js","python-loader.js","python-bootstrap.js","workspace-ui.js","campaign-ui.js","learning-ui.js","gamepad.js","settings-ui.js","keyboard.js","visualization.js")}
         ui_files["/THIRD_PARTY_NOTICES.txt"] = ROOT/"build/web/THIRD_PARTY_NOTICES.txt"
         ui_files["/editor-bundle.js"] = ROOT/"build/web/editor-bundle.js"
         ui_files.update(shared)
@@ -57,11 +58,31 @@ class BrowserServer:
                         self.send_error(403); return
                     try:
                         size = int(self.headers.get("Content-Length", "0"))
-                        if self.headers.get("Content-Type") != "application/json" or not 0 < size <= config["runtime"]["max_message_bytes"] or not (self.path.startswith("/api/workspace/") or self.path == "/api/campaign/start"):
+                        if self.headers.get("Content-Type") != "application/json" or not 0 < size <= config["runtime"]["max_message_bytes"] or not (self.path.startswith("/api/workspace/") or self.path in ("/api/campaign/start", "/api/settings", "/api/session/start", "/api/progress/complete")):
                             raise ValueError("INVALID_REQUEST")
                         self.connection.settimeout(config["runtime"]["startup_timeout_s"])
                         value = strict_loads(self.rfile.read(size))
-                        if self.path == "/api/campaign/start":
+                        if self.path == "/api/settings":
+                            with owner.campaign_lock:
+                                result = owner.application.update_settings(value)
+                                if result["mode_changed"]:
+                                    level = owner.config.get("campaign", {}).get("active_level")
+                                    if not owner.application.developer or level is None:
+                                        level = owner.application.progress()["current_level"] or owner.application.levels[0]
+                                    owner.start_level(level)
+                        elif self.path == "/api/session/start":
+                            if value != {}:
+                                raise ValueError("INVALID_SESSION_REQUEST")
+                            with owner.campaign_lock:
+                                level = owner.config.get("campaign", {}).get("active_level")
+                                ticket = owner.application.register_attempt(level) if level else None
+                                result = {"ticket": ticket, "level_id": level, "developer_mode": owner.application.developer}
+                        elif self.path == "/api/progress/complete":
+                            if not isinstance(value, dict) or set(value) != {"ticket", "level_id"}:
+                                raise ValueError("INVALID_PROGRESS_REQUEST")
+                            with owner.campaign_lock:
+                                result = owner.application.complete(value["ticket"], value["level_id"])
+                        elif self.path == "/api/campaign/start":
                             if not isinstance(value, dict) or set(value) != {"level_id"}:
                                 raise ValueError("INVALID_LEVEL_REQUEST")
                             with owner.campaign_lock:
@@ -80,7 +101,12 @@ class BrowserServer:
                     if self.headers.get("Host")!=f"127.0.0.1:{port}":
                         self.send_error(403);return
                     path=urlsplit(self.path).path
-                    if not runtime and path == "/api/workspace":
+                    if not runtime and path in ("/api/settings", "/api/progress") and owner.application:
+                        value = owner.application.public_settings() if path.endswith("settings") else owner.application.progress()
+                        if path.endswith("settings"):
+                            value["control_token"] = owner.token
+                        raw=json.dumps(value).encode();kind="application/json"
+                    elif not runtime and path == "/api/workspace":
                         value = owner.workspace.get()
                         value["control_token"] = owner.token
                         raw=json.dumps(value).encode();kind="application/json"
@@ -116,6 +142,8 @@ class BrowserServer:
         from .campaign import configure, active
         from .workspace_api import WorkspaceAPI
         from .workspace import starter
+        if self.application:
+            self.application.require_level(level_id)
         config = configure(self.config, level_id)
         if active(self.config):
             self.workspace.unlock(config)
@@ -124,6 +152,8 @@ class BrowserServer:
         self.config = config
         self.ui_json["/authority-config.json"] = config
         self.ui_json["/deployment.json"] = starter(config)
+        if self.application:
+            self.application.select_level(level_id)
         return {"level_id": level_id, "reload_required": True}
 
     def serve(self):

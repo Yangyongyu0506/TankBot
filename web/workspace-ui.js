@@ -1,5 +1,6 @@
 // Workspace changes are explicit revisions; renderer and input controls do not own player code.
 import {mountLearning} from "/learning-ui.js";
+import {shortcut} from "/keyboard.js";
 export function setupWorkspaceDialog(releaseControls){
   const dialog=document.getElementById("workspace-dialog"),toggle=document.getElementById("open-workspace");
   let previousFocus,editorFocus;
@@ -29,7 +30,7 @@ export function setupWorkspaceDialog(releaseControls){
     if(!document.activeElement?.closest(".cm-editor"))hide();
   });
   window.addEventListener("keydown",event=>{
-    if(event.code!=="F2"||event.ctrlKey||event.metaKey||event.altKey||event.shiftKey||event.isComposing)return;
+    if(document.getElementById("settings-dialog")?.open||!shortcut(event,"editor"))return;
     event.preventDefault();event.stopImmediatePropagation();
     if(!event.repeat)(dialog.open?hide():show());
   },{capture:true});

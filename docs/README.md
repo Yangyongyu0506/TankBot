@@ -33,6 +33,8 @@
 | [19 学习说明与 SE(3)](19_LEARNING_GUIDES_AND_SE3.md) | 所有关卡的类型/步骤、编辑器帮助、矩阵实验、NumPy 与模板升级 |
 | [20 手柄驱动](20_GAMEPAD_INPUT.md) | 标准/自定义映射、模拟量、人工仲裁、回中、断连与编辑隔离 |
 | [21 首次启动依赖](21_DEPENDENCY_BOOTSTRAP.md) | 无 pip 环境引导、专用解释器、缓存/离线、并发与重试 |
+| [22 设置与游戏模式](22_SETTINGS_MODES_AND_PROGRESS.md) | YAML 改键、开发者图层、玩家关卡解锁与存档 |
+| [设置与模式验收](reports/SETTINGS_VALIDATION.md) | 两种 Runtime 的改键、实际通关持久化、图层与撤权 |
 | [Python 启动验收](reports/PYTHON_BOOTSTRAP_VALIDATION.md) | 缺包系统直启 C0、原生 Worker、离线新环境与 92 项回归 |
 | [手柄验收](reports/GAMEPAD_VALIDATION.md) | 两种 Runtime / 两种底盘的输入闭环、模拟设备及硬件验证边界 |
 | [学习工具验收](reports/LEARNING_VALIDATION.md) | SE(3) 真实运算、逐关说明、类型补全、矩阵实验与无损升级 |

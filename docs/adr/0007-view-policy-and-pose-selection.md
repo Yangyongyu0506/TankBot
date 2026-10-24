@@ -23,3 +23,7 @@
 ## Validation / Open Questions
 
 验证多源切换、过期/跳变/错帧、局部可玩性以及效果/相机/音频旁路。Policy 具体格式和 UX 阈值未冻结，见 [04](../04_STATE_AND_VIEW_MODEL.md)。
+
+## 2026-10-24 开发者角色增量
+
+[ADR-0026](0026-settings-modes-and-campaign-progress.md) 增加 Authority 侧显式开发者只读 grant 与独立 DeveloperSnapshot；它构成额外角色的视图权限，不能改变玩家快照、估计 Topic 或 Python 输入。显示偏好只能隐藏/显示已授权数据，不能授予真值；退出开发者须清除该角色的显示缓存。

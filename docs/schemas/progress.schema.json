@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tankbot.example/schemas/local/progress.schema.json",
+  "title": "本机玩家关卡存档",
+  "type": "object",
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "completed_levels": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "c0",
+          "c1",
+          "c2"
+        ]
+      }
+    },
+    "current_level": {
+      "enum": [
+        "c0",
+        "c1",
+        "c2",
+        null
+      ]
+    },
+    "completions": {
+      "type": "object",
+      "propertyNames": {
+        "enum": [
+          "c0",
+          "c1",
+          "c2"
+        ]
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "completed_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "completed_at"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "version",
+    "completed_levels",
+    "current_level",
+    "completions"
+  ],
+  "additionalProperties": false
+}

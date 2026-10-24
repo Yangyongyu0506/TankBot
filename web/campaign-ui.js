@@ -1,4 +1,5 @@
 // Teaching UI consumes the same narrow Authority controls in both runtime profiles.
+import {bindingHint} from "/keyboard.js";
 export async function mountCampaign(profile,browser,onState,releaseControls){
   const $=id=>document.getElementById(id),levels=profile.campaign?.levels??[];
   if(!levels.length){$("tab-task").hidden=true;return;}
@@ -9,7 +10,8 @@ export async function mountCampaign(profile,browser,onState,releaseControls){
   }));
   $("task-title").textContent=current?.title??"选择教学关卡";
   $("task-problem").textContent=current?.problem??"C0–C2 依次学习驾驶、坐标变换与噪声跟踪。";
-  $("task-hints").replaceChildren(...(current?.hints??[]).map(text=>{const li=document.createElement("li");li.textContent=text;return li;}));
+  function updateHints(){$("task-hints").replaceChildren(...(current?.hints??[]).map(text=>{const li=document.createElement("li");li.textContent=bindingHint(text);return li;}));}
+  updateHints();window.addEventListener("bindings-changed",updateHints);
   $("finish-level").disabled=!current;
   if(current){
     document.querySelector("h1").textContent=current.title;
@@ -20,6 +22,16 @@ export async function mountCampaign(profile,browser,onState,releaseControls){
     $("mode-label").textContent=current.level_id==="c0"?"C0 · 真值练习":"教学视图 · 系统自定位 / 玩家目标估计";
   }
   const initial=await (await fetch("/api/workspace")).json(),token=initial.control_token;
+  async function updateProgress(){
+    const response=await fetch("/api/progress"),progress=await response.json();
+    if(!response.ok)throw Error(progress.error??"读取存档失败");
+    for(const option of $("level-select").options){
+      const level=levels.find(item=>item.level_id===option.value),completed=progress.completed_levels.includes(option.value);
+      option.disabled=!progress.developer_mode&&!progress.unlocked_levels.includes(option.value);
+      option.textContent=level.title+(option.disabled?" · 未解锁":completed?" · 已通关":"");
+    }
+  }
+  await updateProgress();
   async function runtime(path,value={}){
     const r=browser?await browser.post(path,value):await fetch(path,path==="/api/campaign"?undefined:{method:"POST",headers:{"Content-Type":"application/json","X-TankBot-Control":token},body:JSON.stringify(value)});
     const result=await r.json();if(!r.ok)throw Error(result.error??"关卡请求失败");return result;
@@ -43,7 +55,9 @@ export async function mountCampaign(profile,browser,onState,releaseControls){
   let timer;
   async function poll(){
     try{
-      const {attempt}=await runtime("/api/campaign");
+      const {attempt,save_error}=await runtime("/api/campaign");
+      if(browser?.saveError()){await browser.retrySave();}
+      await updateProgress();
       onState(attempt);
       $("task-status").textContent=attempt?({active:"进行中",passed:"已通关",ended:"本次尝试已结束"}[attempt.status]):"自由试验场";
       $("task-status").dataset.status=attempt?.status??"sandbox";
@@ -57,6 +71,7 @@ export async function mountCampaign(profile,browser,onState,releaseControls){
           const r=attempt.result;
           $("task-message").textContent=(r.passed?"通关！可选择下一关，已有源码会保留。":"可修改代码，再点击开始 / 重试。")+
             (r.rmse_m==null?"":" 本次估计 RMSE："+r.rmse_m.toFixed(3)+" m（仅结束后公布）。");
+          if(save_error||browser?.saveError())$("task-message").textContent=save_error||browser.saveError();
         }
       }
     }catch(error){$("task-message").textContent=error.message;}

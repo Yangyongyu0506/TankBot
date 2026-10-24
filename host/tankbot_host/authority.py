@@ -84,7 +84,8 @@ class CoreAdapter:
 
 class Authority:
     def __init__(self, config, *, workspace=None, binary=None, controlled=False,
-                 core_factory=CoreAdapter, worker_factory=Supervisor, startup_sources=None):
+                 core_factory=CoreAdapter, worker_factory=Supervisor, startup_sources=None, developer_mode=False):
+        self.developer_mode = developer_mode
         if config["view_mode"]=="estimated" and (config["view_policy"]["system_pose_allowed"] or config["view_policy"]["world_effects"]):
             raise ValueError("Estimated view cannot grant truth")
         if config["view_mode"]=="weapons-practice" and (not config["view_policy"]["system_pose_allowed"] or not config["view_policy"]["world_effects"]):
@@ -417,6 +418,19 @@ class Authority:
     def campaign_status(self):
         return {"run_id": self.run_id, "attempt": self.campaign.public() if self.campaign is not None else None}
 
+    def developer_snapshot(self):
+        """Explicit developer grant; never included in PlayerViewSnapshot or Runtime inputs."""
+        if not self.developer_mode:
+            raise Rejected("UNAUTHORIZED")
+        return {"version": 1, "run_id": self.run_id, "simulation_tick": self.tick,
+                "truth": copy.deepcopy(self._private), "sensors": copy.deepcopy(self._sensors),
+                "pose_candidates": copy.deepcopy(self._candidates),
+                "selected_pose": copy.deepcopy(self.selector.canonical),
+                "target_estimate": copy.deepcopy(self._target_estimate),
+                "audit": copy.deepcopy(list(self.audit)[-100:]),
+                "runtime": {"module_id": self.contract["module_id"], "fault": self.worker.fault,
+                            "control_sources": copy.deepcopy(self.config["control_sources"])}}
+
     def public_profile(self):
         limits = copy.deepcopy(self.config["motion_limits"])
         chassis = self.config["scene"]["default_chassis"]
@@ -437,6 +451,7 @@ class Authority:
                                       if self.campaign is not None and self.campaign.definition["radar_profile"] else None),
                 "control_sources":copy.deepcopy(self.config["control_sources"]),
                 "turret_muzzle_offset_m":copy.deepcopy(self.config["weapons"]["turret"]["muzzle_offset_m"]),
+                "projectile_radius_m": self.config["weapons"]["projectile"]["radius_m"],
                 "body": {k: self.config["body"][k] for k in ("length_m", "width_m", "corner_radius_m")},
                 "walls": copy.deepcopy(self.config["scene"]["walls"]) if self.config["scene"]["public_map"] and self.config["view_policy"]["public_map"] else [],
                 "view": copy.deepcopy(self.config["view"]),

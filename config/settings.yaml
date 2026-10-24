@@ -1,0 +1,31 @@
+# 首次运行时复制到个人设置文件；此文件只作为默认值。
+version: 1
+developer_mode: false
+keyboard:
+  forward: KeyW
+  backward: KeyS
+  left: KeyA
+  right: KeyD
+  turn_left: KeyQ
+  turn_right: KeyE
+  turret_left: KeyJ
+  turret_right: KeyL
+  fire: Space
+  editor: F2
+  help: F1
+  settings: F10
+layers:
+  map: true
+  robot: true
+  trail: true
+  target_estimates: true
+  radar: true
+  imu: true
+  encoders: true
+  turret: true
+  truth_robot: true
+  truth_targets: true
+  projectiles: true
+  frames: false
+  velocities: false
+  colliders: false

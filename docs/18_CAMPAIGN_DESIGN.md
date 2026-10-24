@@ -12,7 +12,7 @@
 | C1 | 保留自身系统位姿与地图；隐藏目标、真实弹道和命中特效位置 | 完成返回 NumPy SE(3) 矩阵的函数，由框架执行 T @ p，至少发布一个合法目标估计并命中一次 |
 | C2 | 理想 Radar 改为噪声/丢失；保留手动控制，授权敌车 HP | 复用 C1 函数，编写跟踪状态类；敌车 HP 归零即通关，算法误差用于复盘 |
 
-三关玩家初态均为零位姿/零速度，复用原地图；C0 靶标 `(-3, 0, 0)`，C1 换新靶标 `(-3, 1.5, 0)`，C2 使用新敌车场景。切换建立新纪元，不能把 C0 已公开的目标原地改称秘密。允许直接选择任一关练习；首期没有账号或强制关卡锁。
+三关玩家初态均为零位姿/零速度，复用原地图；C0 靶标 `(-3, 0, 0)`，C1 换新靶标 `(-3, 1.5, 0)`，C2 使用新敌车场景。切换建立新纪元，不能把 C0 已公开的目标原地改称秘密。玩家按 C0 → C1 → C2 解锁；开发者模式可直接选择任一关练习，详见 [22](22_SETTINGS_MODES_AND_PROGRESS.md)。首期没有账号。
 
 ```mermaid
 flowchart LR
@@ -75,7 +75,7 @@ def radar_to_map(own_pose: Pose2D) -> NDArray[np.float64]:
 
 三个阶段共用一个 `perception` 周期 Module，声明 `self_pose` 和可选 `radar` 端口，输出 `target`；可选端口声明不授予额外输入，C0 Router 不提供 Radar。玩家初始化配置仅含公开初始自身位姿、轮组标定、模块配置与 `lesson.level_id`。目标位置、巡逻航点、私有历史和评分器不进入 Runtime。
 
-视图新增 `view_snapshot@3`，沿用 v2 的已授权字段并加入 `target_estimates`（最多一个类型化 Envelope）。v1/v2 仍有效。C1/C2 的 `objects` 与 `effects` 为空；UI 的局部 Radar 不做全局坐标换算。地图标记来自玩家输出，与自身位姿一起按授权时间缓存插值；目标无合法新鲜估计时隐藏，无真值回退。
+视图新增 `view_snapshot@3`，沿用 v2 的已授权字段并加入 `target_estimates`（最多一个类型化 Envelope）。v1/v2 仍有效。玩家 C1/C2 的 `objects` 与 `effects` 为空；玩家 UI 的局部 Radar 不做全局坐标换算。开发者图层通过独立 grant 的只读 DTO 调试，不改变关卡快照或 Python 权限，见 [22](22_SETTINGS_MODES_AND_PROGRESS.md)。地图标记来自玩家输出，与自身位姿一起按授权时间缓存插值；目标无合法新鲜估计时隐藏，无真值回退。
 
 ## 生命周期与验收方向
 
@@ -90,7 +90,7 @@ def radar_to_map(own_pose: Pose2D) -> NDArray[np.float64]:
 | 本机管理接口 | 行为 |
 | --- | --- |
 | `GET /api/campaign` | 原生当前 run 与公开任务状态；浏览器使用同名 Worker RPC |
-| `POST /api/campaign/start`，`{level_id}` | 仅选择已注册的受信关卡；新纪元、重试、非覆盖解锁，页面重新加载 |
+| `POST /api/campaign/start`，`{level_id}` | 仅选择已注册且当前模式可访问的关卡；新纪元、重试、非覆盖解锁，页面重新加载 |
 | `POST /api/campaign/finish`，`{}` | 结束尝试、关闭 Runtime 后返回诊断；不接受客户端的 passed 参数 |
 
 修改沿用 loopback Host/Origin/token 校验。浏览器的 start 只切换启动内容及版本库，刷新后由新的 Core Worker 建立 World；finish 在该 Worker 的 Authority 执行。原生在 Authority 锁内切换。两种部署共享规则与协议语义。
@@ -99,7 +99,7 @@ def radar_to_map(own_pose: Pose2D) -> NDArray[np.float64]:
 
 将教学逻辑放进 Renderer 无法执行权限；复制三套引擎会造成规则漂移。因此用受信关卡配置驱动 Authority。首期使用一个目标和单周期模块，后续多目标关联、多模块、Arena 和强服务器隔离不属于本阶段。
 
-首期保存源码、版本和模板 ledger；任务进度与关卡通关结果按会话保存。重试先加载随游戏提供的启动脚手架，已保存草稿需重新 Test/Deploy。沙盒项目与首次进入 Campaign 使用独立版本库，防止不同 Contract 混入旧项目。用户通过 UI 切换前必须先保存草稿并等待当前测试/部署结束。
+源码、版本和模板 ledger 保存在 Workspace；玩家通关结果另写 `userdata/progress.json`，开发者练习不奖励解锁，见 [22](22_SETTINGS_MODES_AND_PROGRESS.md)。重试先加载随游戏提供的启动脚手架，已保存草稿需重新 Test/Deploy。沙盒项目与首次进入 Campaign 使用独立版本库，防止不同 Contract 混入旧项目。用户通过 UI 切换前必须先保存草稿并等待当前测试/部署结束。
 
 待验证平台仍包括 Windows/macOS 实机与其他浏览器。敌车不避障或反击，玩家可用车体阻挡巡逻；这是当前控制策略的边界。浏览器设备所有者仍可调试自己的 Core/启动配置；本机内容与诊断不构成 Arena 安全隔离。服务器私有场景和公平上传仍属于 M8。
 

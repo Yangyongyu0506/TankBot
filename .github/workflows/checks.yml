@@ -33,5 +33,6 @@ jobs:
           node tests/test_rendering.mjs
           node tests/test_sdk_hints.mjs
           node tests/test_gamepad.mjs
+          node tests/test_settings.mjs
           node tests/test_wasm.mjs
           python docs/tools/check_design.py

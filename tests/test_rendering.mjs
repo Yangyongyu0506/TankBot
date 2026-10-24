@@ -34,6 +34,15 @@ test('interpolation uses simulation timestamps with uneven arrival and never ext
   assert.ok(t.renderTime>=last,'late packets cannot rewind the displayed clock');
 });
 
+test('developer moving targets interpolate position and shortest-angle orientation',()=>{
+  const t=timeline(),target=(x,yaw)=>({kind:'target',target_id:'enemy',pose:pose(x,1,yaw),hits:0});
+  t.push(snapshot(0,[target(0,Math.PI-.1)]),0);
+  t.push(snapshot(6,[target(2,-Math.PI+.1)]),100);
+  const middle=t.sample(150).objects[0];
+  near(middle.pose.x_m,1);near(middle.pose.yaw_rad,Math.PI);
+  near(t.sample(1000).objects[0].pose.x_m,2);
+});
+
 test('identity and snapshot boundaries control births and disappearance', () => {
   const t=timeline();t.push(snapshot(0),0);t.push(snapshot(6,[bullet(1,1)]),100);
   assert.equal(t.sample(150).objects.length,0,'do not show a bullet before its first authorized frame');

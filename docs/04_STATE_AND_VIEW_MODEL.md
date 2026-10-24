@@ -134,3 +134,7 @@ M1 只有玩家位姿源 odometry，默认 System Pose Provider 禁用；开启�
 C0–C2 明确授权自身系统位姿，仍由 Selector 唯一写标准位姿。C0 额外开放真实靶标/弹道；C1/C2 仅发送系统自身位姿、局部 Radar、玩家 `target_estimate@1` 及授权任务反馈。目标估计与自身 Pose Selector 分离，合法错误估计保持原值；旧时间不能替换新状态。`view_snapshot@3` 的目标标记也使用采样时间插值，无合法输出时隐藏，无真值回退。
 
 C2 的 HP/击杀结果属于明确授权的游戏反馈，不含命中坐标、目标位姿或实体运动信息。真值误差仅在本次 Runtime 停止后发布；切换关卡建立新 run 并清空插值和候选。具体规则与本机威胁边界见 [18](18_CAMPAIGN_DESIGN.md)。
+
+## 本机玩家与开发者角色
+
+默认玩家模式继续使用本关 View Policy；C1/C2 的目标只能来自获授权的玩家估计。开发者模式额外获得 Authority 检查的只读视图 grant，可通过独立 DeveloperSnapshot 和图层开关查看当前已实现的真值、估计与传感器；它不进入 PlayerViewSnapshot 或 Robot Runtime，也不改写 Pose Selector。图层开关是呈现偏好，不能给玩家授予新数据。模式切换重建 Authority/Worker 并清除旧缓存，完整权限、文件与单机信任边界见 [22](22_SETTINGS_MODES_AND_PROGRESS.md) 和 [ADR-0026](adr/0026-settings-modes-and-campaign-progress.md)。

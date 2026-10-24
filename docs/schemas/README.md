@@ -65,3 +65,5 @@ M3 内部 SimulationProfile 为 **1.5**，新增必填 workspace 限额；未改
 M4 内部配置为 **1.6**，增加必填 campaign；1.5 沙盒仍可读。新增 `target_estimate@1` 的地图点/可空 2×2 协方差、`view_snapshot@3` 的严格目标估计 Envelope，以及受信策略的 `target_estimates_allowed`。旧快照结构保留，PSD、历史时间、权限与重复采样计分仍由领域层执行。动态目标的 motion/health 仅在已确认教学场景启用；详细语义见 [18](../18_CAMPAIGN_DESIGN.md)。
 
 手柄增量：1.5/1.6 的 view 可选 `gamepad`，一旦声明须提供全部映射和参数，未声明则仅键盘；Protocol、control_sources 枚举及速度消息保持兼容。范围见 [20](../20_GAMEPAD_INPUT.md)。
+
+本机设置增量：`settings.schema.json` 校验 YAML 解析后的模式、键盘与图层结构，`progress.schema.json` 校验 JSON 通关存档。它们属于本机管理文件，不是机器人消息；重复按键、连续完成前缀、尝试模式与当前关卡权限由领域层校验。语义见 [22](../22_SETTINGS_MODES_AND_PROGRESS.md)，不改变 SimulationProfile 或 Protocol 版本。

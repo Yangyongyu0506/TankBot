@@ -1,5 +1,6 @@
 // Read-only learning aids share no world state, runtime handles or player source execution.
 const element=(tag,text,className)=>{const node=document.createElement(tag);if(text!==undefined)node.textContent=text;if(className)node.className=className;return node;};
+import {shortcut} from "/keyboard.js";
 
 export function mountLearning(reference,openFile,previewTemplate){
   const $=id=>document.getElementById(id),pane=$("learning-pane"),grid=pane.parentElement;
@@ -15,7 +16,7 @@ export function mountLearning(reference,openFile,previewTemplate){
   $("toggle-learning").onclick=()=>show(pane.hidden);
   $("close-learning").onclick=()=>show(false);
   window.addEventListener("keydown",event=>{
-    if(event.code!=="F1")return;
+    if(document.getElementById("settings-dialog")?.open||!shortcut(event,"help"))return;
     event.preventDefault();event.stopImmediatePropagation();
     const wasOpen=$("workspace-dialog").open;
     if(!wasOpen)$("open-workspace").click();
@@ -74,7 +75,7 @@ export function mountLearning(reference,openFile,previewTemplate){
     updateUpgrade,
     file(path){
       const fn=reference.lesson.functions.find(item=>item.path===path);
-      $("editor-contract").textContent=fn?.signature??"F1 · 关卡说明、类型与 Python 速查";
+      $("editor-contract").textContent=fn?.signature??"关卡说明、类型与 Python 速查";
       $("editor-contract").title=fn?.description??"";
     }
   };
