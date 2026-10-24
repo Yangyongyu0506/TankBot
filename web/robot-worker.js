@@ -1,10 +1,18 @@
 let py, runner;
+let logBytes=0,logLines=0,logLimit=0,logTruncated=false;
+function output(line){
+  if(logLines>=128||logBytes>=logLimit){if(!logTruncated){logTruncated=true;self.postMessage({op:"log",text:"[输出过多，本批次剩余日志已省略]\n"});}return;}
+  const text=String(line).slice(0,2047)+"\n",bytes=new TextEncoder().encode(text).length;
+  if(logBytes+bytes>logLimit){logBytes=logLimit;logTruncated=true;self.postMessage({op:"log",text:"[输出过多，本批次剩余日志已省略]\n"});return;}
+  logBytes+=bytes;logLines++;self.postMessage({op:"log",text});
+}
 self.onmessage = async ({data}) => {
   try {
     if(data.op==="init") {
+      logLimit=Math.min(data.value.max_log_bytes, data.value.limit/2);
       self.postMessage({op:"progress",phase:"Pyodide"});
       importScripts("/pyodide/pyodide.js","/python-bootstrap.js");
-      py = await self.tankbotPython("/player-bundle.json",false,loadPyodide);
+      py = await self.tankbotPython("/player-bundle.json",false,loadPyodide,output);
       let security=null;
       if(data.value.probe){
         py.globals.set("_ui_origin",data.value.ui_origin);
@@ -54,12 +62,13 @@ json.dumps(checks)
       self.postMessage({op:"progress",phase:"Module initialization"});
       const init={...data.value.init,sources:data.value.init.sources??data.sources};
       py.globals.set("_init_json",JSON.stringify(init));
-      py.runPython("from module_runner import ModuleRunner, runtime_packages\nfrom source_loader import prepare\n_init=json.loads(_init_json)\n_temporary,_tests=prepare(_init)\nrunner=ModuleRunner(_init)\ndel _init_json");
+      py.runPython("from module_runner import ModuleRunner, runtime_packages\nfrom source_loader import prepare\nimport traceback\n_init=json.loads(_init_json)\ntry:\n _temporary,_tests=prepare(_init)\n runner=ModuleRunner(_init)\nexcept Exception:\n traceback.print_exc()\n raise\ndel _init_json");
       runner = py.globals.get("runner");
       self.postMessage({op:"ready",security,unit_tests:py.runPython("_tests"),runtime_packages:JSON.parse(py.runPython("json.dumps(runtime_packages())")),memory_bytes:py._module.HEAPU8.buffer.byteLength});
     } else if(data.op==="probe_ping") {
       self.postMessage({op:"probe_pong"});
     } else if(data.op==="step") {
+      logBytes=0;logLines=0;logTruncated=false;
       py.globals.set("_step_json",data.raw);
       const raw=py.runPython("json.dumps(runner.step(json.loads(_step_json)),allow_nan=False)");
       self.postMessage({op:"result",raw});

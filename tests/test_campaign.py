@@ -8,6 +8,7 @@ import statistics
 import sys
 import tempfile
 import unittest
+import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT / name) for name in ("host", "protocol", "sdk/python")]
@@ -22,7 +23,7 @@ from campaign_support import solutions, EMA, WINDOW, AimHarness
 
 class CampaignTests(unittest.TestCase):
     def config(self, level):
-        return configure(load_config(ROOT / "config/m1.json"), level)
+        return configure(load_config(ROOT / "config/game.yaml"), level)
 
     def authority(self, level, tracker=EMA):
         config = self.config(level)
@@ -68,7 +69,8 @@ class CampaignTests(unittest.TestCase):
         with self.assertRaises(FrozenInstanceError):
             radar.detections[0].range_m = 5
         point = TargetEstimate(1, 2, [1, 0, 0, 1])
-        self.assertIsInstance(point.covariance, tuple)
+        self.assertIsInstance(point.covariance, np.ndarray)
+        self.assertEqual(point.covariance.shape, (2, 2))
         config = self.config("c2")
         channel = "/robot/estimates/perception/target"
         msg = envelope("target_estimate@1", channel, {"x_m": 1, "y_m": 2, "covariance": [1, 0, 0, 1]},
@@ -121,6 +123,20 @@ class CampaignRobot(Module):
         self.assertEqual(a.view["payload"]["target_estimates"][0]["payload"]["x_m"], 7)
         self.assertEqual(a._private["targets"][0]["pose"], config["weapons"]["targets"][0]["pose"])
         self.assertEqual(a._private["truth_pose"], config["scene"]["initial_pose"])
+
+    def test_every_saved_file_survives_level_switch_including_modified_framework(self):
+        with tempfile.TemporaryDirectory() as directory:
+            api = WorkspaceAPI(self.config("c0"), directory=directory)
+            current = api.store.read()
+            changed = {path: source + "\n" for path, source in current["files"].items()}
+            changed["campaign_robot.py"] += "# player modification outside any TODO\n"
+            changed["my_tools.py"] = "VALUE: int = 5\n"
+            snapshot = api.post("save", {"revision": current["revision"], "changes": changed})
+            for level in ("c1", "c2", "c0"):
+                api.unlock(self.config(level))
+                restored = api.store.read()
+                for path, source in snapshot["files"].items():
+                    self.assertEqual(restored["files"][path], source, (level, path))
 
     def test_c0_manual_controls_and_truth_practice_are_playable(self):
         a = self.authority("c0")

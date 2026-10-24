@@ -6,6 +6,10 @@ import inspect
 from functools import lru_cache
 from typing import Any, get_type_hints
 import tankbot
+from tankbot._imports import load_policy
+from typing import get_args, get_origin
+import types
+import numpy as np
 from .campaign_templates import TEMPLATE_VERSION, TRANSFORMS, TRACKER, MANAGED_FILES
 
 
@@ -13,7 +17,7 @@ TYPE_TEXT: dict[str, tuple[str, dict[str, str]]] = {
     "Pose2D": ("自身的二维位姿。C0–C2 由系统公开提供；位置在 map 中，车头方向用 yaw 表示。", {
         "x_m": "地图横坐标，单位 m，向右为正。", "y_m": "地图纵坐标，单位 m，向上为正。",
         "yaw_rad": "车头相对地图 +x 的逆时针角，单位 rad；π/2 表示朝向 +y。",
-        "covariance": "可空的行优先 3×3 协方差，依次对应 x、y、yaw；本关可以忽略。",
+        "covariance": "None 或只读 float64 NumPy 矩阵，shape=(3,3)，依次对应 x、y、yaw；本关可以忽略。",
         "child_frame_id": "被描述的车体系名称，通常为 base_link；本关可以忽略。"}),
     "RadarDetection": ("一次雷达检测。先在车体系里测量，不能直接当作地图坐标。", {
         "observation_id": "仅本次观测的标签；不能用它识别跨帧的同一敌车。",
@@ -22,7 +26,7 @@ TYPE_TEXT: dict[str, tuple[str, dict[str, str]]] = {
     "RadarData": ("一帧雷达数据。没有检测时 detections 是空元组 ()。", {"detections": "不可变的 RadarDetection 元组；逐项读取，不需要解析 JSON。"}),
     "TargetEstimate": ("算法在 map 中估计的目标位置。C2 跟踪器返回这个值；C1 的矩阵结果由框架转换为它。", {
         "x_m": "目标估计的地图横坐标，单位 m。", "y_m": "目标估计的地图纵坐标，单位 m。",
-        "covariance": "可空的行优先 2×2 协方差，对应 x、y；入门时保留 None。"}),
+        "covariance": "None 或只读 float64 NumPy 矩阵，shape=(2,2)，对应 x、y；入门时保留 None。"}),
     "Sample": ("框架使用的带采样时刻的数据包装；入门函数收到的是内部 data，无需手动拆包。", {
         "data": "类型参数 T 对应的数据，例如 Pose2D 或 RadarData。", "simulation_tick": "数据采样的仿真 tick，不是网络到达时间。",
         "frame_id": "数据参考坐标系名称。", "sequence_number": "该数据流递增的序号。"}),
@@ -57,6 +61,10 @@ METHOD_TEXT: dict[str, str] = {
 
 
 def type_name(annotation: Any) -> str:
+    if get_origin(annotation) is np.ndarray:
+        return "NDArray[np.float64]"
+    if get_origin(annotation) is types.UnionType:
+        return " | ".join("None" if item is type(None) else type_name(item) for item in get_args(annotation))
     return inspect.formatannotation(annotation).replace("typing.", "").replace("~T", "T")
 
 
@@ -97,26 +105,10 @@ PYTHON_BASICS: list[dict[str, str]] = [
     {"title": "类型注解", "text": "name: float = 1.0 声明变量；own_pose: Pose2D 声明参数；-> NDArray[np.float64] 声明返回类型。self 是 Python 隐含的当前实例参数。注解帮助阅读，不会替你计算结果。", "code": "distance_m: float = 2.0\nangle_rad: float = math.pi / 2"},
     {"title": "读取字段与构造结果", "text": "用 对象.字段 读取；SDK 数据不可变。创建新结果即可，不修改输入。", "code": "x_m: float = own_pose.x_m\nestimate: TargetEstimate = TargetEstimate(x_m=1.0, y_m=2.0)"},
     {"title": "矩阵与向量", "text": "NumPy 用 [行,列] 索引；@ 是矩阵乘法，* 是逐元素乘法。切片 [:3,:3] 是旋转块，[:3,3] 是平移列。", "code": "T_map_radar: NDArray[np.float64] = np.eye(4, dtype=np.float64)\npoint_radar: NDArray[np.float64] = np.array([2.0, 0.0, 0.0, 1.0])\npoint_map: NDArray[np.float64] = T_map_radar @ point_radar"},
-    {"title": "空测量与状态", "text": "tuple[T, ...] 是任意长度的 T 元组；() 表示没有测量。A | None 表示有 A 或没有结果。self.estimate 可以跨 update 调用保留。", "code": "measurement: TargetEstimate\nif measurements:\n    measurement = measurements[0]\n    self.estimate = measurement\nreturn self.estimate"},
+    {"title": "空测量与状态", "text": "measurements 是本次采样的目标集合，不是历史轨迹；当前单目标场景长度为 0 或 1。() 表示本次没有检测。self.estimate 保存一个当前估计。", "code": "measurement: TargetEstimate\nif measurements:\n    measurement = measurements[0]\n    self.estimate = measurement\nreturn self.estimate"},
+    {"title": "NumPy 矩阵与测量数组", "text": "矩阵使用 np.ndarray。target_positions 将本次检测整理为 (N,2) 的 float64 数组，列为 x/y；丢失时 shape=(0,2)，不会追加历史。协方差也是二维 NumPy 数组。", "code": "from tankbot.transforms import target_positions\nxy: NDArray[np.float64] = target_positions(measurements)\nP: NDArray[np.float64] = np.eye(2, dtype=np.float64)\nestimate: TargetEstimate = TargetEstimate(x_m=1.0, y_m=2.0, covariance=P)"},
     {"title": "只填写算法", "text": "导入、项目结构、仿真时间、消息、测试入口与部署由游戏准备。先保存，再测试，最后部署；重试/部署会清空算法内存，关闭编辑器不会。", "code": "def update(self, measurements: tuple[TargetEstimate, ...], dt: float) -> TargetEstimate | None:\n    return self.estimate"},
 ]
-
-LESSONS: dict[str, dict[str, Any]] = {
-    "c0": {"title": "C0 · 先认识坐标与控制", "summary": "本关不需要编程。先熟悉车头方向、地图方向、炮台与射击。",
-           "steps": ["W/S 前后；差速 A/D 转动车体，全向 A/D 横移、Q/E 转向。", "按任务面板要求移动、转向，再用 J/L 瞄准、空格单发。", "地图 +x 向右、+y 向上；yaw 从 +x 逆时针为正，视角不会跟着车体旋转。", "此关明确显示真值。后续关卡会逐步撤回信息，并提供替代观测与算法模板。"],
-           "files": [], "default_type": "Pose2D", "functions": [], "aliases": {}},
-    "c1": {"title": "C1 · 用 SE(3) 建立两个坐标系之间的关系", "summary": "只实现 radar_to_map：返回一个 NumPy 4×4 矩阵。极坐标展开、点的矩阵乘法和结果发布已由框架处理。",
-           "steps": ["打开 perception/transforms.py，只填写 radar_to_map 的 TODO。own_pose 的完整类型和字段见下方签名与类型参考。", "把二维 yaw 写为绕 z 的旋转，把自身 x/y 写入平移列；本关雷达系与车体系重合，z=0。", "前三列分别是雷达 x/y/z 基向量在地图中的方向，第四列是雷达原点在地图中的位置。乘法把这些列按点坐标加权相加。", "在「矩阵实验」里改变位姿和点坐标，逐行观察 T @ p，再运行旋转、平移及方向向量测试。", "保存 → 测试快照 → 部署已测试版本。看到目标估计后手动瞄准命中。"],
-           "files": [{"path": "perception/transforms.py", "role": "算法练习：只实现这个矩阵函数。"}],
-           "default_type": "Pose2D", "functions": [("perception/transforms.py", TRANSFORMS, "radar_to_map")],
-           "aliases": {"own_pose": "Pose2D", "detection": "RadarDetection", "T_map_radar": "ndarray"}},
-    "c2": {"title": "C2 · 复用变换，在噪声中保留状态", "summary": "C1 的 SE(3) 矩阵继续使用。你只在 Tracker 中处理已经转换到地图的测量，并保存跨调用的估计。",
-           "steps": ["复用 perception/transforms.py，不需要重新实现坐标变换。打开 perception/tracker.py 的 Tracker.update。", "measurements 是 tuple[TargetEstimate, ...]；有测量时可读取 measurements[0].x_m/y_m，丢失时为空元组 ()。", "dt 是仿真秒。__init__ 只初始化一次；把状态保存在 self.estimate 或自定义的带类型字段中。", "尝试平滑、滑动窗口或预测；没有测量时决定保留或预测状态，尚未初始化时可返回 None。", "保存、测试并部署。跟踪巡逻敌车，考虑弹丸飞行时间，击杀后通关；真值误差仅在尝试结束后给出。"],
-           "files": [{"path": "perception/tracker.py", "role": "算法练习：初始化状态并完成 update。"}, {"path": "perception/transforms.py", "role": "复用 C1 的矩阵函数。"}],
-           "default_type": "TargetEstimate", "functions": [("perception/tracker.py", TRACKER, "update"), ("perception/transforms.py", TRANSFORMS, "radar_to_map")],
-           "aliases": {"own_pose": "Pose2D", "detection": "RadarDetection", "measurement": "TargetEstimate", "self.estimate": "TargetEstimate", "T_map_radar": "ndarray"}},
-}
-
 
 def function_reference(path: str, source: str, name: str) -> dict[str, Any]:
     function: ast.FunctionDef = next(node for node in ast.walk(ast.parse(source)) if isinstance(node, ast.FunctionDef) and node.name == name)
@@ -129,10 +121,11 @@ def function_reference(path: str, source: str, name: str) -> dict[str, Any]:
 
 def learning_bundle(config: dict[str, Any]) -> dict[str, Any]:
     level_id: str | None = config.get("campaign", {}).get("active_level")
-    lesson: dict[str, Any] = copy.deepcopy(LESSONS[level_id]) if level_id else {
+    lesson: dict[str, Any] = copy.deepcopy(config["campaign"]["lessons"][level_id]) if level_id else {
         "title": "机器人工作区说明", "summary": "示例里程计已提供；可查阅类型并修改自己的算法。", "steps": ["先阅读文件中的类型注解与说明，再保存、测试和部署。"],
         "files": [], "functions": [], "aliases": {}, "default_type": "Pose2D"}
-    lesson["functions"] = [function_reference(*entry) for entry in lesson["functions"]]
+    sources = {"perception/transforms.py": TRANSFORMS, "perception/tracker.py": TRACKER}
+    lesson["functions"] = [function_reference(entry["path"], sources[entry["path"]], entry["name"]) for entry in lesson["functions"]]
     lesson["execution"] = "本关无需编程；关闭代码编辑器后使用键盘驾驶。"
     lesson["completion"] = "可查阅类型、修改算法，并保存、测试和部署。"
     lesson["common_errors"] = ["编辑器打开时，驾驶按键用于编辑代码；关闭后才能控制坦克。"]
@@ -150,7 +143,15 @@ def learning_bundle(config: dict[str, Any]) -> dict[str, Any]:
                                           "yaw 已经是弧度，矩阵方向为 radar → map；用 @ 做矩阵乘法，最后一行为 [0,0,0,1]。"] if level_id == "c1" else
                                          ["先检查 measurements 是否为空；没有测量不代表目标坐标为 (0,0)。",
                                           "状态保存在 self 的字段中；dt 单位是秒，不要用真实时间或每次调用都清空状态。"])
+        lesson["completion"] += f" 限时 {definition['time_limit_s']} 仿真秒。" + (
+            "首次有效人工操作开始计时。" if definition["timer_start"] == "first_control" else
+            "首次成功部署后开始计时，之前的编辑和测试不计时；重复部署不重置。")
+        lesson["steps"].append("正式尝试持续计时，打开编辑器不暂停；可在任务页或编辑器点击「结束本次尝试」，修改保存后重试。")
+        if definition["player_health"]:
+            health = definition["target"]["health"]
+            lesson["completion"] += f" 我方与敌方均为 {health['max_hp']} HP，每发命中扣 {health['damage_per_hit']} HP；反弹自伤也扣血，碰墙不扣血。我方死亡判失败，同时死亡也失败。"
     return {"version": "1.0", "template_version": TEMPLATE_VERSION, "lesson": lesson,
+            "dependencies": load_policy(),
             "types": copy.deepcopy(sdk_reference()), "python": copy.deepcopy(PYTHON_BASICS),
             "testing": {"checks": ["Python 语法与导入；项目接口、连线和发布权限。",
                                      "tests/test_*.py 中的单元测试；C1/C2 默认包含 SE(3) 合法性、旋转/平移与方向样例。",

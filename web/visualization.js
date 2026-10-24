@@ -15,7 +15,7 @@ export function allowedLayers(profile,developer){
 export function developerView(data,profile){
   const truth=data.truth,tick=data.simulation_tick,[x,y,yaw]=truth.truth_pose;
   return {run_id:data.run_id,sequence_number:tick,simulation_tick:tick,payload:{view_revision:0,
-    selected_pose:{source_id:"system",frame_id:"map",simulation_tick:tick,freshness:"fresh",pose:{x_m:x,y_m:y,yaw_rad:yaw}},
+    selected_pose:truth.player_alive===false?null:{source_id:"system",frame_id:"map",simulation_tick:tick,freshness:"fresh",pose:{x_m:x,y_m:y,yaw_rad:yaw}},
     local_observations:Object.values(data.sensors),objects:[
       ...truth.projectiles.map(p=>({kind:"projectile",projectile_id:p.projectile_id,x_m:p.position[0],y_m:p.position[1],radius_m:p.radius_m??profile.projectile_radius_m})),
       ...truth.targets.filter(t=>t.alive).map(t=>({kind:"target",target_id:t.target_id,pose:{x_m:t.pose[0],y_m:t.pose[1],yaw_rad:t.pose[2]},hits:truth.target_hits[t.target_id]}))]}};
@@ -105,7 +105,7 @@ export function drawVisualization(ctx,point,frame,debugFrame,panel,profile,scale
     }
   }
   if(panel.enabled("colliders")&&data){
-    const poses=[data.truth.truth_pose,...data.truth.targets.filter(t=>t.alive).map(t=>t.pose)];
+    const poses=[...(data.truth.player_alive===false?[]:[data.truth.truth_pose]),...data.truth.targets.filter(t=>t.alive).map(t=>t.pose)];
     for(const [x,y,yaw] of poses){ctx.save();ctx.translate(...point(x,y));ctx.rotate(-yaw);ctx.strokeStyle="#ff9dd2";ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.beginPath();ctx.roundRect(-profile.body.length_m*scale/2,-profile.body.width_m*scale/2,profile.body.length_m*scale,profile.body.width_m*scale,profile.body.corner_radius_m*scale);ctx.stroke();ctx.restore();}
   }
 }

@@ -24,7 +24,7 @@ class ApplicationTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.directory = Path(self.temporary.name)
-        self.config = load_config(ROOT / "config/m1.json")
+        self.config = load_config(ROOT / "config/game.yaml")
         self.state = ApplicationState(self.config, self.directory / "settings.yaml", self.directory / "progress.json")
 
     def mode(self, enabled):

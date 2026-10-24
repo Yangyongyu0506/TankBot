@@ -74,7 +74,7 @@ M1 为明确授权的**本人可信代码开发 profile**：原生 Rust Core 的
 
 ## M2 实测浏览器 profile
 
-双 origin / 双 Worker 已在 Linux Firefox 验证，Authority/玩家解释器不共享堆；Runtime 资源路由不提供配置、Core 或宿主源码。真实 Python JS 桥测试确认宿主句柄/文件不存在、UI/外网连接与嵌套 Worker 被阻止、fork 不可用；死循环强制终止后 Core 和 UI 继续。资源预算仍在 config/m1.json：浏览器初始化 45 s，批次 20 ms，原生初始化仍为 5 s。
+双 origin / 双 Worker 已在 Linux Firefox 验证，Authority/玩家解释器不共享堆；Runtime 资源路由不提供配置、Core 或宿主源码。真实 Python JS 桥测试确认宿主句柄/文件不存在、UI/外网连接与嵌套 Worker 被阻止、fork 不可用；死循环强制终止后 Core 和 UI 继续。资源预算仍在 config/game.yaml：浏览器初始化 45 s，批次 20 ms，原生初始化仍为 5 s。
 
 CSP 允许 Runtime origin 的固定只读资源请求，MEMFS 可写；浏览器无硬内存/磁盘/CPU 配额，未进行破坏性 OOM 压力测试，不保证抗所有 DoS。尚无第三方服务器代码执行或 Arena；ADR-0013 整体仍 Proposed，局部实现选择与成本由 ADR-0020 接受。详细攻击结果、来源与数据边界见 [16](16_BROWSER_RUNTIME.md) 和 [M2 报告](reports/M2_VALIDATION.md)。
 

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {GamepadDriver,mapGamepad,manualTargets,radialDeadzone,moving} from '../web/gamepad.js';
 
-const config=JSON.parse(readFileSync(new URL('../config/m1.json',import.meta.url)));
+const config=JSON.parse(readFileSync(new URL('../core/tests/fixtures/default-profile.json',import.meta.url)));
 const settings=config.view.gamepad;
 const pad=(index=0,id='Test standard controller')=>({index,id,connected:true,mapping:'standard',axes:[0,0,0,0],buttons:Array.from({length:17},()=>({value:0,pressed:false}))});
 const press=(p,name,value=1)=>{p.buttons[settings.buttons[name]]={value,pressed:value>=settings.button_threshold};};

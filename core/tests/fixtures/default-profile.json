@@ -1,5 +1,5 @@
 {
-  "config_version": "1.6",
+  "config_version": "1.7",
   "confirmation_status": "confirmed",
   "body": {
     "length_m": 0.8,
@@ -153,7 +153,8 @@
           3.0
         ]
       }
-    ]
+    ],
+    "player_health": null
   },
   "runtime": {
     "commit_delay_ticks": 6,
@@ -636,8 +637,12 @@
           "movement_m": 1.0,
           "turn_rad": 0.5,
           "required_hits": 1,
-          "required_estimates": 0
-        }
+          "required_estimates": 0,
+          "kind": "checklist"
+        },
+        "time_limit_s": 60,
+        "timer_start": "first_control",
+        "player_health": null
       },
       "c1": {
         "title": "C1 · 用 SE(3) 矩阵变换坐标",
@@ -668,12 +673,16 @@
           "movement_m": 0.0,
           "turn_rad": 0.0,
           "required_hits": 1,
-          "required_estimates": 1
-        }
+          "required_estimates": 1,
+          "kind": "checklist"
+        },
+        "time_limit_s": 60,
+        "timer_start": "first_deployment",
+        "player_health": null
       },
       "c2": {
         "title": "C2 · 噪声中跟踪与击杀",
-        "problem": "移动敌车有 3 HP。雷达带噪声和丢失；复用坐标转换，在状态类中稳定跟踪，击杀即可通关。",
+        "problem": "敌我双方均有 {max_hp} HP。雷达带噪声和丢失；复用坐标转换，稳定跟踪，在 {time_limit_s} 秒内存活并击杀敌车。反弹的己方炮弹也会造成伤害。",
         "hints": [
           "完成 perception/tracker.py；C1 的 transforms.py 继续用于矩阵坐标变换。",
           "空测量时也可输出合理预测；不要把每个 observation_id 当作同一实体 ID。",
@@ -686,7 +695,8 @@
           "control.manual.turret",
           "control.manual.fire",
           "sensor.radar.read",
-          "view.enemy.health"
+          "view.enemy.health",
+          "view.player.health"
         ],
         "radar_profile": "noisy",
         "target": {
@@ -741,9 +751,102 @@
           "movement_m": 0.0,
           "turn_rad": 0.0,
           "required_hits": 0,
-          "required_estimates": 0
+          "required_estimates": 0,
+          "kind": "destroy_target"
+        },
+        "time_limit_s": 120,
+        "timer_start": "first_deployment",
+        "player_health": "same_as_target"
+      }
+    },
+    "lessons": {
+      "c0": {
+        "title": "C0 · 先认识坐标与控制",
+        "summary": "本关不需要编程。先熟悉车头方向、地图方向、炮台与射击。",
+        "steps": [
+          "W/S 前后；差速 A/D 转动车体，全向 A/D 横移、Q/E 转向。",
+          "按任务面板要求移动、转向，再用 J/L 瞄准、空格单发。",
+          "地图 +x 向右、+y 向上；yaw 从 +x 逆时针为正，视角不会跟着车体旋转。",
+          "此关明确显示真值。后续关卡会逐步撤回信息，并提供替代观测与算法模板。"
+        ],
+        "files": [],
+        "default_type": "Pose2D",
+        "functions": [],
+        "aliases": {}
+      },
+      "c1": {
+        "title": "C1 · 用 SE(3) 建立两个坐标系之间的关系",
+        "summary": "只实现 radar_to_map：返回一个 NumPy 4×4 矩阵。极坐标展开、点的矩阵乘法和结果发布已由框架处理。",
+        "steps": [
+          "打开 perception/transforms.py，只填写 radar_to_map 的 TODO。own_pose 的完整类型和字段见下方签名与类型参考。",
+          "把二维 yaw 写为绕 z 的旋转，把自身 x/y 写入平移列；本关雷达系与车体系重合，z=0。",
+          "前三列分别是雷达 x/y/z 基向量在地图中的方向，第四列是雷达原点在地图中的位置。乘法把这些列按点坐标加权相加。",
+          "在「矩阵实验」里改变位姿和点坐标，逐行观察 T @ p，再运行旋转、平移及方向向量测试。",
+          "保存 → 测试快照 → 部署已测试版本。看到目标估计后手动瞄准命中。"
+        ],
+        "files": [
+          {
+            "path": "perception/transforms.py",
+            "role": "算法练习：只实现这个矩阵函数。"
+          }
+        ],
+        "default_type": "Pose2D",
+        "functions": [
+          {
+            "path": "perception/transforms.py",
+            "name": "radar_to_map"
+          }
+        ],
+        "aliases": {
+          "own_pose": "Pose2D",
+          "detection": "RadarDetection",
+          "T_map_radar": "ndarray"
+        }
+      },
+      "c2": {
+        "title": "C2 · 复用变换，在噪声中保留状态",
+        "summary": "C1 的 SE(3) 矩阵继续使用。你只在 Tracker 中处理已经转换到地图的测量，并保存跨调用的估计。",
+        "steps": [
+          "复用 perception/transforms.py，不需要重新实现坐标变换。打开 perception/tracker.py 的 Tracker.update。",
+          "measurements 是本次采样的检测集合（长度 0 或 1），不是随时间增长的历史。需要数值数组时调用 tankbot.transforms.target_positions，得到 shape=(N,2) 的 NumPy 数组。",
+          "dt 是仿真秒。__init__ 只初始化一次；把状态保存在 self.estimate 或自定义的带类型 NumPy 字段中。",
+          "尝试平滑、滑动窗口或预测；没有测量时决定保留或预测状态，尚未初始化时可返回 None。保存历史应使用有长度上限的窗口。",
+          "保存、测试并部署。跟踪巡逻敌车，考虑弹丸飞行时间，击杀后通关；真值误差仅在尝试结束后给出。"
+        ],
+        "files": [
+          {
+            "path": "perception/tracker.py",
+            "role": "算法练习：初始化状态并完成 update。"
+          },
+          {
+            "path": "perception/transforms.py",
+            "role": "复用 C1 的矩阵函数。"
+          }
+        ],
+        "default_type": "TargetEstimate",
+        "functions": [
+          {
+            "path": "perception/tracker.py",
+            "name": "update"
+          },
+          {
+            "path": "perception/transforms.py",
+            "name": "radar_to_map"
+          }
+        ],
+        "aliases": {
+          "own_pose": "Pose2D",
+          "detection": "RadarDetection",
+          "measurement": "TargetEstimate",
+          "self.estimate": "TargetEstimate",
+          "T_map_radar": "ndarray"
         }
       }
-    }
+    },
+    "outcome_priority": [
+      "player_dead",
+      "objective_completed",
+      "timeout"
+    ]
   }
 }

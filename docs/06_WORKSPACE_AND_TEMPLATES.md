@@ -53,7 +53,7 @@ workspace/
 
 示例 SDK `0.1.0` 是规划中的 API profile，不代表已经发布此包。M3 的项目 entry point 直接等于唯一 Module Contract 的类入口，实际夹具见 [M3 Manifest](examples/m3-workspace.json)；下述项目 `build_robot` 是后续高级图组装入口，初学者由模板生成。高级组装结果必须与 Manifest 声明端口和权限兼容，不能运行时偷偷增加特权连接。
 
-依赖只能引用受控注册表中的精确版本与内容摘要，不在运行时联网 `pip install`。首次实现允许空依赖列表、SDK 与标准库；数学扩展经原生/Pyodide 兼容性测试后开放。版本锁定与部署记录分开：`sdk_version` 不等于 Protocol 或模板版本。
+玩家依赖按 [23](23_PLAYER_CODE_AND_LIBRARIES.md) 的课程白名单开放：当前仅 NumPy、SDK、指定基础标准库和自建模块，测试文件另可使用 unittest。Manifest dependencies 必须为空，不提供自由 pip 安装。允许库由游戏自动准备并纳入部署环境摘要；新增基础库需维护者审查教学影响及两平台兼容。sdk_version 不等于 Protocol 或模板版本。
 
 ## 模板元数据与非覆盖式生成
 

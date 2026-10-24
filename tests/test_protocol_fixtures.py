@@ -13,7 +13,7 @@ from tankbot_protocol.validation import Validator, Rejected
 
 class ProtocolFixtureTests(unittest.TestCase):
     def test_documented_protocol_domain_failures(self):
-        config = load_config(ROOT/"config/m1.json")
+        config = load_config(ROOT/"config/game.yaml")
         cases = json.loads((ROOT/"docs/examples/validation-cases.json").read_text())["cases"]
         supported = {"asymmetric-covariance","indefinite-covariance","wrong-time-formula","wrong-run","ungranted-publisher","forbidden-frame","differential-cannot-strafe","velocity-expired-at-controller","future-velocity-stamp","old-target-cannot-replace-newer"}
         for case in cases:

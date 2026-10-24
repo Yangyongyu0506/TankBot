@@ -48,7 +48,7 @@ def main():
                 "ui":b.script("return {model:document.getElementById('arena').dataset.model,x:document.getElementById('x').textContent,connection:document.getElementById('connection').textContent};")}
         root=Path(__file__).resolve().parents[1]
         report["os"]=platform.platform()
-        paths=["config/m1.json","config/browser-assets.lock.json","Cargo.lock","target/wasm32-unknown-unknown/release/tankbot_core.wasm","build/browser/authority-bundle.json","build/browser/player-bundle.json"]
+        paths=["config/game.yaml","config/browser-assets.lock.json","Cargo.lock","target/wasm32-unknown-unknown/release/tankbot_core.wasm","build/browser/authority-bundle.json","build/browser/player-bundle.json"]
         report["artifacts"]={p:{"bytes":(root/p).stat().st_size,"sha256":hashlib.sha256((root/p).read_bytes()).hexdigest()} for p in paths}
         args.output.parent.mkdir(parents=True,exist_ok=True);args.output.write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n")
         print(args.output)

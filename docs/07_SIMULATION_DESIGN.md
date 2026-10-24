@@ -115,7 +115,7 @@ seek 后新建 `run_id` 并清空消息/插值历史。初期从初态重新执�
 
 ## M1 物理配置、数值误差与录制
 
-唯一数值来源为 [config/m1.json](../config/m1.json)，结构受 simulation-profile Schema 校验，跨字段约束由 Host/Core 校验；缺失参数、未知模式与非整数采样比拒绝。`solver.dt` 必须等于 `1/(physics_hz*substeps)`，不静默覆盖矛盾值。Rapier 引擎 profile 完整显式保存；只在升级审查时用 `cargo run --example solver_profile` 导出候选默认设置，不在运行时补缺。刚体不额外使用引擎阻尼/休眠，受力仅来自已确认伺服、地面阻力与接触。
+唯一数值来源为 [config/game.yaml](../config/game.yaml)，结构受 simulation-profile Schema 校验，跨字段约束由 Host/Core 校验；缺失参数、未知模式与非整数采样比拒绝。`solver.dt` 必须等于 `1/(physics_hz*substeps)`，不静默覆盖矛盾值。Rapier 引擎 profile 完整显式保存；只在升级审查时用 `cargo run --example solver_profile` 导出候选默认设置，不在运行时补缺。刚体不额外使用引擎阻尼/休眠，受力仅来自已确认伺服、地面阻力与接触。
 
 每主 tick 四个显式子步，各次重算车体系伺服和阻力再旋转到世界系；每子步运行 Rapier 接触求解（8 solver / 4 PGS / 1 stabilization）。圆角矩形的外包尺寸包含圆角，碰撞形状的核心半长/半宽需减去圆角半径；质量和惯量用独立 MassProperties，不由碰撞外形隐式推导。接触恢复系数零，有限容差仍可能产生微小穿透；验收量测误差，不承诺数学上严格不重叠。
 

@@ -6,6 +6,7 @@ import time
 import uuid
 from tankbot_protocol.wire import strict_loads
 from tankbot_host.authority import Authority, load_config
+from tankbot_host.logs import RuntimeLogs
 
 
 class WasmCore:
@@ -36,12 +37,14 @@ class BrowserSupervisor:
         self.startup_result = None
         self.detail = None
         self.limit = config["runtime"]["max_message_bytes"]
+        self.logs = RuntimeLogs(config["runtime"]["max_log_bytes"])
         self.budget = config["runtime"]["batch_budget_ms"]/1000
         self.batch_times_ms = deque(maxlen=config["runtime"]["history_limit_ticks"])
         self.fault = None
         self.active = self.result = None
         self.closed = False
         self.send("init", {"init":init,"limit":self.limit,"budget_ms":self.budget*1000,
+                           "max_log_bytes": config["runtime"]["max_log_bytes"],
                            "probe":config["browser"]["probe_enabled"],
                            "startup_timeout_s":config["browser"]["startup_timeout_s"]})
 
@@ -101,6 +104,11 @@ def runtime_event(event):
         worker.startup_result = {"ready": True, "unit_tests": event.get("unit_tests", 0), "runtime_packages": event.get("runtime_packages", {})}
     elif event["op"] == "result":
         worker.receive(event["raw"], event["elapsed_ms"])
+    elif event["op"] == "log":
+        import re
+        text = str(event.get("text", ""))[:2048]
+        text = re.sub(r"/tmp/tankbot-deployment-[^/]+/", "", text).replace("/tankbot/", "")
+        worker.logs.append(text, stream="output")
     elif event["op"] == "fault":
         worker.fault = event.get("code", "MODULE_ERROR")
         worker.detail = event.get("detail", "")
@@ -110,7 +118,7 @@ def runtime_event(event):
 def start(sources=None):
     from tankbot_host.deployment import DeploymentManager
     authority = Authority(load_config("/tankbot/config/m1.json"), startup_sources=sources,
-                          core_factory=WasmCore, worker_factory=BrowserSupervisor)
+                          core_factory=WasmCore, worker_factory=BrowserSupervisor, startup_is_deployment=False)
     authority.deployment = DeploymentManager(authority)
     return authority
 

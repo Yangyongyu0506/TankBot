@@ -1,5 +1,13 @@
 // Teaching UI consumes the same narrow Authority controls in both runtime profiles.
 import {bindingHint} from "/keyboard.js";
+export function attemptSummary(attempt){
+  if(!attempt)return "";
+  const clock=attempt.timing,remaining=Math.ceil(clock.remaining_s),minutes=Math.floor(remaining/60),seconds=String(remaining%60).padStart(2,"0");
+  const time=attempt.phase==="preparing"?`尚未计时 · 限时 ${clock.time_limit_s} 秒`:`剩余 ${minutes}:${seconds}`;
+  const health=attempt.player_hp==null?"":` · 我方 HP ${attempt.player_hp}/${attempt.player_max_hp} · 敌方 HP ${attempt.enemy_hp}/${attempt.enemy_max_hp}`;
+  const reasons={aborted:"已主动结束",timeout:"失败：超时",player_dead:"失败：玩家死亡",objective_completed:"已通关"};
+  return (attempt.result?reasons[attempt.result.reason]??"本次尝试已结束":time)+health;
+}
 export async function mountCampaign(profile,browser,onState,releaseControls){
   const $=id=>document.getElementById(id),levels=profile.campaign?.levels??[];
   if(!levels.length){$("tab-task").hidden=true;return;}
@@ -48,10 +56,12 @@ export async function mountCampaign(profile,browser,onState,releaseControls){
       window.location.reload();
     }catch(error){$("task-message").textContent=error.message;$("start-level").disabled=false;}
   };
-  $("finish-level").onclick=async()=>{
+  const finish=async()=>{
     try{releaseControls();await runtime("/api/campaign/finish");await poll();}
     catch(error){$("task-message").textContent=error.message;}
   };
+  $("finish-level").onclick=finish;
+  $("editor-finish-level").onclick=finish;
   let timer;
   async function poll(){
     try{
@@ -59,19 +69,27 @@ export async function mountCampaign(profile,browser,onState,releaseControls){
       if(browser?.saveError()){await browser.retrySave();}
       await updateProgress();
       onState(attempt);
-      $("task-status").textContent=attempt?({active:"进行中",passed:"已通关",ended:"本次尝试已结束"}[attempt.status]):"自由试验场";
+      $("task-status").textContent=attempt?(attempt.phase==="preparing"?"准备中 · 尚未开始计时":{active:"进行中",passed:"已通关",ended:"本次尝试已结束"}[attempt.status]):"自由试验场";
       $("task-status").dataset.status=attempt?.status??"sandbox";
       $("finish-level").disabled=!attempt||attempt.status!=="active";
+      $("editor-finish-level").disabled=$("finish-level").disabled;
+      $("editor-attempt").hidden=!attempt;
+      $("campaign-summary").hidden=!attempt;
+      $("campaign-summary").textContent=attemptSummary(attempt);
+      $("campaign-summary").dataset.phase=attempt?.phase??"";
+      $("editor-attempt-status").textContent=attemptSummary(attempt)+(attempt?.status!=="active"?" · 请重试关卡后再测试/部署。":attempt.phase==="preparing"?" · 测试不计时；首次部署后开始，可关闭编辑器驾驶。":" · 正在计时；改代码前可先结束本次尝试。");
       if(attempt){
         const p=attempt.progress;
-        $("task-progress").textContent=attempt.level_id==="c2"?`敌车 HP：${attempt.enemy_hp} / ${attempt.enemy_max_hp}`:
+        $("task-progress").textContent=attempt.player_hp!=null?`我方 HP：${attempt.player_hp} / ${attempt.player_max_hp}　敌车 HP：${attempt.enemy_hp} / ${attempt.enemy_max_hp}`:
           attempt.level_id==="c0"?`移动 ≥ ${current.objective.movement_m} m ${p.moved?"✓":"○"}　转向 ≥ ${current.objective.turn_rad} rad ${p.turned?"✓":"○"}　命中 ${p.hit?"✓":"○"}`:
           `目标估计 ${p.has_estimate?"✓":"○"}　命中 ${p.hit?"✓":"○"}`;
         if(attempt.result){
           const r=attempt.result;
-          $("task-message").textContent=(r.passed?"通关！可选择下一关，已有源码会保留。":"可修改代码，再点击开始 / 重试。")+
+          $("task-message").textContent=(r.passed?"通关！可选择下一关，已有源码会保留。":attemptSummary(attempt)+"。可修改代码，再点击开始 / 重试。")+
             (r.rmse_m==null?"":" 本次估计 RMSE："+r.rmse_m.toFixed(3)+" m（仅结束后公布）。");
           if(save_error||browser?.saveError())$("task-message").textContent=save_error||browser.saveError();
+        }else{
+          $("task-message").textContent=attempt.phase==="preparing"?(attempt.timing.start_on==="first_control"?"首次有效驾驶、炮台或开火操作后计时。":"保存 → 测试 → 部署。首次成功部署前不计时；部署后开放驾驶和开火。"):"倒计时按仿真时间推进，编辑器打开时也继续。发现问题可立即结束尝试，源码会保留。";
         }
       }
     }catch(error){$("task-message").textContent=error.message;}

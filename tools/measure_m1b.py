@@ -39,7 +39,7 @@ def measure(config,name):
 
 
 def main():
-    config=load_config(ROOT/'config/m1.json')
+    config=load_config(ROOT/'config/game.yaml')
     core=CoreAdapter(config,config['scene']['default_chassis'])
     try:
         out=core.call({'op':'step','fire_requests':[{'publisher_id':'measure','request_id':'one','source_tick':0}]})
@@ -58,7 +58,7 @@ def main():
     equal=(wasm['shots_fired']==native['weapon_state']['shots_fired'] and wasm['relative_angle_rad']==native['relative_angle_rad'])
     if not equal:raise RuntimeError('Native/WASM weapon probe mismatch')
     report={'date':datetime.now(ZoneInfo('Asia/Shanghai')).date().isoformat(),'os':platform.platform(),'python':platform.python_version(),
-            'native_binary_sha256':digest(ROOT/'target/debug/core_worker'),'config_sha256':digest(ROOT/'config/m1.json'),
+            'native_binary_sha256':digest(ROOT/'target/debug/core_worker'),'config_sha256':digest(ROOT/'config/game.yaml'),
             'cargo_lock_sha256':digest(ROOT/'Cargo.lock'),'wasm_sha256':digest(ROOT/'target/wasm32-unknown-unknown/debug/tankbot_core.wasm'),
             'scene':{'dynamic_bodies':2,'static_walls':len(config['scene']['walls']),'static_targets':len(config['weapons']['targets'])},
             'wall_toi_absolute_error_s':toi_error,'wall_reflection_speed_absolute_error_mps':speed_error,

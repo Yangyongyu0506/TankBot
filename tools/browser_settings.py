@@ -5,6 +5,7 @@ import base64
 from datetime import date
 import hashlib
 import json
+import yaml
 from pathlib import Path
 from browser_driver import Browser
 
@@ -70,7 +71,7 @@ def main():
         assert request("/api/settings")["value"]["settings"]["keyboard"]["editor"]=="F3"
 
         # Solve C0 using only its authorized self pose/target and normal actuator routes.
-        speed=json.loads((ROOT/"config/m1.json").read_text())["weapons"]["projectile"]["relative_speed_mps"]
+        speed=yaml.safe_load((ROOT/"config/game.yaml").read_text())["weapons"]["projectile"]["relative_speed_mps"]
         b.script("window.__settingsPlay={started:performance.now(),speed:"+str(speed)+"};return true;")
         b.script('''
           const state=window.__settingsPlay,qa=window.wrappedJSObject?.tankbotQA??window.tankbotQA;

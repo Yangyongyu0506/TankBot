@@ -2,10 +2,12 @@
 import contextlib
 import importlib
 import sys
+import traceback
 from importlib.metadata import PackageNotFoundError, version
 from dataclasses import asdict
 from tankbot import Module, ModuleContext, Inputs, Sample, Pose2D, RadarData, ImuData, JointState, WeaponState, FireCommand
 from tankbot_protocol.message import envelope
+from tankbot._imports import DependencyNotAllowed
 
 
 def runtime_packages() -> dict[str, str]:
@@ -63,7 +65,12 @@ class ModuleRunner:
                                         sequence=self.sequence, message_type="command", request_id=request_id))
                 self.sequence += 1
             status, error = "completed", None
+        except DependencyNotAllowed:
+            traceback.print_exc(file=sys.stderr)
+            outputs = []
+            status, error = "failed", "DEPENDENCY_NOT_ALLOWED"
         except Exception:
+            traceback.print_exc(file=sys.stderr)
             outputs = []
             status, error = "failed", "MODULE_ERROR"
         result = {"step_id": p["step_id"], "results": [{"module_id": contract["module_id"], "status": status, "error_code": error}], "outputs": outputs}

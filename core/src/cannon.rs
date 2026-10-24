@@ -372,6 +372,7 @@ impl CannonSystem {
         let radius = self.projectile.radius_m;
         let ball = Ball::new(radius);
         let tank_shape = body_shape(body);
+        let owner_alive = world.bodies.get(tank).is_some();
         let motion = NonlinearRigidMotion::new(
             start,
             Vector::ZERO,
@@ -474,7 +475,7 @@ impl CannonSystem {
                     motion.linvel,
                     motion.angvel,
                 );
-                if p.owner_armed {
+                if owner_alive && p.owner_armed {
                     if let Some(hit) = query::cast_shapes_nonlinear(
                         &shot_motion,
                         &ball,
@@ -496,7 +497,7 @@ impl CannonSystem {
                             },
                         });
                     }
-                } else {
+                } else if owner_alive {
                     let future = p.position + p.velocity * remaining;
                     let future_base = motion.position_at_time(dt);
                     if !intersects(p.position, radius, &base_pose, tank_shape.as_ref()) {
@@ -682,7 +683,8 @@ mod tests {
     use super::*;
     use crate::{Config, GameCore};
     fn core(chassis: &str) -> GameCore {
-        let mut c: Config = serde_json::from_str(include_str!("../../config/m1.json")).unwrap();
+        let mut c: Config =
+            serde_json::from_str(include_str!("../tests/fixtures/default-profile.json")).unwrap();
         c.scene.walls.clear();
         c.weapons.targets.clear();
         GameCore::new(c, chassis).unwrap()

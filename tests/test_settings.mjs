@@ -5,7 +5,7 @@ import {manualTargets} from '../web/gamepad.js';
 import {allowedLayers,developerView,layerLabels} from '../web/visualization.js';
 import {readFileSync} from 'node:fs';
 
-const config=JSON.parse(readFileSync(new URL('../config/m1.json',import.meta.url)));
+const config=JSON.parse(readFileSync(new URL('../core/tests/fixtures/default-profile.json',import.meta.url)));
 
 test('remapped physical keys preserve chassis semantics and release old bindings',()=>{
   setBindings({...controlKeys,forward:'ArrowUp',left:'ArrowLeft',editor:'F3',help:'F4',settings:'F9'});

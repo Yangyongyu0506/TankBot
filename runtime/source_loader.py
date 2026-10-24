@@ -6,6 +6,7 @@ import re
 import sys
 import tempfile
 import unittest
+from tankbot._imports import install_workspace_imports, WorkspaceLoader
 
 
 def prepare(init):
@@ -19,6 +20,8 @@ def prepare(init):
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(source, encoding="utf-8")
         init["workspace"] = temporary.name
+    root = Path(init["workspace"])
+    guard = install_workspace_imports(root, init["import_policy"])
     count = 0
     if init.pop("test_mode", False):
         root = Path(init["workspace"])
@@ -28,6 +31,7 @@ def prepare(init):
             for path in sorted(root.glob("tests/test_*.py")):
                 import importlib.util
                 spec = importlib.util.spec_from_file_location("player_test_" + path.stem, path)
+                spec.loader = WorkspaceLoader(spec.name, path, guard)
                 module = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(module)
                 suite.addTests(unittest.defaultTestLoader.loadTestsFromModule(module))

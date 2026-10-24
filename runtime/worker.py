@@ -1,5 +1,6 @@
 """Trusted-local CPython transport entry point; NOT an OS security sandbox."""
 import sys
+import traceback
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT / "runtime"), str(ROOT / "sdk/python"), str(ROOT / "protocol")]
@@ -17,6 +18,7 @@ def main():
         temporary, tests = prepare(init)
         runner = ModuleRunner(init)
     except Exception as error:
+        traceback.print_exc(file=sys.stderr)
         send(sink, {"ready": False, "error": type(error).__name__ + ": " + str(error)[:256]}, limit)
         if temporary:
             temporary.cleanup()

@@ -27,7 +27,7 @@ from campaign_support import TRANSFORMS, solutions
 
 class LearningTests(unittest.TestCase):
     def config(self, level="c1"):
-        return configure(load_config(ROOT / "config/m1.json"), level)
+        return configure(load_config(ROOT / "config/game.yaml"), level)
 
     def test_every_level_has_guidance_and_generated_python_has_explicit_types(self):
         for level in ("c0", "c1", "c2"):

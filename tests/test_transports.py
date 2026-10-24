@@ -17,7 +17,7 @@ from websockets.asyncio.client import connect
 
 class TransportTests(unittest.IsolatedAsyncioTestCase):
     async def test_same_fixtures_through_memory_ipc_websocket_and_replay(self):
-        config=load_config(ROOT/"config/m1.json")
+        config=load_config(ROOT/"config/game.yaml")
         limit=config["runtime"]["max_message_bytes"];capacity=config["browser"]["max_pending_requests"]
         fixtures=cases(ROOT/"docs/examples")
         async def check(tx,rx):
@@ -81,7 +81,7 @@ class TransportTests(unittest.IsolatedAsyncioTestCase):
             await adapter.close();bw.close();await bw.wait_closed()
 
     async def test_websocket_disconnect_and_binary_fail_closed(self):
-        config=load_config(ROOT/"config/m1.json")
+        config=load_config(ROOT/"config/game.yaml")
         limit=config["runtime"]["max_message_bytes"];capacity=config["browser"]["max_pending_requests"]
         async def binary(ws):await ws.send(b'{}')
         async with serve(binary,"127.0.0.1",0,max_size=limit,max_queue=capacity) as server:

@@ -106,6 +106,14 @@ def build_editor(root, env, offline):
 
 
 def build_core(root, env, args):
+    if not args.format_check:
+        export = [sys.executable, str(root / "tools/export_profile.py")]
+        if args.offline:
+            export.append("--offline")
+        try:
+            run(export, root, env)
+        except subprocess.CalledProcessError as exc:
+            raise BuildError("无法从 config/game.yaml 生成核心测试配置。") from exc
     cargo = shutil.which("cargo", path=env.get("PATH"))
     if cargo is None:
         directory = root / ".tools/rust/bin"

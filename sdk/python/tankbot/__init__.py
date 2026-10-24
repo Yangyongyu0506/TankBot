@@ -2,6 +2,34 @@
 from dataclasses import asdict, dataclass, field
 from types import MappingProxyType
 from typing import Any, Generic, Mapping, TypeVar
+import numpy as np
+from numpy.typing import NDArray
+
+
+def _covariance_matrix(value, size: int) -> NDArray[np.float64] | None:
+    if value is None:
+        return None
+    original: np.ndarray = np.asarray(value)
+    if original.dtype.kind not in "fiu":
+        raise TypeError("covariance 必须包含实数，不接受复数、字符串或对象数组")
+    array: NDArray[np.float64] = np.asarray(original, dtype=np.float64)
+    # The JSON wire format and older saved projects use flat row-major sequences.
+    if array.shape == (size * size,):
+        array = array.reshape(size, size)
+    if array.shape != (size, size):
+        raise ValueError(f"covariance 必须是 ({size}, {size}) NumPy 矩阵")
+    # Immutable byte backing prevents writable views from changing shared SDK input.
+    return np.frombuffer(array.tobytes(order="C"), dtype=np.float64).reshape(size, size)
+
+
+def _wire_scalars(value):
+    if isinstance(value, np.generic):
+        return value.item()
+    if isinstance(value, dict):
+        return {key: _wire_scalars(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_wire_scalars(item) for item in value]
+    return value
 
 
 @dataclass(frozen=True)
@@ -22,12 +50,11 @@ class Pose2D:
     x_m: float
     y_m: float
     yaw_rad: float
-    covariance: tuple[float, ...] | None = None
+    covariance: NDArray[np.float64] | None = None
     child_frame_id: str = "base_link"
 
     def __post_init__(self) -> None:
-        if self.covariance is not None:
-            object.__setattr__(self, "covariance", tuple(self.covariance))
+        object.__setattr__(self, "covariance", _covariance_matrix(self.covariance, 3))
 
 
 @dataclass(frozen=True)
@@ -64,11 +91,10 @@ class RadarData:
 class TargetEstimate:
     x_m: float
     y_m: float
-    covariance: tuple[float, ...] | None = None
+    covariance: NDArray[np.float64] | None = None
 
     def __post_init__(self) -> None:
-        if self.covariance is not None:
-            object.__setattr__(self, "covariance", tuple(self.covariance))
+        object.__setattr__(self, "covariance", _covariance_matrix(self.covariance, 2))
 
 
 @dataclass(frozen=True)
@@ -161,7 +187,11 @@ class ModuleContext:
         types: dict[type, str] = {Pose2D: "pose2d@1", TargetEstimate: "target_estimate@1", Twist: "twist@1", TurretVelocity: "turret_velocity@1"}
         if type(value) not in types:
             raise TypeError("Unsupported output value")
-        self._outputs.append((port, types[type(value)], asdict(value), frame_id,
+        payload: dict[str, Any] = asdict(value)
+        if isinstance(value, (Pose2D, TargetEstimate)) and value.covariance is not None:
+            payload["covariance"] = value.covariance.ravel(order="C").tolist()
+        payload = _wire_scalars(payload)
+        self._outputs.append((port, types[type(value)], payload, frame_id,
                               self.simulation_tick if simulation_tick is None else simulation_tick))
 
     def fire(self, port: str = "fire", *, request_id: str | None = None) -> str:

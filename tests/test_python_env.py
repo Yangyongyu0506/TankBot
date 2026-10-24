@@ -118,7 +118,7 @@ class PythonEnvironmentTests(unittest.TestCase):
             self.assertNotIn('首次运行',result.stdout+result.stderr)
             self.assertIn('usage:',result.stdout+result.stderr)
         # The entry script tankbot.py must not shadow the SDK package of the same name.
-        source="import runpy;runpy.run_path("+repr(str(ROOT/'tools/tankbot.py'))+",run_name='launcher_probe');import tankbot;assert hasattr(tankbot,'Pose2D'),tankbot.__file__"
+        source="import runpy, importlib.util;runpy.run_path("+repr(str(ROOT/'tools/tankbot.py'))+",run_name='launcher_probe');assert importlib.util.find_spec('tankbot').origin == "+repr(str(ROOT/'sdk/python/tankbot/__init__.py'))
         result=subprocess.run([sys.executable,'-I','-S','-c',source],capture_output=True,text=True)
         self.assertEqual(result.returncode,0,result.stderr)
 

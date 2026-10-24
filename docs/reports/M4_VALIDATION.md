@@ -2,7 +2,7 @@
 
 ## 范围与环境
 
-2026-10-23，在 Linux x86_64、Rust 1.99.1、CPython 3.14.4、Node 22.22.1、Firefox 157.0.1 与锁定 Pyodide 0.29.5 上执行。验证 C0–C2、确认的 Radar/巡逻/血量模型、函数到类模板、非覆盖解锁、原生与浏览器 Edit/Test/Deploy、授权视图及击杀通关。参数权威为 [当前配置](../../config/m1.json) 与 [18](../18_CAMPAIGN_DESIGN.md)。
+2026-10-23，在 Linux x86_64、Rust 1.99.1、CPython 3.14.4、Node 22.22.1、Firefox 157.0.1 与锁定 Pyodide 0.29.5 上执行。验证 C0–C2、确认的 Radar/巡逻/血量模型、函数到类模板、非覆盖解锁、原生与浏览器 Edit/Test/Deploy、授权视图及击杀通关。参数权威为 [当前配置](../../config/game.yaml) 与 [18](../18_CAMPAIGN_DESIGN.md)。
 
 ## 已执行的功能验收
 

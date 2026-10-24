@@ -6,6 +6,7 @@ import {GamepadDriver, neutralControls, moving, manualTargets} from "/gamepad.js
 import {mountSettings} from "/settings-ui.js";
 import {binding,controlKey,keyLabel} from "/keyboard.js";
 import {mountVisualization,drawVisualization} from "/visualization.js";
+import {mountRuntimeLogs} from "/runtime-logs.js";
 
 const $ = id => document.getElementById(id);
 const canvas = $("arena"), ctx = canvas.getContext("2d");
@@ -16,11 +17,12 @@ let controlQueued = false;
 let browser;
 let settings,visualization;
 let campaignEnded = false;
+let campaignWaiting = false;
 let joy,joyControls=neutralControls(),lastControlAt=-Infinity,lastManualActive=false,lastJoyList="";
 const point = (x, y) => camera.project(x, y, canvas.width, canvas.height, profile.rendering.viewport_width_m);
 
 async function command() {
-  if (!profile || campaignEnded) return;
+  if (!profile || campaignEnded || campaignWaiting) return;
   if (controlBusy) {controlQueued = true;return;}
   controlBusy = true;
   const targets=manualTargets(profile,keys,joyControls,canDrive());
@@ -58,7 +60,7 @@ function releaseControls(){keys.clear();joy?.suspend();joyControls=neutralContro
 setupWorkspaceDialog(releaseControls);
 const editing = target => $("settings-dialog").open||$("workspace-dialog").open||target?.closest?.("input, textarea, select, [contenteditable]");
 const visibleFocused=()=>!document.hidden&&document.hasFocus();
-const canDrive=()=>visibleFocused()&&!campaignEnded&&!editing(document.activeElement);
+const canDrive=()=>visibleFocused()&&!campaignEnded&&!campaignWaiting&&!editing(document.activeElement);
 function updateControlLabels(){
   if(!profile)return;
   const omni=profile.chassis==="omnidirectional",k=action=>keyLabel(binding(action));
@@ -309,6 +311,7 @@ try {
   timeline = new SceneTimeline(profile.physics_hz, profile.rendering, profile.view.interpolation_jump_m);
   camera = new FollowCamera(profile.rendering.camera_origin_m);
   visualization=mountVisualization(profile,settings);
+  mountRuntimeLogs(browser,profile);
   statsSince = performance.now();
   const omni = profile.chassis === "omnidirectional";
   joy=new GamepadDriver(profile.view.gamepad,profile.chassis);
@@ -331,8 +334,9 @@ try {
   mountWorkspace(browser).catch(error=>$("workspace-message").textContent="编辑器加载失败："+error.message+"。请运行 python3 tools/build.py 后刷新页面。");
   mountCampaign(profile,browser,state=>{
     const ended=Boolean(state&&state.status!=="active");
+    campaignWaiting=Boolean(state?.phase==="preparing"&&state?.timing.start_on==="first_deployment");
     if(ended&&!campaignEnded){campaignEnded=true;releaseControls();}
-    $("fire").disabled=ended||profile.control_sources.weapon!=="keyboard";
+    $("fire").disabled=ended||campaignWaiting||profile.control_sources.weapon!=="keyboard";
   },releaseControls).then(()=>{
     if(visualization.developer){
       $("mode-label").textContent="开发者可视化 · 真值、估计与传感器图层可独立开关";

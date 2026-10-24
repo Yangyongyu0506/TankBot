@@ -1,8 +1,8 @@
 // Universal bootstrap, shared by module Core Worker and classic robot Worker.
-self.tankbotPython = async function(bundleURL, trusted, loader) {
-  const py = await loader({indexURL:"/pyodide/", stdout:()=>{}, stderr:()=>{}});
+self.tankbotPython = async function(bundleURL, trusted, loader, onOutput=null) {
+  const py = await loader({indexURL:"/pyodide/", stdout:line=>onOutput?.(line), stderr:line=>onOutput?.(line)});
   if(trusted) await py.loadPackage("jsonschema");
-  else await py.loadPackage("numpy");
+  await py.loadPackage("numpy");
   const bundle = await (await fetch(bundleURL)).json();
   for(const [relative,source] of Object.entries(bundle)) {
     const path="/tankbot/"+relative;

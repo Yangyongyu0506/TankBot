@@ -5,14 +5,14 @@
   <header><a class="brand" href="/">T<span>◈</span>NK<span>BOT</span></a><span class="edition">ROBOTICS PLAYGROUND</span><button id="gamepad-indicator" class="pill" type="button" title="查看手柄与驾驶说明">手柄：未连接</button><button id="open-workspace" class="editor-toggle" type="button" aria-haspopup="dialog" aria-controls="workspace-dialog" aria-expanded="false">代码编辑器 <kbd>F2</kbd></button><span id="application-mode" class="mode-indicator">玩家模式</span><button id="open-settings" class="settings-toggle" type="button" aria-haspopup="dialog" aria-controls="settings-dialog">设置 <kbd id="settings-shortcut">F10</kbd></button><span id="connection" class="pill">连接中</span></header>
   <main>
     <section class="arena-panel"><div class="panel-heading"><div><p class="eyebrow">ROBOTICS PLAYGROUND</p><h1>从观测开始，建立世界。</h1></div><span class="live"><i></i><span id="physics-rate">SIMULATION</span></span></div>
-      <div class="canvas-wrap"><canvas id="arena" width="1000" height="700" tabindex="0" aria-label="坦克游戏画面"></canvas><div class="map-label">TASK MAP / METERS</div><div id="pose-label" class="pose-label">等待位姿估计</div></div>
+      <div class="canvas-wrap"><canvas id="arena" width="1000" height="700" tabindex="0" aria-label="坦克游戏画面"></canvas><div class="map-label">TASK MAP / METERS</div><div id="campaign-summary" class="campaign-summary" role="status" hidden></div><div id="pose-label" class="pose-label">等待位姿估计</div></div>
       <p id="mode-label" class="hint">—</p><div class="legend"><span><i class="estimate"></i> <span id="legend-pose">机器人估计</span></span><span><i class="trail"></i> 估计轨迹</span><span>静态地图已由任务公开</span></div>
     </section>
-    <aside><nav class="hud-tabs" role="tablist" aria-label="机器人面板"><button id="tab-task" role="tab" aria-selected="false" aria-controls="hud-task" tabindex="-1">任务</button><button id="tab-chassis" role="tab" aria-selected="true" aria-controls="hud-chassis">驾驶</button><button id="tab-state" role="tab" aria-selected="false" aria-controls="hud-state" tabindex="-1">状态</button><button id="tab-sensors" role="tab" aria-selected="false" aria-controls="hud-sensors" tabindex="-1">传感器</button><button id="tab-weapons" role="tab" aria-selected="false" aria-controls="hud-weapons" tabindex="-1">武器</button><button id="tab-visualization" role="tab" aria-selected="false" aria-controls="hud-visualization" tabindex="-1">图层</button></nav>
+    <aside><nav class="hud-tabs" role="tablist" aria-label="机器人面板"><button id="tab-task" role="tab" aria-selected="false" aria-controls="hud-task" tabindex="-1">任务</button><button id="tab-chassis" role="tab" aria-selected="true" aria-controls="hud-chassis">驾驶</button><button id="tab-state" role="tab" aria-selected="false" aria-controls="hud-state" tabindex="-1">状态</button><button id="tab-sensors" role="tab" aria-selected="false" aria-controls="hud-sensors" tabindex="-1">传感器</button><button id="tab-weapons" role="tab" aria-selected="false" aria-controls="hud-weapons" tabindex="-1">武器</button><button id="tab-visualization" role="tab" aria-selected="false" aria-controls="hud-visualization" tabindex="-1">图层</button><button id="tab-logs" role="tab" aria-selected="false" aria-controls="hud-logs" tabindex="-1">日志</button></nav>
     <section id="hud-task" class="card" role="tabpanel" aria-labelledby="tab-task" hidden>
       <p class="eyebrow">CAMPAIGN · C0 — C2</p><h2 id="task-title">教学关卡</h2><p id="task-problem"></p>
       <label for="level-select" class="hint">选择关卡</label><select id="level-select" aria-label="选择教学关卡"></select>
-      <div class="task-actions"><button id="start-level">开始 / 重试</button><button id="finish-level">结束并评估</button></div>
+      <div class="task-actions"><button id="start-level">开始 / 重试</button><button id="finish-level">结束本次尝试</button></div>
       <p id="task-status" role="status">加载任务…</p><p id="task-progress"></p><ul id="task-hints"></ul>
       <p id="task-message" class="hint">切换关卡前请保存草稿。新关只补缺失文件；源码保留，须重新测试与部署。</p>
     </section>
@@ -24,6 +24,7 @@
       <p class="eyebrow">DISPLAYS</p><h2>可视化图层</h2><p id="visualization-note"></p><div id="layer-list"></div><p id="layers-message" class="hint" role="status"></p>
       <details id="message-inspector"><summary>消息查看器</summary><label><input id="show-message" type="checkbox" checked> 显示消息内容</label><select id="message-topic" aria-label="选择可视消息"></select><pre id="message-data"></pre></details>
     </section>
+    <section id="hud-logs" class="card runtime-logs-panel" role="tabpanel" aria-labelledby="tab-logs" hidden><h2>运行日志</h2><div id="hud-runtime-log-view" class="runtime-log-view"></div></section>
     <section class="note"><span>↗</span><p id="view-note">在地图上的位置来自 Python 里程计。碰撞仍由独立的物理世界决定，估计误差会保留。</p></section></aside>
   </main>
   <dialog id="settings-dialog" aria-labelledby="settings-title">
@@ -36,7 +37,8 @@
   <dialog id="workspace-dialog" aria-labelledby="workspace-title">
   <section id="workspace-panel" class="workspace-panel" aria-label="Robot Workspace">
     <div class="workspace-heading"><div><p id="workspace-shortcut" class="eyebrow">ROBOT WORKSPACE · F2 打开 / 收起</p><h2 id="workspace-title">编写、测试、部署你的机器人</h2></div><span id="workspace-revision" class="hint">加载中…</span><button id="close-workspace" type="button" aria-label="关闭代码编辑器" title="关闭代码编辑器（F2）">×</button></div>
-    <div class="workspace-toolbar"><button id="save-workspace">保存 · Ctrl / ⌘ S</button><button id="test-workspace">测试快照</button><button id="deploy-workspace" class="primary" disabled aria-describedby="deploy-help">部署已测试版本</button><button id="toggle-learning" aria-controls="learning-pane" aria-expanded="true">关卡说明 / 类型 <kbd>F1</kbd></button><label><input type="checkbox" id="vim-mode"> Vim</label><span id="deployment-state">Editing</span></div>
+    <div class="workspace-toolbar"><button id="save-workspace">保存 · Ctrl / ⌘ S</button><button id="test-workspace">测试快照</button><button id="deploy-workspace" class="primary" disabled aria-describedby="deploy-help">部署已测试版本</button><button id="toggle-editor-logs" aria-expanded="false" aria-controls="editor-runtime-logs">运行日志</button><button id="toggle-learning" aria-controls="learning-pane" aria-expanded="true">关卡说明 / 类型 <kbd>F1</kbd></button><label><input type="checkbox" id="vim-mode"> Vim</label><span id="deployment-state">Editing</span></div>
+    <div id="editor-attempt" class="editor-attempt" hidden><span id="editor-attempt-status" role="status"></span><button id="editor-finish-level" type="button">结束本次尝试</button></div>
     <p id="deploy-help" class="hint" role="status">保存并测试快照，通过后即可部署。</p>
     <div id="workspace-upgrade" class="workspace-upgrade" hidden><span>此项目需要更新课程运行框架；你的算法尚未测试。</span><button id="preview-teaching-upgrade" type="button">预览更新（保留算法）</button></div>
     <div class="workspace-grid"><nav aria-label="项目文件"><div id="file-list"></div><input id="new-file-path" aria-label="新文件路径" placeholder="planning/controller.py"><button id="new-file">新增文件</button></nav><div class="editor-pane"><div id="editor-path">—</div><div id="editor-contract" aria-label="当前函数签名">—</div><div id="code-editor"></div></div>
@@ -49,6 +51,7 @@
         <div id="learning-python" class="learning-tabpanel" role="tabpanel" hidden></div>
       </section>
     </div>
+    <section id="editor-runtime-logs" class="runtime-logs-panel" aria-label="测试与运行日志" hidden><div id="editor-runtime-log-view" class="runtime-log-view"></div></section>
     <p id="workspace-message" class="workspace-message" role="status">编辑不会影响当前运行的程序。测试通过后可显式部署。</p>
     <div class="deployment-bar"><span>运行版本 <code id="active-deployment">启动示例</code></span><select id="deployment-history" aria-label="历史部署"></select><button id="rollback-workspace" disabled>回滚到所选版本</button></div>
     <details class="workspace-tools"><summary>模板、备份与恢复</summary><div class="workspace-toolbar"><button id="template-workspace">预览基础模板</button><button id="export-workspace">导出项目</button><button id="export-records">导出测试与部署记录</button><label class="file-label">导入项目并预览<input id="import-workspace" type="file" accept="application/json,.json"></label></div><div class="workspace-toolbar"><input id="revision-input" placeholder="历史 revision 的完整 SHA-256" aria-label="历史 revision"><button id="restore-revision">预览历史源码</button></div><p class="hint">保存在本机版本库。导入和模板升级会先预览冲突；已有文件默认保留。部署与回滚重置算法状态，物理世界继续运行。</p></details>

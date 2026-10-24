@@ -23,7 +23,7 @@ node tests/test_rendering.mjs
 python3 docs/tools/check_design.py
 ```
 
-使用全新的测试配置启动 `serve --level c0` 或 `browser --level c0 --browser-qa`，显式传入独立的 `--settings-file`、`--save-file`、`--workspace-store`；浏览器模式先运行 `python3 tools/prepare_browser.py --offline` 更新可信 bundle。本次配置复制 `config/m1.json` 后只调整 host/runtime 端口为 8775/8776。启用 Marionette 2829 的独立 Firefox 启动后执行：
+使用全新的测试配置启动 `serve --level c0` 或 `browser --level c0 --browser-qa`，显式传入独立的 `--settings-file`、`--save-file`、`--workspace-store`；浏览器模式先运行 `python3 tools/prepare_browser.py --offline` 更新可信 bundle。本次配置复制 `config/game.yaml` 后只调整 host/runtime 端口为 8775/8776。启用 Marionette 2829 的独立 Firefox 启动后执行：
 
 ```bash
 python3 tools/browser_settings.py --url http://127.0.0.1:8775 --output docs/reports/settings-native.json

@@ -1,0 +1,673 @@
+# Game parameters and level definitions. Edit YAML; JSON test fixtures are generated.
+config_version: '1.7'
+confirmation_status: confirmed
+body:
+  length_m: 0.8
+  width_m: 0.6
+  corner_radius_m: 0.08
+  mass_kg: 20.0
+  yaw_inertia_kg_m2: 2.0
+servo:
+  tau_x_s: 0.2
+  tau_y_s: 0.2
+  tau_yaw_s: 0.15
+  max_force_x_n: 100.0
+  max_force_y_n: 100.0
+  max_torque_nm: 20.0
+  zero_target_behavior: active_brake
+motion_limits:
+  max_vx_mps: 3.0
+  max_vy_mps: 3.0
+  max_wz_radps: 6.0
+chassis:
+  differential:
+    lateral_actuation: false
+    drag_x_n_s_per_m: 4.0
+    drag_y_n_s_per_m: 200.0
+    drag_yaw_nm_s: 0.8
+  omnidirectional:
+    lateral_actuation: true
+    drag_x_n_s_per_m: 4.0
+    drag_y_n_s_per_m: 4.0
+    drag_yaw_nm_s: 0.8
+clock:
+  physics_hz: 60
+  substeps: 4
+  sensor_hz: 30
+  algorithm_hz: 10
+contact:
+  restitution: 0.0
+  friction: 0.4
+wheels:
+  radius_m: 0.1
+  differential_track_m: 0.5
+  omnidirectional:
+    geometry_version: radial_omni@1
+    center_radius_m: 0.25
+    wheels:
+    - name: front_left
+      azimuth_deg: 45.0
+    - name: front_right
+      azimuth_deg: 315.0
+    - name: rear_left
+      azimuth_deg: 135.0
+    - name: rear_right
+      azimuth_deg: 225.0
+sensors:
+  imu_mount: center_of_mass
+  imu_axes: base_link
+  planar_gravity_mps2: 0.0
+  noise_stddev: 0.0
+  bias: 0.0
+  drift_per_s: 0.0
+  latency_ticks: 0
+  drop_probability: 0.0
+  encoder_model: ideal_rolling
+controller:
+  cmd_vel_timeout_s: 0.5
+  overspeed_target: clamp_each_axis
+  unsupported_lateral: reject
+scene:
+  default_chassis: differential
+  initial_pose:
+  - 0.0
+  - 0.0
+  - 0.0
+  initial_velocity:
+  - 0.0
+  - 0.0
+  - 0.0
+  public_initial_pose: true
+  public_map: true
+  walls:
+  - center:
+    - 6.1
+    - 0.0
+    size:
+    - 0.2
+    - 8.4
+  - center:
+    - -6.1
+    - 0.0
+    size:
+    - 0.2
+    - 8.4
+  - center:
+    - 0.0
+    - 4.1
+    size:
+    - 12.0
+    - 0.2
+  - center:
+    - 0.0
+    - -4.1
+    size:
+    - 12.0
+    - 0.2
+  - center:
+    - 2.0
+    - 0.0
+    size:
+    - 0.2
+    - 3.0
+  player_health: null
+runtime:
+  commit_delay_ticks: 6
+  batch_budget_ms: 20
+  startup_timeout_s: 5.0
+  max_message_bytes: 65536
+  max_failures: 3
+  input_max_age_ticks: 12
+  max_log_bytes: 32768
+  seed: 0
+  history_limit_ticks: 36000
+  audit_limit_entries: 4096
+  max_cmd_vel_per_sim_second: 60
+  max_inbound_per_wall_second: 512
+  estimate_history_ticks: 60
+view_policy:
+  policy_id: m1-estimates-only
+  system_pose_allowed: false
+  player_pose_allowed: true
+  allowed_pose_frames:
+  - map
+  public_map: m1-test-map
+  local_observation_channels:
+  - /robot/sensors/joint_states
+  - /robot/sensors/imu
+  - /robot/turret/joint_states
+  - /robot/weapons/cannon/state
+  true_enemy_objects: false
+  world_effects: false
+  camera_source: selected_pose_or_manual
+  pose_fresh_ticks: 12
+  pose_hide_after_ticks: 60
+view:
+  pose_source_id: odometry
+  snapshot_hz: 30
+  max_visual_trail: 300
+  poll_ms: 33
+  keyboard_refresh_ms: 100
+  keyboard_linear_mps: 1.0
+  keyboard_yaw_radps: 1.0
+  interpolation_jump_m: 1.0
+  keyboard_turret_radps: 2.0
+  gamepad:
+    enabled: true
+    standard_mapping_only: true
+    deadzone: 0.18
+    button_threshold: 0.5
+    refresh_ms: 50
+    linear_mps: 1.0
+    yaw_radps: 1.0
+    turret_radps: 2.0
+    axes:
+      forward:
+        index: 1
+        sign: -1
+      horizontal:
+        index: 0
+        sign: -1
+      turret:
+        index: 2
+        sign: -1
+    buttons:
+      yaw_left: 4
+      yaw_right: 5
+      fire: 7
+      editor: 9
+host:
+  bind: 127.0.0.1
+  port: 8765
+  max_catchup_ticks: 5
+validation:
+  ticks: 600
+  probe_target:
+  - 0.5
+  - 0.0
+  - 0.0
+  pose_offset_m: 2.0
+  covariance_tolerance: 1.0e-09
+  numeric_tolerance: 1.0e-08
+  contact_measurement_tolerance_m: 0.005
+  odom_error_tolerance_m: 0.1
+  covariance_max_iterations: 64
+solver:
+  dt: 0.004166666666666667
+  min_ccd_dt: 0.00016666666666666666
+  contact_softness:
+    natural_frequency: 30.0
+    damping_ratio: 10.0
+  static_contact_softness:
+    natural_frequency: 60.0
+    damping_ratio: 10.0
+  warmstart_coefficient: 1.0
+  length_unit: 1.0
+  soft_bodies:
+    recovery:
+      authored_velocity_margin: true
+      edge_speculation: false
+      inverted_cell_detection: true
+      self_crossing_detection: true
+      detection_motion_gating: true
+      cross_body_detection: true
+      self_stand_down: true
+      cross_body_expel_gate: true
+      edge_stand_down: true
+      crossing_repulsion: false
+      crossing_repulsion_guide: false
+      crossing_repulsion_self_guide: false
+      recovery_pace: 0.5
+      overlap_constraints: true
+      overlap_rigid: true
+      overlap_skip_self_tangled: true
+      overlap_edge_stand_down: true
+      overlap_constraint_pace: 1.0
+      overlap_patch_constraints: AlongNormal
+      overlap_skin_volume: false
+      overlap_kept_depth: 0.0
+      overlap_self_regions: false
+      overlap_normal_push: true
+      overlap_multi_volume: false
+      overlap_split: 3
+      overlap_patience: 240
+      overlap_progress_margin: 0.02
+    resweep_strain: 0.75
+    max_extra_substeps: 4
+    contact_stiffening: 4.0
+  normalized_allowed_linear_error: 0.001
+  normalized_max_corrective_velocity: 3.0
+  normalized_prediction_distance: 0.02
+  normalized_max_linear_velocity: 400.0
+  num_solver_iterations: 8
+  num_internal_pgs_iterations: 4
+  num_internal_stabilization_iterations: 1
+  max_ccd_substeps: 1
+  contact_clustering: true
+  contact_recycling: true
+  normalized_contact_recycle_distance: 0.05
+  friction_in_bias_pass: false
+  warmstart_joints: false
+rigid_body:
+  ccd_enabled: true
+  can_sleep: false
+  linear_damping: 0.0
+  angular_damping: 0.0
+module:
+  module_id: odometry
+  entry_point: localization.odometry:Odometry
+  pose_offset_m: 0.0
+  output_frame: map
+  fault: none
+  weapon_demo:
+    enabled: false
+    turret_velocity_radps: 2.0
+    fire_period_ticks: 18
+weapons:
+  turret:
+    mass_kg: 2.0
+    yaw_inertia_kg_m2: 0.08
+    center_m:
+    - 0.0
+    - 0.0
+    tau_s: 0.1
+    max_torque_nm: 2.0
+    max_relative_rate_radps: 8.0
+    bearing_drag_nm_s: 0.02
+    muzzle_offset_m:
+    - 0.45
+    - 0.0
+    initial_relative_angle_rad: 0.0
+    initial_relative_rate_radps: 0.0
+    cmd_vel_timeout_s: 0.5
+  projectile:
+    mass_kg: 0.05
+    radius_m: 0.03
+    relative_speed_mps: 5.0
+    wall_restitution: 1.0
+    wall_friction: 0.0
+    max_bounces: 3
+    lifetime_s: 5.0
+  mass_accounting: fixed_chassis_mass
+  enabled: true
+  firing:
+    cooldown_s: 0.25
+    trigger: single
+    ammunition: unlimited
+    request_cache_capacity: 65536
+    pending_capacity: 64
+    max_active_projectiles: 64
+  numerics:
+    time_epsilon_s: 1.0e-09
+    spatial_epsilon_m: 1.0e-06
+  impact:
+    momentum: world_velocity
+    application_body: chassis
+    application_point: contact_or_muzzle
+    direction_rule: chassis_capability
+    timing: substep_end
+  targets:
+  - target_id: target_01
+    pose:
+    - -3.0
+    - 0.0
+    - 0.0
+  collision:
+    owner_immunity: until_exit
+    projectile_pair: destroy_both
+    simultaneous_pairs: destroy_contact_graph
+    priority: target_pair_wall
+    wall_order: stable_id
+    blocked_muzzle: reject_without_recoil_or_cooldown
+control_sources:
+  chassis: keyboard
+  turret: keyboard
+  weapon: keyboard
+view_mode: estimated
+practice_view_policy:
+  policy_id: m1b-weapons-practice
+  system_pose_allowed: true
+  player_pose_allowed: false
+  allowed_pose_frames:
+  - map
+  public_map: m1-test-map
+  local_observation_channels:
+  - /robot/sensors/joint_states
+  - /robot/sensors/imu
+  - /robot/turret/joint_states
+  - /robot/weapons/cannon/state
+  true_enemy_objects: false
+  world_effects: true
+  camera_source: selected_pose_or_manual
+  pose_fresh_ticks: 12
+  pose_hide_after_ticks: 60
+rendering:
+  viewport_width_m: 12.0
+  grid_spacing_m: 1.0
+  camera_origin_m:
+  - 0.0
+  - 0.0
+  interpolation_delay_ms: 80
+  estimate_interpolation_delay_ms: 220
+  history_ms: 2000
+  stats_interval_ms: 1000
+  barrel_width_m: 0.035
+  chassis_models:
+    differential:
+      model_id: tracked-differential-v1
+      kind: tracked
+      hull:
+        length_m: 0.72
+        width_m: 0.4
+        radius_m: 0.065
+      track:
+        length_m: 0.8
+        width_m: 0.12
+        center_y_m: 0.24
+        radius_m: 0.045
+        tread_count: 12
+      panel:
+        length_m: 0.5
+        width_m: 0.055
+        center_y_m: 0.14
+        radius_m: 0.015
+      forward_marker_m:
+      - - 0.3
+        - 0
+      - - 0.19
+        - 0.065
+      - - 0.19
+        - -0.065
+      turret_radius_m: 0.105
+      colors:
+        shell: '#8fe3b5'
+        stale: '#ba9a50'
+        panel: '#356856'
+        rubber: '#162724'
+        roller: '#649380'
+        edge: '#527c69'
+        mark: '#d7f7df'
+        turret: '#416b50'
+        barrel: '#f1f7c5'
+    omnidirectional:
+      model_id: radial-omni-x-v1
+      kind: radial_omni
+      hull:
+        length_m: 0.34
+        width_m: 0.34
+        radius_m: 0.045
+      deck:
+        length_m: 0.25
+        width_m: 0.25
+        radius_m: 0.035
+      suspension_width_m: 0.045
+      wheel:
+        width_m: 0.08
+        roller_count: 7
+        roller_width_m: 0.012
+        hub_length_m: 0.035
+        hub_width_m: 0.025
+        hub_radius_m: 0.008
+        corner_radius_m: 0.02
+      armor:
+        front_center_x_m: 0.18
+        front_length_m: 0.06
+        front_width_m: 0.2
+        side_center_y_m: 0.18
+        side_length_m: 0.2
+        side_width_m: 0.06
+        radius_m: 0.015
+      forward_marker_m:
+      - - 0.16
+        - 0
+      - - 0.09
+        - 0.04
+      - - 0.09
+        - -0.04
+      turret_radius_m: 0.1
+      colors:
+        shell: '#65baf0'
+        stale: '#ba9a50'
+        frame: '#426176'
+        deck: '#b7cbd2'
+        rubber: '#14242e'
+        roller: '#8aa3ae'
+        hub: '#d9edf3'
+        edge: '#355568'
+        mark: '#e1f6ff'
+        turret: '#337ba6'
+        barrel: '#d6eeff'
+      suspension_inner_ratio: 0.55
+browser:
+  runtime_port: 8766
+  startup_timeout_s: 45
+  max_pending_requests: 16
+  probe_enabled: false
+workspace:
+  max_files: 64
+  max_source_bytes: 32768
+  max_plans: 16
+  test_batches: 6
+  max_deployments: 32
+  poll_ms: 500
+  max_archives: 128
+campaign:
+  active_level: null
+  module_id: perception
+  entry_point: campaign_robot:CampaignRobot
+  initial_pose:
+  - 0.0
+  - 0.0
+  - 0.0
+  initial_velocity:
+  - 0.0
+  - 0.0
+  - 0.0
+  radar:
+    mount_m:
+    - 0.0
+    - 0.0
+    yaw_rad: 0.0
+    frame_id: radar_link
+    range_m: 12.0
+    field_of_view_rad: 6.283185307179586
+    update_hz: 10
+    occlusion: walls
+    measurement: target_center
+    latency_ticks: 0
+    range_bias_m: 0.0
+    bearing_bias_rad: 0.0
+    profiles:
+      ideal:
+        range_stddev_m: 0.0
+        bearing_stddev_rad: 0.0
+        drop_probability: 0.0
+      noisy:
+        range_stddev_m: 0.15
+        bearing_stddev_rad: 0.02
+        drop_probability: 0.1
+  levels:
+    c0:
+      title: C0 · 认识坦克与坐标
+      problem: 驾驶坦克、转动车体，并命中可见靶标。此关明确开放真值练习。
+      hints:
+      - W/S 前后，差速 A/D 转向；全向 Q/E 转向。
+      - J/L 转动炮台，空格单发。炮弹会反弹；瞄准左侧红色靶标。
+      capabilities:
+      - system.pose.read
+      - estimate.target.publish
+      - control.manual.drive
+      - control.manual.turret
+      - control.manual.fire
+      - view.enemy.truth
+      - view.projectiles.truth
+      radar_profile: null
+      target:
+        target_id: training_target
+        pose:
+        - -3.0
+        - 0.0
+        - 0.0
+      objective:
+        movement_m: 1.0
+        turn_rad: 0.5
+        required_hits: 1
+        required_estimates: 0
+        kind: checklist
+      time_limit_s: 60
+      timer_start: first_control
+      player_health: null
+    c1:
+      title: C1 · 用 SE(3) 矩阵变换坐标
+      problem: 敌车已隐藏。实现返回 4×4 NumPy SE(3) 矩阵的函数；游戏用矩阵乘法把雷达点变成地图上的目标估计。
+      hints:
+      - F2 打开编辑器，阅读任务说明，完成 perception/transforms.py 的 radar_to_map。
+      - F1 查看 Pose2D 字段、NumPy 返回类型及矩阵实验：前三列是基向量，最后一列是原点位置。
+      - 系统负责极坐标展开和 T @ p；保存 → 测试快照 → 部署，然后手动瞄准命中。
+      capabilities:
+      - system.pose.read
+      - estimate.target.publish
+      - control.manual.drive
+      - control.manual.turret
+      - control.manual.fire
+      - sensor.radar.read
+      radar_profile: ideal
+      target:
+        target_id: radar_target
+        pose:
+        - -3.0
+        - 1.5
+        - 0.0
+      objective:
+        movement_m: 0.0
+        turn_rad: 0.0
+        required_hits: 1
+        required_estimates: 1
+        kind: checklist
+      time_limit_s: 60
+      timer_start: first_deployment
+      player_health: null
+    c2:
+      title: C2 · 噪声中跟踪与击杀
+      problem: 敌我双方均有 {max_hp} HP。雷达带噪声和丢失；复用坐标转换，稳定跟踪，在 {time_limit_s} 秒内存活并击杀敌车。反弹的己方炮弹也会造成伤害。
+      hints:
+      - 完成 perception/tracker.py；C1 的 transforms.py 继续用于矩阵坐标变换。
+      - 空测量时也可输出合理预测；不要把每个 observation_id 当作同一实体 ID。
+      - J/L 手动瞄准，给移动目标留出弹丸飞行时间。HP 是授权反馈；误差在结束后显示。
+      capabilities:
+      - system.pose.read
+      - estimate.target.publish
+      - control.manual.drive
+      - control.manual.turret
+      - control.manual.fire
+      - sensor.radar.read
+      - view.enemy.health
+      - view.player.health
+      radar_profile: noisy
+      target:
+        target_id: patrol_enemy
+        pose:
+        - -4.5
+        - -2.0
+        - 0.0
+        motion:
+          chassis: differential
+          initial_velocity:
+          - 0.0
+          - 0.0
+          - 0.0
+          initial_turret_angle_rad: 0.0
+          initial_turret_rate_radps: 0.0
+          control_hz: 10
+          waypoints_m:
+          - - -1.5
+            - -2.0
+          - - -1.5
+            - 2.0
+          - - -4.5
+            - 2.0
+          - - -4.5
+            - -2.0
+          forward_speed_mps: 0.6
+          heading_gain_per_s: 2.0
+          max_yaw_rate_radps: 1.5
+          turn_in_place_threshold_rad: 0.35
+          arrival_radius_m: 0.25
+        health:
+          max_hp: 3
+          damage_per_hit: 1
+          collision_damage: 0
+          death_behavior: remove_at_substep_end
+      objective:
+        movement_m: 0.0
+        turn_rad: 0.0
+        required_hits: 0
+        required_estimates: 0
+        kind: destroy_target
+      time_limit_s: 120
+      timer_start: first_deployment
+      player_health: same_as_target
+  lessons:
+    c0:
+      title: C0 · 先认识坐标与控制
+      summary: 本关不需要编程。先熟悉车头方向、地图方向、炮台与射击。
+      steps:
+      - W/S 前后；差速 A/D 转动车体，全向 A/D 横移、Q/E 转向。
+      - 按任务面板要求移动、转向，再用 J/L 瞄准、空格单发。
+      - 地图 +x 向右、+y 向上；yaw 从 +x 逆时针为正，视角不会跟着车体旋转。
+      - 此关明确显示真值。后续关卡会逐步撤回信息，并提供替代观测与算法模板。
+      files: []
+      default_type: Pose2D
+      functions: []
+      aliases: {}
+    c1:
+      title: C1 · 用 SE(3) 建立两个坐标系之间的关系
+      summary: 只实现 radar_to_map：返回一个 NumPy 4×4 矩阵。极坐标展开、点的矩阵乘法和结果发布已由框架处理。
+      steps:
+      - 打开 perception/transforms.py，只填写 radar_to_map 的 TODO。own_pose 的完整类型和字段见下方签名与类型参考。
+      - 把二维 yaw 写为绕 z 的旋转，把自身 x/y 写入平移列；本关雷达系与车体系重合，z=0。
+      - 前三列分别是雷达 x/y/z 基向量在地图中的方向，第四列是雷达原点在地图中的位置。乘法把这些列按点坐标加权相加。
+      - 在「矩阵实验」里改变位姿和点坐标，逐行观察 T @ p，再运行旋转、平移及方向向量测试。
+      - 保存 → 测试快照 → 部署已测试版本。看到目标估计后手动瞄准命中。
+      files:
+      - path: perception/transforms.py
+        role: 算法练习：只实现这个矩阵函数。
+      default_type: Pose2D
+      functions:
+      - path: perception/transforms.py
+        name: radar_to_map
+      aliases:
+        own_pose: Pose2D
+        detection: RadarDetection
+        T_map_radar: ndarray
+    c2:
+      title: C2 · 复用变换，在噪声中保留状态
+      summary: C1 的 SE(3) 矩阵继续使用。你只在 Tracker 中处理已经转换到地图的测量，并保存跨调用的估计。
+      steps:
+      - 复用 perception/transforms.py，不需要重新实现坐标变换。打开 perception/tracker.py 的 Tracker.update。
+      - measurements 是本次采样的检测集合（长度 0 或 1），不是随时间增长的历史。需要数值数组时调用 tankbot.transforms.target_positions，得到
+        shape=(N,2) 的 NumPy 数组。
+      - dt 是仿真秒。__init__ 只初始化一次；把状态保存在 self.estimate 或自定义的带类型 NumPy 字段中。
+      - 尝试平滑、滑动窗口或预测；没有测量时决定保留或预测状态，尚未初始化时可返回 None。保存历史应使用有长度上限的窗口。
+      - 保存、测试并部署。跟踪巡逻敌车，考虑弹丸飞行时间，击杀后通关；真值误差仅在尝试结束后给出。
+      files:
+      - path: perception/tracker.py
+        role: 算法练习：初始化状态并完成 update。
+      - path: perception/transforms.py
+        role: 复用 C1 的矩阵函数。
+      default_type: TargetEstimate
+      functions:
+      - path: perception/tracker.py
+        name: update
+      - path: perception/transforms.py
+        name: radar_to_map
+      aliases:
+        own_pose: Pose2D
+        detection: RadarDetection
+        measurement: TargetEstimate
+        self.estimate: TargetEstimate
+        T_map_radar: ndarray
+  outcome_priority:
+  - player_dead
+  - objective_completed
+  - timeout

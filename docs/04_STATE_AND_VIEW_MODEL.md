@@ -117,7 +117,7 @@ Renderer 只在同 `run_id`、同 source、同 frame 且有效的相邻估计样
 
 ## M1 实施边界
 
-M1 只有玩家位姿源 odometry，默认 System Pose Provider 禁用；开启未实现的系统源会拒绝配置。Selector 独占 `/robot/localization/pose`，Gateway 只接受标准估计与授权观测，不接受真值对象。UI 只在同 run/revision/source/frame 内插值，来源变化清缓存；跳变阈值以 config/m1.json 的 `view` 为准。`view_revision` 不随普通快照递增，Envelope sequence 负责排序。
+M1 只有玩家位姿源 odometry，默认 System Pose Provider 禁用；开启未实现的系统源会拒绝配置。Selector 独占 `/robot/localization/pose`，Gateway 只接受标准估计与授权观测，不接受真值对象。UI 只在同 run/revision/source/frame 内插值，来源变化清缓存；跳变阈值以 config/game.yaml 的 `view` 为准。`view_revision` 不随普通快照递增，Envelope sequence 负责排序。
 
 公开地图和零初始位姿属于用户确认的试验场任务信息；这不授予运行中的世界状态读取权限。未定位时仍能使用键盘与轮速/IMU 面板；完整局部 scan/接触提示、通用选源服务和 TF 留在后续任务。C0 系统显示及 C1/C2 雷达已在 M4 增加，相关权限见下节。
 

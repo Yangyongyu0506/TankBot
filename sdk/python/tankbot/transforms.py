@@ -1,8 +1,18 @@
 """NumPy helpers for teaching homogeneous transforms; no World or Authority access."""
 import math
+from typing import Sequence
 import numpy as np
 from numpy.typing import NDArray
-from tankbot import RadarDetection
+from tankbot import RadarDetection, TargetEstimate
+
+
+def target_positions(measurements: Sequence[TargetEstimate]) -> NDArray[np.float64]:
+    """Current detection batch as (N, 2) float64 rows [x_m, y_m], never history."""
+    points: NDArray[np.float64] = np.empty((len(measurements), 2), dtype=np.float64)
+    for index, measurement in enumerate(measurements):
+        points[index, 0] = measurement.x_m
+        points[index, 1] = measurement.y_m
+    return points
 
 
 def validate_se3(matrix: NDArray[np.float64], *, tolerance: float) -> NDArray[np.float64]:

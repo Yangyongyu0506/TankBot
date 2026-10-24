@@ -125,7 +125,7 @@ class CoordinateTest(unittest.TestCase):
 
 
 def teaching_sources(level_id: str) -> dict[str, str]:
-    files: dict[str, str] = {"campaign_robot.py": WRAPPER}
+    files: dict[str, str] = {"campaign_robot.py": WRAPPER, "perception/__init__.py": ""}
     if level_id in ("c1", "c2"):
         files.update({"perception/__init__.py": "", "perception/transforms.py": TRANSFORMS,
                       "tests/test_coordinates.py": COORDINATE_TEST})

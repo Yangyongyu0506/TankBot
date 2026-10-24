@@ -80,6 +80,12 @@ M2 仍需其他 OS/浏览器执行构建与安全检查；CI 的 Linux/Windows/m
 
 M3 已完成 CodeMirror/Vim、多文件 Workspace、Manifest、非覆盖模板预览、不可变测试/部署、失败保留与显式回滚；具体接口和 profile 限制见 [17](17_EDITOR_AND_DEPLOYMENT.md)。原生和 Firefox 都有实际 UI 验收。ADR-0021 接受当前 Canvas/ES module/CodeMirror 组合，替代 ADR-0003。
 
-M4 已按用户确认实现 12 m / 360° / 10 Hz Radar、C2 高斯噪声/10% 丢失、同物理世界的差速巡逻敌车、逐发扣血与死亡销毁。C2 以击杀通关，误差仅结束后显示。函数→类的自动模板解锁保留既有源码；原生/Firefox 真实 UI 证据见报告。
+M4 已按用户确认实现 12 m / 360° / 10 Hz Radar、C2 高斯噪声/10% 丢失、同物理世界的差速巡逻敌车、逐发扣血与死亡销毁。C2 以限时内存活并击杀通关，误差仅结束后显示。函数→类的自动模板解锁保留既有源码；原生/Firefox 真实 UI 证据见报告。
 
 下一项为 **M5a：完整多模块 Contract 图与依赖调度**。先用现有 Encoder/IMU 与估计类型建立可复用模块链，验证输入冻结、固定提交、预算分配、部署/失败与跨文件迁移；再推进 C3/C4 的定位与建图能力。新增定位 fix/scan 等观测模型和权限需要单独确认。其他平台支持仍须执行 M2 矩阵，CI 文件存在不构成验证。
+
+## 2026-10-25 范围核对
+
+当前 M1–M4 的平台、资源、存储与教学开放项统一见 [状态核对](reports/M1_M4_STATUS_AUDIT.md)。本轮补充课程依赖白名单、NumPy 矩阵和运行日志反馈，不把未实现的强沙箱、独立浏览器存储、多模块或后续关卡改称已完成。
+
+本机 Campaign 另补每关运行时限、编辑器主动结束、C2 玩家 HP 与死亡失败，并统一迁移 YAML 参数源，见 [25](25_ATTEMPT_RULES_AND_CONFIGURATION.md) 和 [验收](reports/ATTEMPT_RULES_VALIDATION.md)。这不增加敌车攻击 AI，也不改变 M5 的范围。

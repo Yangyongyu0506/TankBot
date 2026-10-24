@@ -71,3 +71,7 @@ Windows/macOS 与 Chromium/WebKit 尚无本机执行证据；CI 构建矩阵已�
 官方依据：[Pyodide 0.29.5 发布](https://github.com/pyodide/pyodide/releases/tag/0.29.5)、[Worker CSP](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy)、[websockets 官方 API](https://websockets.readthedocs.io/en/stable/reference/asyncio/server.html)。这些来源用于接口研究，具体能力以上述锁定版本的实测为准。
 
 M3 在此基础上升为 `1.5`，增加 workspace 限额；UI origin 提供带 Host/Origin/token 校验的管理 API，Runtime origin 仍无 Workspace 路由。源码持久化由本机启动器提供，独立静态 Web 存储仍未验证。候选启动期间可信 Core + Active + candidate 共三个解释器。
+
+## 玩家反馈与数学库增量
+
+SDK 数值矩阵使用 NumPy，可信 Authority 和玩家 Worker 都加载已锁定的 NumPy 包。课程白名单在静态检查与玩家 loader 执行，不扩大传感器 grants，见 [23](23_PLAYER_CODE_AND_LIBRARIES.md)。玩家输出经受限 op: log 旁路、worker 身份检查和有界缓冲后进入管理状态；没有把日志写入物理快照或开放 Runtime 网络权限，见 [24](24_RUNTIME_LOGS.md)。

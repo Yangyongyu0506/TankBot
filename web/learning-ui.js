@@ -31,8 +31,12 @@ export function mountLearning(reference,openFile,previewTemplate){
     for(const parameter of fn.parameters){const button=element("button",`${parameter.name}: ${parameter.type}`);button.onclick=()=>selectType(parameter.type.split(/[\[ |]/)[0]);section.append(button);}
     section.append(element("p","返回类型："+fn.returns),element("pre",fn.description));lesson.append(section);
   }
-  lesson.append(element("h4","文件已准备好"),element("p","只编辑算法文件中的 TODO。导入、检测列表展开、矩阵乘法、消息发布、测试和部署由系统脚手架承担；框架文件与 JSON 配置可保持原样。"));
+  lesson.append(element("h4","文件与保存范围"),element("p","建议只编辑算法文件中的 TODO。保存会保留整个文件，不局限于 TODO 区域；已有算法、自建文件和框架文件跨关卡均保持原样，新关只补缺失文件。系统框架升级先预览再确认，旧版本可恢复。"));
+  lesson.append(element("p","self.estimate 等运行内存会在部署或重试时重新初始化；这与源码文件的保存是两回事。需要计算矩阵时使用 NumPy，不把无限追加的列表或元组当历史缓存。"));
   lesson.append(element("h4","常见问题"));
+  lesson.append(element("h4","允许使用的库"),element("p","第三方库仅开放 NumPy；数学矩阵使用 np.ndarray。可使用自己项目内的 Python 模块。游戏自动准备这些固定依赖，不提供自行 pip 安装。"));
+  lesson.append(element("p","基础标准库："+reference.dependencies.standard_modules.join(", ")));
+  lesson.append(element("p","unittest 仅供 tests/ 测试文件使用。未列出的第三方包（例如 SciPy、FilterPy、scikit-learn）会在测试或运行时被拒绝。"));
   for(const text of reference.lesson.common_errors)lesson.append(element("p",text));
   lesson.append(element("h4","测试快照会检查什么？"));
   for(const text of reference.testing.checks)lesson.append(element("p",text));

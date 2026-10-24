@@ -52,6 +52,7 @@ export async function mountWorkspace(browser){
     const result=await r.json();if(!r.ok)throw Error(result.error||"Deployment request failed");return result;
   }
   function refresh(){
+    const ended=Boolean(status?.attempt_status&&status.attempt_status!=="active");
     root.dataset.busy=String(busy);
     root.dataset.dirty=String(dirty());
     root.dataset.runtimeBusy=String(Boolean(status?.job));
@@ -62,17 +63,17 @@ export async function mountWorkspace(browser){
       button.onclick=()=>open(path);return button;
     }));
     $("save-workspace").disabled=busy||!dirty();
-    $("test-workspace").disabled=busy||Boolean(status?.job);
+    $("test-workspace").disabled=ended||busy||Boolean(status?.job);
     const ready=status?.reports.some(r=>r.revision===snapshot.revision&&r.status==="Ready");
-    $("deploy-workspace").disabled=needsUpgrade||busy||dirty()||Boolean(status?.job)||!ready;
-    const deployHelp=needsUpgrade?"尚未测试算法：请先预览并更新课程运行框架。":
+    $("deploy-workspace").disabled=ended||needsUpgrade||busy||dirty()||Boolean(status?.job)||!ready;
+    const deployHelp=ended?"本次关卡已结束；可以修改并保存代码，重试关卡后再测试和部署。":needsUpgrade?"尚未测试算法：请先预览并更新课程运行框架。":
       busy?"正在处理当前操作，请稍候。":status?.job?"正在测试或准备运行版本，完成后会更新部署状态。":
       dirty()?"代码有未保存的修改；保存并重新测试后才能部署。":ready?"当前快照测试通过，可以部署。":
       status?.last?.status==="Failed"&&status.last.revision===snapshot.revision?"当前快照测试失败；请查看下方错误，修改后重新测试。":"当前快照尚未测试通过；通过后部署按钮会亮起。";
     $("deploy-help").textContent=deployHelp;$("deploy-workspace").title=deployHelp;
     $("workspace-upgrade").hidden=!needsUpgrade;
     $("preview-teaching-upgrade").disabled=busy||Boolean(status?.job);
-    $("rollback-workspace").disabled=busy||Boolean(status?.job)||!$("deployment-history").value;
+    $("rollback-workspace").disabled=ended||busy||Boolean(status?.job)||!$("deployment-history").value;
   }
   function open(path){selected=path;$("editor-path").textContent=path;editor.open(path,files[path]);learning?.file(path);refresh();}
   function accept(value){snapshot=value;files={...value.files};const preferred=level==="c2"?"perception/tracker.py":level==="c1"?"perception/transforms.py":level==="c0"?"campaign_robot.py":null;open(files[selected]!==undefined?selected:(preferred&&preferred in files?preferred:Object.keys(files).find(p=>p.endsWith("odometry.py"))||Object.keys(files)[0]));}
@@ -122,6 +123,14 @@ export async function mountWorkspace(browser){
   $("test-workspace").title=initial.learning.testing.checks.join("\n")+"\n"+initial.learning.testing.meaning;
   const {createEditor}=await import("/editor-bundle.js");
   editor=createEditor($("code-editor"),(path,text)=>{files[path]=text;refresh();},()=>action(save),initial.learning);
+  window.addEventListener("tankbot-open-source",event=>{
+    const {path,line,revision}=event.detail;
+    if(files[path]===undefined)return;
+    if(!$("workspace-dialog").open)$("open-workspace").click();
+    if(!$("learning-pane").hidden)$("close-learning").click();
+    open(path);editor.go(line);
+    if(dirty()||(revision&&revision!==snapshot.revision))message("日志来自已部署/测试的快照；当前源码已有变化，行号可能不同，可按历史 revision 预览原代码。");
+  });
   needsUpgrade=initial.learning.upgrade_required;
   learning=mountLearning(initial.learning,open,()=>action(previewUpgrade));
   accept(snapshot);
@@ -171,7 +180,7 @@ export async function mountWorkspace(browser){
     try{
       status=await runtime("");root.dataset.deployment=JSON.stringify(status);root.dataset.revision=snapshot.revision;
       $("active-deployment").textContent=status.active?status.active.sha256.slice(0,12)+" · tick "+status.active.activated_tick:"启动示例（尚未部署工作区）";
-      $("deployment-state").textContent=status.job?(status.job.kind+" / "+status.job.phase):status.last?.status||"Editing";
+      $("deployment-state").textContent=status.attempt_status&&status.attempt_status!=="active"?"关卡已结束":status.job?(status.job.kind+" / "+status.job.phase):status.runtime_fault?"程序已停止 · "+status.runtime_fault:status.last?.status||"Editing";
       const history=$("deployment-history"),choice=history.value;
       history.replaceChildren(...[...new Map(status.history.map(d=>[d.sha256,d])).values()].map(d=>{const o=document.createElement("option");o.value=d.sha256;o.textContent=d.sha256.slice(0,12)+" · "+d.revision.slice(0,8);return o;}));
       if([...history.options].some(o=>o.value===choice))history.value=choice;

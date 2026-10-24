@@ -5,6 +5,7 @@ import base64
 from datetime import date
 import hashlib
 import json
+import yaml
 from pathlib import Path
 import sys
 from browser_driver import Browser
@@ -102,7 +103,7 @@ def main():
 
     def play(level):
         # This driver only uses the published view, ordinary control routes, and known gun calibration.
-        speed = json.loads((ROOT / "config/m1.json").read_text())["weapons"]["projectile"]["relative_speed_mps"]
+        speed = yaml.safe_load((ROOT / "config/game.yaml").read_text())["weapons"]["projectile"]["relative_speed_mps"]
         b.script("window.__m4Playing={level:"+json.dumps(level)+",speed:"+json.dumps(speed)+"};return true;")
         b.script('''
           const qa=window.wrappedJSObject?.tankbotQA??window.tankbotQA;
@@ -209,7 +210,7 @@ def main():
                   "learning_evidence": learning_evidence,
                   "screenshot": str(image_path.relative_to(ROOT))}
         report["artifacts"] = {path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest() for path in
-                               ("config/m1.json", "package-lock.json", "target/debug/core_worker", "build/web/editor-bundle.js", "build/browser/authority-bundle.json", "build/browser/player-bundle.json", "target/wasm32-unknown-unknown/release/tankbot_core.wasm")}
+                               ("config/game.yaml", "package-lock.json", "target/debug/core_worker", "build/web/editor-bundle.js", "build/browser/authority-bundle.json", "build/browser/player-bundle.json", "target/wasm32-unknown-unknown/release/tankbot_core.wasm")}
         source_paths = [path for directory in ("host", "protocol", "runtime", "sdk/python", "web", "core/src", "docs/schemas")
                         for path in (ROOT / directory).rglob("*") if path.suffix in (".py", ".js", ".html", ".css", ".rs", ".json")]
         source_paths += [ROOT / "tools/browser_m4.py", ROOT / "tests/campaign_support.py"]

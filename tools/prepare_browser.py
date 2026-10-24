@@ -8,6 +8,8 @@ from pathlib import Path
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
+import sys
+sys.path.insert(0, str(ROOT / "tools"))
 DEST = ROOT / "build/browser"
 LOCK = ROOT / "config/browser-assets.lock.json"
 
@@ -66,8 +68,15 @@ def main():
     trusted += list((ROOT/"protocol/tankbot_protocol").glob("*.py")) + [ROOT/"runtime/browser_authority.py"]
     trusted += list((ROOT/"docs/schemas").glob("*.schema.json"))
     trusted += list((ROOT/"docs/examples").glob("*.json"))
-    trusted += [ROOT/"requirements.txt", ROOT/"config/browser-assets.lock.json"]
-    (DEST/"authority-bundle.json").write_text(json.dumps(bundle(trusted)))
+    trusted += [ROOT/"requirements.txt", ROOT/"config/browser-assets.lock.json", ROOT/"config/player-dependencies.yaml", ROOT/"config/game.yaml"]
+    from python_env import relaunch_if_needed
+    relaunch_if_needed(Path(__file__).resolve(), offline=args.offline)
+    import sys
+    sys.path.insert(0, str(ROOT / "host"))
+    from tankbot_host.configuration import load_yaml
+    trusted_bundle = bundle(trusted)
+    trusted_bundle["config/player-dependencies.json"] = json.dumps(load_yaml(ROOT/"config/player-dependencies.yaml"))
+    (DEST/"authority-bundle.json").write_text(json.dumps(trusted_bundle))
     print(f"Browser bundles ready; pinned Pyodide {lock['version']}, {sum(f['bytes'] for f in lock['files'].values())} artifact bytes")
 
 

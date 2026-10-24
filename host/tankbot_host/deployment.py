@@ -8,6 +8,7 @@ import uuid
 from tankbot_protocol.validation import Validator, Rejected, envelope
 from tankbot_protocol.wire import strict_loads
 from .workspace import digest, validate_files, artifact_files, ROOT
+from tankbot._imports import load_policy, validate_imports
 
 
 def environment(config, core_sha256, runtime_packages=None):
@@ -16,7 +17,7 @@ def environment(config, core_sha256, runtime_packages=None):
     paths += list((ROOT / "runtime").glob("*.py"))
     paths += list((ROOT / "host/tankbot_host").glob("*.py"))
     paths += list((ROOT / "protocol/tankbot_protocol").glob("*.py"))
-    paths += [ROOT / "requirements.txt", ROOT / "config/browser-assets.lock.json"]
+    paths += [ROOT / "requirements.txt", ROOT / "config/browser-assets.lock.json", ROOT / "config/player-dependencies.yaml", ROOT / "config/game.yaml"]
     return digest({"config": config, "core_sha256": core_sha256, "python": sys.version, "platform": sys.platform,
                    "runtime_packages": runtime_packages or {},
                    "sources": {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(paths)}})
@@ -41,11 +42,12 @@ def inspect_snapshot(snapshot, authority):
     upgrade = framework_upgrade(authority.config, files)
     if upgrade["required"]:
         raise ValueError("TEACHING_TEMPLATE_UPGRADE_REQUIRED: " + upgrade["message"])
+    validate_imports(files, load_policy())
     manifest = strict_loads(files["tankbot.json"])
     validator = authority.validator
     validator.structure(manifest, "workspace.schema.json")
     if manifest["sdk_version"] != "0.1.0" or manifest["dependencies"] or len(manifest["modules"]) != 1:
-        raise ValueError("UNSUPPORTED_WORKSPACE_PROFILE: M3 supports one module, standard library and SDK 0.1.0")
+        raise ValueError("UNSUPPORTED_WORKSPACE_PROFILE: 当前仅开放一个模块、NumPy、SDK 与指定基础标准库，不支持自行安装外部依赖。")
     module = manifest["modules"][0]
     contract = strict_loads(files[module["contract"]])
     validator.structure(contract, "module-contract.schema.json")
@@ -82,10 +84,16 @@ class DeploymentManager:
         self.last = None
 
     def status(self):
+        self.authority.collect_logs(self.authority.worker, "runtime")
+        if self.job:
+            self.authority.collect_logs(self.job["worker"], self.job["kind"])
         return copy.deepcopy({"active": self.active, "history": self.history,
                               "job": None if self.job is None else {k: self.job[k] for k in ("id", "kind", "phase", "sha256")},
                               "last": self.last, "reports": list(self.reports.values()),
-                              "run_id": self.authority.run_id, "tick": self.authority.tick})
+                              "run_id": self.authority.run_id, "tick": self.authority.tick,
+                              "attempt_status": self.authority.campaign.status if self.authority.campaign else None,
+                              "runtime_fault": self.authority.worker.fault or ("MODULE_ERROR" if self.authority._faulted else None),
+                              "logs": self.authority.logs.public()})
 
     def start(self, kind, snapshot=None, sha256=None):
         if self.authority.campaign is not None and self.authority.campaign.status != "active":
@@ -94,7 +102,11 @@ class DeploymentManager:
             raise ValueError("DEPLOYMENT_BUSY")
         a = self.authority
         if kind in ("test", "deploy"):
-            artifact = inspect_snapshot(snapshot, a)
+            try:
+                artifact = inspect_snapshot(snapshot, a)
+            except (ValueError, SyntaxError) as error:
+                a.logs.append(str(error) + "\n", source=kind, module_id=a.contract["module_id"], tick=a.tick, stream="error")
+                raise
         elif kind == "rollback" and sha256 in self.artifacts:
             artifact = copy.deepcopy(self.artifacts[sha256])
         else:
@@ -115,7 +127,10 @@ class DeploymentManager:
         init["start_tick"] = a.tick
         init["reset_reason"] = "deployment"
         worker = a.worker_factory(a.config, init, deferred=True)
-        self.job = {"id": uuid.uuid4().hex, "kind": kind, "phase": "Starting", "sha256": sha,
+        job_id = uuid.uuid4().hex
+        worker.deployment_id = job_id
+        worker.revision = artifact["revision"]
+        self.job = {"id": job_id, "kind": kind, "phase": "Starting", "sha256": sha,
                     "artifact": artifact, "worker": worker, "init": init, "count": 0, "pending": None,
                     "validator": Validator(a.config, a.run_id)}
         self.last = None
@@ -124,6 +139,8 @@ class DeploymentManager:
     def _fail(self, error):
         job = self.job
         job["worker"].close()
+        self.authority.collect_logs(job["worker"], job["kind"])
+        self.authority.logs.append(str(error) + "\n", source=job["kind"], module_id=self.authority.contract["module_id"], tick=self.authority.tick, stream="error", deployment_id=job["id"], revision=job["artifact"]["revision"])
         self.last = {"id": job["id"], "kind": job["kind"], "sha256": job["sha256"], "revision": job["artifact"]["revision"], "status": "Failed", "error": str(error)}
         self.job = None
 
@@ -134,6 +151,8 @@ class DeploymentManager:
         if response["request_id"] != f"check-{tick}" or p["step_id"] != f"check-{tick}" or response["simulation_tick"] != tick:
             raise ValueError("INVALID_TEST_RESPONSE")
         if p["results"] != [{"module_id": a.contract["module_id"], "status": "completed", "error_code": None}]:
+            if p["results"] == [{"module_id": a.contract["module_id"], "status": "failed", "error_code": "DEPENDENCY_NOT_ALLOWED"}]:
+                raise ValueError("DEPENDENCY_NOT_ALLOWED: 当前仅开放 NumPy、SDK 和指定基础标准库，请查看关卡说明。")
             raise ValueError("MODULE_ERROR")
         grants = {(job["init"]["publisher_id"], ch, a.contract["outputs"][port]["schema"], None if port == "fire" else "map" if port in ("pose", "target") else "base_link") for port, ch in a.output_channels.items()}
         seen = set()
@@ -148,6 +167,7 @@ class DeploymentManager:
             return
         a, job = self.authority, self.job
         worker = job["worker"]
+        a.collect_logs(worker, job["kind"])
         try:
             if not worker.poll_ready():
                 if worker.fault:
@@ -219,12 +239,15 @@ class DeploymentManager:
                 if key[0] in ("runtime", old_publisher):
                     del table[key]
         self.active = {"deployment_id": job["id"], "sha256": job["sha256"], "revision": job["artifact"]["revision"], "activated_tick": a.tick}
+        if a.campaign is not None and a.campaign.definition["timer_start"] == "first_deployment":
+            a.campaign.start(a.tick)
         self.history.append(copy.deepcopy(self.active))
         self.history = self.history[-a.config["workspace"]["max_deployments"]:]
         a.audit.append({"event": "deployment_activated", "tick": a.tick, **self.active})
         self.last = {**self.active, "id": job["id"], "status": "Active", "kind": job["kind"]}
         self.job = None
         old.close()
+        a.collect_logs(old, "runtime")
 
     def close(self):
         if self.job:

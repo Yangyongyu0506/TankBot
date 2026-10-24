@@ -8,6 +8,8 @@ import threading
 import time
 import copy
 import tempfile
+import codecs
+from .logs import RuntimeLogs
 from tankbot_protocol.wire import send, receive
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -28,6 +30,8 @@ class Supervisor:
                 path.write_text(source, encoding="utf-8")
             init["workspace"] = self.workspace_temp.name
         self.limit = config["runtime"]["max_message_bytes"]
+        self.logs = RuntimeLogs(config["runtime"]["max_log_bytes"])
+        self.workspace_path = init["workspace"]
         self.budget = config["runtime"]["batch_budget_ms"] / 1000
         self.condition = threading.Condition()
         self.active = None
@@ -40,11 +44,13 @@ class Supervisor:
         self.detail = None
         self.batch_times_ms = deque(maxlen=config["runtime"]["history_limit_ticks"])
         self.proc = subprocess.Popen([sys.executable, "-I", str(ROOT / "runtime/worker.py"), str(self.limit)],
-                                     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                                     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                      cwd=init["workspace"], start_new_session=(os.name == "posix"))
         self.reader = threading.Thread(target=self._read, daemon=True)
+        self.log_reader = threading.Thread(target=self._read_logs, daemon=True)
         self.watchdog = threading.Thread(target=self._watch, daemon=True)
         self.reader.start()
+        self.log_reader.start()
         send(self.proc.stdin, init, self.limit)
         deadline = time.monotonic() + config["runtime"]["startup_timeout_s"]
         self.startup_deadline = deadline
@@ -61,7 +67,7 @@ class Supervisor:
             ready, self.result = self.result, None
         if self.fault or not ready or ready[0].get("ready") is not True:
             self.close()
-            raise RuntimeError("Worker initialization failed")
+            raise RuntimeError("Worker initialization failed" + (": " + self.detail if self.detail else ""))
         self.ready = True
         self.startup_result = ready[0]
         self.watchdog.start()
@@ -109,6 +115,26 @@ class Supervisor:
                 if not self.closed:
                     self.fault = self.fault or "MODULE_ERROR"
                     self.condition.notify_all()
+
+    def _read_logs(self):
+        decoder = codecs.getincrementaldecoder("utf-8")("replace")
+        pending = ""
+        def emit(text):
+            self.logs.append(text.replace(str(self.workspace_path).rstrip("/") + "/", "").replace(str(ROOT) + "/", ""), stream="output")
+        try:
+            while True:
+                raw = os.read(self.proc.stderr.fileno(), 4096)
+                if not raw:
+                    break
+                pending += decoder.decode(raw)
+                while "\n" in pending:
+                    line, pending = pending.split("\n", 1); emit(line + "\n")
+                while len(pending) > 2048:
+                    emit(pending[:2048]); pending = pending[2048:]
+            if pending:
+                emit(pending)
+        except (ValueError, OSError):
+            pass
 
     def _kill(self):
         if self.proc.poll() is None:
@@ -181,5 +207,8 @@ class Supervisor:
             self.reader.join(timeout=1)
         if self.watchdog.is_alive():
             self.watchdog.join(timeout=1)
+        if self.log_reader.is_alive():
+            self.log_reader.join(timeout=1)
+        self.proc.stderr.close()
         if self.workspace_temp is not None:
             self.workspace_temp.cleanup()

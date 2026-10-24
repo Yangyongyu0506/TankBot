@@ -67,3 +67,7 @@ M4 内部配置为 **1.6**，增加必填 campaign；1.5 沙盒仍可读。新�
 手柄增量：1.5/1.6 的 view 可选 `gamepad`，一旦声明须提供全部映射和参数，未声明则仅键盘；Protocol、control_sources 枚举及速度消息保持兼容。范围见 [20](../20_GAMEPAD_INPUT.md)。
 
 本机设置增量：`settings.schema.json` 校验 YAML 解析后的模式、键盘与图层结构，`progress.schema.json` 校验 JSON 通关存档。它们属于本机管理文件，不是机器人消息；重复按键、连续完成前缀、尝试模式与当前关卡权限由领域层校验。语义见 [22](../22_SETTINGS_MODES_AND_PROGRESS.md)，不改变 SimulationProfile 或 Protocol 版本。
+
+课程依赖增量：player-dependencies.schema.json 约束受信库策略结构，实际跨文件导入/相对模块/运行检查由 SDK 内部 loader 与 Authority 执行。策略见 [23](../23_PLAYER_CODE_AND_LIBRARIES.md)。协方差 JSON 仍为行优先扁平数组；SDK 使用二维 ndarray，不改消息 Schema。
+
+游戏可编辑配置为 `config/game.yaml`，仍以 `simulation-profile.schema.json` 校验解析后的结构。`campaign.schema.json` 新增每关时间/起算/生命、目标类型、教学数据及结算顺序。生成的 `core/tests/fixtures/default-profile.json` 只供 Rust/Node 测试与探针；数值从 YAML 导出，不得单独维护。详见 [25](../25_ATTEMPT_RULES_AND_CONFIGURATION.md)。

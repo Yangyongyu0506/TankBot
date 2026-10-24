@@ -107,7 +107,7 @@ def main():
                 'run_unchanged':rolled['run_id']==run,'world_ticks_advanced':rolled['tick']-deployed['tick'],
                 'edit_preserves_active':True,'vim_focus_isolated':True,'template_defaults_keep':True,'syntax_diagnostic':True,'persistent_file':name,'revision':revision,'screenshot':str(path),'archived_records':len(archives)}
         root=Path(__file__).resolve().parents[1]
-        paths=['config/m1.json','package-lock.json','build/web/editor-bundle.js','build/browser/authority-bundle.json','build/browser/player-bundle.json','target/wasm32-unknown-unknown/release/tankbot_core.wasm']
+        paths=['config/game.yaml','package-lock.json','build/web/editor-bundle.js','build/browser/authority-bundle.json','build/browser/player-bundle.json','target/wasm32-unknown-unknown/release/tankbot_core.wasm']
         report['artifacts']={p:{'bytes':(root/p).stat().st_size,'sha256':hashlib.sha256((root/p).read_bytes()).hexdigest()} for p in paths}
         args.output.write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n');print(args.output)
     finally:b.close()

@@ -1,5 +1,7 @@
 import math
 from typing import cast
+import numpy as np
+from numpy.typing import NDArray
 from tankbot import Inputs, JointState, Module, ModuleContext, Pose2D, Sample
 from .kinematics import body_increment
 
@@ -35,6 +37,6 @@ class Odometry(Module):
         self.previous = current
         if fault == "no_output":
             return
-        covariance: tuple[float, ...] | None = (-1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0) if fault == "bad_covariance" else None
+        covariance: NDArray[np.float64] | None = np.diag([-1.0, 1.0, 1.0]) if fault == "bad_covariance" else None
         ctx.publish("pose", Pose2D(self.x+ctx.config["module"]["pose_offset_m"], self.y, self.yaw, covariance),
                     frame_id=ctx.config["module"]["output_frame"], simulation_tick=joint.simulation_tick)

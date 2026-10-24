@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def make_parser():
     parser = argparse.ArgumentParser(description="TankBot trusted-local simulation and teaching levels")
     parser.add_argument("mode", choices=("serve", "browser", "headless", "probe"))
-    parser.add_argument("--config", type=Path, default=ROOT / "config/m1.json")
+    parser.add_argument("--config", type=Path, default=ROOT / "config/game.yaml")
     parser.add_argument("--level", choices=("c0", "c1", "c2"), help="Start a teaching level with its authorized capabilities")
     parser.add_argument("--chassis", choices=("differential", "omnidirectional"))
     parser.add_argument("--core-binary", type=Path)

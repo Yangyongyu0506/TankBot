@@ -7,7 +7,8 @@
     "config_version": {
       "enum": [
         "1.5",
-        "1.6"
+        "1.6",
+        "1.7"
       ]
     },
     "confirmation_status": {
@@ -373,6 +374,16 @@
             ],
             "additionalProperties": false
           }
+        },
+        "player_health": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "campaign.schema.json#/$defs/health"
+            }
+          ]
         }
       },
       "required": [
@@ -1846,7 +1857,10 @@
       "if": {
         "properties": {
           "config_version": {
-            "const": "1.6"
+            "enum": [
+              "1.6",
+              "1.7"
+            ]
           }
         }
       },

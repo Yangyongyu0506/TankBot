@@ -182,7 +182,8 @@ mod tests {
     use serde_json::Value;
 
     fn enemy_core() -> GameCore {
-        let raw: Value = serde_json::from_str(include_str!("../../config/m1.json")).unwrap();
+        let raw: Value =
+            serde_json::from_str(include_str!("../tests/fixtures/default-profile.json")).unwrap();
         let mut config: Config = serde_json::from_value(raw.clone()).unwrap();
         let mut target: TargetConfig =
             serde_json::from_value(raw["campaign"]["levels"]["c2"]["target"].clone()).unwrap();
@@ -246,7 +247,8 @@ mod tests {
 
     #[test]
     fn patrol_visits_all_waypoints_with_differential_enemy_and_omni_player() {
-        let raw: Value = serde_json::from_str(include_str!("../../config/m1.json")).unwrap();
+        let raw: Value =
+            serde_json::from_str(include_str!("../tests/fixtures/default-profile.json")).unwrap();
         let mut config: Config = serde_json::from_value(raw.clone()).unwrap();
         let target: TargetConfig =
             serde_json::from_value(raw["campaign"]["levels"]["c2"]["target"].clone()).unwrap();

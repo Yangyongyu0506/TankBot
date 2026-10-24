@@ -4,7 +4,7 @@
 
 M3 提供可持久化的多文件 Python 编辑、Manifest/Contract 校验、非覆盖模板、不可变快照测试、原子切换和显式回滚。继承 [06](06_WORKSPACE_AND_TEMPLATES.md)、ADR-0009/0012；实际入口见根 [README](../README.md)。此处定义已实现的本机 profile，不把后续的多模块图、Arena、云同步或独立托管网站存储视为已完成。
 
-M3 不改变物理模型或 Protocol 1.0 Envelope。`config/m1.json` 内部版本升为 `1.5`，增加 `workspace` 段：文件数、源码字节、迁移预览数、测试批次数、部署数量、归档数量和界面轮询间隔。旧配置需显式补齐，工具不改写用户配置。
+M3 不改变物理模型或 Protocol 1.0 Envelope。`config/game.yaml` 内部版本升为 `1.5`，增加 `workspace` 段：文件数、源码字节、迁移预览数、测试批次数、部署数量、归档数量和界面轮询间隔。旧配置需显式补齐，工具不改写用户配置。
 
 ## 职责与数据流
 
@@ -38,7 +38,7 @@ M3 的两种启动方式都由本机 HTTP 启动器提供版本库；默认路�
 
 ## Manifest、模板与渐进扩展
 
-M3 managed profile 恰有一个周期模块，但源码和测试可跨多个文件。`tankbot.json.entry_point` 必须等于该模块 Contract 的类入口，如 `localization.odometry:Odometry`；高级 `main:build_robot` 图组装是 M5 范围。支持 SDK `0.1.0` 本地 profile、标准库与空 `dependencies`，不执行安装钩子或联网 pip。
+M3 managed profile 恰有一个周期模块，但源码和测试可跨多个文件。`tankbot.json.entry_point` 必须等于该模块 Contract 的类入口，如 `localization.odometry:Odometry`；高级 `main:build_robot` 图组装是 M5 范围。支持 SDK `0.1.0` 本地 profile、NumPy、指定基础标准库与空 `dependencies`，不执行安装钩子或联网 pip。
 
 模块 `config` 传入 `ctx.config['module']`；场景、传感器标定、授权端口和执行预算由任务提供。Contract 可修改 `entry_point`、`state_version`；模块 ID、端口、频率、截止、依赖图须匹配任务 profile。`connections` 必须恰好是任务授予的连线；`pose_source` 为该玩家模块且无真值 fallback。练习模式的系统显示仍只由 Authority 的 View Policy 决定。
 
@@ -105,3 +105,5 @@ M4 新增独立的 Campaign 单模块 profile：标准输入是授权系统自�
 学习工具增量见 [19](19_LEARNING_GUIDES_AND_SE3.md)：每关默认说明、函数签名、类型搜索/悬停/补全、矩阵实验和 Python 速查共用 Workspace 弹窗；页面不滚动。测试环境摘要另绑定 NumPy 实际包版本、requirements 与浏览器资源锁。旧教学脚手架通过显式预览升级，算法文件不自动替换。
 
 教学升级交互修复：Test 遇到旧框架时先保存草稿并打开只含运行文件/缺失文件的预览，确认后更新并继续 Test；取消不更新源码。兼容性提示不作为算法测试结论。部署按钮旁说明未启用原因，当前 revision 通过 Ready 后才启用，继续编辑会再次禁用；测试范围及证据见 [19](19_LEARNING_GUIDES_AND_SE3.md) 与 [教学升级报告](reports/TEACHING_UPGRADE_VALIDATION.md)。
+
+玩家代码保存/依赖与矩阵接口见 [23](23_PLAYER_CODE_AND_LIBRARIES.md)，stdout/traceback 的有界采集、部署版本标记和 HUD/编辑器日志见 [24](24_RUNTIME_LOGS.md)。管理状态新增 logs 与 runtime_fault；机器人 Protocol 未变。

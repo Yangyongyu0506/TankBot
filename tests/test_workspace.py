@@ -19,7 +19,7 @@ from tankbot_host.workspace import WorkspaceStore, starter, validate_files, read
 
 class WorkspaceFixture:
     def setUp(self):
-        self.config = load_config(ROOT / 'config/m1.json')
+        self.config = load_config(ROOT / 'config/game.yaml')
         self.temp = tempfile.TemporaryDirectory()
         self.store = WorkspaceStore(self.temp.name, starter(self.config), self.config['workspace'])
 

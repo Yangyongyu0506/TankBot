@@ -21,7 +21,7 @@
 
 目标速度使用 `base_link`，不随相机或地图旋转转换；摇杆幅度控制目标速度比例，仍服从已有受力伺服、限速、接触和制动。肩键与差速摇杆转向相加后截断到配置范围。
 
-全部设备索引、正负方向、死区、阈值、速度和发送周期在唯一配置 `config/m1.json` 的 `view.gamepad`，由 [gamepad-input.schema.json](schemas/gamepad-input.schema.json) 校验。默认死区 0.18、按钮阈值 0.5、刷新周期 50 ms，线速度 1 m/s、底盘角速度 1 rad/s、炮台相对角速度 2 rad/s。左摇杆采用径向死区与幅度重映射，斜推不获得额外线速度；炮台轴采用轴向死区。
+全部设备索引、正负方向、死区、阈值、速度和发送周期在唯一配置 `config/game.yaml` 的 `view.gamepad`，由 [gamepad-input.schema.json](schemas/gamepad-input.schema.json) 校验。默认死区 0.18、按钮阈值 0.5、刷新周期 50 ms，线速度 1 m/s、底盘角速度 1 rad/s、炮台相对角速度 2 rad/s。左摇杆采用径向死区与幅度重映射，斜推不获得额外线速度；炮台轴采用轴向死区。
 
 标准索引为 forward=1、horizontal=0、turret=2，默认 sign 均为 -1；按钮为 yaw_left=4、yaw_right=5、fire=7、editor=9。非标准设备默认不驾驶，显示映射提示；维护者可以设置 `standard_mapping_only=false`，按实际设备修改轴/按钮索引及 sign，不在程序内猜测型号。自定义配置仍须具备所有必需的轴/按钮。旧 1.5/1.6 配置可省略 gamepad，保留键盘功能，不静默补入手柄参数。
 

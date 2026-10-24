@@ -4,6 +4,7 @@ import ast
 import copy
 import json
 import math
+import sys
 import re
 from pathlib import Path
 from urllib.parse import unquote
@@ -85,7 +86,12 @@ def main():
     for filename, schema in schemas.items():
         Draft202012Validator.check_schema(schema)
         validators[(filename, None)] = Draft202012Validator(schema, registry=registry)
-    validators[("simulation-profile.schema.json", None)].validate(strict_json((ROOT/"config/m1.json").read_text()))
+    sys.path.insert(0, str(ROOT / "host"))
+    from tankbot_host.configuration import load_yaml
+    profile = load_yaml(ROOT / "config/game.yaml")
+    validators[("simulation-profile.schema.json", None)].validate(profile)
+    if strict_json((ROOT/"core/tests/fixtures/default-profile.json").read_text()) != profile:
+        raise ValueError("Generated profile is stale; run tools/export_profile.py")
     for name in schemas["payloads.schema.json"]["$defs"]:
         reference = schemas["payloads.schema.json"]["$id"] + "#/$defs/" + name
         validators[("payloads.schema.json", name)] = Draft202012Validator(

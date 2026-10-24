@@ -11,7 +11,7 @@ from tankbot_host.authority import Authority,CoreAdapter,load_config
 
 class RenderingTests(unittest.TestCase):
     def test_visual_settings_do_not_change_physics(self):
-        config=load_config(ROOT/'config/m1.json')
+        config=load_config(ROOT/'config/game.yaml')
         other=copy.deepcopy(config)
         other['view']['snapshot_hz']=10
         other['rendering']['viewport_width_m']=5
@@ -25,7 +25,7 @@ class RenderingTests(unittest.TestCase):
             for core in cores:core.close()
 
     def test_profile_selects_independent_visuals_without_exposing_internal_model(self):
-        config=load_config(ROOT/'config/m1.json')
+        config=load_config(ROOT/'config/game.yaml')
         profiles=[]
         for chassis in config['chassis']:
             c=copy.deepcopy(config);c['scene']['default_chassis']=chassis

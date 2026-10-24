@@ -5,6 +5,7 @@ import base64
 from datetime import date
 import hashlib
 import json
+import yaml
 from pathlib import Path
 import time
 from browser_driver import Browser
@@ -20,7 +21,7 @@ def main():
     b=Browser()
     # Execute in the page realm so its RAF loop sees the same navigator override.
     b.script=lambda source:b.call("WebDriver:ExecuteScript",{"script":source,"args":[],"newSandbox":False})["value"]
-    settings=json.loads((ROOT/"config/m1.json").read_text())["view"]["gamepad"]
+    settings=yaml.safe_load((ROOT/"config/game.yaml").read_text())["view"]["gamepad"]
     def controls(axes=None,buttons=(),connected=True,mapping="standard"):
         value={"index":0,"id":"TankBot simulated standard controller","connected":connected,"mapping":mapping,
                "axes":axes or [0,0,0,0],"buttons":[{"pressed":False,"value":0} for _ in range(17)]}
@@ -110,7 +111,7 @@ def main():
             value=b.script("const d=document.scrollingElement;return {width:innerWidth,height:innerHeight,scrollWidth:d.scrollWidth,clientWidth:d.clientWidth,scrollHeight:d.scrollHeight,clientHeight:d.clientHeight};")
             assert value['scrollWidth']==value['clientWidth'] and value['scrollHeight']==value['clientHeight'],value
             dimensions.append(value)
-        paths=['web/gamepad.js','web/app.js','web/index.html','web/style.css','config/m1.json','docs/schemas/gamepad-input.schema.json','tools/browser_gamepad.py']
+        paths=['web/gamepad.js','web/app.js','web/index.html','web/style.css','config/game.yaml','docs/schemas/gamepad-input.schema.json','tools/browser_gamepad.py']
         report={"date":date.today().isoformat(),"url":args.url,"input_source":"simulated Gamepad API; no physical controller certification",
                 "browser":b.capabilities['capabilities']['browserVersion'],"chassis":chassis,"checks":evidence,"layout":dimensions,
                 "screenshot":image.relative_to(ROOT).as_posix(),"sources":{p:hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in paths}}

@@ -19,7 +19,7 @@ def digest(path):return hashlib.sha256((ROOT/path).read_bytes()).hexdigest()
 
 
 def main():
-    config=load_config(ROOT/'config/m1.json');config['scene']['default_chassis']='omnidirectional'
+    config=load_config(ROOT/'config/game.yaml');config['scene']['default_chassis']='omnidirectional'
     a=Authority(config,controlled=True)
     max_position_error=max_yaw_error=0.0
     v=config['validation']['probe_target'][0];w=config['view']['keyboard_yaw_radps']
@@ -51,7 +51,7 @@ def main():
             'max_position_error_m':max_position_error,'max_yaw_error_rad':max_yaw_error,'rejections':rejections,
             'same_build_replay_exact':exact,'native_wheel_rates_radps':native,'wasm_probe':wasm,
             'native_wasm_first_wheel_absolute_error_radps':difference,
-            'config_sha256':digest('config/m1.json'),'native_binary_sha256':digest('target/debug/core_worker'),
+            'config_sha256':digest('config/game.yaml'),'native_binary_sha256':digest('target/debug/core_worker'),
             'wasm_sha256':digest('target/wasm32-unknown-unknown/debug/tankbot_core.wasm')}
     path=ROOT/'docs/reports/omni-baseline.json';path.write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
     print(path.relative_to(ROOT))

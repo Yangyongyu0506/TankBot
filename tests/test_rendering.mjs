@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {SceneTimeline, FollowCamera, drawChassis, omniMounts} from '../web/rendering.js';
 
-const config = JSON.parse(readFileSync(new URL('../config/m1.json', import.meta.url)));
+const config = JSON.parse(readFileSync(new URL('../core/tests/fixtures/default-profile.json', import.meta.url)));
 const settings = {...config.rendering, interpolation_delay_ms:100, estimate_interpolation_delay_ms:200};
 const near = (actual, expected) => assert.ok(Math.abs(actual - expected) < 1e-12, `${actual} != ${expected}`);
 const pose = (x, y=0, yaw=0) => ({x_m:x, y_m:y, yaw_rad:yaw});

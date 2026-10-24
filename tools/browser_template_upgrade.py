@@ -5,6 +5,7 @@ import base64
 from datetime import date
 import hashlib
 import json
+import yaml
 from pathlib import Path
 import sys
 from browser_driver import Browser
@@ -24,7 +25,7 @@ def main():
         from tankbot_host.campaign import configure
         from tankbot_host.workspace import WorkspaceStore
         from campaign_support import solutions
-        config=configure(json.loads((ROOT/'config/m1.json').read_text()),'c1')
+        config=configure(yaml.safe_load((ROOT/'config/game.yaml').read_text()),'c1')
         if (args.prepare_store/'HEAD.json').exists():raise SystemExit('Use a new disposable store')
         files=solutions(config)
         files['campaign_robot.py']='# old unversioned framework\n'

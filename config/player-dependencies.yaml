@@ -1,0 +1,30 @@
+policy_version: 1
+external_packages:
+- numpy
+standard_modules:
+- __future__
+- abc
+- array
+- bisect
+- cmath
+- collections
+- copy
+- dataclasses
+- decimal
+- enum
+- fractions
+- functools
+- heapq
+- itertools
+- json
+- math
+- numbers
+- operator
+- random
+- statistics
+- typing
+test_modules:
+- unittest
+sdk_modules:
+- tankbot
+- tankbot.transforms

@@ -2,7 +2,7 @@
 
 ## 阅读方式与规范状态
 
-文档基线：`m4-0.1`，更新日期：2026-10-24。已完成 M1/M1b、M2 本机浏览器/Transport、M3 编辑部署和 M4 C0–C2 教学闭环验收：实现与限制见 [运行入口](../README.md)、[M4 验证报告](reports/M4_VALIDATION.md)；模型由用户逐项确认，见 [13](13_PHYSICS_MODEL_DECISIONS.md)、[18](18_CAMPAIGN_DESIGN.md)。M5 以后仍为后续设计，不能把目录完整当作开发完成。
+文档基线：`m4-0.1`，更新日期：2026-10-25。已完成 M1/M1b、M2 本机浏览器/Transport、M3 编辑部署和 M4 C0–C2 教学闭环验收：实现与限制见 [运行入口](../README.md)、[M4 验证报告](reports/M4_VALIDATION.md)；模型由用户逐项确认，见 [13](13_PHYSICS_MODEL_DECISIONS.md)、[18](18_CAMPAIGN_DESIGN.md)。M5 以后仍为后续设计，不能把目录完整当作开发完成。
 
 “必须／不得”为设计约束；“建议／拟采用”为待验证方案。Accepted ADR 表示接受设计原则或接口方向，不表示实现或平台验证完成；Proposed 技术不得当作既成依赖。协议 `1.0` 是**未发布草案**，首次发布前由兼容性审查冻结；发布后执行版本规则。
 
@@ -34,6 +34,12 @@
 | [20 手柄驱动](20_GAMEPAD_INPUT.md) | 标准/自定义映射、模拟量、人工仲裁、回中、断连与编辑隔离 |
 | [21 首次启动依赖](21_DEPENDENCY_BOOTSTRAP.md) | 无 pip 环境引导、专用解释器、缓存/离线、并发与重试 |
 | [22 设置与游戏模式](22_SETTINGS_MODES_AND_PROGRESS.md) | YAML 改键、开发者图层、玩家关卡解锁与存档 |
+| [23 玩家代码与依赖](23_PLAYER_CODE_AND_LIBRARIES.md) | 完整源码保留、课程库白名单与 NumPy 矩阵 |
+| [24 运行日志](24_RUNTIME_LOGS.md) | 程序输出、traceback、版本与源码定位 |
+| [25 计时、生命与参数](25_ATTEMPT_RULES_AND_CONFIGURATION.md) | 60/60/120 秒、主动结束、玩家死亡、YAML 参数源与生成夹具 |
+| [关卡规则验收](reports/ATTEMPT_RULES_VALIDATION.md) | 准备/部署计时、终局边界、反弹自伤和原生/WASM 界面 |
+| [M1–M4 核对](reports/M1_M4_STATUS_AUDIT.md) | 当前完成范围、平台/资源/教学开放项 |
+| [玩家 Runtime 验收](reports/PLAYER_RUNTIME_VALIDATION.md) | 依赖拒绝、NumPy 往返、日志与恢复 |
 | [设置与模式验收](reports/SETTINGS_VALIDATION.md) | 两种 Runtime 的改键、实际通关持久化、图层与撤权 |
 | [Python 启动验收](reports/PYTHON_BOOTSTRAP_VALIDATION.md) | 缺包系统直启 C0、原生 Worker、离线新环境与 92 项回归 |
 | [手柄验收](reports/GAMEPAD_VALIDATION.md) | 两种 Runtime / 两种底盘的输入闭环、模拟设备及硬件验证边界 |

@@ -8,7 +8,7 @@
 
 ## 实现与唯一数据源
 
-- config/m1.json 版本 1.3：wheels.omnidirectional 使用 radial_omni@1，四轮 name/azimuth_deg 与 R 只配置一次；旧 mecanum_half_length/width、roller_angle_deg 已移除。
+- config/game.yaml 版本 1.3：wheels.omnidirectional 使用 radial_omni@1，四轮 name/azimuth_deg 与 R 只配置一次；旧 mecanum_half_length/width、roller_angle_deg 已移除。
 - Core 的 wheels.rs 根据实际车体 vx/vy/wz 计算切向轮速，仍按子步梯形积分累计角。理想观测不读取玩家估计。
 - 仓库 Python 参考里程计按名字及同一标定反解，不再调用旧麦轮公式。玩家持久 Workspace 未被读写迁移或覆盖。
 - Host 校验四轮唯一、等间隔 90°、正半径和显式模型版本，公开 wheel_calibration 经过独立 Schema；不携带真实位姿。

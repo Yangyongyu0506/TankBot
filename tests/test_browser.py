@@ -19,7 +19,7 @@ from browser_authority import BrowserSupervisor
 
 class BrowserTests(unittest.TestCase):
     def test_browser_supervisor_commits_only_buffered_timely_result(self):
-        config=load_config(ROOT/"config/m1.json");sent=[]
+        config=load_config(ROOT/"config/game.yaml");sent=[]
         with patch.dict(sys.modules,{"js":types.SimpleNamespace(runtime_send=lambda raw:sent.append(json.loads(raw)))}):
             sup=BrowserSupervisor(config,{"workspace":"/workspace"})
             with patch("browser_authority.time.monotonic",return_value=1):
@@ -33,7 +33,7 @@ class BrowserTests(unittest.TestCase):
             self.assertEqual(sent[-1]["op"],"close")
 
     def test_browser_supervisor_rejects_duplicate_oversized_and_late_responses(self):
-        config=load_config(ROOT/"config/m1.json")
+        config=load_config(ROOT/"config/game.yaml")
         for raw,elapsed in [('{"x":1,"x":2}',1),('x'*65537,1),('{}',21)]:
             with self.subTest(raw=raw[:20],elapsed=elapsed),patch.dict(sys.modules,{"js":types.SimpleNamespace(runtime_send=lambda raw:None)}):
                 sup=BrowserSupervisor(config,{})
@@ -43,7 +43,7 @@ class BrowserTests(unittest.TestCase):
 
     @unittest.skipUnless((ROOT/"build/browser/authority-bundle.json").exists(),"Run tools/prepare_browser.py for launcher HTTP checks")
     def test_runtime_origin_never_serves_authority_workspace_or_private_config(self):
-        config=load_config(ROOT/"config/m1.json")
+        config=load_config(ROOT/"config/game.yaml")
         leases=[]
         try:
             for _ in range(2):
@@ -60,7 +60,7 @@ class BrowserTests(unittest.TestCase):
             response=c.getresponse();status,headers,raw=response.status,dict(response.getheaders()),response.read();c.close()
             return status,headers,raw
         try:
-            for path in ("/authority-bundle.json","/authority-config.json","/deployment.json","/api/view","/../config/m1.json","/tankbot_core.wasm"):
+            for path in ("/authority-bundle.json","/authority-config.json","/deployment.json","/api/view","/../config/game.yaml","/tankbot_core.wasm"):
                 self.assertEqual(request(ports[1],path)[0],404,path)
             status,headers,raw=request(ports[1],"/robot-worker.js")
             self.assertEqual(status,200);self.assertIn("worker-src 'none'",headers["Content-Security-Policy"])

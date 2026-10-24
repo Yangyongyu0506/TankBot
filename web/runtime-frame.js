@@ -18,7 +18,7 @@ window.addEventListener("message",event=>{
       if(op==="init"){
         if(old||workers.size>=2)throw Error("Runtime slot limit");
         limit=value.limit;qa ||= value.probe===true;
-        const state={worker:new Worker("/robot-worker.js"),active:false,booting:true,timer:null,started:0};
+        const state={worker:new Worker("/robot-worker.js"),active:false,booting:true,timer:null,started:0,logBytes:0,logLines:0,logNotice:false};
         const emit=v=>port.postMessage({...v,worker_id});
         state.stop=()=>{clearTimeout(state.timer);state.worker.terminate();workers.delete(worker_id);};
         state.fault=(code,detail="")=>{state.stop();emit({op:"fault",code,detail:String(detail).slice(0,256)});};
@@ -26,6 +26,13 @@ window.addEventListener("message",event=>{
         state.worker.onerror=e=>state.fault("MODULE_ERROR",e.message);
         state.worker.onmessage=({data:result})=>{
           if(workers.get(worker_id)!==state)return;
+          if(result?.op==="log"){
+            if(typeof result.text!=="string"||new TextEncoder().encode(result.text).length>value.limit/2){state.fault("RESOURCE_LIMIT");return;}
+            const bytes=new TextEncoder().encode(result.text).length;
+            if(state.logLines>=128||state.logBytes+bytes>value.max_log_bytes){if(!state.logNotice){state.logNotice=true;emit({op:"log",text:"[输出过多，本批次剩余日志已省略]\n"});}return;}
+            state.logLines++;state.logBytes+=bytes;
+            emit({op:"log",text:result.text});return;
+          }
           if(result?.op==="progress"&&state.booting){emit({op:"progress",phase:result.phase});return;}
           if(result?.op==="fault"){state.fault("MODULE_ERROR",result.detail);return;}
           if(result?.op==="ready"&&state.booting){state.booting=false;clearTimeout(state.timer);emit({op:"ready",security:result.security,memory_bytes:result.memory_bytes,unit_tests:result.unit_tests});return;}
@@ -38,6 +45,7 @@ window.addEventListener("message",event=>{
       }else if(op==="step"){
         if(!old||old.active||old.booting)throw Error("Runtime not ready");
         old.active=true;old.started=performance.now();
+        old.logBytes=0;old.logLines=0;old.logNotice=false;
         old.timer=setTimeout(()=>old.fault("RESOURCE_LIMIT"),old.budget);
         old.worker.postMessage({op,raw:JSON.stringify(value)});
       }else throw Error("Unknown operation");

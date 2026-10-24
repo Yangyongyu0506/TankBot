@@ -12,7 +12,7 @@ child.stdout.on("data",raw=>{buffer=Buffer.concat([buffer,raw]);if(buffer.length
 }});
 function native(request){return new Promise(resolve=>{receive=resolve;const raw=Buffer.from(JSON.stringify(request)),head=Buffer.alloc(4);head.writeUInt32BE(raw.length);child.stdin.write(Buffer.concat([head,raw]));});}
 try{
-  const config=JSON.parse(readFileSync(new URL("../config/m1.json",import.meta.url)));
+  const config=JSON.parse(readFileSync(new URL("../core/tests/fixtures/default-profile.json",import.meta.url)));
   const exchange=async request=>{
     const a=JSON.parse(wasm.call(request)),b=await native(request);
     // Empirical same-toolchain equivalence, not a cross-platform bitwise guarantee.

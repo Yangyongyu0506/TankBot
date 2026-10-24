@@ -2,7 +2,7 @@
 
 ## 目的与状态
 
-ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评审变更。初版日期为 2026-10-20，当前更新到 M4 学习工具（2026-10-24）。`Accepted` 表示当前接受的设计约束；不是实施完成证明。`Proposed` 表示仍需指定实验/审查，不得当成已锁定依赖。`Superseded` 表示被明确编号的新 ADR 完整替代，保留原记录与链接。ADR-0003 已由 M3 实证后的 ADR-0021 替代；ADR-0014 局部修订 0004/0010 的速度接口表达，其余约束仍有效。ADR-0017 局部修订武器阶段与后坐作用模型，未整体废弃 ADR-0015。
+ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评审变更。初版日期为 2026-10-20，当前更新到玩家依赖与运行反馈（2026-10-25）。`Accepted` 表示当前接受的设计约束；不是实施完成证明。`Proposed` 表示仍需指定实验/审查，不得当成已锁定依赖。`Superseded` 表示被明确编号的新 ADR 完整替代，保留原记录与链接。ADR-0003 已由 M3 实证后的 ADR-0021 替代；ADR-0014 局部修订 0004/0010 的速度接口表达，其余约束仍有效。ADR-0017 局部修订武器阶段与后坐作用模型，未整体废弃 ADR-0015。
 
 | 编号 | 决策 | Status |
 | --- | --- | --- |
@@ -32,6 +32,10 @@ ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评
 | [0024](0024-gamepad-manual-input.md) | Gamepad API、逐执行器人工仲裁与回中后接管 | Accepted |
 | [0025](0025-automatic-python-environment.md) | 首启准备专用 Python 环境、缓存与隔离 Worker 共享解释器 | Accepted |
 | [0026](0026-settings-modes-and-campaign-progress.md) | YAML 设置、玩家关卡存档与独立授权的开发者图层 | Accepted |
+| [0027](0027-curated-libraries-and-numpy-matrices.md) | 课程库白名单、NumPy 矩阵与兼容边界 | Accepted |
+| [0028](0028-bounded-player-runtime-feedback.md) | 有界玩家输出、异常调用栈与 UI 运行日志 | Accepted |
+| [0029](0029-attempt-deadlines-and-player-health.md) | 关卡时限、主动结束、玩家 HP 与终局顺序 | Accepted |
+| [0030](0030-yaml-parameter-source.md) | YAML 参数源、教学数据与生成测试夹具 | Accepted |
 
 ## 变更流程与完成条件
 

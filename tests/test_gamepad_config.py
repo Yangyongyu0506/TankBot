@@ -12,7 +12,7 @@ from tankbot_protocol.validation import Validator, Rejected
 
 class GamepadConfigTests(unittest.TestCase):
     def test_legacy_profile_and_strict_complete_gamepad_settings(self):
-        config=load_config(ROOT/'config/m1.json')
+        config=load_config(ROOT/'config/game.yaml')
         validator=Validator(config,'configuration')
         legacy=copy.deepcopy(config);legacy['view'].pop('gamepad')
         validator.structure(legacy,'simulation-profile.schema.json')
@@ -25,7 +25,7 @@ class GamepadConfigTests(unittest.TestCase):
             with self.assertRaises(Rejected,msg=mutation):validator.structure(value,'simulation-profile.schema.json')
 
     def test_input_settings_are_public_but_robot_lease_still_rejects_manual_controls(self):
-        config=load_config(ROOT/'config/m1.json')
+        config=load_config(ROOT/'config/game.yaml')
         config['control_sources']={key:'robot' for key in config['control_sources']}
         authority=Authority(config,controlled=True)
         self.addCleanup(authority.close)

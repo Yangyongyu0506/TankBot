@@ -13,12 +13,14 @@ from .supervisor import Supervisor
 from .view import PoseSelector, ViewGateway, SystemPoseProvider
 from .wheel_geometry import validate_wheels, public_calibration
 from .campaign import active as campaign_level, validate_profile, CampaignSession, RadarSimulator, catalog
+from .logs import RuntimeLogs
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
 def load_config(path):
-    config = strict_loads(Path(path).read_bytes())
+    from .configuration import load_yaml
+    config = load_yaml(path) if Path(path).suffix in (".yaml", ".yml") else strict_loads(Path(path).read_bytes())
     Validator(config, "configuration").structure(config, "simulation-profile.schema.json")
     if config["confirmation_status"] != "confirmed":
         raise ValueError("Physical profile not confirmed")
@@ -84,7 +86,8 @@ class CoreAdapter:
 
 class Authority:
     def __init__(self, config, *, workspace=None, binary=None, controlled=False,
-                 core_factory=CoreAdapter, worker_factory=Supervisor, startup_sources=None, developer_mode=False):
+                 core_factory=CoreAdapter, worker_factory=Supervisor, startup_sources=None, developer_mode=False,
+                 startup_is_deployment=None):
         self.developer_mode = developer_mode
         if config["view_mode"]=="estimated" and (config["view_policy"]["system_pose_allowed"] or config["view_policy"]["world_effects"]):
             raise ValueError("Estimated view cannot grant truth")
@@ -99,6 +102,7 @@ class Authority:
         self.period = self.hz // config["clock"]["algorithm_hz"]
         self.delay = config["runtime"]["commit_delay_ticks"]
         self.tick = 0
+        self.logs = RuntimeLogs(config["runtime"]["max_log_bytes"])
         self.view_revision = 0
         self.validator = Validator(config, self.run_id)
         self.validator.structure(config["view_policy"], "view-policy.schema.json")
@@ -141,6 +145,8 @@ class Authority:
             "initial_pose": config["scene"]["initial_pose"], "wheels": config["wheels"], "module": config["module"]},
             "contract": self.contract, "physics_hz": self.hz, "run_id": self.run_id,
             "publisher_id": self.publisher_id, "input_channels": self.input_channels, "output_channels": self.output_channels}
+        from tankbot._imports import load_policy
+        init["import_policy"] = load_policy()
         if config.get("campaign", {}).get("active_level"):
             from .workspace import starter, read_sources
             init["sources"] = starter(config)
@@ -155,6 +161,11 @@ class Authority:
         self.deployment = None
         try:
             self.worker = worker_factory(config, init)
+            self.worker.deployment_id = "startup"
+            self.worker.revision = None
+            explicit_startup = (workspace is not None or startup_sources is not None) if startup_is_deployment is None else startup_is_deployment
+            if self.campaign and explicit_startup and self.campaign.definition["timer_start"] == "first_deployment":
+                self.campaign.start(self.tick)
         except BaseException:
             self.core.close()
             raise
@@ -213,6 +224,7 @@ class Authority:
         self._rate_limit()
         msg = self._message("twist@1", "/robot/cmd_vel", twist, frame="base_link", publisher="ui")
         self.validator.validate(msg, now=self.tick, grants={("ui", "/robot/cmd_vel", "twist@1", "base_link")})
+        self._manual_start(any(twist[part][axis] for part in ("linear", "angular") for axis in ("x", "y", "z")))
         # Controller's single keyboard lease; M1 has no simultaneous algorithm actuator grant.
         self._keyboard = msg
 
@@ -221,6 +233,7 @@ class Authority:
         self._rate_limit()
         msg = self._message("turret_velocity@1","/robot/turret/cmd_vel",value,frame="base_link",publisher="ui")
         self.validator.validate(msg,now=self.tick,grants={("ui",msg["channel"],msg["schema"],"base_link")})
+        self._manual_start(value["velocity_radps"] != 0)
         self._turret_target = {**msg["payload"],"source_tick":self.tick}
 
     def _queue_fire(self, msg):
@@ -244,8 +257,16 @@ class Authority:
                      run_id=self.run_id,publisher_id="ui",sequence=self._sequences.get(("ui","fire"),0),
                      message_type="command",request_id=value["request_id"])
         self.validator.validate(msg,now=self.tick,grants={("ui",msg["channel"],msg["schema"],None)})
+        self._manual_start(True)
         self._sequences["ui","fire"]=msg["sequence_number"]+1
         return self._queue_fire(msg)
+
+    def _manual_start(self, effective):
+        if not effective or self.campaign is None or self.campaign.started_tick is not None:
+            return
+        if self.campaign.definition["timer_start"] != "first_control":
+            raise Rejected("DEPLOY_TO_START_ATTEMPT")
+        self.campaign.start(self.tick)
 
     def select_pose_source(self, source_id):
         if self.config["view_mode"]!="estimated" or source_id != self.contract["module_id"]:
@@ -273,6 +294,8 @@ class Authority:
             if response["simulation_tick"] != pending["activation"] or response["simulation_time_ns"] != pending["activation"]*1_000_000_000//self.hz:
                 raise Rejected("INVALID_TIMESTAMP")
             if p["results"] != expected_result:
+                if p["results"] == [{"module_id": self.contract["module_id"], "status": "failed", "error_code": "DEPENDENCY_NOT_ALLOWED"}]:
+                    raise Rejected("DEPENDENCY_NOT_ALLOWED")
                 raise Rejected("MODULE_ERROR")
             if len(p["outputs"]) > len(self.contract["outputs"]):
                 raise Rejected("RATE_LIMITED")
@@ -313,6 +336,8 @@ class Authority:
             self._failures = 0
         except Rejected as e:
             self.audit.append({"event": "rejected", "tick": self.tick, "code": e.code})
+            self.logs.append("Runtime 批次失败：" + e.code + "\n", source="runtime", module_id=self.contract["module_id"], tick=self.tick, stream="error",
+                             deployment_id=getattr(self.worker, "deployment_id", "startup"), revision=getattr(self.worker, "revision", None))
             self._failures += 1
             if self._failures >= self.config["runtime"]["max_failures"] or self.worker.fault:
                 self._faulted = True
@@ -346,7 +371,10 @@ class Authority:
     def _build_view(self):
         practice = None
         campaign = bool(self.config.get("campaign", {}).get("active_level"))
-        if self.selector.source_id == "system" and self.config["view_policy"]["system_pose_allowed"]:
+        if not self._private.get("player_alive", True):
+            self.selector.canonical = None
+            self._sensors.clear()
+        elif self.selector.source_id == "system" and self.config["view_policy"]["system_pose_allowed"]:
             if self.config["view_policy"]["world_effects"]:
                 practice=SystemPoseProvider.project(self._private,self.config,self.tick)
             pose = SystemPoseProvider.pose(self._private, self.config)
@@ -363,6 +391,7 @@ class Authority:
     def advance(self):
         """Process boundary n, then advance to S_(n+1). Player computation is never awaited in real time."""
         started = time.monotonic()
+        self.collect_logs(self.worker, "runtime")
         if self.campaign is not None:
             alive = [target for target in self._private["targets"] if target["alive"]]
             self._target_history[self.tick] = alive[0]["pose"] if alive else None
@@ -394,17 +423,34 @@ class Authority:
         for publisher,result in self._private["fire_results"]:
             self._fire_journal[publisher,result["request_id"]]=result
         self.tick += 1
-        if self.campaign is not None and self.campaign.observe(self._private):
-            self._finish_campaign(passed=True)
+        if self.campaign is not None:
+            outcome = self.campaign.outcome(self._private, self.tick)
+            if outcome:
+                self._finish_campaign(passed=outcome == "objective_completed", reason=outcome)
         self.tick_times_ms.append((time.monotonic()-started)*1000)
 
-    def _finish_campaign(self, *, passed=False):
+    def collect_logs(self, worker, source):
+        incoming = getattr(worker, "logs", None)
+        if incoming is None:
+            return
+        batch = incoming.drain()
+        for item in batch["entries"]:
+            self.logs.append(item["text"], source=source, module_id=self.contract["module_id"],
+                             tick=self.tick, stream=item.get("stream", "output"),
+                             deployment_id=getattr(worker, "deployment_id", "startup"), revision=getattr(worker, "revision", None))
+        if batch["dropped"]:
+            self.logs.append("[输出过多，部分日志已省略]\n", source=source, module_id=self.contract["module_id"], tick=self.tick, stream="notice")
+
+    def _finish_campaign(self, *, passed=False, reason="aborted"):
         if self.campaign is None:
             raise Rejected("NO_ACTIVE_LEVEL")
         if self.campaign.status == "active":
-            self.campaign.finish(self.tick, passed=passed)
+            self.campaign.finish(self.tick, passed=passed, reason=reason)
             self._pending = None
+            self._keyboard = self._turret_target = None
+            self._fire_pending.clear()
             self.worker.close()
+            self.collect_logs(self.worker, "runtime")
             if self.deployment is not None:
                 self.deployment.close()
             self._target_estimate = None

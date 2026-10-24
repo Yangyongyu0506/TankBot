@@ -12,7 +12,7 @@ from tankbot_host.authority import CoreAdapter, load_config
 
 class WeaponTests(unittest.TestCase):
     def setUp(self):
-        self.config=load_config(ROOT/"config/m1.json")
+        self.config=load_config(ROOT/"config/game.yaml")
 
     def core(self, config=None):
         core=CoreAdapter(config or self.config,(config or self.config)["scene"]["default_chassis"])

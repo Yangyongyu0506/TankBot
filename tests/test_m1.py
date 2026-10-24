@@ -29,7 +29,7 @@ def twist(v):
 class M1Tests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.config = load_config(ROOT/"config/m1.json")
+        cls.config = load_config(ROOT/"config/game.yaml")
         cls.config["weapons"]["enabled"] = False  # Preserve the M1 bare-chassis regression profile.
 
     def core(self, config=None, chassis=None):
@@ -334,7 +334,7 @@ class M1Tests(unittest.TestCase):
         self.addCleanup(conn.close)
         conn.request("GET", "/api/profile");response = conn.getresponse();profile = json.loads(response.read())
         self.assertEqual(profile["walls"], c["scene"]["walls"])
-        for path in ("/api/truth", "/config/m1.json", "/../config/m1.json", "/api/world"):
+        for path in ("/api/truth", "/config/game.yaml", "/../config/game.yaml", "/api/world"):
             conn.request("GET", path);response = conn.getresponse();self.assertEqual(response.status,404);response.read()
         conn.request("POST", "/api/cmd_vel", json.dumps(twist((1,0,0))), {"Content-Type":"application/json"})
         response = conn.getresponse();self.assertEqual(response.status,403);response.read()

@@ -15,7 +15,7 @@ from localization.kinematics import body_increment
 
 class OmniTests(unittest.TestCase):
     def setUp(self):
-        self.config=load_config(ROOT/'config/m1.json')
+        self.config=load_config(ROOT/'config/game.yaml')
 
     def core(self,config=None):
         c=CoreAdapter(config or self.config,'omnidirectional');self.addCleanup(c.close);return c
