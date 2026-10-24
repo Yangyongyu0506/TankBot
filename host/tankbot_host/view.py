@@ -19,7 +19,7 @@ class ViewGateway:
     def __init__(self, policy):
         self.policy = copy.deepcopy(policy)
 
-    def build(self, tick, revision, selector, sensors, *, practice=None):
+    def build(self, tick, revision, selector, sensors, *, practice=None, target_estimate=None, campaign=False):
         policy = self.policy
         selected = None
         candidate = selector.canonical
@@ -31,16 +31,30 @@ class ViewGateway:
                             "pose": copy.deepcopy(candidate["payload"])}
         objects=copy.deepcopy(practice["objects"]) if practice is not None and policy["world_effects"] else []
         observations = [copy.deepcopy(sensors[c]) for c in policy["local_observation_channels"] if c in sensors]
-        return {"view_revision": revision, "policy_id": policy["policy_id"], "selected_pose": selected,
-                "local_observations": observations, "objects": objects, "effects": []}
+        payload = {"view_revision": revision, "policy_id": policy["policy_id"], "selected_pose": selected,
+                   "local_observations": observations, "objects": objects, "effects": []}
+        if campaign:
+            payload["target_estimates"] = []
+            if (policy.get("target_estimates_allowed", False) and target_estimate is not None
+                    and target_estimate["frame_id"] == "map"
+                    and 0 <= tick-target_estimate["simulation_tick"] <= policy["pose_hide_after_ticks"]):
+                payload["target_estimates"].append(copy.deepcopy(target_estimate))
+        return payload
 
 
 class SystemPoseProvider:
     """Authority-only projection; the private DTO never goes directly to ViewGateway."""
     @staticmethod
+    def pose(private, config):
+        if not config["view_policy"]["system_pose_allowed"] or "map" not in config["view_policy"]["allowed_pose_frames"]:
+            raise ValueError("System self-pose denied")
+        x, y, yaw = private["truth_pose"]
+        return {"x_m": x, "y_m": y, "yaw_rad": yaw, "covariance": None, "child_frame_id": "base_link"}
+
+    @staticmethod
     def project(private,config,tick):
         policy=config["view_policy"]
-        if config["view_mode"]!="weapons-practice" or not policy["system_pose_allowed"] or not policy["world_effects"] or "map" not in policy["allowed_pose_frames"]:
+        if config["view_mode"] not in ("weapons-practice", "campaign") or not policy["system_pose_allowed"] or not policy["world_effects"] or "map" not in policy["allowed_pose_frames"]:
             raise ValueError("Truth projection denied")
         def pose(value):
             return {"x_m":value[0],"y_m":value[1],"yaw_rad":value[2],"covariance":None,"child_frame_id":"base_link"}
@@ -48,5 +62,5 @@ class SystemPoseProvider:
                   "radius_m":config["weapons"]["projectile"]["radius_m"]} for p in private["projectiles"]]
         if config["weapons"]["enabled"]:
             objects += [{"kind":"target","target_id":t["target_id"],"pose":{"x_m":t["pose"][0],"y_m":t["pose"][1],"yaw_rad":(t["pose"][2]+math.pi)%math.tau-math.pi},"hits":private["target_hits"][t["target_id"]]}
-                        for t in config["weapons"]["targets"]]
+                        for t in private["targets"] if t["alive"]]
         return {"pose":pose(private["truth_pose"]),"objects":objects}

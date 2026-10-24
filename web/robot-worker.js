@@ -54,9 +54,9 @@ json.dumps(checks)
       self.postMessage({op:"progress",phase:"Module initialization"});
       const init={...data.value.init,sources:data.value.init.sources??data.sources};
       py.globals.set("_init_json",JSON.stringify(init));
-      py.runPython("from module_runner import ModuleRunner\nfrom source_loader import prepare\n_init=json.loads(_init_json)\n_temporary,_tests=prepare(_init)\nrunner=ModuleRunner(_init)\ndel _init_json");
+      py.runPython("from module_runner import ModuleRunner, runtime_packages\nfrom source_loader import prepare\n_init=json.loads(_init_json)\n_temporary,_tests=prepare(_init)\nrunner=ModuleRunner(_init)\ndel _init_json");
       runner = py.globals.get("runner");
-      self.postMessage({op:"ready",security,unit_tests:py.runPython("_tests"),memory_bytes:py._module.HEAPU8.buffer.byteLength});
+      self.postMessage({op:"ready",security,unit_tests:py.runPython("_tests"),runtime_packages:JSON.parse(py.runPython("json.dumps(runtime_packages())")),memory_bytes:py._module.HEAPU8.buffer.byteLength});
     } else if(data.op==="probe_ping") {
       self.postMessage({op:"probe_pong"});
     } else if(data.op==="step") {

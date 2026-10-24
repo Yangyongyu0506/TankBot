@@ -14,6 +14,7 @@
 | [chassis-controller.schema.json](chassis-controller.schema.json) | 受信底盘类型、速度轴限值、cmd_vel_timeout；不是逐条速度消息 |
 | [wheel-calibration.schema.json](wheel-calibration.schema.json) | radial_omni@1 公开轮组标定和可复用几何结构 |
 | [simulation-profile.schema.json](simulation-profile.schema.json) | M1 唯一配置文件的必填结构，跨字段/数值可行性另由 Host/Core 校验 |
+| [campaign.schema.json](campaign.schema.json) | M4 受信关卡、Radar、巡逻与血量配置；由单文件配置引用 |
 
 payload 标识为 `joint_state@1`、`pose2d@1`、`imu@1`、`encoder@1`、`radar@1`、`twist@1`、`view_snapshot@1`、`error@1`、`negotiate_request@1`、`negotiate_response@1`、`runtime_step_request@1`、`runtime_step_result@1`。Twist 保留 linear.x/y/z、angular.x/y/z，二维的 linear.z/angular.x/angular.y 限定为零，底盘是否支持非零 linear.y 由领域层判定。首发 `view_snapshot@1` 的 objects/effects 为空；实体/效果、scan、地图瓦片、pose_fix、选源服务仍须补齐结构和权限后才能注册，不以任意 object 扩展绕过审查。
 
@@ -59,3 +60,5 @@ SimulationProfile 内部版本升为 1.2，新增必填 rendering：显示缓冲
 内部 SimulationProfile 版本 1.4 必填 browser 段（资源 origin 端口、独立初始化预算、UI 待处理控制请求上限与显式 QA 开关）；物理/SDK/协议消息未变。旧 1.3 文件须显式迁移，工具不覆盖。49 个 Envelope 夹具已接入真实多 Adapter 及浏览器同源验证器，见 16 与 M2 报告；M3 已实现单模块 Manifest profile；event/完整模块图仍未实现。
 
 M3 内部 SimulationProfile 为 **1.5**，新增必填 workspace 限额；未改变已确认物理或 Protocol 1.0。实际单模块夹具为 `m3-workspace.json` 与 `m3-module-contract.json`，通用 `tankbot.json` / `module-contract-event.json` 保留为未来图组装示例，不能混用为当前可运行项目。
+
+M4 内部配置为 **1.6**，增加必填 campaign；1.5 沙盒仍可读。新增 `target_estimate@1` 的地图点/可空 2×2 协方差、`view_snapshot@3` 的严格目标估计 Envelope，以及受信策略的 `target_estimates_allowed`。旧快照结构保留，PSD、历史时间、权限与重复采样计分仍由领域层执行。动态目标的 motion/health 仅在已确认教学场景启用；详细语义见 [18](../18_CAMPAIGN_DESIGN.md)。

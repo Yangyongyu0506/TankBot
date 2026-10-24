@@ -1,0 +1,181 @@
+{
+  "date": "2026-10-23",
+  "url": "http://127.0.0.1:8765/?runtime=browser",
+  "browser": {
+    "browserName": "firefox",
+    "browserVersion": "157.0.1",
+    "platformName": "linux"
+  },
+  "c0": {
+    "run_id": "9f52b95a07444e8ba4e67f747130a458",
+    "attempt": {
+      "level_id": "c0",
+      "status": "passed",
+      "enemy_hp": null,
+      "enemy_max_hp": null,
+      "progress": {
+        "moved": true,
+        "turned": true,
+        "has_estimate": false,
+        "hit": true
+      },
+      "result": {
+        "passed": true,
+        "finished_tick": 209,
+        "estimate_samples": 0,
+        "rmse_m": null,
+        "scored_samples": 0,
+        "hits": 1
+      }
+    }
+  },
+  "c1": {
+    "run_id": "463df89b12b0418a93f805eb920bad6a",
+    "attempt": {
+      "level_id": "c1",
+      "status": "passed",
+      "enemy_hp": null,
+      "enemy_max_hp": null,
+      "progress": {
+        "moved": true,
+        "turned": true,
+        "has_estimate": true,
+        "hit": true
+      },
+      "result": {
+        "passed": true,
+        "finished_tick": 348,
+        "estimate_samples": 23,
+        "rmse_m": 1.2577794313672007e-15,
+        "scored_samples": 23,
+        "hits": 1
+      }
+    }
+  },
+  "c2": {
+    "run_id": "83f2738037d04066bbd13f96341dbd2f",
+    "attempt": {
+      "level_id": "c2",
+      "status": "passed",
+      "enemy_hp": 0,
+      "enemy_max_hp": 3,
+      "progress": {
+        "moved": true,
+        "turned": true,
+        "has_estimate": true,
+        "hit": true
+      },
+      "result": {
+        "passed": true,
+        "finished_tick": 400,
+        "estimate_samples": 27,
+        "rmse_m": 0.11614839696013564,
+        "scored_samples": 27,
+        "hits": 3
+      }
+    }
+  },
+  "c1_deployment": {
+    "deployment_id": "913ddfe9039249459c5f9499c8cd84a5",
+    "sha256": "545354b74154ff2127a57a6aa767106553199f4e6a05ea3214ee2350ab7e72a3",
+    "revision": "4ab60f0124d95873e1f7e5135aabe96efced922e6506284b2f931004e34e24c8",
+    "activated_tick": 204
+  },
+  "c2_deployment": {
+    "deployment_id": "bd1b381bfa8f4e4799d574e5e2cff67b",
+    "sha256": "a67ba1319b02460c20aceb5f3cd15cd2ebbfd601770f653955a3d7ad498b657f",
+    "revision": "a072b5183986a86699b7d80ec056913fdbd9ef046d2ee4ad6738aa5a20cd170f",
+    "activated_tick": 234
+  },
+  "source_preserved": true,
+  "new_run_per_level": true,
+  "layout": [
+    {
+      "width": 1280,
+      "height": 714,
+      "scrollHeight": 714,
+      "clientHeight": 714,
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "width": 500,
+      "height": 654,
+      "scrollHeight": 654,
+      "clientHeight": 654,
+      "scrollWidth": 500,
+      "clientWidth": 500
+    }
+  ],
+  "screenshot": ".m1-cache/m4-browser-tracking.png",
+  "artifacts": {
+    "config/m1.json": "e72fe659f143eedce250763ab9f95955017d262b9827e07c9d77e4e2183a6d4b",
+    "package-lock.json": "1328e9b32337711192989a6a3f8c423e29da911aa3e4b02ed630e788f792921d",
+    "target/debug/core_worker": "089d03dd49804c37d9dd5f80ded0388b181b6be5f8731602b772a82082696f4c",
+    "build/web/editor-bundle.js": "81dd55c83815bc7180e6a0f41f341fff57cf360985d4bc41ffb3d96f8954319a",
+    "build/browser/authority-bundle.json": "23ae7cfbda0eb667dde689a113f4cade745374df0d0f240b5f915d152deaab25",
+    "build/browser/player-bundle.json": "6fc283b6fa544333a84717e0d08e553cf78b77f3e467e5906a088585a68abd37",
+    "target/wasm32-unknown-unknown/release/tankbot_core.wasm": "be75beeaf2ffc9aadc3bcc20f8230eec0c97f7363cce05e641bd898febb31b71"
+  },
+  "sources": {
+    "core/src/bin/core_worker.rs": "7434afcc8d8f125a617cd2fd6bd4a08c1c4253502412ab0b118707b5ae5732b8",
+    "core/src/cannon.rs": "9fafb1272c3aaef74802f52ad6dc79098d57ae564e478f3edcf1bdee9b5a583b",
+    "core/src/enemy.rs": "2ecbbef00ef641637ef7692f25300ffbc54afa2b0aceb99614aff98d515fa4c1",
+    "core/src/lib.rs": "eadd8b57236bddfd32c1c615185fd7063cfaa9fd387736f205821209b45440bc",
+    "core/src/session.rs": "ab1c3cd627c040ae61de99fd8e71c3ee48fe85fdad0569849bd4eb2802e9be89",
+    "core/src/turret.rs": "cb440f61680a8b8ca0c756ca1d2c606c74251deb7cb08c4f9b4021bd5128b8fd",
+    "core/src/wasm.rs": "26e532b7da41ecc4e3ed49f253c011229555a97ba3113b43c7ce0345c24d257a",
+    "core/src/wheels.rs": "64ef89d50a33830491cd383770a0a0711e2b9a3dc8453fb4f81f5c279257ff8f",
+    "docs/schemas/campaign.schema.json": "f2a3964d4aea84eca13a23085bcfc4d8a94aa1439c344d864d5c055cadfa08f0",
+    "docs/schemas/chassis-controller.schema.json": "63e0520ae3dc054959e13874dceb00e32c1c68498904caf2593361145d86bbd4",
+    "docs/schemas/envelope.schema.json": "71977ed916fa8924dd508ef5c87d7301b59db91d3441cc13b13dfbf885f98858",
+    "docs/schemas/module-contract.schema.json": "e3182ed2a11e390dd1b5439bc123d1f9910cd7b4bb4f88652d420a73e73c410e",
+    "docs/schemas/payloads.schema.json": "74c007f23f826557ebdf1846407904114157222f34d7bedf37661f71119699c8",
+    "docs/schemas/simulation-profile.schema.json": "652cf9ad4be166cf7720035a6188ae5fcaf70ea5f39ff55a4ada6b04255ebc6d",
+    "docs/schemas/view-policy.schema.json": "8f4a470094d41d36976f4cbec5f41d7036d9e50db63fd927beac290c084e6801",
+    "docs/schemas/wheel-calibration.schema.json": "f6f2df6dc57ad85b58faa8220be14a47d39d8c4041b2943e271f01f693e8e819",
+    "docs/schemas/workspace.schema.json": "5115327a09c8bc86fa20c526cd90edac77e71cb8409d909a7acc7a51738ddf83",
+    "host/tankbot_host/__init__.py": "763c3b1f903b5ac960ac4b176ab5ddcc41c8f58601260a13b553d6193e7a9be4",
+    "host/tankbot_host/authority.py": "15b9fb18518065ef568a1c8c6c51c4d395c07168e7389ab6e6ccc4bf4f31fc9d",
+    "host/tankbot_host/browser_server.py": "9fb0223327133e2e7a58e9bb344da7d3c0993ff8de3d8cc8c1850a6c5ad5adee",
+    "host/tankbot_host/campaign.py": "ea8dd80e5cfd9ef92c71d728b803a904692f521bd985aea40ba75f4d775ff752",
+    "host/tankbot_host/campaign_templates.py": "2dd6df3a139f87cdcce17614e2101ba2489434227a6ae89ab6783942847bce1d",
+    "host/tankbot_host/cli.py": "733ec631532fae541bc69a4d4fcca46cab48dcc2acd9b0fbc9abc18767754b65",
+    "host/tankbot_host/deployment.py": "fa583793df622161fb53ebad59ee23c5748c85faf58f4de14ac45b0ba00c99aa",
+    "host/tankbot_host/module_profile.py": "de189fe58fc50730f7be7084cd6c0bd2a45cf46c73265c4e2388690c626330aa",
+    "host/tankbot_host/server.py": "42fe3f20b39174e7129e218735ebf825bc55583631c0ec2dcdc77952eb1c72ba",
+    "host/tankbot_host/supervisor.py": "70111a074b1eda183a9f3d5c36f47e6c4156d375036b173962d781dd3fc912e0",
+    "host/tankbot_host/view.py": "6a885469b3863a095fe809e01a28349588d8a77a31b174000a9bc28eeda359b3",
+    "host/tankbot_host/wheel_geometry.py": "428f2662224b4a5c641a43ecce10a1f7c7c693f4540acadd89baa8edc85690e9",
+    "host/tankbot_host/workspace.py": "e94e090ff20b4f3d3496388a67e213a0139561918b2143754a3439eff4352ac9",
+    "host/tankbot_host/workspace_api.py": "f401ad04f63438d7c4d5d7382ad82b56996d770a9100c0e331db547770ab0e77",
+    "protocol/tankbot_protocol/__init__.py": "0f7f794a2bbdcd6f5b5d59e22378ce97f4f75f51704408206bd173cd719e008c",
+    "protocol/tankbot_protocol/conformance.py": "9e5479e874503017a6f68c98ea42627efbe4bedf9e126607ac5d2378fe36a045",
+    "protocol/tankbot_protocol/message.py": "16b1cc299814b13c8bdcec1a4232cad988985e394ae04bfb8f41748280756d2b",
+    "protocol/tankbot_protocol/transport.py": "68add66e7334450ec44d14c8d7b56ee4139034daef7a206673f1c2bc788a6795",
+    "protocol/tankbot_protocol/validation.py": "01ed6bacb426b68d1891373fb5b1c928ca60fcb9ac7f673689777aa78f56cdfc",
+    "protocol/tankbot_protocol/wire.py": "99221bf373078424017fd9b7b16906c42e6cfb029921382a11908e1bfdfbe7fa",
+    "runtime/browser_authority.py": "f03172d4ac60eba0a0c1b566a85ff0e0d2b0c56061d9f5434bd927f6af516d23",
+    "runtime/module_runner.py": "67bda2c2f7def4f10379b395b40cf4d600f61c372b794f6f1334a17bfb28ff7a",
+    "runtime/source_loader.py": "84f954f7407a34abb694a34f9886db1a5e667d019c42c42b9cb56522cba171e9",
+    "runtime/worker.py": "6dd75518c514e6424c51502cca43678fc3de1eb177d24182649c4a7949053caf",
+    "sdk/python/tankbot/__init__.py": "5f485a439741890bfa58c36eaca563bd1bb2f4802463c970e6c802b820c00c58",
+    "tests/campaign_support.py": "8f9a6d384ec84ab3ba085dbdedc2e5ba3ad25c7fb08cdb99bc0cc9eb525e0d0e",
+    "tools/browser_m4.py": "f74c2adaa51bef0712e5f42cfc1a6b2e1d2384071c942962cc403f975a05fb6b",
+    "web/app.js": "af0f6175c2e3b836a97df5b2519b932c466b93eb386ea91dceb0bf6a619da94b",
+    "web/browser-client.js": "157b7ddbda2b082b4e90b1b9ea3e0a90e3be6e558585cacc9534be40babcd89e",
+    "web/campaign-ui.js": "b442cb426f017868871d08a0f1970802dc5d6a2104e7e407a9dc224eabe65660",
+    "web/core-worker.js": "4c74b0dea36836add37c409917a1fa9d58f184aeb13f75f7457d3be77a684e5b",
+    "web/editor.js": "0589a219e7ed1b95d351373f577529d3edff2a417cee3f2d402cd266e13a43d6",
+    "web/index.html": "c6274275272fa7772d6b1dab2f7c516358db148377f0e8b4735070a6ff26f22e",
+    "web/python-bootstrap.js": "bb6272489f93c339c87b4c934555e8c4eef793f8e0740d56fa838705f1b58483",
+    "web/python-loader.js": "75e4b71e4816489efc9014f9316b70c966dabd58a2009aa66e46fd72d5c67624",
+    "web/rendering.js": "eea1acfbcc98a2044dbb930904ca284349e884a93ef8f04ebab55d639b2c4a3c",
+    "web/robot-worker.js": "df68be72bea12a622dc0b83f4e2aff812ddedc43929e937e52ab83986c279019",
+    "web/runtime-frame.html": "4646a42fcdb08d1dddaf4288c54e8fccdf5b74e3c20883ab498ffb0855a3ba0d",
+    "web/runtime-frame.js": "3e510318e8aca2064f6ede429483a13d05e0519d7850feca36138a719c458442",
+    "web/style.css": "889d6cf990ef497636b70b0657bcf63f45ff5119e8b7c7ee3429b504d64b7ec6",
+    "web/wasm-core.js": "d03756544028a58af10818ade6fcb383450edb9ee45f74daa33966160ffaa635",
+    "web/workspace-ui.js": "d782d586835ee2c72a240d6a4725da20a51d14b5901bce1ea7fd882eb53a5659"
+  }
+}

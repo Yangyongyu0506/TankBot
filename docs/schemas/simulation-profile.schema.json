@@ -5,7 +5,10 @@
   "type": "object",
   "properties": {
     "config_version": {
-      "const": "1.5"
+      "enum": [
+        "1.5",
+        "1.6"
+      ]
     },
     "confirmation_status": {
       "const": "confirmed"
@@ -1124,13 +1127,33 @@
                 },
                 "minItems": 3,
                 "maxItems": 3
+              },
+              "motion": {
+                "$ref": "campaign.schema.json#/$defs/patrol"
+              },
+              "health": {
+                "$ref": "campaign.schema.json#/$defs/health"
               }
             },
             "required": [
               "target_id",
               "pose"
             ],
-            "additionalProperties": false
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": {
+                  "required": [
+                    "health"
+                  ]
+                },
+                "then": {
+                  "required": [
+                    "motion"
+                  ]
+                }
+              }
+            ]
           }
         },
         "collision": {
@@ -1211,7 +1234,8 @@
     "view_mode": {
       "enum": [
         "estimated",
-        "weapons-practice"
+        "weapons-practice",
+        "campaign"
       ]
     },
     "practice_view_policy": {
@@ -1779,6 +1803,9 @@
         "max_archives"
       ],
       "additionalProperties": false
+    },
+    "campaign": {
+      "$ref": "campaign.schema.json"
     }
   },
   "required": [
@@ -1810,5 +1837,21 @@
     "browser",
     "workspace"
   ],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "config_version": {
+            "const": "1.6"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "campaign"
+        ]
+      }
+    }
+  ]
 }

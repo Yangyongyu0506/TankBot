@@ -2,7 +2,7 @@
 
 ## 阅读方式与规范状态
 
-文档基线：`m3-0.1`，更新日期：2026-10-23。已完成 M1/M1b 收尾、M2 本机浏览器/Transport 和 M3 编辑部署验收：实现与限制见 [运行入口](../README.md)、[M1b 验证报告](reports/M1B_VALIDATION.md)；物理模型由用户逐项确认，见 [13](13_PHYSICS_MODEL_DECISIONS.md)。其余功能仍为后续设计，不能把目录完整当作开发完成。
+文档基线：`m4-0.1`，更新日期：2026-10-24。已完成 M1/M1b、M2 本机浏览器/Transport、M3 编辑部署和 M4 C0–C2 教学闭环验收：实现与限制见 [运行入口](../README.md)、[M4 验证报告](reports/M4_VALIDATION.md)；模型由用户逐项确认，见 [13](13_PHYSICS_MODEL_DECISIONS.md)、[18](18_CAMPAIGN_DESIGN.md)。M5 以后仍为后续设计，不能把目录完整当作开发完成。
 
 “必须／不得”为设计约束；“建议／拟采用”为待验证方案。Accepted ADR 表示接受设计原则或接口方向，不表示实现或平台验证完成；Proposed 技术不得当作既成依赖。协议 `1.0` 是**未发布草案**，首次发布前由兼容性审查冻结；发布后执行版本规则。
 
@@ -29,6 +29,10 @@
 | [15 渲染设计](15_RENDERING_DESIGN.md) | 多频率时间插值、固定世界朝向相机、独立底盘外观 |
 | [16 浏览器 Runtime](16_BROWSER_RUNTIME.md) | 共享 Authority、私有 WASM ABI、独立 origin、加载/截止与平台限制 |
 | [17 编辑器与部署](17_EDITOR_AND_DEPLOYMENT.md) | M3 存储、Manifest profile、测试、原子激活、回滚和管理 API |
+| [18 教学关卡](18_CAMPAIGN_DESIGN.md) | M4 C0–C2、Radar、目标估计、巡逻敌车与血量通关 |
+| [19 学习说明与 SE(3)](19_LEARNING_GUIDES_AND_SE3.md) | 所有关卡的类型/步骤、编辑器帮助、矩阵实验、NumPy 与模板升级 |
+| [学习工具验收](reports/LEARNING_VALIDATION.md) | SE(3) 真实运算、逐关说明、类型补全、矩阵实验与无损升级 |
+| [M4 验收](reports/M4_VALIDATION.md) | 原生/Firefox 三关通关、两种跟踪法、来源保留与权限证据 |
 | [M3 验收](reports/M3_VALIDATION.md) | 原生/Firefox 多文件编辑、快照摘要、失败恢复和焦点证据 |
 | [M1 收尾复核](reports/M1_CLOSEOUT.md) | 路线图逐项检查、当前配置与历史证据范围 |
 | [M2 验收](reports/M2_VALIDATION.md) | 真实浏览器双 Worker、故障、49 个夹具与平台矩阵 |

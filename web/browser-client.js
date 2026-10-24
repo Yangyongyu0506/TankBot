@@ -28,7 +28,7 @@ export async function connectBrowser(){
   worker.onerror=()=>fail("Core Worker 已停止");
   worker.postMessage({op:"start",port:channel.port1},[channel.port1]);
   await boot;
-  return {profile,
+  const client={profile,
     view:async()=>{if(failed||!view)throw Error(failed||"Waiting for view");return structuredClone(view);},
     health:()=>health,
     post:(path,value)=>{
@@ -38,4 +38,10 @@ export async function connectBrowser(){
     },
     close:()=>{clearTimeout(startup);dispose();}
   };
+  // Explicit local QA sees only the same authorized snapshot/control adapter as this UI.
+  if(options.probe_enabled)window.tankbotQA=Object.freeze({
+    view:async()=>JSON.stringify(await client.view()),
+    post:async(path,value)=>{const response=await client.post(path,value);return JSON.stringify({ok:response.ok,value:await response.json()});}
+  });
+  return client;
 }

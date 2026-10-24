@@ -70,6 +70,21 @@ test('a player estimate can lag the view while camera and body still interpolate
   assert.deepEqual(camera.project(displayed.pose.x_m,displayed.pose.y_m,1000,700,12),[500,350]);
 });
 
+test('campaign target estimates interpolate at display rate and disappear when revoked', () => {
+  const t=timeline();
+  for(const tick of [6,12,18]){
+    const msg=snapshot(tick);
+    msg.payload.target_estimates=[{simulation_tick:tick-6,frame_id:'map',payload:{x_m:(tick-6)/12,y_m:2,covariance:null}}];
+    t.push(msg,tick*1000/60);
+  }
+  near(t.sample(350).targetEstimate.x_m,.75);
+  near(t.sample(366).targetEstimate.x_m,.83);
+  assert.equal(t.sample(5000).targetEstimate.x_m,1,'do not extrapolate an unseen target');
+  const revoked=snapshot(24);revoked.payload.target_estimates=[];
+  t.push(revoked,5050);
+  assert.equal(t.sample(5060).targetEstimate,null);
+});
+
 test('camera follows xy, preserves world axes through yaw changes, and holds without pose', () => {
   const camera=new FollowCamera([0,0]);
   camera.follow(pose(3,-2,Math.PI/2));

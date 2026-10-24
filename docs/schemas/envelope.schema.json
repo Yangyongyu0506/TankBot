@@ -84,7 +84,9 @@
         "turret_velocity@1",
         "fire_command@1",
         "weapon_state@1",
-        "view_snapshot@2"
+        "view_snapshot@2",
+        "target_estimate@1",
+        "view_snapshot@3"
       ]
     },
     "payload": {
@@ -692,6 +694,50 @@
           },
           "channel": {
             "const": "/view/snapshot"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "target_estimate@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "payloads.schema.json#/$defs/target_estimate"
+          },
+          "message_type": {
+            "const": "topic"
+          },
+          "frame_id": {
+            "const": "map"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "view_snapshot@3"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "payloads.schema.json#/$defs/view_snapshot_v3"
+          },
+          "message_type": {
+            "const": "topic"
+          },
+          "frame_id": {
+            "type": "null"
           }
         }
       }

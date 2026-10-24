@@ -60,3 +60,7 @@ public_profile 包含 rendering（不含全套 chassis_models）与当前 chassi
 ## Acceptance Criteria
 
 JS 行为测试验证不同接收间隔的插值、断流/迟到、出生/消失、角度、估计延迟、权限/跳变、相机矩阵与四轮/履带绘制。Python 回归验证显示配置不改变物理结果、两底盘配置独立且不下发内部对象。浏览器在实际 RAF 中采样，确认同一快照序号下弹丸位置继续改变，转向时车体居中且 camera_yaw=0；分别检查两底盘截图。
+
+## M4 目标估计显示
+
+`SceneTimeline.sample()` 增加可空 `targetEstimate`，从 `view_snapshot@3.target_estimates` 的合法采样时间缓存生成。系统自定位与玩家目标估计同时存在时使用估计显示缓冲，10 Hz 输出也在 RAF 帧之间插值；失去授权/过期时立即隐藏，没有未来外推或真值回退。局部 Radar 面板仅画车体系距离/方位回波；地图目标标记与物理目标严格分离，详见 [18](18_CAMPAIGN_DESIGN.md)。

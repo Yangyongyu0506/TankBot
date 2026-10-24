@@ -34,6 +34,7 @@ def main():
             for dep in pkg["depends"]:
                 include(dep)
         include("jsonschema")
+        include("numpy")
         def fetch(name):
             raw = urllib.request.urlopen(base+name, timeout=90).read()
             (artifacts/name).write_bytes(raw)
@@ -58,13 +59,14 @@ def main():
         list(pool.map(verify, lock["files"].items()))
     common = list((ROOT/"protocol/tankbot_protocol").glob("*.py"))
     common = [p for p in common if p.name in ("__init__.py","message.py","wire.py")]
-    common += [ROOT/"sdk/python/tankbot/__init__.py", ROOT/"runtime/module_runner.py", ROOT/"runtime/source_loader.py"]
+    common += list((ROOT/"sdk/python/tankbot").glob("*.py")) + [ROOT/"runtime/module_runner.py", ROOT/"runtime/source_loader.py"]
     # Player bundle contains SDK/runner only. Workspace sources are a separate deployment snapshot.
     (DEST/"player-bundle.json").write_text(json.dumps(bundle(common)))
     trusted = common + list((ROOT/"host/tankbot_host").glob("*.py"))
     trusted += list((ROOT/"protocol/tankbot_protocol").glob("*.py")) + [ROOT/"runtime/browser_authority.py"]
     trusted += list((ROOT/"docs/schemas").glob("*.schema.json"))
     trusted += list((ROOT/"docs/examples").glob("*.json"))
+    trusted += [ROOT/"requirements.txt", ROOT/"config/browser-assets.lock.json"]
     (DEST/"authority-bundle.json").write_text(json.dumps(bundle(trusted)))
     print(f"Browser bundles ready; pinned Pyodide {lock['version']}, {sum(f['bytes'] for f in lock['files'].values())} artifact bytes")
 

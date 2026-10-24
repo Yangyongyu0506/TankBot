@@ -2,6 +2,7 @@
 self.tankbotPython = async function(bundleURL, trusted, loader) {
   const py = await loader({indexURL:"/pyodide/", stdout:()=>{}, stderr:()=>{}});
   if(trusted) await py.loadPackage("jsonschema");
+  else await py.loadPackage("numpy");
   const bundle = await (await fetch(bundleURL)).json();
   for(const [relative,source] of Object.entries(bundle)) {
     const path="/tankbot/"+relative;

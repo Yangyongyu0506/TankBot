@@ -98,7 +98,7 @@ def runtime_event(event):
         return
     if event["op"] == "ready":
         worker.ready = True
-        worker.startup_result = {"ready": True, "unit_tests": event.get("unit_tests", 0)}
+        worker.startup_result = {"ready": True, "unit_tests": event.get("unit_tests", 0), "runtime_packages": event.get("runtime_packages", {})}
     elif event["op"] == "result":
         worker.receive(event["raw"], event["elapsed_ms"])
     elif event["op"] == "fault":
@@ -107,9 +107,9 @@ def runtime_event(event):
         worker.close()
 
 
-def start():
+def start(sources=None):
     from tankbot_host.deployment import DeploymentManager
-    authority = Authority(load_config("/tankbot/config/m1.json"), workspace="/workspace",
+    authority = Authority(load_config("/tankbot/config/m1.json"), startup_sources=sources,
                           core_factory=WasmCore, worker_factory=BrowserSupervisor)
     authority.deployment = DeploymentManager(authority)
     return authority

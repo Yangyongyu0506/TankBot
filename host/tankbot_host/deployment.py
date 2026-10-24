@@ -10,23 +10,29 @@ from tankbot_protocol.wire import strict_loads
 from .workspace import digest, validate_files, artifact_files, ROOT
 
 
-def environment(config, core_sha256):
+def environment(config, core_sha256, runtime_packages=None):
     paths = list((ROOT / "docs/schemas").glob("*.json"))
     paths += list((ROOT / "sdk/python").rglob("*.py"))
     paths += list((ROOT / "runtime").glob("*.py"))
     paths += list((ROOT / "host/tankbot_host").glob("*.py"))
     paths += list((ROOT / "protocol/tankbot_protocol").glob("*.py"))
+    paths += [ROOT / "requirements.txt", ROOT / "config/browser-assets.lock.json"]
     return digest({"config": config, "core_sha256": core_sha256, "python": sys.version, "platform": sys.platform,
+                   "runtime_packages": runtime_packages or {},
                    "sources": {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(paths)}})
 
 
 def inspect_snapshot(snapshot, authority):
     files = snapshot["files"]
     validate_files(files, authority.config["workspace"])
+    if authority.config.get("campaign", {}).get("active_level"):
+        from .campaign_templates import TEMPLATE_VERSION
+        if not files.get("campaign_robot.py", "").startswith("# TankBot managed scaffold " + TEMPLATE_VERSION):
+            raise ValueError("TEACHING_TEMPLATE_UPGRADE_REQUIRED: 请预览教学模板升级并采用系统脚手架；算法文件会保留")
     revision = snapshot["revision"]
     if revision != digest({"files": files, "ledger": snapshot["ledger"]}):
         raise ValueError("SNAPSHOT_DIGEST_MISMATCH")
-    reserved = set(sys.stdlib_module_names) | {"tankbot", "tankbot_protocol", "module_runner", "source_loader", "js", "pyodide"}
+    reserved = set(sys.stdlib_module_names) | {"tankbot", "tankbot_protocol", "module_runner", "source_loader", "js", "pyodide", "numpy"}
     for path, source in files.items():
         if path.endswith(".py") and path.split("/")[0].split(".")[0] in reserved:
             raise ValueError("RESERVED_MODULE: " + path)
@@ -53,10 +59,13 @@ def inspect_snapshot(snapshot, authority):
     connections += [{"from": f"{mid}.{port}", "to": channel} for port, channel in authority.output_channels.items()]
     if sorted(manifest["connections"], key=digest) != sorted(connections, key=digest):
         raise ValueError("UNAUTHORIZED_CONNECTION")
-    if manifest["pose_source"] != {"mode": "player", "module_id": mid, "fallback": "none"}:
+    expected_source = ({"mode": "system", "module_id": None, "fallback": "none"}
+                       if authority.config.get("campaign", {}).get("active_level") else
+                       {"mode": "player", "module_id": mid, "fallback": "none"})
+    if manifest["pose_source"] != expected_source:
         raise ValueError("UNAUTHORIZED_POSE_SOURCE")
     packaged = artifact_files(files)
-    env = environment(authority.config, authority.core.build_sha256)
+    env = environment(authority.config, authority.core.build_sha256, (authority.worker.startup_result or {}).get("runtime_packages", {}))
     sha = digest({"files": {p: hashlib.sha256(s.encode()).hexdigest() for p, s in packaged.items()}, "environment": env})
     return {"sha256": sha, "revision": revision, "environment": env, "files": packaged,
             "test_files": copy.deepcopy(files), "contract": contract, "module_config": module["config"]}
@@ -79,6 +88,8 @@ class DeploymentManager:
                               "run_id": self.authority.run_id, "tick": self.authority.tick})
 
     def start(self, kind, snapshot=None, sha256=None):
+        if self.authority.campaign is not None and self.authority.campaign.status != "active":
+            raise ValueError("ATTEMPT_ENDED: 请先重试或开始下一关")
         if self.job is not None:
             raise ValueError("DEPLOYMENT_BUSY")
         a = self.authority
@@ -93,7 +104,7 @@ class DeploymentManager:
             raise ValueError("DEPLOYMENT_LIMIT: export your project and restart the session")
         if kind != "test":
             report = self.reports.get(sha)
-            if not report or report["revision"] != artifact["revision"] or report["environment"] != environment(a.config, a.core.build_sha256):
+            if not report or report["revision"] != artifact["revision"] or report["environment"] != environment(a.config, a.core.build_sha256, (a.worker.startup_result or {}).get("runtime_packages", {})):
                 raise ValueError("TEST_REQUIRED_FOR_THIS_SNAPSHOT_AND_PROFILE")
         init = copy.deepcopy(a.worker_init)
         init["contract"] = copy.deepcopy(artifact["contract"])
@@ -124,7 +135,7 @@ class DeploymentManager:
             raise ValueError("INVALID_TEST_RESPONSE")
         if p["results"] != [{"module_id": a.contract["module_id"], "status": "completed", "error_code": None}]:
             raise ValueError("MODULE_ERROR")
-        grants = {(job["init"]["publisher_id"], ch, a.contract["outputs"][port]["schema"], None if port == "fire" else "map" if port == "pose" else "base_link") for port, ch in a.output_channels.items()}
+        grants = {(job["init"]["publisher_id"], ch, a.contract["outputs"][port]["schema"], None if port == "fire" else "map" if port in ("pose", "target") else "base_link") for port, ch in a.output_channels.items()}
         seen = set()
         for msg in p["outputs"]:
             if msg["channel"] in seen:
@@ -200,6 +211,7 @@ class DeploymentManager:
             a._turret_target = None
         a._fire_pending = [f for f in a._fire_pending if f["publisher_id"] != old_publisher]
         a._candidates.clear()
+        a._target_estimate = None
         a.selector.canonical = None
         a.view_revision += 1
         for table in (a.validator.sequences, a.validator.target_ticks):

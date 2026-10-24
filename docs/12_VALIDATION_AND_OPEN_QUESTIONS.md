@@ -27,7 +27,7 @@
 - 全部 Envelope 使用 `protocol_version`、`message_type`、`channel`、`sequence_number`、`simulation_tick`、`simulation_time_ns`、`run_id`、`publisher_id`、`request_id`、`frame_id`、`schema`、`payload`；不存在另一套 kind/data 别名。
 - 玩家位姿只写候选；Selector 独占 `/robot/localization/pose`。`/system/pose` 不是公开 Topic，系统源许可不会因候选超时自动恢复。
 - `world` 是私有物理系，`map` 与 `odom` 是公开声明系；显示插值不反馈物理。权威状态不进入 UI/SDK 的通用序列化接口。
-- sample tick、delivery tick、activation tick 和 output commit tick 分开；M1 确认 60 Hz 物理/4 子步、30 Hz 轮组/IMU、10 Hz 算法；5 Hz Radar 仍未实现。
+- sample tick、delivery tick、activation tick 和 output commit tick 分开；M1 确认 60 Hz 物理/4 子步、30 Hz 轮组/IMU、10 Hz 算法；M4 另经用户确认实现 10 Hz Radar，保持原固定提交语义。
 - 连续速度使用 `/robot/cmd_vel` / `twist@1`，保留 vx/vy/wz 对应的 linear.x/y、angular.z；payload 无执行起止时间。Host 决定内部提交时刻，Core 内底盘控制器按生成时间与 cmd_vel_timeout 检查新鲜度。差速模型不能横移，M1 已实现四轮径向全向轮的聚合刚体模型与 JointState 观测。
 - Workspace revision 可编辑，DeploymentArtifact 不可变；测试报告绑定摘要；重启/部署不隐含重置 World，reset/seek 才新建 run。
 - JSON Schema 只处理结构；PSD、帧关系、跨字段时间与权限有独立验证责任。文档检查不声称实现这些领域验证器。
@@ -133,4 +133,4 @@ O01 已在 Linux 原生与 Firefox WASM 范围接受，ADR-0002 改 Accepted；O
 
 ## M3 实施状态
 
-M3 多文件编辑、非覆盖模板、CAS/文件锁、快照报告、独立 Test Runtime、tick 边界部署与显式回滚已验证。61 项 Python 测试与原生/Firefox UI 记录见 [M3 报告](reports/M3_VALIDATION.md)。单模块 profile、观察式仿真测试、会话内 Ready 和启动器存储限制见 [17](17_EDITOR_AND_DEPLOYMENT.md)。M4 新增传感器模型仍须用户确认。
+M3 多文件编辑、非覆盖模板、CAS/文件锁、快照报告、独立 Test Runtime、tick 边界部署与显式回滚已验证。历史测试与原生/Firefox UI 记录见 [M3 报告](reports/M3_VALIDATION.md)。单模块 profile、观察式仿真测试、会话内 Ready 和启动器存储限制见 [17](17_EDITOR_AND_DEPLOYMENT.md)。M4 新增模型已逐项确认，C0–C2、两种跟踪法、结束后评分及原生/Firefox 通关记录见 [M4 报告](reports/M4_VALIDATION.md)。

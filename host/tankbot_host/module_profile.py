@@ -4,6 +4,17 @@ def module_profile(config):
     period = config["clock"]["physics_hz"] // config["clock"]["algorithm_hz"]
     delay = config["runtime"]["commit_delay_ticks"]
     module_id = config["module"]["module_id"]
+    if config.get("campaign", {}).get("active_level"):
+        return ({"contract_version": "1.0", "module_id": module_id,
+                 "entry_point": config["module"]["entry_point"],
+                 "inputs": {"self_pose": {"schema": "pose2d@1", "required": True, "max_age_ticks": config["runtime"]["input_max_age_ticks"]},
+                            "radar": {"schema": "radar@1", "required": False, "max_age_ticks": config["runtime"]["input_max_age_ticks"]}},
+                 "outputs": {"target": {"schema": "target_estimate@1"}},
+                 "execution": {"mode": "periodic", "period_ticks": period, "deadline_ticks": delay,
+                               "budget_ms": config["runtime"]["batch_budget_ms"]},
+                 "dependencies": [], "state_version": "1"},
+                {"self_pose": "/robot/localization/pose", "radar": "/robot/sensors/radar"},
+                {"target": f"/robot/estimates/{module_id}/target"})
     input_channels = {"wheels": "/robot/sensors/joint_states", "imu": "/robot/sensors/imu"}
     output_channels = {"pose": f"/robot/estimates/{module_id}/pose"}
     if config["weapons"]["enabled"]:

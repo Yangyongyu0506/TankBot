@@ -55,7 +55,7 @@ class Validator:
             raise Rejected("INVALID_TIMESTAMP")
         if tick > now or (source_tick is not None and tick > source_tick):
             raise Rejected("INVALID_TIMESTAMP")
-        if msg["schema"] == "pose2d@1":
+        if msg["schema"] in ("pose2d@1", "target_estimate@1"):
             stale = (now if source_tick is None else source_tick)-tick > self.config["runtime"]["estimate_history_ticks"]
         elif msg["schema"] in ("twist@1", "turret_velocity@1", "fire_command@1"):
             timeout = self.config["controller"]["cmd_vel_timeout_s"] if msg["schema"] == "twist@1" else self.config["weapons"]["turret"]["cmd_vel_timeout_s"]
@@ -68,6 +68,9 @@ class Validator:
             raise Rejected("OUT_OF_ORDER")
         if msg["schema"] == "pose2d@1":
             self.covariance(msg["payload"]["covariance"])
+        if msg["schema"] == "target_estimate@1" and msg["payload"]["covariance"] is not None:
+            a, b, c, d = msg["payload"]["covariance"]
+            self.covariance([a, b, 0, c, d, 0, 0, 0, 0])
         if msg["schema"] in ("twist@1", "turret_velocity@1"):
             if tick < self.target_ticks.get(key, -1):
                 raise Rejected("OUT_OF_ORDER")

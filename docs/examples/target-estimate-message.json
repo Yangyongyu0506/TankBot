@@ -1,0 +1,23 @@
+{
+  "protocol_version": "1.0",
+  "message_type": "topic",
+  "channel": "/robot/estimates/perception/target",
+  "sequence_number": 1,
+  "simulation_tick": 120,
+  "simulation_time_ns": 2000000000,
+  "run_id": "run-demo-001",
+  "publisher_id": "module:perception",
+  "request_id": null,
+  "frame_id": "map",
+  "schema": "target_estimate@1",
+  "payload": {
+    "x_m": 2.0,
+    "y_m": 1.0,
+    "covariance": [
+      0.01,
+      0.0,
+      0.0,
+      0.01
+    ]
+  }
+}

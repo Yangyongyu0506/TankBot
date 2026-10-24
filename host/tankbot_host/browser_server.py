@@ -14,6 +14,7 @@ class BrowserServer:
         self.config = config
         from .workspace_api import WorkspaceAPI
         self.workspace = WorkspaceAPI(config, workspace, workspace_store)
+        self.campaign_directory = (Path(workspace_store) / "campaign" if workspace_store and not config.get("campaign", {}).get("active_level") else workspace_store)
         self.token = secrets.token_urlsafe()
         self.ui_origin = f"http://127.0.0.1:{config['host']['port']}"
         self.runtime_origin = f"http://127.0.0.1:{config['browser']['runtime_port']}"
@@ -26,19 +27,24 @@ class BrowserServer:
         if not wasm.is_file():
             raise ValueError("Run tools/build.py --wasm --release first")
         from .workspace import read_sources
-        sources = read_sources(workspace or ROOT/"examples/robot", config["workspace"])
+        from .workspace import starter
+        sources = starter(config) if config.get("campaign", {}).get("active_level") else read_sources(workspace or ROOT/"examples/robot", config["workspace"])
+        if workspace is not None and config.get("campaign", {}).get("active_level"):
+            sources.update(read_sources(workspace, config["workspace"]))
         meta=json.loads((ROOT/"config/browser-assets.lock.json").read_text())
         runtime_files={"/"+name:ROOT/"web"/name for name in ("runtime-frame.html","runtime-frame.js","robot-worker.js","python-bootstrap.js")}
         runtime_files["/player-bundle.json"]=assets/"player-bundle.json"
         shared={"/pyodide/"+name:assets/"pyodide"/name for name in meta["files"]}
         runtime_files.update(shared)
-        ui_files={"/"+name:ROOT/"web"/name for name in ("index.html","app.js","style.css","rendering.js","browser-client.js","core-worker.js","wasm-core.js","python-loader.js","python-bootstrap.js","workspace-ui.js")}
+        ui_files={"/"+name:ROOT/"web"/name for name in ("index.html","app.js","style.css","rendering.js","browser-client.js","core-worker.js","wasm-core.js","python-loader.js","python-bootstrap.js","workspace-ui.js","campaign-ui.js","learning-ui.js")}
         ui_files["/THIRD_PARTY_NOTICES.txt"] = ROOT/"build/web/THIRD_PARTY_NOTICES.txt"
         ui_files["/editor-bundle.js"] = ROOT/"build/web/editor-bundle.js"
         ui_files.update(shared)
         ui_files.update({"/":ROOT/"web/index.html","/tankbot_core.wasm":wasm,"/authority-bundle.json":assets/"authority-bundle.json"})
         ui_json={"/authority-config.json":config,"/deployment.json":sources,
                  "/browser-profile.json":{"runtime_origin":self.runtime_origin,**config["browser"]}}
+        self.ui_json = ui_json
+        self.campaign_lock = threading.Lock()
         owner=self
 
         def handler(runtime):
@@ -51,11 +57,17 @@ class BrowserServer:
                         self.send_error(403); return
                     try:
                         size = int(self.headers.get("Content-Length", "0"))
-                        if self.headers.get("Content-Type") != "application/json" or not 0 < size <= config["runtime"]["max_message_bytes"] or not self.path.startswith("/api/workspace/"):
+                        if self.headers.get("Content-Type") != "application/json" or not 0 < size <= config["runtime"]["max_message_bytes"] or not (self.path.startswith("/api/workspace/") or self.path == "/api/campaign/start"):
                             raise ValueError("INVALID_REQUEST")
                         self.connection.settimeout(config["runtime"]["startup_timeout_s"])
                         value = strict_loads(self.rfile.read(size))
-                        result = owner.workspace.post(self.path.rsplit("/", 1)[1], value)
+                        if self.path == "/api/campaign/start":
+                            if not isinstance(value, dict) or set(value) != {"level_id"}:
+                                raise ValueError("INVALID_LEVEL_REQUEST")
+                            with owner.campaign_lock:
+                                result = owner.start_level(value["level_id"])
+                        else:
+                            result = owner.workspace.post(self.path.rsplit("/", 1)[1], value)
                         status = 200
                     except (ValueError, KeyError, TypeError, OSError, RecursionError) as error:
                         result = {"error": str(error)[:512]}; status = 400
@@ -99,6 +111,20 @@ class BrowserServer:
             self.runtime=ThreadingHTTPServer(("127.0.0.1",config["browser"]["runtime_port"]),handler(True))
         except BaseException:
             self.ui.server_close();raise
+
+    def start_level(self, level_id):
+        from .campaign import configure, active
+        from .workspace_api import WorkspaceAPI
+        from .workspace import starter
+        config = configure(self.config, level_id)
+        if active(self.config):
+            self.workspace.unlock(config)
+        else:
+            self.workspace = WorkspaceAPI(config, directory=self.campaign_directory)
+        self.config = config
+        self.ui_json["/authority-config.json"] = config
+        self.ui_json["/deployment.json"] = starter(config)
+        return {"level_id": level_id, "reload_required": True}
 
     def serve(self):
         thread=threading.Thread(target=self.runtime.serve_forever,daemon=True);thread.start()

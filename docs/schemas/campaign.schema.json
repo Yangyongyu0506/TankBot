@@ -1,0 +1,371 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tankbot.example/schemas/v1/campaign.schema.json",
+  "title": "TankBot M4 Campaign profile",
+  "type": "object",
+  "properties": {
+    "active_level": {
+      "enum": [
+        null,
+        "c0",
+        "c1",
+        "c2"
+      ]
+    },
+    "module_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,47}$"
+    },
+    "entry_point": {
+      "type": "string"
+    },
+    "initial_pose": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "initial_velocity": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "radar": {
+      "type": "object",
+      "properties": {
+        "mount_m": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "yaw_rad": {
+          "type": "number"
+        },
+        "frame_id": {
+          "const": "radar_link"
+        },
+        "range_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "field_of_view_rad": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 6.283185307179586
+        },
+        "update_hz": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "occlusion": {
+          "const": "walls"
+        },
+        "measurement": {
+          "const": "target_center"
+        },
+        "latency_ticks": {
+          "const": 0
+        },
+        "range_bias_m": {
+          "const": 0
+        },
+        "bearing_bias_rad": {
+          "const": 0
+        },
+        "profiles": {
+          "type": "object",
+          "properties": {
+            "ideal": {
+              "type": "object",
+              "properties": {
+                "range_stddev_m": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "bearing_stddev_rad": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "drop_probability": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              },
+              "required": [
+                "range_stddev_m",
+                "bearing_stddev_rad",
+                "drop_probability"
+              ],
+              "additionalProperties": false
+            },
+            "noisy": {
+              "type": "object",
+              "properties": {
+                "range_stddev_m": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "bearing_stddev_rad": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "drop_probability": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              },
+              "required": [
+                "range_stddev_m",
+                "bearing_stddev_rad",
+                "drop_probability"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "ideal",
+            "noisy"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "mount_m",
+        "yaw_rad",
+        "frame_id",
+        "range_m",
+        "field_of_view_rad",
+        "update_hz",
+        "occlusion",
+        "measurement",
+        "latency_ticks",
+        "range_bias_m",
+        "bearing_bias_rad",
+        "profiles"
+      ],
+      "additionalProperties": false
+    },
+    "levels": {
+      "type": "object",
+      "properties": {
+        "c0": {
+          "$ref": "#/$defs/level"
+        },
+        "c1": {
+          "$ref": "#/$defs/level"
+        },
+        "c2": {
+          "$ref": "#/$defs/level"
+        }
+      },
+      "required": [
+        "c0",
+        "c1",
+        "c2"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "active_level",
+    "module_id",
+    "entry_point",
+    "initial_pose",
+    "initial_velocity",
+    "radar",
+    "levels"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "patrol": {
+      "type": "object",
+      "properties": {
+        "chassis": {
+          "enum": [
+            "differential",
+            "omnidirectional"
+          ]
+        },
+        "initial_velocity": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "initial_turret_angle_rad": {
+          "type": "number"
+        },
+        "initial_turret_rate_radps": {
+          "type": "number"
+        },
+        "control_hz": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "waypoints_m": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "minItems": 1,
+          "maxItems": 64
+        },
+        "forward_speed_mps": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "heading_gain_per_s": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "max_yaw_rate_radps": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "turn_in_place_threshold_rad": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "arrival_radius_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "chassis",
+        "initial_velocity",
+        "initial_turret_angle_rad",
+        "initial_turret_rate_radps",
+        "control_hz",
+        "waypoints_m",
+        "forward_speed_mps",
+        "heading_gain_per_s",
+        "max_yaw_rate_radps",
+        "turn_in_place_threshold_rad",
+        "arrival_radius_m"
+      ],
+      "additionalProperties": false
+    },
+    "health": {
+      "type": "object",
+      "properties": {
+        "max_hp": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "damage_per_hit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "collision_damage": {
+          "const": 0
+        },
+        "death_behavior": {
+          "const": "remove_at_substep_end"
+        }
+      },
+      "required": [
+        "max_hp",
+        "damage_per_hit",
+        "collision_damage",
+        "death_behavior"
+      ],
+      "additionalProperties": false
+    },
+    "level": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "problem": {
+          "type": "string",
+          "maxLength": 1024
+        },
+        "hints": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 512
+          },
+          "maxItems": 16
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "maxItems": 32
+        },
+        "radar_profile": {
+          "enum": [
+            null,
+            "ideal",
+            "noisy"
+          ]
+        },
+        "target": {
+          "$ref": "simulation-profile.schema.json#/properties/weapons/properties/targets/items"
+        },
+        "objective": {
+          "type": "object",
+          "properties": {
+            "movement_m": {
+              "type": "number",
+              "minimum": 0
+            },
+            "turn_rad": {
+              "type": "number",
+              "minimum": 0
+            },
+            "required_hits": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "required_estimates": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "movement_m",
+            "turn_rad",
+            "required_hits",
+            "required_estimates"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "title",
+        "problem",
+        "hints",
+        "capabilities",
+        "radar_profile",
+        "target",
+        "objective"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

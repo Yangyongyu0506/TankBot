@@ -5,9 +5,10 @@ from .authority import Authority, load_config, ROOT
 
 
 def main():
-    parser = argparse.ArgumentParser(description="TankBot M1 trusted-local prototype")
+    parser = argparse.ArgumentParser(description="TankBot trusted-local simulation and teaching levels")
     parser.add_argument("mode", choices=("serve", "browser", "headless", "probe"))
     parser.add_argument("--config", type=Path, default=ROOT / "config/m1.json")
+    parser.add_argument("--level", choices=("c0", "c1", "c2"), help="Start a teaching level with its authorized capabilities")
     parser.add_argument("--chassis", choices=("differential", "omnidirectional"))
     parser.add_argument("--core-binary", type=Path)
     parser.add_argument("--workspace", type=Path)
@@ -19,6 +20,11 @@ def main():
     parser.add_argument("--browser-qa", action="store_true", help="Run explicit M2 browser security/fixture probes")
     args = parser.parse_args()
     config = load_config(args.config)
+    if args.level:
+        if args.view or args.robot_demo:
+            parser.error("--level 不可与 --view 或 --robot-demo 合用")
+        from .campaign import configure
+        config = configure(config, args.level)
     if args.chassis:
         config["scene"]["default_chassis"] = args.chassis
     if args.view:
@@ -48,6 +54,12 @@ def main():
         finally:
             core.close()
         return
+    if config.get("campaign", {}).get("active_level"):
+        from .campaign import ensure_native_numpy
+        try:
+            ensure_native_numpy()
+        except ValueError as error:
+            parser.error(str(error))
     authority = Authority(config, workspace=args.workspace, binary=args.core_binary, controlled=args.mode=="headless")
     try:
         if args.mode == "serve":
@@ -61,6 +73,7 @@ def main():
                 authority.advance()
             print(json.dumps({"tick": authority.tick, "truth_digest": authority.truth_digest(),
                               "pose_commits": sum(e["event"]=="pose_commit" for e in authority.audit),
-                              "rejections": [e for e in authority.audit if e["event"]=="rejected"]}, indent=2))
+                              "rejections": [e for e in authority.audit if e["event"]=="rejected"],
+                              "campaign": authority.campaign_status()}, indent=2))
     finally:
         authority.close()

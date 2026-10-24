@@ -79,10 +79,17 @@ def starter(config):
                 "connections": [{"from": channel, "to": f"{module_id}.{port}"} for port, channel in inputs.items()] +
                                [{"from": f"{module_id}.{port}", "to": channel} for port, channel in outputs.items()],
                 "dependencies": [], "pose_source": {"mode": "player", "module_id": module_id, "fallback": "none"}}
-    files = read_sources(ROOT / "examples/robot", config["workspace"])
+    level = config.get("campaign", {}).get("active_level")
+    if level:
+        from .campaign_templates import teaching_sources
+        files = teaching_sources(level)
+        manifest["pose_source"] = {"mode": "system", "module_id": None, "fallback": "none"}
+    else:
+        files = read_sources(ROOT / "examples/robot", config["workspace"])
     files["tankbot.json"] = json.dumps(manifest, indent=2) + "\n"
     files[f"contracts/{module_id}.json"] = json.dumps(contract, indent=2) + "\n"
-    files["tests/test_project.py"] = 'import unittest\n\nclass ProjectTest(unittest.TestCase):\n    def test_import(self):\n        from localization.kinematics import body_increment\n        self.assertTrue(callable(body_increment))\n'
+    if not level:
+        files["tests/test_project.py"] = 'import unittest\n\nclass ProjectTest(unittest.TestCase):\n    def test_import(self) -> None:\n        from localization.kinematics import body_increment\n        self.assertTrue(callable(body_increment))\n'
     return files
 
 

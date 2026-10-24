@@ -23,6 +23,7 @@ class LocalServer:
         from .workspace_api import WorkspaceAPI
         from .deployment import DeploymentManager
         self.workspace = WorkspaceAPI(config, workspace, workspace_store)
+        self.campaign_directory = (Path(workspace_store) / "campaign" if workspace_store and not config.get("campaign", {}).get("active_level") else workspace_store)
         authority.deployment = DeploymentManager(authority)
         if config["host"]["bind"] != "127.0.0.1":
             raise ValueError("M1 supports loopback only")
@@ -58,6 +59,10 @@ class LocalServer:
                     value = owner.workspace.get()
                     value["control_token"] = owner.token
                     self.reply(200, json.dumps(value).encode())
+                elif path == "/api/campaign":
+                    with owner.lock:
+                        value = owner.authority.campaign_status()
+                    self.reply(200, json.dumps(value).encode())
                 elif path == "/api/deployment":
                     with owner.lock:
                         value = owner.authority.deployment.status()
@@ -73,7 +78,7 @@ class LocalServer:
                         else:
                             value = copy.deepcopy(owner.authority.view)
                     self.reply(200, json.dumps(value, allow_nan=False).encode())
-                elif path in ("/", "/index.html", "/app.js", "/rendering.js", "/browser-client.js", "/style.css", "/workspace-ui.js"):
+                elif path in ("/", "/index.html", "/app.js", "/rendering.js", "/browser-client.js", "/style.css", "/workspace-ui.js", "/campaign-ui.js", "/learning-ui.js"):
                     file = ROOT / "web" / ("index.html" if path == "/" else path[1:])
                     kind = {".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css"}[file.suffix]
                     self.reply(200, file.read_bytes(), kind)
@@ -86,7 +91,7 @@ class LocalServer:
                 if not self.valid_host() or self.headers.get("Origin") not in origins or self.headers.get("X-TankBot-Control") != owner.token:
                     self.reply(403, b'{}')
                     return
-                if self.path not in ("/api/cmd_vel", "/api/turret_cmd_vel", "/api/fire") and not self.path.startswith(("/api/workspace/", "/api/deployment/")):
+                if self.path not in ("/api/cmd_vel", "/api/turret_cmd_vel", "/api/fire", "/api/campaign/start", "/api/campaign/finish") and not self.path.startswith(("/api/workspace/", "/api/deployment/")):
                     self.reply(404, b'{}')
                     return
                 try:
@@ -100,7 +105,15 @@ class LocalServer:
                         self.reply(200, json.dumps(result).encode())
                         return
                     with owner.lock:
-                        if self.path.startswith("/api/deployment/"):
+                        if self.path == "/api/campaign/start":
+                            if not isinstance(value, dict) or set(value) != {"level_id"}:
+                                raise ValueError("INVALID_LEVEL_REQUEST")
+                            result = owner.start_level(value["level_id"])
+                        elif self.path == "/api/campaign/finish":
+                            if value != {}:
+                                raise ValueError("INVALID_LEVEL_REQUEST")
+                            result = owner.authority.finish_campaign()
+                        elif self.path.startswith("/api/deployment/"):
                             operation = self.path.rsplit("/", 1)[1]
                             snapshot = owner.workspace.store.read(value["revision"]) if operation in ("test", "deploy") else None
                             result = owner.authority.deployment.start(operation, snapshot=snapshot, sha256=value.get("sha256"))
@@ -119,6 +132,28 @@ class LocalServer:
         self.http = ThreadingHTTPServer((config["host"]["bind"], config["host"]["port"]), Handler)
         self.http.daemon_threads = True
         self.thread = threading.Thread(target=self._simulate, daemon=True)
+
+    def start_level(self, level_id):
+        from .authority import Authority
+        from .campaign import configure, active, ensure_native_numpy
+        from .workspace_api import WorkspaceAPI
+        from .deployment import DeploymentManager
+        old = self.authority
+        ensure_native_numpy()
+        config = configure(old.config, level_id)
+        candidate = Authority(config, binary=getattr(old.core, "binary", None))
+        try:
+            if active(old.config):
+                self.workspace.unlock(config)
+            else:
+                self.workspace = WorkspaceAPI(config, directory=self.campaign_directory)
+            candidate.deployment = DeploymentManager(candidate)
+        except BaseException:
+            candidate.close()
+            raise
+        self.authority = candidate
+        old.close()
+        return candidate.public_profile()
 
     def _simulate(self):
         deadline = time.monotonic()
@@ -141,7 +176,7 @@ class LocalServer:
     def serve(self):
         self.thread.start()
         host, port = self.http.server_address
-        print(f"TankBot M1: http://{host}:{port}  [trusted local code only]", flush=True)
+        print(f"TankBot: http://{host}:{port}  [trusted local code only]", flush=True)
         try:
             self.http.serve_forever()
         finally:

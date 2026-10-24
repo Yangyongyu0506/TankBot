@@ -98,3 +98,7 @@ CodeMirror 6 + Python/JSON 扩展 + 可切换 Vim，通过 esbuild 本地打包�
 验收追踪见 [M3 报告](reports/M3_VALIDATION.md)：多文件/测试真实执行，非覆盖/冲突/磁盘错误、摘要与环境匹配、旧版本保留、部署门/World 连续、回滚新实例、浏览器刷新持久化和焦点隔离。未决项为其他浏览器/OS、独立浏览器存储、完整模块图、长时资源/磁盘回收及强服务端沙箱；不作为本机 M3 已验证能力宣传。
 
 弹窗交互补充验证：`tools/browser_dialog.py` 在真实 Firefox 中检查顶部按钮、F2 切换、× 关闭、草稿/文件选择保留、焦点限制、打开时释放按键及 HUD 页签；实测 1440×814、1280×634、1024×526、500×654 的内容视口无页面滚动。代码、文件列表及工具区仅在各自面板内部滚动。运行 `tools/browser_m3.py` 继续验证弹窗内完整 Edit/Test/Deploy/回滚流程；截图与布局记录保存在 `.m1-cache/`。
+
+M4 新增独立的 Campaign 单模块 profile：标准输入是授权系统自身位姿和可选 Radar，输出是目标估计。三关共用一个 Contract，阶段解锁只补缺失文件，并为每个阶段保留独立 ledger；Manifest 的系统位姿来源由 Authority 校验。继续复用本文件定义的 Test/Deploy/回滚边界，具体接口与课堂函数/类见 [18](18_CAMPAIGN_DESIGN.md)。
+
+学习工具增量见 [19](19_LEARNING_GUIDES_AND_SE3.md)：每关默认说明、函数签名、类型搜索/悬停/补全、矩阵实验和 Python 速查共用 Workspace 弹窗；页面不滚动。测试环境摘要另绑定 NumPy 实际包版本、requirements 与浏览器资源锁。旧教学脚手架通过显式预览升级，算法文件不自动替换。

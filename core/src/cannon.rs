@@ -40,6 +40,8 @@ pub struct Numerics {
 pub struct TargetConfig {
     pub target_id: String,
     pub pose: [f64; 3],
+    pub motion: Option<crate::enemy::PatrolConfig>,
+    pub health: Option<crate::enemy::HealthConfig>,
 }
 #[derive(Clone, Deserialize, Serialize, Debug)]
 #[serde(deny_unknown_fields)]
@@ -69,6 +71,11 @@ pub struct Obstacle {
     pub shape: SharedShape,
     pub target_id: Option<String>,
 }
+pub struct DynamicTarget {
+    pub body: RigidBodyHandle,
+    pub chassis: Chassis,
+    pub motion: NonlinearRigidMotion,
+}
 #[derive(Clone)]
 enum EventKind {
     Expire,
@@ -95,6 +102,7 @@ pub struct CannonSystem {
     pub firing: FiringConfig,
     pub numerics: Numerics,
     pub obstacles: Vec<Obstacle>,
+    pub dynamic_targets: BTreeMap<String, DynamicTarget>,
     pub shots: Vec<Projectile>,
     pub target_hits: BTreeMap<String, u64>,
     pub shots_fired: u64,
@@ -231,6 +239,7 @@ impl CannonSystem {
             firing: f,
             numerics: n,
             obstacles,
+            dynamic_targets: BTreeMap::new(),
             shots: vec![],
             target_hits,
             shots_fired: 0,
@@ -372,6 +381,7 @@ impl CannonSystem {
         let mut elapsed = 0.0;
         let mut alive = vec![true; self.shots.len()];
         let mut impulses = vec![];
+        let mut target_impulses = vec![];
         let limit = self.firing.max_active_projectiles * (self.projectile.max_bounces as usize + 4);
         let mut rounds = 0;
         while elapsed < dt && alive.iter().any(|a| *a) {
@@ -393,6 +403,41 @@ impl CannonSystem {
                 }
                 let pos = Pose::translation(p.position.x, p.position.y);
                 for (j, o) in self.obstacles.iter().enumerate() {
+                    if let Some(dynamic) = o
+                        .target_id
+                        .as_ref()
+                        .and_then(|id| self.dynamic_targets.get(id))
+                    {
+                        let moving = NonlinearRigidMotion::new(
+                            dynamic.motion.position_at_time(elapsed),
+                            Vector::ZERO,
+                            dynamic.motion.linvel,
+                            dynamic.motion.angvel,
+                        );
+                        let shot = NonlinearRigidMotion::new(pos, Vector::ZERO, p.velocity, 0.0);
+                        if let Some(hit) = query::cast_shapes_nonlinear(
+                            &shot,
+                            &ball,
+                            &moving,
+                            o.shape.as_ref(),
+                            0.0,
+                            remaining,
+                            false,
+                        )
+                        .map_err(|e| format!("{e:?}"))?
+                        {
+                            events.push(Event {
+                                time: hit.time_of_impact,
+                                shot: i,
+                                kind: EventKind::Hit {
+                                    target: o.target_id.clone(),
+                                    point: moving.position_at_time(hit.time_of_impact)
+                                        * hit.witness2,
+                                },
+                            });
+                        }
+                        continue;
+                    }
                     if let Some(hit) = query::cast_shapes(
                         &pos,
                         p.velocity,
@@ -545,6 +590,15 @@ impl CannonSystem {
                     let p = &self.shots[e.shot];
                     if let Some(id) = target {
                         *self.target_hits.get_mut(id).expect("Registered target") += 1;
+                        if let Some(dynamic) = self.dynamic_targets.get(id) {
+                            target_impulses.push((
+                                dynamic.body,
+                                dynamic.chassis.clone(),
+                                p.velocity * self.projectile.mass_kg,
+                                *point,
+                                dynamic.motion.position_at_time(elapsed),
+                            ));
+                        }
                     } else {
                         self.hits_received += 1;
                         impulses.push((
@@ -599,6 +653,9 @@ impl CannonSystem {
         });
         for (impulse, point, reference) in impulses {
             apply_chassis_impulse(world, tank, chassis, impulse, point, reference);
+        }
+        for (body, drive, impulse, point, reference) in target_impulses {
+            apply_chassis_impulse(world, body, &drive, impulse, point, reference);
         }
         Ok(())
     }

@@ -1,0 +1,30 @@
+{
+  "contract_version": "1.0",
+  "module_id": "perception",
+  "entry_point": "campaign_robot:CampaignRobot",
+  "inputs": {
+    "self_pose": {
+      "schema": "pose2d@1",
+      "required": true,
+      "max_age_ticks": 12
+    },
+    "radar": {
+      "schema": "radar@1",
+      "required": false,
+      "max_age_ticks": 12
+    }
+  },
+  "outputs": {
+    "target": {
+      "schema": "target_estimate@1"
+    }
+  },
+  "execution": {
+    "mode": "periodic",
+    "period_ticks": 6,
+    "deadline_ticks": 6,
+    "budget_ms": 20
+  },
+  "dependencies": [],
+  "state_version": "1"
+}

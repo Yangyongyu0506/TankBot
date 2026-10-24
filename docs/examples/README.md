@@ -16,6 +16,8 @@
 | [turret-velocity-message.json](turret-velocity-message.json)、[fire-command.json](fire-command.json)、[weapon-state-message.json](weapon-state-message.json) | M1b 炮台速度、幂等单发与自身反馈 |
 | [weapons-practice-view.json](weapons-practice-view.json) | 显式真值练习的严格 view_snapshot@2 |
 | [view-snapshot.json](view-snapshot.json) | tick 126 的授权估计视图，不含完整世界 |
+| [target-estimate-message.json](target-estimate-message.json)、[campaign-view.json](campaign-view.json) | M4 地图目标估计和严格 view_snapshot@3，无敌方真值 |
+| [m4-workspace.json](m4-workspace.json)、[m4-module-contract.json](m4-module-contract.json) | 三关共用的单模块 Contract 与系统自定位授权 |
 | [negotiate-request.json](negotiate-request.json)、[negotiate-response.json](negotiate-response.json) | bootstrap 协商 |
 | [runtime-step-request.json](runtime-step-request.json)、[runtime-step-result.json](runtime-step-result.json) | tick 6 激活、tick 12 提交的私有 Runtime 控制面 |
 | [error-event.json](error-event.json) | 脱敏错误事件 |

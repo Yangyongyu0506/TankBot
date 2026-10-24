@@ -1,5 +1,6 @@
 //! Pure fixed-step authority. Private snapshots belong only to the trusted host.
 mod cannon;
+mod enemy;
 pub mod session;
 mod turret;
 #[cfg(target_arch = "wasm32")]
@@ -7,6 +8,7 @@ mod wasm;
 mod wheels;
 use cannon::CannonSystem;
 pub use cannon::{FiringConfig, Numerics, ProjectileConfig, ShotRequest, TargetConfig};
+use enemy::{EnemyTank, drive_servo};
 use rapier2d_f64::prelude::*;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -148,6 +150,7 @@ pub struct PrivateSnapshot {
     pub fire_results: Value,
     pub weapon_events: Value,
     pub target_hits: Value,
+    pub targets: Value,
 }
 
 pub struct GameCore {
@@ -166,6 +169,8 @@ pub struct GameCore {
     last_sensors: Option<Value>,
     turret: Option<TurretSystem>,
     cannon: Option<CannonSystem>,
+    enemies: BTreeMap<String, EnemyTank>,
+    destroyed_targets: BTreeMap<String, Value>,
 }
 impl GameCore {
     pub fn new(config: Config, chassis_name: &str) -> Result<Self, String> {
@@ -276,9 +281,27 @@ impl GameCore {
                     .restitution(e),
             );
         }
+        let mut enemies = BTreeMap::new();
         let cannon = if config.weapons.enabled {
             let cannon = CannonSystem::new(&config.weapons, b, &config.scene.walls)?;
             for target in &config.weapons.targets {
+                if let Some(health) = &target.health {
+                    if target.motion.is_none()
+                        || health.max_hp == 0
+                        || health.damage_per_hit == 0
+                        || health.collision_damage != 0
+                        || health.death_behavior != "remove_at_substep_end"
+                    {
+                        return Err("Unsupported target health profile".into());
+                    }
+                }
+                if let Some(patrol) = &target.motion {
+                    enemies.insert(
+                        target.target_id.clone(),
+                        EnemyTank::new(&mut world, &config, target.pose, patrol.clone())?,
+                    );
+                    continue;
+                }
                 world.colliders.insert(
                     ColliderBuilder::new(cannon::body_shape(b))
                         .translation(Vector::new(target.pose[0], target.pose[1]))
@@ -338,6 +361,8 @@ impl GameCore {
             last_sensors: None,
             turret,
             cannon,
+            enemies,
+            destroyed_targets: BTreeMap::new(),
         };
         core.wheel_rates = core.rates(core.body_velocity());
         core.last_sensors = Some(core.sensor_payload(Vector::ZERO, v[2]));
@@ -427,25 +452,21 @@ impl GameCore {
             let old_pose = *b.position();
             let old_v = b.linvel();
             let old_angle = b.rotation().angle();
-            let s = &self.config.servo;
-            let c = &self.chassis;
-            let fx = (self.config.body.mass_kg * (goal[0] - before[0]) / s.tau_x_s)
-                .clamp(-s.max_force_x_n, s.max_force_x_n)
-                - c.drag_x_n_s_per_m * before[0];
-            let fy = (if c.lateral_actuation {
-                (self.config.body.mass_kg * (goal[1] - before[1]) / s.tau_y_s)
-                    .clamp(-s.max_force_y_n, s.max_force_y_n)
-            } else {
-                0.0
-            }) - c.drag_y_n_s_per_m * before[1];
-            let mz = (self.config.body.yaw_inertia_kg_m2 * (goal[2] - before[2]) / s.tau_yaw_s)
-                .clamp(-s.max_torque_nm, s.max_torque_nm)
-                - c.drag_yaw_nm_s * before[2];
-            let force = *b.rotation() * Vector::new(fx, fy);
-            b.reset_forces(true);
-            b.reset_torques(true);
-            b.add_force(force, true);
-            b.add_torque(mz, true);
+            drive_servo(
+                &mut self.world,
+                self.tank,
+                &self.config,
+                &self.chassis,
+                goal,
+            );
+            let enemy_starts: BTreeMap<_, _> = self
+                .enemies
+                .iter()
+                .map(|(id, enemy)| (id.clone(), *self.world.bodies[enemy.body].position()))
+                .collect();
+            for enemy in self.enemies.values_mut() {
+                enemy.apply(&mut self.world, &self.config, self.tick);
+            }
             if let Some(t) = &self.turret {
                 t.apply_servo(
                     &mut self.world,
@@ -456,6 +477,23 @@ impl GameCore {
             }
             self.world.step();
             if let Some(c) = &mut self.cannon {
+                for (id, enemy) in &self.enemies {
+                    let start = enemy_starts[id];
+                    let end = *self.world.bodies[enemy.body].position();
+                    c.dynamic_targets.insert(
+                        id.clone(),
+                        cannon::DynamicTarget {
+                            body: enemy.body,
+                            chassis: enemy.chassis.clone(),
+                            motion: rapier2d_f64::parry::query::NonlinearRigidMotion::new(
+                                start,
+                                Vector::ZERO,
+                                (end.translation - start.translation) / dt,
+                                normalize_angle(end.rotation.angle() - start.rotation.angle()) / dt,
+                            ),
+                        },
+                    );
+                }
                 let end = *self.world.bodies[self.tank].position();
                 let start_s =
                     self.tick as f64 / self.config.clock.physics_hz as f64 + substep as f64 * dt;
@@ -469,7 +507,17 @@ impl GameCore {
                     start_s,
                     dt,
                 )?;
+                for obstacle in &mut c.obstacles {
+                    if let Some(enemy) = obstacle
+                        .target_id
+                        .as_ref()
+                        .and_then(|id| self.enemies.get(id))
+                    {
+                        obstacle.pose = *self.world.bodies[enemy.body].position();
+                    }
+                }
             }
+            self.remove_dead_targets();
             if let Some(t) = &mut self.turret {
                 t.observe_angle(&self.world, self.tank);
             }
@@ -500,6 +548,61 @@ impl GameCore {
         }
         Ok(())
     }
+    fn target_snapshot(&self, target: &TargetConfig) -> Value {
+        if let Some(dead) = self.destroyed_targets.get(&target.target_id) {
+            return dead.clone();
+        }
+        let hits = self
+            .cannon
+            .as_ref()
+            .and_then(|c| c.target_hits.get(&target.target_id))
+            .copied()
+            .unwrap_or(0);
+        let hp = target.health.as_ref().map(|h| {
+            h.max_hp
+                .saturating_sub(hits.saturating_mul(h.damage_per_hit))
+        });
+        let (pose, velocity) = if let Some(enemy) = self.enemies.get(&target.target_id) {
+            let b = &self.world.bodies[enemy.body];
+            let v = b.rotation().inverse() * b.linvel();
+            (
+                [
+                    b.translation().x,
+                    b.translation().y,
+                    normalize_angle(b.rotation().angle()),
+                ],
+                [v.x, v.y, b.angvel()],
+            )
+        } else {
+            (target.pose, [0.0; 3])
+        };
+        json!({"target_id":target.target_id,"pose":pose,"velocity":velocity,"hp":hp,"alive":hp != Some(0)})
+    }
+    fn remove_dead_targets(&mut self) {
+        let dead: Vec<_> = self
+            .config
+            .weapons
+            .targets
+            .iter()
+            .filter(|t| {
+                t.health.is_some()
+                    && self.target_snapshot(t)["alive"] == false
+                    && !self.destroyed_targets.contains_key(&t.target_id)
+            })
+            .map(|t| (t.target_id.clone(), self.target_snapshot(t)))
+            .collect();
+        for (id, snapshot) in dead {
+            if let Some(enemy) = self.enemies.remove(&id) {
+                self.world.remove_body(enemy.turret.body);
+                self.world.remove_body(enemy.body);
+            }
+            if let Some(c) = &mut self.cannon {
+                c.dynamic_targets.remove(&id);
+                c.obstacles.retain(|o| o.target_id.as_ref() != Some(&id));
+            }
+            self.destroyed_targets.insert(id, snapshot);
+        }
+    }
     /// Trusted adapter only: never serialize this DTO to the robot worker or UI.
     pub fn private_snapshot(&self) -> PrivateSnapshot {
         let b = &self.world.bodies[self.tank];
@@ -515,6 +618,7 @@ impl GameCore {
             fire_results: self.cannon.as_ref().map(|c|json!(c.results)).unwrap_or(json!([])),
             weapon_events: self.cannon.as_ref().map(|c|json!(c.events)).unwrap_or(json!([])),
             target_hits: self.cannon.as_ref().map(|c|json!(c.target_hits)).unwrap_or(json!({})),
+            targets: json!(self.config.weapons.targets.iter().map(|t| self.target_snapshot(t)).collect::<Vec<_>>()),
             turret_state: self.turret.as_ref().map(|t|json!({"relative_angle_rad":t.relative_angle,
                 "relative_rate_radps":self.world.bodies[t.body].angvel()-b.angvel(),
                 "position":[self.world.bodies[t.body].translation().x,self.world.bodies[t.body].translation().y],

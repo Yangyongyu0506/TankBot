@@ -40,22 +40,23 @@ Contract 的 `budget_ms` 是请求的墙钟预算；Host 可以下调或拒绝�
 ## Module API 与生命周期
 
 ```python
-from tankbot import Module, ModuleContext, Inputs, Pose2D
+from typing import cast
+from tankbot import Module, ModuleContext, Inputs, Pose2D, EncoderData, ImuData, Sample
 
 class Odometry(Module):
     def setup(self, ctx: ModuleContext) -> None:
-        self.previous_encoder = None
+        self.previous_encoder: EncoderData | None = None
 
     def update(self, inputs: Inputs, ctx: ModuleContext) -> None:
-        encoder = inputs.latest("encoder")  # Sample[EncoderData]，必要输入保证存在
-        imu = inputs.latest("imu")          # Sample[ImuData] | None
+        encoder: Sample[EncoderData] | None = cast("Sample[EncoderData] | None", inputs.latest("encoder"))
+        imu: Sample[ImuData] | None = cast("Sample[ImuData] | None", inputs.latest("imu"))
         # TODO: 用测量、ctx.dt_seconds 和自己的状态计算 estimate: Pose2D。
         # 完成算法后：ctx.publish("pose", estimate, frame_id="map",
         #                         simulation_tick=encoder.simulation_tick)
         raise NotImplementedError
 
     def reset(self, ctx: ModuleContext, reason: str) -> None:
-        self.previous_encoder = None
+        self.previous_encoder: EncoderData | None = None
 
     def teardown(self, ctx: ModuleContext) -> None:
         pass
@@ -70,7 +71,7 @@ class Odometry(Module):
 ```python
 from tankbot import Twist, Vector3
 
-velocity = Twist(
+velocity: Twist = Twist(
     linear=Vector3(x=0.5, y=0.0, z=0.0),
     angular=Vector3(x=0.0, y=0.0, z=0.2),
 )
@@ -138,3 +139,13 @@ M1 仅运行一个 periodic Module，支持多文件 import；event、多模块�
 ## M2 运行适配
 
 `runtime/module_runner.py` 是原生 CPython 与浏览器 Pyodide 共用的生命周期和类型化输入/输出实现；仅运输与外部截止管理不同。浏览器多文件部署复制到独立 MEMFS，不挂载宿主目录、不加载 Authority 包。API 形状和固定提交门不变；完整安全限制见 [16](16_BROWSER_RUNTIME.md)。
+
+## M4 函数与状态类
+
+新增不可变 `RadarDetection(observation_id, range_m, bearing_rad)`、`RadarData(detections)` 和 `TargetEstimate(x_m, y_m, covariance=None)`。雷达检测列表和协方差转为 tuple；`ctx.publish("target", value, frame_id="map", simulation_tick=...)` 仍通过原批次收集与提交门。自身系统位姿经授权后解码为 `Sample[Pose2D]`。
+
+C1 只需实现坐标转换函数，C2 实现保存状态的 `Tracker.update(measurements, dt)`；生成的 `CampaignRobot` Module 负责适配 Sample/端口，同一 Contract 与 Manifest 跨三关不变。模板和错误语义见 [18](18_CAMPAIGN_DESIGN.md)；这不开放 event、手动 Topic 或完整模块图。
+
+## 关卡学习接口与 NumPy
+
+所有关卡提供输入输出约定、字段单位、合成示例和带类型的脚手架。C1 返回 `NDArray[np.float64]` 的 4×4 SE(3) 矩阵；`tankbot.transforms` 校验矩阵并提供齐次雷达点，真实 wrapper 使用 `T @ p` 后发布既有 TargetEstimate。C2 只接收地图测量并保留状态。NumPy 是预装 Runtime 能力，不需要玩家写依赖/网络/JSON；详细工具、类参考与迁移见 [19](19_LEARNING_GUIDES_AND_SE3.md)。

@@ -1,6 +1,7 @@
 import {SceneTimeline, FollowCamera, drawChassis, drawTurret} from "/rendering.js";
 import {mountWorkspace, setupWorkspaceDialog} from "/workspace-ui.js";
 import {connectBrowser} from "/browser-client.js";
+import {mountCampaign, drawRadar} from "/campaign-ui.js";
 
 const $ = id => document.getElementById(id);
 const canvas = $("arena"), ctx = canvas.getContext("2d");
@@ -9,10 +10,11 @@ let frames = 0, statsSince = 0, renderFps = 0;
 let controlBusy = false;
 let controlQueued = false;
 let browser;
+let campaignEnded = false;
 const point = (x, y) => camera.project(x, y, canvas.width, canvas.height, profile.rendering.viewport_width_m);
 
 async function command() {
-  if (!profile) return;
+  if (!profile || campaignEnded) return;
   if (controlBusy) {controlQueued = true;return;}
   controlBusy = true;
   const axis = (a,b) => Number(keys.has(a))-Number(keys.has(b));
@@ -31,7 +33,7 @@ function post(path,value){
   return fetch(path,{method:"POST",headers:{"Content-Type":"application/json","X-TankBot-Control":profile.control_token},body:JSON.stringify(value)});
 }
 async function fire(){
-  if($("workspace-dialog").open||!profile||profile.control_sources.weapon!=="keyboard")return;
+  if($("workspace-dialog").open||!profile||campaignEnded||profile.control_sources.weapon!=="keyboard")return;
   try{
     const response=await post("/api/fire",{request_id:crypto.randomUUID()});
     const result=await response.json();
@@ -105,13 +107,17 @@ async function poll() {
         for (const [id, value] of [["x", selected.pose.x_m], ["y", selected.pose.y_m], ["yaw", selected.pose.yaw_rad]]) $(id).textContent = value.toFixed(3);
         $("tick").textContent = selected.simulation_tick;
         $("pose-label").textContent = `${selected.source_id} / ${selected.frame_id} · ${selected.freshness}`;
-        $("freshness").textContent = profile.view_mode === "weapons-practice" ? "显式真值练习视图 · Python 仍只接收传感器" : selected.freshness === "fresh" ? "相机跟随估计 x/y · 世界坐标方向固定" : "估计过期，暂留位置；超龄后隐藏";
+        $("freshness").textContent = profile.view_mode === "campaign" ? "系统提供自身位姿；敌车只有玩家目标估计" : profile.view_mode === "weapons-practice" ? "显式真值练习视图 · Python 仍只接收传感器" : selected.freshness === "fresh" ? "相机跟随估计 x/y · 世界坐标方向固定" : "估计过期，暂留位置；超龄后隐藏";
       } else {
         trail = [];
         for (const id of ["x", "y", "yaw", "tick"]) $(id).textContent = "—";
         $("pose-label").textContent = "等待合法位姿估计 · 相机保持";
       }
       for (const m of message.payload.local_observations) {
+        if(m.schema==="radar@1"){
+          $("radar-panel").hidden=false;drawRadar($("radar-canvas"),m,profile.radar_calibration.range_m);
+          $("radar-status").textContent=`tick ${m.simulation_tick} · ${m.payload.detections.length} 回波（车体系）`;
+        }
         if (m.schema === "joint_state@1" && m.channel === "/robot/sensors/joint_states") {
           $("wheels").replaceChildren(...m.payload.name.map((name, i) => {
             const row = document.createElement("div"), label = document.createElement("span"), value = document.createElement("strong");
@@ -181,6 +187,13 @@ function draw(now) {
       drawTurret(ctx, profile.chassis_visual, scale, frame.turretAngle, profile.turret_muzzle_offset_m, profile.rendering.barrel_width_m);
       ctx.restore();
     }
+    if(frame.targetEstimate){
+      const p=frame.targetEstimate,[x,y]=point(p.x_m,p.y_m);
+      ctx.strokeStyle="#f4cf7e";ctx.fillStyle="#f4cf7e";ctx.lineWidth=2;ctx.setLineDash([5,4]);
+      ctx.beginPath();ctx.arc(x,y,profile.body.width_m*scale/2,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+      ctx.beginPath();ctx.moveTo(x-7,y);ctx.lineTo(x+7,y);ctx.moveTo(x,y-7);ctx.lineTo(x,y+7);ctx.stroke();
+      ctx.font="12px sans-serif";ctx.fillText("目标估计",x+12,y-12);
+    }
     ctx.fillStyle = "#8ba69a"; ctx.font = "12px monospace";
     ctx.fillText("WORLD  +x →  +y ↑", canvas.width - 170, 28);
     // These diagnostics contain only the displayed, already-authorized state.
@@ -196,6 +209,8 @@ function draw(now) {
     const firstProjectile = frame.objects.find(o => o.kind === "projectile");
     canvas.dataset.projectileX = firstProjectile?.x_m ?? "";
     canvas.dataset.projectileY = firstProjectile?.y_m ?? "";
+    canvas.dataset.targetEstimateX=frame.targetEstimate?.x_m??"";
+    canvas.dataset.targetEstimateY=frame.targetEstimate?.y_m??"";
     frames++;
     if (now - statsSince >= profile.rendering.stats_interval_ms) {
       renderFps = Math.round(frames * 1000 / (now - statsSince)); frames = 0; statsSince = now;
@@ -228,6 +243,11 @@ try {
   $("fire").disabled = profile.control_sources.weapon !== "keyboard";
   $("weapon-control").textContent = `炮台：${profile.control_sources.turret} · 武器：${profile.control_sources.weapon} · J/L 旋转，空格单发`;
   mountWorkspace(browser).catch(error=>$("workspace-message").textContent="编辑器加载失败："+error.message+"。请运行 python3 tools/build.py 后刷新页面。");
+  mountCampaign(profile,browser,state=>{
+    const ended=Boolean(state&&state.status!=="active");
+    if(ended&&!campaignEnded){campaignEnded=true;releaseControls();}
+    $("fire").disabled=ended||profile.control_sources.weapon!=="keyboard";
+  },releaseControls).catch(error=>$("task-message").textContent=error.message);
   poll();
   setInterval(() => { if (keys.size) command(); }, profile.view.keyboard_refresh_ms);
 } catch(error) { $("connection").textContent = `启动失败：${error.message}`; }

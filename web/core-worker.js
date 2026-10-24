@@ -61,7 +61,8 @@ self.onmessage=async({data})=>{
       };
       py=await python("/authority-bundle.json",true);
       py.FS.mkdirTree("/tankbot/config");py.FS.writeFile("/tankbot/config/m1.json",JSON.stringify(config));
-      py.runPython("from browser_authority import start, diagnostics, runtime_event\nauthority=start()");
+      py.globals.set("_startup_sources_json",JSON.stringify(sources));
+      py.runPython("from browser_authority import start, diagnostics, runtime_event\nauthority=start(json.loads(_startup_sources_json))");
       if(config.browser.probe_enabled){
         py.runPython("from tankbot_protocol.conformance import cases, verdict\nfrom tankbot_protocol.wire import strict_loads\n_fixture_cases=cases('/tankbot/docs/examples')");
         runtimePort.postMessage(JSON.stringify({op:"conformance",value:evaluate("[json.dumps(c['message']) for c in _fixture_cases]")}));
@@ -69,6 +70,10 @@ self.onmessage=async({data})=>{
       authority=true;
     }else if(data.op==="command"&&authority){
       py.globals.set("_command",JSON.stringify(data.value));
+      if(data.path==="/api/campaign"||data.path==="/api/campaign/finish"){
+        py.runPython(data.path.endsWith("/finish")?"_reply=authority.finish_campaign()":"_reply=authority.campaign_status()");
+        self.postMessage({kind:"response",id:data.id,ok:true,value:evaluate("_reply")});return;
+      }
       if(data.path.startsWith("/api/deployment")){
         if(data.path==="/api/deployment")py.runPython("_reply=authority.deployment.status()");
         else {
@@ -85,7 +90,7 @@ self.onmessage=async({data})=>{
       self.postMessage({kind:"response",id:data.id,ok:true,value:evaluate("_reply")});
     }
   }catch(error){
-    if(data.id!==undefined)self.postMessage({kind:"response",id:data.id,ok:false,value:{error:String(error).slice(0,512)}});
+    if(data.id!==undefined)self.postMessage({kind:"response",id:data.id,ok:false,value:{error:String(error).slice(-512)}});
     else notify("error",String(error));
   }
 };

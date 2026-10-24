@@ -1,5 +1,5 @@
 {
-  "config_version": "1.5",
+  "config_version": "1.6",
   "confirmation_status": "confirmed",
   "body": {
     "length_m": 0.8,
@@ -533,5 +533,187 @@
     "max_deployments": 32,
     "poll_ms": 500,
     "max_archives": 128
+  },
+  "campaign": {
+    "active_level": null,
+    "module_id": "perception",
+    "entry_point": "campaign_robot:CampaignRobot",
+    "initial_pose": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "initial_velocity": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "radar": {
+      "mount_m": [
+        0.0,
+        0.0
+      ],
+      "yaw_rad": 0.0,
+      "frame_id": "radar_link",
+      "range_m": 12.0,
+      "field_of_view_rad": 6.283185307179586,
+      "update_hz": 10,
+      "occlusion": "walls",
+      "measurement": "target_center",
+      "latency_ticks": 0,
+      "range_bias_m": 0.0,
+      "bearing_bias_rad": 0.0,
+      "profiles": {
+        "ideal": {
+          "range_stddev_m": 0.0,
+          "bearing_stddev_rad": 0.0,
+          "drop_probability": 0.0
+        },
+        "noisy": {
+          "range_stddev_m": 0.15,
+          "bearing_stddev_rad": 0.02,
+          "drop_probability": 0.1
+        }
+      }
+    },
+    "levels": {
+      "c0": {
+        "title": "C0 · 认识坦克与坐标",
+        "problem": "驾驶坦克、转动车体，并命中可见靶标。此关明确开放真值练习。",
+        "hints": [
+          "W/S 前后，差速 A/D 转向；全向 Q/E 转向。",
+          "J/L 转动炮台，空格单发。炮弹会反弹；瞄准左侧红色靶标。"
+        ],
+        "capabilities": [
+          "system.pose.read",
+          "estimate.target.publish",
+          "control.manual.drive",
+          "control.manual.turret",
+          "control.manual.fire",
+          "view.enemy.truth",
+          "view.projectiles.truth"
+        ],
+        "radar_profile": null,
+        "target": {
+          "target_id": "training_target",
+          "pose": [
+            -3.0,
+            0.0,
+            0.0
+          ]
+        },
+        "objective": {
+          "movement_m": 1.0,
+          "turn_rad": 0.5,
+          "required_hits": 1,
+          "required_estimates": 0
+        }
+      },
+      "c1": {
+        "title": "C1 · 用 SE(3) 矩阵变换坐标",
+        "problem": "敌车已隐藏。实现返回 4×4 NumPy SE(3) 矩阵的函数；游戏用矩阵乘法把雷达点变成地图上的目标估计。",
+        "hints": [
+          "F2 打开编辑器，阅读任务说明，完成 perception/transforms.py 的 radar_to_map。",
+          "F1 查看 Pose2D 字段、NumPy 返回类型及矩阵实验：前三列是基向量，最后一列是原点位置。",
+          "系统负责极坐标展开和 T @ p；保存 → 测试快照 → 部署，然后手动瞄准命中。"
+        ],
+        "capabilities": [
+          "system.pose.read",
+          "estimate.target.publish",
+          "control.manual.drive",
+          "control.manual.turret",
+          "control.manual.fire",
+          "sensor.radar.read"
+        ],
+        "radar_profile": "ideal",
+        "target": {
+          "target_id": "radar_target",
+          "pose": [
+            -3.0,
+            1.5,
+            0.0
+          ]
+        },
+        "objective": {
+          "movement_m": 0.0,
+          "turn_rad": 0.0,
+          "required_hits": 1,
+          "required_estimates": 1
+        }
+      },
+      "c2": {
+        "title": "C2 · 噪声中跟踪与击杀",
+        "problem": "移动敌车有 3 HP。雷达带噪声和丢失；复用坐标转换，在状态类中稳定跟踪，击杀即可通关。",
+        "hints": [
+          "完成 perception/tracker.py；C1 的 transforms.py 继续用于矩阵坐标变换。",
+          "空测量时也可输出合理预测；不要把每个 observation_id 当作同一实体 ID。",
+          "J/L 手动瞄准，给移动目标留出弹丸飞行时间。HP 是授权反馈；误差在结束后显示。"
+        ],
+        "capabilities": [
+          "system.pose.read",
+          "estimate.target.publish",
+          "control.manual.drive",
+          "control.manual.turret",
+          "control.manual.fire",
+          "sensor.radar.read",
+          "view.enemy.health"
+        ],
+        "radar_profile": "noisy",
+        "target": {
+          "target_id": "patrol_enemy",
+          "pose": [
+            -4.5,
+            -2.0,
+            0.0
+          ],
+          "motion": {
+            "chassis": "differential",
+            "initial_velocity": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "initial_turret_angle_rad": 0.0,
+            "initial_turret_rate_radps": 0.0,
+            "control_hz": 10,
+            "waypoints_m": [
+              [
+                -1.5,
+                -2.0
+              ],
+              [
+                -1.5,
+                2.0
+              ],
+              [
+                -4.5,
+                2.0
+              ],
+              [
+                -4.5,
+                -2.0
+              ]
+            ],
+            "forward_speed_mps": 0.6,
+            "heading_gain_per_s": 2.0,
+            "max_yaw_rate_radps": 1.5,
+            "turn_in_place_threshold_rad": 0.35,
+            "arrival_radius_m": 0.25
+          },
+          "health": {
+            "max_hp": 3,
+            "damage_per_hit": 1,
+            "collision_damage": 0,
+            "death_behavior": "remove_at_substep_end"
+          }
+        },
+        "objective": {
+          "movement_m": 0.0,
+          "turn_rad": 0.0,
+          "required_hits": 0,
+          "required_estimates": 0
+        }
+      }
+    }
   }
 }

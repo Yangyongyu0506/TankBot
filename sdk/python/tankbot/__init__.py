@@ -1,7 +1,7 @@
 """Typed values and synchronous module contract for the M1 local worker."""
 from dataclasses import asdict, dataclass, field
 from types import MappingProxyType
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic, Mapping, TypeVar
 
 
 @dataclass(frozen=True)
@@ -25,7 +25,7 @@ class Pose2D:
     covariance: tuple[float, ...] | None = None
     child_frame_id: str = "base_link"
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.covariance is not None:
             object.__setattr__(self, "covariance", tuple(self.covariance))
 
@@ -41,6 +41,34 @@ class ImuData:
     angular_velocity_z_radps: float
     linear_acceleration_x_mps2: float
     linear_acceleration_y_mps2: float
+
+
+@dataclass(frozen=True)
+class RadarDetection:
+    observation_id: str
+    range_m: float
+    bearing_rad: float
+
+
+@dataclass(frozen=True)
+class RadarData:
+    detections: tuple[RadarDetection, ...]
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "detections", tuple(
+            RadarDetection(**item) if isinstance(item, dict) else item for item in self.detections
+        ))
+
+
+@dataclass(frozen=True)
+class TargetEstimate:
+    x_m: float
+    y_m: float
+    covariance: tuple[float, ...] | None = None
+
+    def __post_init__(self) -> None:
+        if self.covariance is not None:
+            object.__setattr__(self, "covariance", tuple(self.covariance))
 
 
 @dataclass(frozen=True)
@@ -69,7 +97,7 @@ class WeaponState:
     hits_received: int
     last_result: FireResult | None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if isinstance(self.last_result, dict):
             object.__setattr__(self, "last_result", FireResult(**self.last_result))
 
@@ -81,7 +109,7 @@ class JointState:
     velocity: tuple[float, ...]
     effort: tuple[float, ...] = ()
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         for key in ("name", "position", "velocity", "effort"):
             object.__setattr__(self, key, tuple(getattr(self, key)))
 
@@ -97,7 +125,7 @@ class Sample(Generic[T]):
     sequence_number: int
 
 
-def freeze(value):
+def freeze(value: Any) -> Any:
     if isinstance(value, dict):
         return MappingProxyType({k: freeze(v) for k, v in value.items()})
     if isinstance(value, list):
@@ -106,25 +134,31 @@ def freeze(value):
 
 
 class Inputs:
-    def __init__(self, samples):
-        self._samples = MappingProxyType(dict(samples))
+    def __init__(self, samples: Mapping[str, Sample[Any]]) -> None:
+        self._samples: Mapping[str, Sample[Any]] = MappingProxyType(dict(samples))
 
-    def latest(self, port: str) -> Sample | None:
+    def latest(self, port: str) -> Sample[Any] | None:
         return self._samples.get(port)
 
 
 class ModuleContext:
-    def __init__(self, simulation_tick, dt_seconds, output_commit_tick, config):
-        self.simulation_tick = simulation_tick
-        self.dt_seconds = dt_seconds
-        self.output_commit_tick = output_commit_tick
-        self.config = freeze(config)
-        self._outputs = []
-        self._commands = []
+    simulation_tick: int
+    dt_seconds: float
+    output_commit_tick: int
+    config: Mapping[str, Any]
+
+    def __init__(self, simulation_tick: int, dt_seconds: float, output_commit_tick: int,
+                 config: Mapping[str, Any]) -> None:
+        self.simulation_tick: int = simulation_tick
+        self.dt_seconds: float = dt_seconds
+        self.output_commit_tick: int = output_commit_tick
+        self.config: Mapping[str, Any] = freeze(config)
+        self._outputs: list[tuple[str, str, dict[str, Any], str, int]] = []
+        self._commands: list[tuple[str, str]] = []
 
     def publish(self, port: str, value: Any, *, frame_id: str,
                 simulation_tick: int | None = None) -> None:
-        types = {Pose2D: "pose2d@1", Twist: "twist@1", TurretVelocity: "turret_velocity@1"}
+        types: dict[type, str] = {Pose2D: "pose2d@1", TargetEstimate: "target_estimate@1", Twist: "twist@1", TurretVelocity: "turret_velocity@1"}
         if type(value) not in types:
             raise TypeError("Unsupported output value")
         self._outputs.append((port, types[type(value)], asdict(value), frame_id,

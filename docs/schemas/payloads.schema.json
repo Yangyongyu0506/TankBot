@@ -462,7 +462,8 @@
                       "radar@1",
                       "twist@1",
                       "joint_state@1",
-                      "weapon_state@1"
+                      "weapon_state@1",
+                      "target_estimate@1"
                     ]
                   }
                 }
@@ -576,7 +577,8 @@
                       "pose2d@1",
                       "twist@1",
                       "turret_velocity@1",
-                      "fire_command@1"
+                      "fire_command@1",
+                      "target_estimate@1"
                     ]
                   }
                 }
@@ -930,6 +932,244 @@
         "local_observations",
         "objects",
         "effects"
+      ],
+      "additionalProperties": false
+    },
+    "target_estimate": {
+      "type": "object",
+      "properties": {
+        "x_m": {
+          "type": "number"
+        },
+        "y_m": {
+          "type": "number"
+        },
+        "covariance": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 4,
+              "maxItems": 4
+            }
+          ]
+        }
+      },
+      "required": [
+        "x_m",
+        "y_m",
+        "covariance"
+      ],
+      "additionalProperties": false
+    },
+    "view_snapshot_v3": {
+      "type": "object",
+      "properties": {
+        "view_revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "policy_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "selected_pose": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "source_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "frame_id": {
+                  "enum": [
+                    "map",
+                    "odom"
+                  ]
+                },
+                "simulation_tick": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "freshness": {
+                  "enum": [
+                    "fresh",
+                    "stale"
+                  ]
+                },
+                "pose": {
+                  "$ref": "payloads.schema.json#/$defs/pose2d"
+                }
+              },
+              "required": [
+                "source_id",
+                "frame_id",
+                "simulation_tick",
+                "freshness",
+                "pose"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "local_observations": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "$ref": "envelope.schema.json"
+              },
+              {
+                "properties": {
+                  "message_type": {
+                    "const": "topic"
+                  },
+                  "schema": {
+                    "enum": [
+                      "imu@1",
+                      "encoder@1",
+                      "radar@1",
+                      "joint_state@1",
+                      "weapon_state@1"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 64
+        },
+        "objects": {
+          "type": "array",
+          "maxItems": 128,
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "projectile"
+                  },
+                  "projectile_id": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "x_m": {
+                    "type": "number"
+                  },
+                  "y_m": {
+                    "type": "number"
+                  },
+                  "radius_m": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  }
+                },
+                "required": [
+                  "kind",
+                  "projectile_id",
+                  "x_m",
+                  "y_m",
+                  "radius_m"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "target"
+                  },
+                  "target_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "pose": {
+                    "type": "object",
+                    "properties": {
+                      "x_m": {
+                        "type": "number"
+                      },
+                      "y_m": {
+                        "type": "number"
+                      },
+                      "yaw_rad": {
+                        "type": "number",
+                        "minimum": -3.141592653589793,
+                        "exclusiveMaximum": 3.141592653589793
+                      }
+                    },
+                    "required": [
+                      "x_m",
+                      "y_m",
+                      "yaw_rad"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "hits": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "kind",
+                  "target_id",
+                  "pose",
+                  "hits"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "effects": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "target_estimates": {
+          "type": "array",
+          "maxItems": 1,
+          "items": {
+            "allOf": [
+              {
+                "$ref": "envelope.schema.json"
+              },
+              {
+                "properties": {
+                  "schema": {
+                    "const": "target_estimate@1"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "required": [
+        "view_revision",
+        "policy_id",
+        "selected_pose",
+        "local_observations",
+        "objects",
+        "effects",
+        "target_estimates"
       ],
       "additionalProperties": false
     }

@@ -2,9 +2,17 @@
 import contextlib
 import importlib
 import sys
+from importlib.metadata import PackageNotFoundError, version
 from dataclasses import asdict
-from tankbot import Module, ModuleContext, Inputs, Sample, ImuData, JointState, WeaponState, FireCommand
+from tankbot import Module, ModuleContext, Inputs, Sample, Pose2D, RadarData, ImuData, JointState, WeaponState, FireCommand
 from tankbot_protocol.message import envelope
+
+
+def runtime_packages() -> dict[str, str]:
+    try:
+        return {"numpy": version("numpy")}
+    except PackageNotFoundError:
+        return {}
 
 class ModuleRunner:
     def __init__(self, init):
@@ -25,7 +33,8 @@ class ModuleRunner:
 
     def step(self, request):
         init, contract, config = self.init, self.contract, self.init["config"]
-        converters = {"imu@1": ImuData, "joint_state@1": lambda **p: JointState(**{k: tuple(v) for k, v in p.items()}), "weapon_state@1": WeaponState}
+        converters = {"imu@1": ImuData, "radar@1": RadarData, "pose2d@1": Pose2D,
+                      "joint_state@1": lambda **p: JointState(**{k: tuple(v) for k, v in p.items()}), "weapon_state@1": WeaponState}
         p = request["payload"]
         tick = p["activation_tick"]
         context = ModuleContext(tick, p["modules"][0]["dt_ticks"] / init["physics_hz"], p["output_commit_tick"], config)

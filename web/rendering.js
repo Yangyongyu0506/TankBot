@@ -34,6 +34,7 @@ export class SceneTimeline {
     this.frames = [];
     this.poses = [];
     this.turrets = [];
+    this.targets = [];
     this.latest = null;
     this.context = null;
     this.renderTime = -Infinity;
@@ -67,8 +68,14 @@ export class SceneTimeline {
     }
     const joint = message.payload.local_observations.find(m => m.channel === "/robot/turret/joint_states");
     if (joint) putSample(this.turrets, {time: timeOf(joint.simulation_tick, this.hz), angle: joint.payload.position[0]});
+    const target = message.payload.target_estimates?.[0];
+    if (target) {
+      const previous = this.targets.at(-1)?.point;
+      if (previous && Math.hypot(target.payload.x_m-previous.x_m,target.payload.y_m-previous.y_m)>this.jumpDistance) this.targets=[];
+      putSample(this.targets,{time:timeOf(target.simulation_tick,this.hz),point:target.payload});
+    }
     const cutoff = time - this.options.history_ms;
-    for (const samples of [this.frames, this.poses, this.turrets]) {
+    for (const samples of [this.frames, this.poses, this.turrets, this.targets]) {
       // Keep one lower endpoint, including a stale pose that is still authorized.
       while (samples.length > 2 && samples[1].time < cutoff) samples.shift();
     }
@@ -78,7 +85,7 @@ export class SceneTimeline {
   sample(nowMs) {
     if (!this.latest) return {pose: null, objects: [], turretAngle: 0};
     const selected = this.latest.payload.selected_pose;
-    const delay = selected && selected.source_id !== "system"
+    const delay = (selected && selected.source_id !== "system") || this.latest.payload.target_estimates?.length
       ? this.options.estimate_interpolation_delay_ms : this.options.interpolation_delay_ms;
     const newestTime = timeOf(this.latest.simulation_tick, this.hz);
     // A stalled stream holds the last received state. It never predicts hidden events.
@@ -102,7 +109,10 @@ export class SceneTimeline {
     const joints = bracket(this.turrets, this.renderTime);
     // Joint angle is continuous/unwrapped; short-angle interpolation would lose turns.
     const turretAngle = joints ? lerp(joints[0].angle, joints[1].angle, joints[2]) : 0;
-    return {pose, objects, turretAngle, simulationTimeMs: this.renderTime};
+    const targetPair = this.latest.payload.target_estimates?.length ? bracket(this.targets,this.renderTime) : null;
+    const targetEstimate = targetPair ? {x_m:lerp(targetPair[0].point.x_m,targetPair[1].point.x_m,targetPair[2]),
+                                       y_m:lerp(targetPair[0].point.y_m,targetPair[1].point.y_m,targetPair[2])} : null;
+    return {pose, objects, turretAngle, targetEstimate, simulationTimeMs: this.renderTime};
   }
 }
 

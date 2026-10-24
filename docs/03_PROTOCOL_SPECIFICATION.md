@@ -83,14 +83,19 @@ tick、序号和纳秒计数字段限制在 `0..9007199254740991`，防止 JavaS
 | `/robot/sensors/encoder` | topic / `encoder@1` | Sensor Simulator | 同上 |
 | `/robot/sensors/radar` | topic / `radar@1` | Sensor Simulator | 授权模块/UI；标签不是全局实体 ID |
 | `/robot/estimates/{module_id}/pose` | topic / `pose2d@1` | 已注册候选模块 | 本机器人、Pose Selector、获准调试 UI |
+| `/robot/estimates/{module_id}/target` | topic / `target_estimate@1` | 获授权感知模块 | 获准目标估计图层；不进入自身 Pose Selector |
 | `/robot/localization/pose` | topic / `pose2d@1` | Pose Selector | View Gateway、本机器人在策略允许时 |
 | `/robot/cmd_vel` | topic / `twist@1` | 当前控制租约持有者 | Chassis Controller / Actuator Arbiter；不转发给对手 |
-| `/view/snapshot` | topic / `view_snapshot@1` | View Gateway | 对应玩家 UI |
+| `/view/snapshot` | topic / `view_snapshot@1/@2/@3` | View Gateway | 对应玩家 UI，按执行 profile 选择版本 |
 | `/session/negotiate` | service / 协商 request/response | 连接主体 / Host | 仅本连接 |
 | `/runtime/step` | service / RuntimeStep 类型 | Supervisor / 指定 Runtime | 私有运行控制面，不给玩家通用 service 权限 |
 | `/system/diagnostics` | event / `error@1` | Host | 对应主体，内容须脱敏 |
 
-`/system/pose` **不是公共频道**。System Pose Provider 在 Authority 私有接口内向 Selector 提供许可候选。`/robot/sensors/pose_fix`、局部 scan、建图瓦片、fire、选源服务等是后续频道，须补 Schema、授权与验收后注册；不能因出现在概念图中就自动开放。
+`/system/pose` **不是公共频道**。System Pose Provider 在 Authority 私有接口内向 Selector 提供许可候选。`/robot/sensors/pose_fix`、局部 scan、建图瓦片、选源服务等是后续频道，须补 Schema、授权与验收后注册；不能因出现在概念图中就自动开放。
+
+M4 注册 `target_estimate@1`，使用 `map` 中的 `x_m/y_m` 和可空、行优先 2×2 `covariance`；有限性、历史时间窗、对称及 PSD 在 Authority 验证。样例见 [目标估计](examples/target-estimate-message.json)。`view_snapshot@3` 在严格 v2 结构上新增最多一个 `target_estimates` Envelope，旧 v1/v2 不接收该字段。协议仍为未发布 1.0 草案；新类型在对应 profile 注册，既有沙盒继续输出 v1/v2。
+
+C0–C2 授权系统自定位时，System Pose Provider 仍先进入 Pose Selector，后者作为唯一写者发布 `/robot/localization/pose`，并提供给模块 `self_pose` 端口。`radar@1` 的标签仅在单次采样内有效；C1/C2 的标定与噪声模型见 [18](18_CAMPAIGN_DESIGN.md)。
 
 Authority 根据主体、机器人、部署、关卡、频道、操作（publish/subscribe/call）检查 grant；所有资源默认拒绝。每个输出端口拥有单写者租约。重连/部署时旧租约失效；一个 Runtime 内的模块不是彼此隔离的安全主体，模块名只用于配置和路由，不能扩大整个机器人获授的能力。
 

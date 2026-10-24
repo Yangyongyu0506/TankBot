@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT / "runtime"), str(ROOT / "sdk/python"), str(ROOT / "protocol")]
-from module_runner import ModuleRunner
+from module_runner import ModuleRunner, runtime_packages
 from source_loader import prepare
 from tankbot_protocol.wire import receive, send
 
@@ -21,7 +21,7 @@ def main():
         if temporary:
             temporary.cleanup()
         return
-    send(sink, {"ready": True, "unit_tests": tests}, limit)
+    send(sink, {"ready": True, "unit_tests": tests, "runtime_packages": runtime_packages()}, limit)
     try:
         while True:
             send(sink, runner.step(receive(source, limit)), limit)

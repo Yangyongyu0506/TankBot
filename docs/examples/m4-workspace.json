@@ -1,0 +1,34 @@
+{
+  "manifest_version": "1.0",
+  "sdk_version": "0.1.0",
+  "protocol_version": "1.0",
+  "project_id": "my-first-robot",
+  "entry_point": "campaign_robot:CampaignRobot",
+  "modules": [
+    {
+      "module_id": "perception",
+      "contract": "contracts/perception.json",
+      "config": {}
+    }
+  ],
+  "connections": [
+    {
+      "from": "/robot/localization/pose",
+      "to": "perception.self_pose"
+    },
+    {
+      "from": "/robot/sensors/radar",
+      "to": "perception.radar"
+    },
+    {
+      "from": "perception.target",
+      "to": "/robot/estimates/perception/target"
+    }
+  ],
+  "dependencies": [],
+  "pose_source": {
+    "mode": "system",
+    "module_id": null,
+    "fallback": "none"
+  }
+}

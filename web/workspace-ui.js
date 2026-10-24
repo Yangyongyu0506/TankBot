@@ -1,4 +1,5 @@
 // Workspace changes are explicit revisions; renderer and input controls do not own player code.
+import {mountLearning} from "/learning-ui.js";
 export function setupWorkspaceDialog(releaseControls){
   const dialog=document.getElementById("workspace-dialog"),toggle=document.getElementById("open-workspace");
   let previousFocus,editorFocus;
@@ -7,7 +8,8 @@ export function setupWorkspaceDialog(releaseControls){
     releaseControls();
     dialog.showModal();
     toggle.setAttribute("aria-expanded","true");
-    const focus=editorFocus?.isConnected?editorFocus:dialog.querySelector(".cm-content");
+    const help=dialog.querySelector("#learning-pane:not([hidden]) #learning-title");
+    const focus=innerWidth<1050&&help?help:editorFocus?.isConnected?editorFocus:dialog.querySelector(".cm-content");
     focus?.focus({preventScroll:true});
   }
   function hide(){if(dialog.open)dialog.close();}
@@ -35,7 +37,7 @@ export function setupWorkspaceDialog(releaseControls){
 
 export async function mountWorkspace(browser){
   const $=id=>document.getElementById(id),root=$("workspace-panel");
-  let snapshot,files,selected,editor,plan,status,busy=false,token;
+  let snapshot,files,selected,editor,plan,status,busy=false,token,level,learning;
   const message=text=>{$("workspace-message").textContent=text;};
   const dirty=()=>JSON.stringify(files)!==JSON.stringify(snapshot.files);
   async function http(operation,value){
@@ -50,6 +52,8 @@ export async function mountWorkspace(browser){
   }
   function refresh(){
     root.dataset.busy=String(busy);
+    root.dataset.dirty=String(dirty());
+    root.dataset.runtimeBusy=String(Boolean(status?.job));
     root.dataset.revision=snapshot.revision;
     $("workspace-revision").textContent=(dirty()?"未保存 · ":"已保存 · ")+snapshot.revision.slice(0,12);
     $("file-list").replaceChildren(...Object.keys(files).sort().map(path=>{
@@ -61,8 +65,8 @@ export async function mountWorkspace(browser){
     $("deploy-workspace").disabled=busy||dirty()||Boolean(status?.job)||!status?.reports.some(r=>r.revision===snapshot.revision&&r.status==="Ready");
     $("rollback-workspace").disabled=busy||Boolean(status?.job)||!$("deployment-history").value;
   }
-  function open(path){selected=path;$("editor-path").textContent=path;editor.open(path,files[path]);refresh();}
-  function accept(value){snapshot=value;files={...value.files};open(files[selected]!==undefined?selected:Object.keys(files).find(p=>p.endsWith("odometry.py"))||Object.keys(files)[0]);}
+  function open(path){selected=path;$("editor-path").textContent=path;editor.open(path,files[path]);learning?.file(path);refresh();}
+  function accept(value){snapshot=value;files={...value.files};const preferred=level==="c2"?"perception/tracker.py":level==="c1"?"perception/transforms.py":level==="c0"?"campaign_robot.py":null;open(files[selected]!==undefined?selected:(preferred&&preferred in files?preferred:Object.keys(files).find(p=>p.endsWith("odometry.py"))||Object.keys(files)[0]));}
   async function save(){
     const changes={};for(const p of new Set([...Object.keys(files),...Object.keys(snapshot.files)]))if(files[p]!==snapshot.files[p])changes[p]=files[p]??null;
     if(Object.keys(changes).length)accept(await http("save",{revision:snapshot.revision,changes}));
@@ -87,9 +91,10 @@ export async function mountWorkspace(browser){
     }
     message(plan.already_applied?"此模板已应用；再次预览不会覆盖文件。":"请检查新增文件与冲突，再应用。可先在编辑器手动合并后重新预览。");
   }
-  const initial=await (await fetch("/api/workspace")).json();token=initial.control_token;snapshot=initial.snapshot;files={...snapshot.files};
+  const initial=await (await fetch("/api/workspace")).json();token=initial.control_token;level=initial.level_id;snapshot=initial.snapshot;files={...snapshot.files};
   const {createEditor}=await import("/editor-bundle.js");
-  editor=createEditor($("code-editor"),(path,text)=>{files[path]=text;refresh();},()=>action(save));
+  editor=createEditor($("code-editor"),(path,text)=>{files[path]=text;refresh();},()=>action(save),initial.learning);
+  learning=mountLearning(initial.learning,open,()=>$("template-workspace").click());
   accept(snapshot);
   $("save-workspace").onclick=()=>action(save);
   $("test-workspace").onclick=()=>action(async()=>{await save();status=await runtime("test",{revision:snapshot.revision,snapshot});message("正在独立运行环境中测试此快照…");});
@@ -107,6 +112,10 @@ export async function mountWorkspace(browser){
     const resolutions={};$("migration-list").querySelectorAll("select[data-path]").forEach(e=>resolutions[e.dataset.path]=e.value);
     accept(await http("apply",{plan_id:plan.plan_id,revision:plan.base_revision,resolutions}));$("migration-panel").hidden=true;message("已创建新 revision；之前的 revision 可导出或恢复。");
   });
+  $("select-framework-upgrade").onclick=()=>{
+    $("migration-list").querySelectorAll("select[data-path]").forEach(select=>{select.value=initial.learning.managed_files.includes(select.dataset.path)?"incoming":"keep";});
+    message("已选择系统脚手架；算法文件保留。请检查预览后点击应用。");
+  };
   $("cancel-migration").onclick=()=>{$("migration-panel").hidden=true;plan=null;};
   $("export-workspace").onclick=()=>action(async()=>{
     await save();const url=URL.createObjectURL(new Blob([JSON.stringify(snapshot,null,2)],{type:"application/json"}));
