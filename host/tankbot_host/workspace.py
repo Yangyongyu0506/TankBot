@@ -6,12 +6,67 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import stat
 import threading
 import uuid
 from tankbot_protocol.wire import strict_loads
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+@contextmanager
+def _file_lock(path):
+    with Path(path).open("a+b") as handle:
+        if os.name == "nt":
+            import msvcrt
+            if handle.tell() == 0:
+                handle.write(b"0"); handle.flush()
+            handle.seek(0)
+            msvcrt.locking(handle.fileno(), msvcrt.LK_LOCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            if os.name == "nt":
+                handle.seek(0)
+                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
+def _migrate_store(source, destination, files, limits):
+    """Copy a locked legacy store, then publish it; caller holds the migration lock."""
+    if source.is_symlink() or not source.is_dir():
+        raise ValueError("UNSAFE_LEGACY_WORKSPACE")
+    if (source / "HEAD.json").is_symlink() or not (source / "HEAD.json").is_file():
+        raise ValueError("INVALID_LEGACY_WORKSPACE: missing HEAD.json")
+    def check_tree():
+        for path in source.rglob("*"):
+            mode = path.lstat()
+            if stat.S_ISLNK(mode.st_mode) or not (stat.S_ISDIR(mode.st_mode) or stat.S_ISREG(mode.st_mode)) or (stat.S_ISREG(mode.st_mode) and mode.st_nlink != 1):
+                raise ValueError("UNSAFE_LEGACY_WORKSPACE_FILE")
+    check_tree()
+    old = WorkspaceStore(source, files, limits)
+    staging = destination.parent / ("." + destination.name + "-migrating-" + uuid.uuid4().hex)
+    try:
+        with old.transaction():
+            old.read()
+            check_tree()
+            shutil.copytree(source, staging, ignore=lambda path, names: ["LOCK"] if Path(path) == source else [])
+            copied = WorkspaceStore(staging, files, limits)
+            copied.read()
+            for path in staging.glob("*.json"):
+                if re.fullmatch("[a-f0-9]{64}", path.stem):
+                    copied.read(path.stem)
+            if destination.exists() or destination.is_symlink():
+                raise ValueError("WORKSPACE_MIGRATION_CONFLICT")
+            staging.rename(destination)
+    finally:
+        if staging.exists():
+            shutil.rmtree(staging)
 
 
 def digest(value):
@@ -110,7 +165,28 @@ def open_store(config, seed=None, directory=None):
     files = {**template, **files}
     key = digest({"seed": str(Path(seed).resolve()) if seed else "default", "entry": config["module"]["entry_point"],
                   "sources": config["control_sources"]})[:16]
-    return WorkspaceStore(directory or ROOT / ".m1-cache/workspaces" / key, files, config["workspace"])
+    if directory is not None:
+        return WorkspaceStore(directory, files, config["workspace"])
+    storage = config["workspace"].get("storage")
+    if storage is None:
+        # Older profiles use the current documented application storage policy.
+        from .configuration import load_yaml
+        storage = load_yaml(ROOT / "config/game.yaml")["workspace"]["storage"]
+    parent = ROOT / storage["directory"]
+    legacy = ROOT / storage["legacy_directory"]
+    destination = parent / key
+    if legacy.resolve() == parent.resolve():
+        raise ValueError("WORKSPACE_STORAGE_PATH_CONFLICT")
+    parent.mkdir(parents=True, exist_ok=True)
+    with _file_lock(parent / "MIGRATION.lock"):
+        if legacy.exists():
+            # Preserve inactive profiles too: persistent player code must no longer
+            # depend on retaining a build cache. Existing userdata stores always win.
+            for source in sorted(legacy.iterdir()):
+                target = parent / source.name
+                if re.fullmatch("[a-f0-9]{16}",source.name) and not target.exists() and not target.is_symlink():
+                    _migrate_store(source, target, files, config["workspace"])
+        return WorkspaceStore(destination, files, config["workspace"])
 
 
 class WorkspaceStore:
@@ -134,30 +210,15 @@ class WorkspaceStore:
     @contextmanager
     def transaction(self):
         with self.lock:
-            handle = None
-            if self.depth == 0:
-                handle = (self.directory / "LOCK").open("a+b")
-                if os.name == "nt":
-                    import msvcrt
-                    if handle.tell() == 0:
-                        handle.write(b"0"); handle.flush()
-                    handle.seek(0)
-                    msvcrt.locking(handle.fileno(), msvcrt.LK_LOCK, 1)
-                else:
-                    import fcntl
-                    fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
-            self.depth += 1
-            try:
+            if self.depth:
                 yield
-            finally:
-                self.depth -= 1
-                if handle is not None:
-                    if os.name == "nt":
-                        handle.seek(0)
-                        msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
-                    else:
-                        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
-                    handle.close()
+            else:
+                with _file_lock(self.directory / "LOCK"):
+                    self.depth += 1
+                    try:
+                        yield
+                    finally:
+                        self.depth -= 1
 
     def _write(self, files, ledger):
         value = {"files": files, "ledger": ledger}

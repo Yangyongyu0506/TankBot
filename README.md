@@ -91,7 +91,9 @@ python3 tools/tankbot.py browser --chassis omnidirectional
 
 游戏界面固定在视口内，无需滚动网页。点击顶部「代码编辑器」或按默认 **F2** 弹出 Workspace；再次按对应快捷键 或点击右上角 **×** 收起。草稿、光标与选中文件会保留。Workspace 支持 Python/JSON 编辑、Vim、文件切换、新建文件、Ctrl/⌘S 或 `:w` 保存。依次点击 **测试快照 → 部署已测试版本**；测试或候选启动失败会保留当前机器人。历史部署可显式回滚，产生新 Runtime 并清空算法状态，物理世界继续运行。编辑器焦点不会把 W/J/L/空格传给坦克。
 
-默认编辑库保存在 `.m1-cache/workspaces/`，源码、模板 ledger 和测试/部署归档跨刷新保留。建议长期项目指定自己的持久目录，并定期导出备份：
+默认编辑库保存在 `userdata/workspaces/<项目标识>/`，与 `userdata/settings.yaml` 和 `userdata/progress.json` 一起管理。源码以版本化 JSON 快照保存，模板 ledger、历史版本和测试/部署归档均在项目目录中，跨刷新与重启保留。备份整个 `userdata/` 即可保存个人数据。
+
+首次使用新路径时自动复制旧 `.m1-cache/workspaces/` 中的各个默认项目，验证历史快照后原子发布，旧目录保留为备份；目标已有项目时不覆盖、不合并。升级前先关闭旧游戏服务，防止旧进程继续向备份目录保存。迁移失败保留旧数据并可重试。路径由 `config/game.yaml` 的 `workspace.storage` 配置，`--workspace-store` 仍可显式指定其他目录：
 
 ```bash
 python3 tools/tankbot.py serve --workspace-store /path/to/tankbot-project-store

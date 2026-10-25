@@ -466,6 +466,9 @@ browser:
   max_pending_requests: 16
   probe_enabled: false
 workspace:
+  storage:
+    directory: userdata/workspaces
+    legacy_directory: .m1-cache/workspaces
   max_files: 64
   max_source_bytes: 32768
   max_plans: 16

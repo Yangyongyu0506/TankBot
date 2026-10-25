@@ -12,7 +12,7 @@ def make_parser():
     parser.add_argument("--chassis", choices=("differential", "omnidirectional"))
     parser.add_argument("--core-binary", type=Path)
     parser.add_argument("--workspace", type=Path)
-    parser.add_argument("--workspace-store", type=Path, help="Persistent versioned editor store; --workspace remains a read-only seed")
+    parser.add_argument("--workspace-store", type=Path, help="Override the versioned editor store (default: userdata/workspaces/<profile>/); --workspace is a read-only seed")
     parser.add_argument("--ticks", type=int)
     parser.add_argument("--view", choices=("estimated", "weapons-practice"))
     parser.add_argument("--robot-demo", action="store_true", help="Run the separate SDK turret/fire example")

@@ -23,3 +23,7 @@
 ## Validation / Open Questions
 
 逐字节保留已编辑文件；并发、重复迁移、中断和磁盘错误可恢复；旧项目可导出/迁移。浏览器存储后端和 SDK 兼容窗口仍待决定，见 [06](../06_WORKSPACE_AND_TEMPLATES.md)。
+
+## 本机存储位置补充（2026-10-25）
+
+按用户要求，玩家版本库默认改为 YAML 配置的 `userdata/workspaces/`，与个人设置及进度一起备份。旧缓存库在文件锁下非覆盖复制、校验历史后原子发布，原库保留；已有目标库优先，不合并独立项目。显式存储目录仍由 CLI 决定。未改变源码所有权、JSON revision、CAS、测试或部署语义；实现和迁移验收见 [17](../17_EDITOR_AND_DEPLOYMENT.md)。

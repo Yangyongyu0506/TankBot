@@ -23,7 +23,7 @@ workspace/
 
 按解锁需要创建目录；不要求所有目录从第一关存在。算法文件与玩家自建工具库均属玩家内容。框架包装器放在 SDK 包或 Host 生成的只读部署层，避免在玩家文件内反复改“自动生成区”。玩家文件允许同项目绝对 import；`localization` 是 Python 包，SDK 自带 `tankbot` 不被工作区同名文件覆盖，检测同名遮蔽并报错。
 
-持久化分别存储源码 revision、模板 ledger、测试报告、部署 artifact 和运行 checkpoint。浏览器建议 IndexedDB/OPFS 适配并提供导出；需应对配额、隐私模式和存储清理，不能把浏览器存储视为永久备份。桌面使用项目目录/应用数据，服务器按用户存储；底层差异隐藏于 `WorkspaceStore`。
+本机源码 revision、模板 ledger 和测试/部署归档位于 `userdata/workspaces/<项目标识>/`，旧缓存库非覆盖复制迁移，具体规则见 [17](17_EDITOR_AND_DEPLOYMENT.md)。持久化设计分别存储源码 revision、模板 ledger、测试报告、部署 artifact 和运行 checkpoint。浏览器建议 IndexedDB/OPFS 适配并提供导出；需应对配额、隐私模式和存储清理，不能把浏览器存储视为永久备份。桌面使用项目目录/应用数据，服务器按用户存储；底层差异隐藏于 `WorkspaceStore`。
 
 ## Manifest
 

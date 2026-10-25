@@ -12,7 +12,7 @@
 
 ## 文件与设置界面
 
-默认设置来自 `config/settings.yaml`，首次运行复制到 `userdata/settings.yaml`；玩家进度为 `userdata/progress.json`。`userdata/` 忽略提交，独立于构建缓存。可用 `--settings-file`、`--save-file` 指定长期路径。已有文件先验证，损坏时报错并保留，不静默重置；不存在的文件才创建。
+默认设置来自 `config/settings.yaml`，首次运行复制到 `userdata/settings.yaml`；玩家进度为 `userdata/progress.json`，玩家源码版本库为 `userdata/workspaces/`，迁移规则见 [17](17_EDITOR_AND_DEPLOYMENT.md)。`userdata/` 忽略提交，独立于构建缓存。可用 `--settings-file`、`--save-file` 指定长期路径。已有文件先验证，损坏时报错并保留，不静默重置；不存在的文件才创建。
 
 设置页面通过顶部按钮或默认 F10 打开/收起，右上角 × 关闭，内容在弹窗内部滚动。进入设置先释放驾驶和武器输入；手柄在设置期间暂停，返回后需回中。模式变更前必须保存代码并等待 Test/Deploy 完成；切换重建关卡与 Runtime，清除旧显示缓存，已保存源码保留。
 

@@ -28,7 +28,7 @@ flowchart LR
 
 ## Workspace 与存储
 
-M3 的两种启动方式都由本机 HTTP 启动器提供版本库；默认路径为 `.m1-cache/workspaces/<seed-and-control-profile-hash>/`，可用 `--workspace-store PATH` 指定持久目录。此选择不等于独立静态网站的浏览器存储方案；IndexedDB/OPFS 留待独立 Web 分发验证。
+M3 的两种启动方式都由本机 HTTP 启动器提供版本库；默认路径为 `userdata/workspaces/<seed-and-control-profile-hash>/`，可用 `--workspace-store PATH` 指定持久目录。此选择不等于独立静态网站的浏览器存储方案；IndexedDB/OPFS 留待独立 Web 分发验证。
 
 `--workspace PATH` 是只读种子：首次建立编辑库时导入文件，只补不存在的基础模板；原目录和仓库示例均不回写。后续启动继续读取保存的编辑库。启动机器人使用原种子示例；编辑库须经 Test/Deploy 才成为 Active，避免启动时自动执行未测试草稿。
 
@@ -111,3 +111,13 @@ M4 新增独立的 Campaign 单模块 profile：标准输入是授权系统自�
 ## M5 当前增量
 
 本文记录 M3 原始单模块 profile；M5 已扩展同步多模块 Contract/Topic 图、整图测试、报告执行/等待模块、原子部署与回滚，见 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)。快照、非覆盖与失败保留原则继续适用。
+
+## Workspace 持久目录修订（2026-10-25）
+
+用户要求玩家代码归入 userdata。两种本机 Runtime 仍共享同一个 WorkspaceAPI/版本库实现；可编辑源码、所有历史 revision、模板 ledger 和 archive 均保存在 `userdata/workspaces/<项目标识>/`，完整备份 userdata 可包含设置、进度和代码。源码继续使用版本化 JSON，不改变快照、CAS 或部署接口。
+
+路径在 `config/game.yaml` 的 `workspace.storage.directory` 配置，历史根目录由 `legacy_directory` 指定；相对路径以仓库根为基准。当前 1.8 配置必须声明这两个字段，旧 profile 未声明时读取当前 YAML 中的应用存储策略。显式 `--workspace-store` 优先，不迁移或改写该目录；`--workspace` 仍为只读种子。
+
+打开默认库前扫描历史根目录的默认项目标识，逐个在原库文件锁下复制完整内容到新根的独立暂存目录；验证 HEAD 和全部历史源码摘要后原子发布。迁移锁串行化并发启动。目标目录存在时保留其内容，不合并旧库；原库保留为备份。缺 HEAD、损坏 revision、不安全链接或复制/发布失败时不生成替代项目，并清理本次暂存目录，可修复后重试。升级前应关闭旧服务，迁移后新目录为主；独立项目不会被合并。
+
+验证：`tests/test_workspace_storage.py` 的 9 项迁移/持久化检查，以及既有 Workspace 保存、CAS、失败部署和回滚回归。无需改变 Game Core、玩家导入权限或 View Policy。
