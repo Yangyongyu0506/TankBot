@@ -8,7 +8,8 @@
       "enum": [
         "1.5",
         "1.6",
-        "1.7"
+        "1.7",
+        "1.8"
       ]
     },
     "confirmation_status": {
@@ -579,6 +580,99 @@
         },
         "covariance_max_iterations": {
           "type": "integer"
+        },
+        "reference_aim": {
+          "type": "object",
+          "properties": {
+            "kp": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "kd": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "fire_tolerance_rad": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "velocity_window_s": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "max_target_speed_mps": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "yaw_speed_threshold_mps": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "minimum_track_samples": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "maximum_track_samples": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "minimum_fit_span_s": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "armor_facing_cosine": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "yaw_alpha": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "initial_variance": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "process_acceleration_std": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "measurement_std_m": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "position_window_s": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "intercept_iterations": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "minimum_distance_squared": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          },
+          "required": [
+            "kp",
+            "kd",
+            "fire_tolerance_rad",
+            "velocity_window_s",
+            "max_target_speed_mps",
+            "yaw_speed_threshold_mps",
+            "minimum_track_samples",
+            "maximum_track_samples",
+            "minimum_fit_span_s",
+            "armor_facing_cosine",
+            "yaw_alpha",
+            "initial_variance",
+            "process_acceleration_std",
+            "measurement_std_m",
+            "position_window_s",
+            "intercept_iterations",
+            "minimum_distance_squared"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
@@ -977,6 +1071,29 @@
             "cmd_vel_timeout_s": {
               "type": "number",
               "exclusiveMinimum": 0
+            },
+            "acceleration_control": {
+              "type": "object",
+              "properties": {
+                "max_relative_acceleration_radps2": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "timeout_s": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "rate_limit_braking_tau_s": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                }
+              },
+              "required": [
+                "max_relative_acceleration_radps2",
+                "timeout_s",
+                "rate_limit_braking_tau_s"
+              ],
+              "additionalProperties": false
             }
           },
           "required": [
@@ -1147,6 +1264,23 @@
               },
               "health": {
                 "$ref": "campaign.schema.json#/$defs/health"
+              },
+              "armor": {
+                "type": "object",
+                "properties": {
+                  "layout": {
+                    "const": "four_side_centers"
+                  },
+                  "width_m": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  }
+                },
+                "required": [
+                  "layout",
+                  "width_m"
+                ],
+                "additionalProperties": false
               }
             },
             "required": [
@@ -1222,19 +1356,22 @@
         "chassis": {
           "enum": [
             "keyboard",
-            "robot"
+            "robot",
+            "disabled"
           ]
         },
         "turret": {
           "enum": [
             "keyboard",
-            "robot"
+            "robot",
+            "disabled"
           ]
         },
         "weapon": {
           "enum": [
             "keyboard",
-            "robot"
+            "robot",
+            "disabled"
           ]
         }
       },
@@ -1820,6 +1957,133 @@
     },
     "campaign": {
       "$ref": "campaign.schema.json"
+    },
+    "robot_graph": {
+      "type": "object",
+      "properties": {
+        "max_modules": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "max_connections": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 256
+        },
+        "schemas": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          }
+        },
+        "internal_schemas": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "profiles": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "template_version",
+              "manifest",
+              "contracts",
+              "grants",
+              "target_source",
+              "managed_files"
+            ],
+            "properties": {
+              "template_version": {
+                "type": "string",
+                "minLength": 1
+              },
+              "manifest": {
+                "$ref": "workspace.schema.json"
+              },
+              "contracts": {
+                "type": "object",
+                "minProperties": 1,
+                "additionalProperties": {
+                  "$ref": "module-contract.schema.json"
+                }
+              },
+              "grants": {
+                "type": "object",
+                "required": [
+                  "inputs",
+                  "outputs",
+                  "actuators"
+                ],
+                "properties": {
+                  "inputs": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "outputs": {
+                    "type": "array",
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "actuators": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "additionalProperties": false
+              },
+              "target_source": {
+                "type": "string",
+                "minLength": 1
+              },
+              "managed_files": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "uniqueItems": true
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "max_batch_outputs": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128
+        },
+        "max_view_topic_bytes": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "max_modules",
+        "max_connections",
+        "schemas",
+        "internal_schemas",
+        "profiles",
+        "max_batch_outputs",
+        "max_view_topic_bytes"
+      ],
+      "additionalProperties": false
     }
   },
   "required": [
@@ -1859,7 +2123,8 @@
           "config_version": {
             "enum": [
               "1.6",
-              "1.7"
+              "1.7",
+              "1.8"
             ]
           }
         }
@@ -1868,6 +2133,47 @@
         "required": [
           "campaign"
         ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "config_version": {
+            "const": "1.8"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "robot_graph"
+        ],
+        "properties": {
+          "weapons": {
+            "properties": {
+              "turret": {
+                "required": [
+                  "acceleration_control"
+                ]
+              }
+            }
+          },
+          "campaign": {
+            "required": [
+              "chapters"
+            ],
+            "properties": {
+              "levels": {
+                "additionalProperties": {
+                  "required": [
+                    "chapter_id",
+                    "control_sources",
+                    "armor_mode"
+                  ]
+                }
+              }
+            }
+          }
+        }
       }
     }
   ]

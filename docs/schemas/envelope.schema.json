@@ -86,7 +86,11 @@
         "weapon_state@1",
         "view_snapshot@2",
         "target_estimate@1",
-        "view_snapshot@3"
+        "view_snapshot@3",
+        "target_points@1",
+        "turret_acceleration@1",
+        "target_pose_estimate@1",
+        "view_snapshot@4"
       ]
     },
     "payload": {
@@ -732,6 +736,97 @@
         "properties": {
           "payload": {
             "$ref": "payloads.schema.json#/$defs/view_snapshot_v3"
+          },
+          "message_type": {
+            "const": "topic"
+          },
+          "frame_id": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "target_points@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "payloads.schema.json#/$defs/target_points"
+          },
+          "message_type": {
+            "const": "topic"
+          },
+          "frame_id": {
+            "const": "map"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "turret_acceleration@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "payloads.schema.json#/$defs/turret_acceleration"
+          },
+          "message_type": {
+            "const": "topic"
+          },
+          "frame_id": {
+            "const": "base_link"
+          },
+          "channel": {
+            "const": "/robot/turret/cmd_accel"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "target_pose_estimate@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "payloads.schema.json#/$defs/target_pose_estimate"
+          },
+          "message_type": {
+            "const": "topic"
+          },
+          "frame_id": {
+            "const": "map"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "view_snapshot@4"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "payloads.schema.json#/$defs/view_snapshot_v4"
           },
           "message_type": {
             "const": "topic"

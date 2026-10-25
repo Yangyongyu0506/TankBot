@@ -1,7 +1,7 @@
 """Local editor API. Storage does not execute player files or grant runtime permissions."""
 from .workspace import open_store, starter, digest
 from .learning import learning_bundle
-from .campaign_templates import TEMPLATE_VERSION, framework_upgrade, MANAGED_FILES
+from .campaign_templates import template_version, framework_upgrade
 
 
 class WorkspaceAPI:
@@ -26,7 +26,7 @@ class WorkspaceAPI:
         sources = starter(config)
         missing = {path: source for path, source in sources.items() if path not in snapshot["files"]}
         if template_id not in snapshot["ledger"] or missing:
-            plan = self.store.plan(template_id, TEMPLATE_VERSION, sources, snapshot["revision"],
+            plan = self.store.plan(template_id, template_version(config), sources, snapshot["revision"],
                                    {"level_id": config["campaign"]["active_level"], "required_sdk_profile": "0.1.0"})
             self.store.apply(plan["plan_id"], snapshot["revision"], {})
         self.config = config
@@ -40,16 +40,17 @@ class WorkspaceAPI:
                 raise ValueError("NO_TEACHING_UPGRADE")
             snapshot = self.store.read()
             sources = starter(self.config)
+            managed = framework_upgrade(self.config,snapshot["files"])["managed_files"]
             # Existing algorithms never enter the replacement plan, including user tests outside managed paths.
             sources = {path: source for path, source in sources.items()
-                       if path in MANAGED_FILES or path not in snapshot["files"]}
-            plan = self.store.plan("campaign-starter", TEMPLATE_VERSION, sources, value["revision"],
+                       if path in managed or path not in snapshot["files"]}
+            plan = self.store.plan("campaign-starter", template_version(self.config), sources, value["revision"],
                                    {"purpose": "teaching-framework-upgrade", "preserve_existing_algorithms": True})
             plan["purpose"] = "teaching-framework-upgrade"
             return plan
         if operation == "template":
             template_id = "campaign-starter" if self.config.get("campaign", {}).get("active_level") else "odometry-starter"
-            return self.store.plan(template_id, TEMPLATE_VERSION, starter(self.config), value["revision"],
+            return self.store.plan(template_id, template_version(self.config), starter(self.config), value["revision"],
                                    {"required_sdk_profile": "0.1.0", "module_contract": f"contracts/{self.config['module']['module_id']}.json",
                                     "purpose": "single-module odometry project and tests"})
         if operation == "import":

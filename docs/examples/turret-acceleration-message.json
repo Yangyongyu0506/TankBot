@@ -1,0 +1,16 @@
+{
+  "protocol_version": "1.0",
+  "message_type": "topic",
+  "channel": "/robot/turret/cmd_accel",
+  "sequence_number": 1,
+  "simulation_tick": 120,
+  "simulation_time_ns": 2000000000,
+  "run_id": "m5-example",
+  "publisher_id": "module:aiming",
+  "request_id": null,
+  "frame_id": "base_link",
+  "schema": "turret_acceleration@1",
+  "payload": {
+    "acceleration_radps2": 2.0
+  }
+}

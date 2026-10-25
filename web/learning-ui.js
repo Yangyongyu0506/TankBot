@@ -25,6 +25,7 @@ export function mountLearning(reference,openFile,previewTemplate){
   const lesson=$("learning-lesson");lesson.append(element("h3",reference.lesson.title),element("p",reference.lesson.summary));
   lesson.append(element("h4","完成条件"),element("p",reference.lesson.completion),element("h4","调用与状态"),element("p",reference.lesson.execution));
   const steps=element("ol");for(const text of reference.lesson.steps)steps.append(element("li",text));lesson.append(steps);
+  if(reference.lesson.calibration)lesson.append(element("h4","公开安装与运动学模型"),element("pre",JSON.stringify(reference.lesson.calibration,null,2)));
   for(const file of reference.lesson.files){const button=element("button","打开 "+file.path);button.onclick=()=>{openFile(file.path);if(innerWidth<1050)show(false);};lesson.append(button,element("p",file.role,"hint"));}
   for(const fn of reference.lesson.functions){
     const section=element("section",undefined,"function-guide");section.append(element("h4","填写约定"),element("pre",fn.signature));
@@ -50,6 +51,7 @@ export function mountLearning(reference,openFile,previewTemplate){
   }
   updateUpgrade(reference.upgrade_required);
   function selectType(name){
+    if(name==="NDArray")name="ndarray";
     if(!reference.types.some(type=>type.name===name))return;
     currentType=name;tab("types");show(true);renderType();
   }

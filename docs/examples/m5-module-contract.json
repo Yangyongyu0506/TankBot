@@ -1,0 +1,27 @@
+{
+  "contract_version": "1.0",
+  "module_id": "tracking",
+  "entry_point": "robot_modules.weapons:TrackingModule",
+  "inputs": {
+    "points": {
+      "schema": "target_points@1",
+      "required": true,
+      "max_age_ticks": 24
+    }
+  },
+  "outputs": {
+    "target": {
+      "schema": "target_estimate@1"
+    }
+  },
+  "execution": {
+    "mode": "periodic",
+    "period_ticks": 6,
+    "deadline_ticks": 6,
+    "budget_ms": 6
+  },
+  "dependencies": [
+    "coordinates"
+  ],
+  "state_version": "1"
+}

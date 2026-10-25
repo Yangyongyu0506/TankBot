@@ -2,7 +2,7 @@
 
 ## 目的与执行原则
 
-先验证本项目独特的端到端数据流，再扩展内容。M0、M1/M1b 已交付并完成[收尾复核](reports/M1_CLOSEOUT.md)；M2 已完成浏览器双 Worker、Adapter 一致性及本机资源验收，见 [M2 报告](reports/M2_VALIDATION.md)。其他 OS/浏览器验证仍待执行；M3 编辑部署和 M4 C0–C2 本机教学闭环已完成，见 [M3](reports/M3_VALIDATION.md)、[M4 报告](reports/M4_VALIDATION.md)。M5 以后尚未实施。Accepted 安全/状态边界从 M1 开始，不把三层状态分离推迟到画面完成以后。
+先验证本项目独特的端到端数据流，再扩展内容。M0、M1/M1b 已交付并完成[收尾复核](reports/M1_CLOSEOUT.md)；M2 已完成浏览器双 Worker、Adapter 一致性及本机资源验收，见 [M2 报告](reports/M2_VALIDATION.md)。其他 OS/浏览器验证仍待执行；M3 编辑部署和 M4 C0–C2 本机教学闭环已完成，见 [M3](reports/M3_VALIDATION.md)、[M4 报告](reports/M4_VALIDATION.md)。M5 多模块和 Weapons C3/C4 已完成本机验收，见 [M5 报告](reports/M5_VALIDATION.md)；M6 以后尚未实施。Accepted 安全/状态边界从 M1 开始，不把三层状态分离推迟到画面完成以后。
 
 ```mermaid
 flowchart LR
@@ -12,8 +12,8 @@ flowchart LR
     M1 --> M3[M3 编辑与部署]
     M2 --> M4[M4 前三关]
     M3 --> M4
-    M4 --> M5[M5 多模块与定位建图]
-    M5 --> M6[M6 规划控制自主]
+    M4 --> M5[M5 多模块与自动武器]
+    M5 --> M6[M6 Locomotion 到自主]
     M5 --> M7[M7 Algorithm Lab]
     M6 --> M8[M8 服务器与 Arena]
     M2 --> M8
@@ -31,8 +31,8 @@ flowchart LR
 | M2 Platform and Runtime Profiles（本机 profile 已验收） | 依赖 M1b；浏览器 Pyodide 双 Worker、IPC/WebSocket/Test Adapter 一致性、构建矩阵、资源测量 | 同一协议夹具跨 Adapter 等价；算法/物理不进入主 UI，并测量帧间隔；明确平台保证范围；复审 ADR-0002/0003/0013 状态 | 冷启动、存储、CSP、OS 安全差异 |
 | M3 Editor and Deployment（本机完成） | 依赖 M1；CodeMirror 原型、多文件 Workspace、模板 ledger、Manifest、Edit/Test/Deploy、失败回滚 | 不覆盖玩家文件；编辑不改变 Active；快照测试/部署摘要一致；Vim 焦点不误触控制 | 迁移冲突、多文件 import、安全打包 |
 | M4 First Three Playable Levels（本机完成） | 依赖 M2/M3；C0–C2、理想/噪声 Radar、函数到类、巡逻敌车与 3 HP 击杀 | 原生/Firefox 实际编辑部署并通关；两种跟踪法可用；跨关保留源码，无目标/弹道真值旁路 | 其他平台、难度曲线与长期教学反馈 |
-| M5 Multi-Module Robot Software | 依赖 M4；完整 Contract 图、C3/C4、候选选源、Encoder/IMU/scan、估计地图 | 多模块项目复用旧代码；无系统定位仍可玩；错帧/过期/PSD 负例通过；迁移无损 | 帧对齐、积累漂移、主题图复杂度 |
-| M6 Planning and Autonomous Control | 依赖 M5；C5–C7、路径/速度控制、任务决策、控制租约切换 | 无键盘执行器完成多次隐藏场景；失效时安全制动；不改 Core 即接管能力 | 闭环时延、规划开销、弹道/碰撞边界 |
+| M5 Multi-Module Robot Software（本机完成） | 依赖 M4；同步周期/event Contract 图、选源、章节和 C3/C4 自动瞄准/敌车姿态/装甲 | 冻结/固定提交、失败与整图回滚；算法迁移无损；两种数值方案与原生/浏览器真实 UI 通关 | 管线时延、中心观测不可观区间、难度曲线 |
+| M6 Locomotion → Autonomous Control（待设计） | 依赖 M5；先底盘驱动/运动控制，再自身状态估计，后续建图、规划与决策；具体关卡另行确认 | 每步只增加主要学习负担；最终无键盘自主任务，失效安全制动，不改 Core 接管能力 | 新传感器、漂移、闭环时延、规划开销 |
 | M7 Algorithm Lab | 依赖 M5；录制输入、参数比较、估计轨迹、停止后授权真值评分 | 传感器回放与闭环比较有明确区别；可重现错误；私有数据不进正式 Runtime | Replay 容量、评估 oracle、数据权限 |
 | M8 Remote Server and Arena | 依赖 M2/M6，复用 M7 录制设计；服务器 Authority、强化沙箱、公平配额、比赛审计 | 第三方代码攻击测试通过；客户端无真值/秘密地图；服务器评分；版本/资源锁定，超载处理可审计 | 逃逸、DoS、公平性、运维成本 |
 | M9 Cross-Platform Release and Maintenance | 依赖 M7/M8；桌面打包、验证后的平台支持表、兼容窗口、文档 CI、回放保留政策 | 每个声称支持的平台有安装/启动/安全/性能报告；旧项目可迁移或在声明窗口内运行 | 兼容回归、签名分发、浏览器/系统更新 |
@@ -82,10 +82,12 @@ M3 已完成 CodeMirror/Vim、多文件 Workspace、Manifest、非覆盖模板�
 
 M4 已按用户确认实现 12 m / 360° / 10 Hz Radar、C2 高斯噪声/10% 丢失、同物理世界的差速巡逻敌车、逐发扣血与死亡销毁。C2 以限时内存活并击杀通关，误差仅结束后显示。函数→类的自动模板解锁保留既有源码；原生/Firefox 真实 UI 证据见报告。
 
-下一项为 **M5a：完整多模块 Contract 图与依赖调度**。先用现有 Encoder/IMU 与估计类型建立可复用模块链，验证输入冻结、固定提交、预算分配、部署/失败与跨文件迁移；再推进 C3/C4 的定位与建图能力。新增定位 fix/scan 等观测模型和权限需要单独确认。其他平台支持仍须执行 M2 矩阵，CI 文件存在不构成验证。
+M5 已按用户修订完成：M5a 多模块图、M5b C3 自动武器、M5c C4 敌车姿态与有效装甲，见 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)。Accepted ADR-0031/0032 记录实际语义。原“C3 自身定位 / C4 scan 建图”移至未来 Locomotion，不属于已完成项。
+
+建议下一项为 **M6a：Locomotion 首关设计与底盘驱动练习**。先共同确定任务、驱动输入与教学传感器；复用已有两个底盘和武器模块，先验证运动学/速度控制，不同时撤销系统自身位姿。交付关卡说明、带类型数值接口、非覆盖模板、权限和可测验收，再实现。新增物理或观测参数继续逐项确认；不在 M5 结束时自动开始。
 
 ## 2026-10-25 范围核对
 
-当前 M1–M4 的平台、资源、存储与教学开放项统一见 [状态核对](reports/M1_M4_STATUS_AUDIT.md)。本轮补充课程依赖白名单、NumPy 矩阵和运行日志反馈，不把未实现的强沙箱、独立浏览器存储、多模块或后续关卡改称已完成。
+当前 M1–M4 的平台、资源、存储与教学开放项统一见 [状态核对](reports/M1_M4_STATUS_AUDIT.md)。本轮补充课程依赖白名单、NumPy 矩阵和运行日志反馈，强沙箱和独立浏览器存储仍未实现；M5 多模块/C3/C4 的新增证据单列于 M5 报告。
 
-本机 Campaign 另补每关运行时限、编辑器主动结束、C2 玩家 HP 与死亡失败，并统一迁移 YAML 参数源，见 [25](25_ATTEMPT_RULES_AND_CONFIGURATION.md) 和 [验收](reports/ATTEMPT_RULES_VALIDATION.md)。这不增加敌车攻击 AI，也不改变 M5 的范围。
+本机 Campaign 另补每关运行时限、编辑器主动结束、C2 玩家 HP 与死亡失败，并统一迁移 YAML 参数源，见 [25](25_ATTEMPT_RULES_AND_CONFIGURATION.md) 和 [验收](reports/ATTEMPT_RULES_VALIDATION.md)。这不增加敌车攻击 AI，M5 的课程范围由本轮用户确认修订，以 26 为准。

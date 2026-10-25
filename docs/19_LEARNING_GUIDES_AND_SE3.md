@@ -91,3 +91,7 @@ Test 自动检查语法、导入、项目/Contract/连线/发布权限，运行 
 ## 课程库与数值数据增量
 
 玩家仅可导入 NumPy、SDK、指定基础标准库及自身模块；测试和 Runtime 共用白名单。类型参考的协方差为二维 ndarray，target_positions 可将 C2 当次测量转换为 (N,2) 数组；对象集合不是历史轨迹。源码完整保存与兼容说明见 [23](23_PLAYER_CODE_AND_LIBRARIES.md)。玩家可用 print 与异常日志调试，编辑器中的运行日志可定位项目文件，见 [24](24_RUNTIME_LOGS.md)。
+
+## M5 当前增量
+
+M5 的 C3/C4 同样提供完整的输入/返回约定、单位、参考系、NumPy shape 与常见问题；新增 AimInput/AimOutput、TargetPoints、TargetPoseEstimate 的类型参考及公开差速/装甲标定。章节与多模块复用见 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)。

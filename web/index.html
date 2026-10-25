@@ -8,9 +8,9 @@
       <div class="canvas-wrap"><canvas id="arena" width="1000" height="700" tabindex="0" aria-label="坦克游戏画面"></canvas><div class="map-label">TASK MAP / METERS</div><div id="campaign-summary" class="campaign-summary" role="status" hidden></div><div id="pose-label" class="pose-label">等待位姿估计</div></div>
       <p id="mode-label" class="hint">—</p><div class="legend"><span><i class="estimate"></i> <span id="legend-pose">机器人估计</span></span><span><i class="trail"></i> 估计轨迹</span><span>静态地图已由任务公开</span></div>
     </section>
-    <aside><nav class="hud-tabs" role="tablist" aria-label="机器人面板"><button id="tab-task" role="tab" aria-selected="false" aria-controls="hud-task" tabindex="-1">任务</button><button id="tab-chassis" role="tab" aria-selected="true" aria-controls="hud-chassis">驾驶</button><button id="tab-state" role="tab" aria-selected="false" aria-controls="hud-state" tabindex="-1">状态</button><button id="tab-sensors" role="tab" aria-selected="false" aria-controls="hud-sensors" tabindex="-1">传感器</button><button id="tab-weapons" role="tab" aria-selected="false" aria-controls="hud-weapons" tabindex="-1">武器</button><button id="tab-visualization" role="tab" aria-selected="false" aria-controls="hud-visualization" tabindex="-1">图层</button><button id="tab-logs" role="tab" aria-selected="false" aria-controls="hud-logs" tabindex="-1">日志</button></nav>
+    <aside><nav class="hud-tabs" role="tablist" aria-label="机器人面板"><button id="tab-task" role="tab" aria-selected="false" aria-controls="hud-task" tabindex="-1">任务</button><button id="tab-chassis" role="tab" aria-selected="true" aria-controls="hud-chassis">驾驶</button><button id="tab-state" role="tab" aria-selected="false" aria-controls="hud-state" tabindex="-1">状态</button><button id="tab-sensors" role="tab" aria-selected="false" aria-controls="hud-sensors" tabindex="-1">传感器</button><button id="tab-weapons" role="tab" aria-selected="false" aria-controls="hud-weapons" tabindex="-1">武器</button><button id="tab-visualization" role="tab" aria-selected="false" aria-controls="hud-visualization" tabindex="-1">图层</button><button id="tab-graph" role="tab" aria-selected="false" aria-controls="hud-graph" tabindex="-1">模块</button><button id="tab-logs" role="tab" aria-selected="false" aria-controls="hud-logs" tabindex="-1">日志</button></nav>
     <section id="hud-task" class="card" role="tabpanel" aria-labelledby="tab-task" hidden>
-      <p class="eyebrow">CAMPAIGN · C0 — C2</p><h2 id="task-title">教学关卡</h2><p id="task-problem"></p>
+      <p id="task-chapter" class="eyebrow">CAMPAIGN</p><h2 id="task-title">教学关卡</h2><p id="task-problem"></p>
       <label for="level-select" class="hint">选择关卡</label><select id="level-select" aria-label="选择教学关卡"></select>
       <div class="task-actions"><button id="start-level">开始 / 重试</button><button id="finish-level">结束本次尝试</button></div>
       <p id="task-status" role="status">加载任务…</p><p id="task-progress"></p><ul id="task-hints"></ul>
@@ -24,6 +24,7 @@
       <p class="eyebrow">DISPLAYS</p><h2>可视化图层</h2><p id="visualization-note"></p><div id="layer-list"></div><p id="layers-message" class="hint" role="status"></p>
       <details id="message-inspector"><summary>消息查看器</summary><label><input id="show-message" type="checkbox" checked> 显示消息内容</label><select id="message-topic" aria-label="选择可视消息"></select><pre id="message-data"></pre></details>
     </section>
+    <section id="hud-graph" class="card" role="tabpanel" aria-labelledby="tab-graph" hidden><h2>机器人模块</h2><p id="graph-summary"></p><label id="pose-provider-control" hidden>位姿显示来源<select id="pose-provider" aria-label="选择位姿发布模块"></select></label><div id="robot-graph-list"></div><p id="graph-message" class="hint" role="status"></p></section>
     <section id="hud-logs" class="card runtime-logs-panel" role="tabpanel" aria-labelledby="tab-logs" hidden><h2>运行日志</h2><div id="hud-runtime-log-view" class="runtime-log-view"></div></section>
     <section class="note"><span>↗</span><p id="view-note">在地图上的位置来自 Python 里程计。碰撞仍由独立的物理世界决定，估计误差会保留。</p></section></aside>
   </main>
@@ -58,6 +59,6 @@
     <section id="migration-panel" hidden><h3>变更预览</h3><p id="migration-explanation" class="hint"></p><div id="migration-list"></div><button id="upgrade-and-test" hidden>保留算法，更新框架并继续测试</button><button id="select-framework-upgrade">选择系统脚手架更新（保留算法）</button><button id="apply-migration">应用所选变更</button><button id="cancel-migration">取消</button></section>
   </section>
   </dialog>
-  <footer><span>TankBot / Experimental M4 · <a href="/THIRD_PARTY_NOTICES.txt">开源组件许可</a></span><span>Physics → Sensors → Python → Estimated pose → Authorized view</span></footer>
+  <footer><span>TankBot / Experimental M5 · <a href="/THIRD_PARTY_NOTICES.txt">开源组件许可</a></span><span>Physics → Sensors → Python → Estimated pose → Authorized view</span></footer>
   <script type="module" src="/app.js"></script>
 </body></html>

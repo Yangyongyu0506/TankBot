@@ -18,6 +18,7 @@ use std::{
     collections::BTreeMap,
     f64::consts::{PI, TAU},
 };
+pub use turret::TurretAccelerationTarget;
 use turret::TurretSystem;
 pub use turret::{TurretConfig, TurretTarget};
 pub use wheels::Wheels;
@@ -153,6 +154,7 @@ pub struct PrivateSnapshot {
     pub fire_results: Value,
     pub weapon_events: Value,
     pub target_hits: Value,
+    pub target_damage_hits: Value,
     pub targets: Value,
     pub player_hp: Option<u64>,
     pub player_alive: bool,
@@ -421,6 +423,18 @@ impl GameCore {
             t.revoke();
         }
     }
+    pub fn set_turret_acceleration(
+        &mut self,
+        target: TurretAccelerationTarget,
+    ) -> Result<(), String> {
+        if self.destroyed_player_pose.is_some() {
+            return Err("PLAYER_DEAD".into());
+        }
+        self.turret
+            .as_mut()
+            .ok_or("Weapons disabled")?
+            .set_acceleration(target, self.tick)
+    }
     pub fn set_target(&mut self, t: VelocityTarget) -> Result<(), String> {
         if self.destroyed_player_pose.is_some() {
             return Err("PLAYER_DEAD".into());
@@ -602,7 +616,7 @@ impl GameCore {
         let hits = self
             .cannon
             .as_ref()
-            .and_then(|c| c.target_hits.get(&target.target_id))
+            .and_then(|c| c.damage_hits.get(&target.target_id))
             .copied()
             .unwrap_or(0);
         let hp = target.health.as_ref().map(|h| {
@@ -687,6 +701,7 @@ impl GameCore {
             fire_results: self.cannon.as_ref().map(|c|json!(c.results)).unwrap_or(json!([])),
             weapon_events: self.cannon.as_ref().map(|c|json!(c.events)).unwrap_or(json!([])),
             target_hits: self.cannon.as_ref().map(|c|json!(c.target_hits)).unwrap_or(json!({})),
+            target_damage_hits: self.cannon.as_ref().map(|c|json!(c.damage_hits)).unwrap_or(json!({})),
             targets: json!(self.config.weapons.targets.iter().map(|t| self.target_snapshot(t)).collect::<Vec<_>>()),
             player_hp: self.player_hp(),
             player_alive: self.destroyed_player_pose.is_none(),

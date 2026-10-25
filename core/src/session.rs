@@ -1,5 +1,5 @@
 //! Shared private JSON DTO session for native IPC and browser WASM. Not a public protocol endpoint.
-use crate::{Config, GameCore, TurretTarget, VelocityTarget};
+use crate::{Config, GameCore, TurretAccelerationTarget, TurretTarget, VelocityTarget};
 use serde_json::{Value, json};
 
 #[derive(Default)]
@@ -34,6 +34,12 @@ impl CoreSession {
                     let target: TurretTarget = serde_json::from_value(r["turret_target"].clone())
                         .map_err(|e| e.to_string())?;
                     c.set_turret_target(target)?;
+                }
+                if !r["turret_acceleration_target"].is_null() {
+                    let target: TurretAccelerationTarget =
+                        serde_json::from_value(r["turret_acceleration_target"].clone())
+                            .map_err(|e| e.to_string())?;
+                    c.set_turret_acceleration(target)?;
                 }
                 if let Some(requests) = r["fire_requests"].as_array() {
                     for request in requests {

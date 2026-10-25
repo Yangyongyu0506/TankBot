@@ -138,5 +138,5 @@ def diagnostics(authority):
             "rejections":[e for e in authority.audit if e["event"]=="rejected"],
             "tick_cost":dist(authority.tick_times_ms),"batch_cost":dist(authority.worker.batch_times_ms),
             "max_view_bytes":authority.max_view_bytes,
-            "fixed_commit_gates":all(e["tick"]-e["sample_tick"]==authority.delay for e in authority.audit if e["event"]=="pose_commit"),
+            "fixed_commit_gates":all(e["tick"]-e.get("activation_tick",e["sample_tick"])==authority.delay for e in authority.audit if e["event"]=="pose_commit"),
             "shots_fired":authority._sensors.get("/robot/weapons/cannon/state",{}).get("payload",{}).get("shots_fired",0)}

@@ -1,0 +1,76 @@
+{
+  "manifest_version": "1.0",
+  "sdk_version": "0.1.0",
+  "protocol_version": "1.0",
+  "project_id": "weapons-robot",
+  "entry_point": "robot_modules.weapons:CoordinatesModule",
+  "modules": [
+    {
+      "module_id": "coordinates",
+      "contract": "contracts/coordinates.json",
+      "config": {}
+    },
+    {
+      "module_id": "tracking",
+      "contract": "contracts/tracking.json",
+      "config": {}
+    },
+    {
+      "module_id": "aiming",
+      "contract": "contracts/aiming.json",
+      "config": {}
+    }
+  ],
+  "connections": [
+    {
+      "from": "/robot/localization/pose",
+      "to": "coordinates.self_pose"
+    },
+    {
+      "from": "/robot/sensors/radar",
+      "to": "coordinates.radar"
+    },
+    {
+      "from": "coordinates.points",
+      "to": "/robot/modules/coordinates/points"
+    },
+    {
+      "from": "/robot/modules/coordinates/points",
+      "to": "tracking.points"
+    },
+    {
+      "from": "tracking.target",
+      "to": "/robot/estimates/tracking/target"
+    },
+    {
+      "from": "/robot/localization/pose",
+      "to": "aiming.self_pose"
+    },
+    {
+      "from": "/robot/turret/joint_states",
+      "to": "aiming.turret"
+    },
+    {
+      "from": "/robot/weapons/cannon/state",
+      "to": "aiming.weapon"
+    },
+    {
+      "from": "/robot/estimates/tracking/target",
+      "to": "aiming.target"
+    },
+    {
+      "from": "aiming.acceleration",
+      "to": "/robot/turret/cmd_accel"
+    },
+    {
+      "from": "aiming.fire",
+      "to": "/robot/weapons/cannon/fire"
+    }
+  ],
+  "dependencies": [],
+  "pose_source": {
+    "mode": "system",
+    "module_id": null,
+    "fallback": "none"
+  }
+}

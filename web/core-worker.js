@@ -85,6 +85,10 @@ self.onmessage=async({data})=>{
         py.runPython(data.path.endsWith("/finish")?"_reply=authority.finish_campaign()":"_reply=authority.campaign_status()");
         self.postMessage({kind:"response",id:data.id,ok:true,value:evaluate("_reply")});return;
       }
+      if(data.path==="/api/pose_source"){
+        py.runPython("_value=json.loads(_command)\nassert isinstance(_value,dict) and set(_value)=={'module_id'}\nauthority.select_pose_source(_value['module_id'])\n_reply={'selected_source':authority.selector.source_id}");
+        self.postMessage({kind:"response",id:data.id,ok:true,value:evaluate("_reply")});return;
+      }
       if(data.path.startsWith("/api/deployment")){
         if(data.path==="/api/deployment")py.runPython("_reply=authority.deployment.status()");
         else {

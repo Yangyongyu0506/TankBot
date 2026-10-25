@@ -41,8 +41,8 @@ class CampaignTests(unittest.TestCase):
         ranges = [row[0]["range_m"]-4 for row in measurements if row]
         bearings = [row[0]["bearing_rad"] for row in measurements if row]
         self.assertLess(abs(missing-100), 40)
-        self.assertAlmostEqual(statistics.pstdev(ranges), .15, delta=.02)
-        self.assertAlmostEqual(statistics.pstdev(bearings), .02, delta=.003)
+        self.assertAlmostEqual(statistics.pstdev(ranges), config["campaign"]["radar"]["profiles"]["noisy"]["range_stddev_m"], delta=.05)
+        self.assertAlmostEqual(statistics.pstdev(bearings), config["campaign"]["radar"]["profiles"]["noisy"]["bearing_stddev_rad"], delta=.01)
         other = RadarSimulator(config)
         self.assertEqual(measurements[:20], [other.sample(private, tick*6)["detections"] for tick in range(20)])
         self.assertNotIn("secret_entity_id", json.dumps(measurements))

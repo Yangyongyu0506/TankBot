@@ -10,10 +10,22 @@ from tankbot._imports import load_policy
 from typing import get_args, get_origin
 import types
 import numpy as np
-from .campaign_templates import TEMPLATE_VERSION, TRANSFORMS, TRACKER, MANAGED_FILES
+from .campaign_templates import template_version, TRANSFORMS, TRACKER, MANAGED_FILES
 
 
 TYPE_TEXT: dict[str, tuple[str, dict[str, str]]] = {
+    "TargetPoints": ("当前帧地图坐标测量矩阵，不包含历史。", {"positions_m":"只读 float64 NumPy 数组，shape=(N,2)，列为 x/y，单位 m；无检测时 shape=(0,2)。"}),
+    "TargetPoseEstimate": ("玩家估计的敌车底盘中心与车头朝向，与自身位姿完全分离。", {
+        "x_m":"敌车中心在 map 中的 x，m。","y_m":"敌车中心在 map 中的 y，m。","yaw_rad":"敌车车头相对 map +x 的逆时针角，rad，范围 [-π,π)。",
+        "covariance":"None 或只读 (3,3) NumPy 协方差，对应 x/y/yaw；原地转向时 yaw 不可直接观测。"}),
+    "AimInput": ("自瞄函数的授权输入；数组都是只读 NumPy，玩家无需处理 Topic。", {
+        "target_xy":"None 或 shape=(2,) 的地图目标位置 [x,y]，m；C4 仍为敌车底盘中心。",
+        "target_age_s":"在本批控制提交时，目标估计已经过去的仿真秒；包含等待提交的延迟。",
+        "own_pose":"shape=(3,) 的系统自身位姿 [x,y,yaw]，单位 m、rad。Weapons 阶段不要求估计自己。",
+        "turret_angle_rad":"炮台相对车体的累计角，rad；可连续旋转。","turret_rate_radps":"炮台相对角速度，rad/s。",
+        "weapon_ready":"本机是否已冷却，bool。","target_yaw_rad":"C3 为 None；C4 为玩家估计的敌车朝向，rad。不是雷达方位角。"}),
+    "AimOutput": ("算法的自瞄结果，由框架转换为合法控制消息。", {"acceleration_radps2":"炮台相对角加速度目标，rad/s²；不能直接写角度/角速度。","fire":"bool，True 请求单发；框架处理冷却和请求 ID。"}),
+    "TurretAcceleration": ("炮台相对角加速度 Topic 的类型化负载。", {"acceleration_radps2":"目标角加速度，rad/s²；真实响应仍由受限力矩和双刚体动力学决定。"}),
     "Pose2D": ("自身的二维位姿。C0–C2 由系统公开提供；位置在 map 中，车头方向用 yaw 表示。", {
         "x_m": "地图横坐标，单位 m，向右为正。", "y_m": "地图纵坐标，单位 m，向上为正。",
         "yaw_rad": "车头相对地图 +x 的逆时针角，单位 rad；π/2 表示朝向 +y。",
@@ -124,7 +136,9 @@ def learning_bundle(config: dict[str, Any]) -> dict[str, Any]:
     lesson: dict[str, Any] = copy.deepcopy(config["campaign"]["lessons"][level_id]) if level_id else {
         "title": "机器人工作区说明", "summary": "示例里程计已提供；可查阅类型并修改自己的算法。", "steps": ["先阅读文件中的类型注解与说明，再保存、测试和部署。"],
         "files": [], "functions": [], "aliases": {}, "default_type": "Pose2D"}
-    sources = {"perception/transforms.py": TRANSFORMS, "perception/tracker.py": TRACKER}
+    from .weapon_templates import AUTO_AIM,POSE_TRACKER,ARMOR_AIM
+    sources = {"perception/transforms.py": TRANSFORMS, "perception/tracker.py": TRACKER,"weapons/auto_aim.py":AUTO_AIM,
+               "perception/pose_tracker.py":POSE_TRACKER,"weapons/armor_aim.py":ARMOR_AIM}
     lesson["functions"] = [function_reference(entry["path"], sources[entry["path"]], entry["name"]) for entry in lesson["functions"]]
     lesson["execution"] = "本关无需编程；关闭代码编辑器后使用键盘驾驶。"
     lesson["completion"] = "可查阅类型、修改算法，并保存、测试和部署。"
@@ -143,6 +157,25 @@ def learning_bundle(config: dict[str, Any]) -> dict[str, Any]:
                                           "yaw 已经是弧度，矩阵方向为 radar → map；用 @ 做矩阵乘法，最后一行为 [0,0,0,1]。"] if level_id == "c1" else
                                          ["先检查 measurements 是否为空；没有测量不代表目标坐标为 (0,0)。",
                                           "状态保存在 self 的字段中；dt 单位是秒，不要用真实时间或每次调用都清空状态。"])
+        if definition.get("robot_profile"):
+            lesson["completion"] = config["campaign"]["lessons"][level_id]["completion"]
+            lesson["common_errors"] = copy.deepcopy(config["campaign"]["lessons"][level_id]["common_errors"])
+            lesson["execution"] = "三个独立模块通过冻结 Topic 快照交互，按各自 Contract 调度。输出在固定提交门生效；target_age_s 已包含本次提交等待。缺输入时模块等待，正常异常只影响对应模块，整个 Worker 超时则终止本台机器人的所有模块。"
+            import math
+            lesson["calibration"] = {"enemy_drive_model":"differential","enemy_forward_only":True,
+                "kinematics":"车体系 vy=0；vx=r(ω_right+ω_left)/2；wz=r(ω_right−ω_left)/track。中心轨迹在运动时提供航向线索；原地转向的 yaw 不可唯一观测。",
+                "wheel_radius_m":config["wheels"]["radius_m"],"track_m":config["wheels"]["differential_track_m"],
+                "body_length_m":config["body"]["length_m"],"body_width_m":config["body"]["width_m"],
+                "projectile_speed_mps":config["weapons"]["projectile"]["relative_speed_mps"],
+                "max_acceleration_radps2":config["weapons"]["turret"]["acceleration_control"]["max_relative_acceleration_radps2"]}
+            if definition.get("armor_mode"):
+                length,width=config["body"]["length_m"],config["body"]["width_m"]
+                lesson["calibration"].update(armor_width_m=definition["target"]["armor"]["width_m"],
+                    armor_mounts=[[length/2,0,0],[-length/2,0,-math.pi],[0,width/2,math.pi/2],[0,-width/2,-math.pi/2]],
+                    armor_columns="[底盘系 x_m, 底盘系 y_m, 向外法线 yaw_rad]；依次前、后、左、右；接触点落在中央装甲段才扣血。")
+        if definition["radar_profile"]:
+            noise=config["campaign"]["radar"]["profiles"][definition["radar_profile"]]
+            lesson["execution"] += f" 雷达距离 σ={noise['range_stddev_m']:g} m，方位 σ={noise['bearing_stddev_rad']:g} rad，独立丢失 {noise['drop_probability']:.0%}。"
         lesson["completion"] += f" 限时 {definition['time_limit_s']} 仿真秒。" + (
             "首次有效人工操作开始计时。" if definition["timer_start"] == "first_control" else
             "首次成功部署后开始计时，之前的编辑和测试不计时；重复部署不重置。")
@@ -150,11 +183,13 @@ def learning_bundle(config: dict[str, Any]) -> dict[str, Any]:
         if definition["player_health"]:
             health = definition["target"]["health"]
             lesson["completion"] += f" 我方与敌方均为 {health['max_hp']} HP，每发命中扣 {health['damage_per_hit']} HP；反弹自伤也扣血，碰墙不扣血。我方死亡判失败，同时死亡也失败。"
-    return {"version": "1.0", "template_version": TEMPLATE_VERSION, "lesson": lesson,
+    from .campaign_templates import framework_upgrade
+    managed = framework_upgrade(config,{})["managed_files"]
+    return {"version": "1.0", "template_version": template_version(config), "lesson": lesson,
             "dependencies": load_policy(),
             "types": copy.deepcopy(sdk_reference()), "python": copy.deepcopy(PYTHON_BASICS),
             "testing": {"checks": ["Python 语法与导入；项目接口、连线和发布权限。",
                                      "tests/test_*.py 中的单元测试；C1/C2 默认包含 SE(3) 合法性、旋转/平移与方向样例。",
                                      f"使用获授权传感器输入试运行 {config['workspace']['test_batches']} 个批次，检查异常、超时和输出消息。"],
                         "meaning": "通过表示此快照可以加载并通过这些样例和短时间试运行，不代表算法效果完美或关卡通关。测试输出不会控制坦克，也不会进入正式画面。"},
-            "managed_files": list(MANAGED_FILES)}
+            "managed_files": list(managed)}

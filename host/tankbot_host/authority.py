@@ -96,6 +96,7 @@ class Authority:
         validate_wheels(config["wheels"])
         validate_profile(config)
         self.config = copy.deepcopy(config)
+        self.graph = None
         self.run_id = uuid.uuid4().hex
         self.controlled = controlled
         self.hz = config["clock"]["physics_hz"]
@@ -106,7 +107,7 @@ class Authority:
         self.view_revision = 0
         self.validator = Validator(config, self.run_id)
         self.validator.structure(config["view_policy"], "view-policy.schema.json")
-        self.selector = PoseSelector("system" if config["view_mode"] in ("weapons-practice", "campaign") else config["view"]["pose_source_id"])
+        self.selector = PoseSelector("system" if config["view_mode"] in ("weapons-practice", "campaign") and config["view_policy"]["system_pose_allowed"] else config["view"]["pose_source_id"])
         self.gateway = ViewGateway(config["view_policy"])
         self.core = core_factory(config, config["scene"]["default_chassis"], binary)
         self._private = self.core.snapshot
@@ -122,6 +123,7 @@ class Authority:
         self._last_activation = 0
         self._keyboard = None
         self._turret_target = None
+        self._turret_acceleration_target = None
         self._fire_pending = []
         self._fire_journal = {}
         self._revoke_robot = False
@@ -154,8 +156,25 @@ class Authority:
                 init["sources"].update(read_sources(workspace, config["workspace"]))
             init["config"]["lesson"] = {"level_id": config["campaign"]["active_level"],
                                           "transform_tolerance": config["validation"]["numeric_tolerance"]}
+            if self.graph_profile():
+                import math
+                init["config"]["lesson"]["tick_duration_s"] = 1/self.hz
+                armor = self.campaign.definition.get("armor_mode",False)
+                length,width = config["body"]["length_m"],config["body"]["width_m"]
+                init["config"]["actuators"] = {"projectile_speed_mps":config["weapons"]["projectile"]["relative_speed_mps"],
+                    "max_acceleration_radps2":config["weapons"]["turret"]["acceleration_control"]["max_relative_acceleration_radps2"],
+                    "armor_mounts":[[length/2,0,0],[-length/2,0,-math.pi],[0,width/2,math.pi/2],[0,-width/2,-math.pi/2]] if armor else [],
+                    "enemy_drive_model":self.campaign.definition["target"]["motion"]["chassis"],
+                    "enemy_forward_only":self.campaign.definition["target"]["motion"]["forward_speed_mps"] > 0}
         if startup_sources is not None:
             init["sources"] = copy.deepcopy(startup_sources)
+        if self.graph_profile():
+            from .robot_graph import inspect_graph,bind_publishers,GraphExecution
+            from tankbot_protocol.wire import strict_loads
+            graph = inspect_graph(init["sources"],strict_loads(init["sources"]["tankbot.json"]),self)
+            init["graph"] = bind_publishers(graph,self.run_id)
+            self.graph = GraphExecution(self,init["graph"],0)
+            self.selector.source_id = "system" if graph["pose_source"]["mode"] == "system" else graph["pose_source"]["module_id"]
         self.worker_factory = worker_factory
         self.worker_init = copy.deepcopy(init)
         self.deployment = None
@@ -269,6 +288,21 @@ class Authority:
         self.campaign.start(self.tick)
 
     def select_pose_source(self, source_id):
+        if self.graph is not None:
+            candidates = [mid for mid,m in self.graph.graph["modules"].items() if f"/robot/estimates/{mid}/pose" in m["output_channels"].values()]
+            if not self.config["view_policy"]["player_pose_allowed"] or source_id not in candidates:
+                raise Rejected("UNAUTHORIZED")
+            self.selector.source_id = source_id
+            self.graph.graph["pose_source"] = {"mode":"player","module_id":source_id,"fallback":"none"}
+            self.selector.canonical = None
+            self._sensors.pop("/robot/localization/pose",None)
+            candidate = self._candidates.get(source_id)
+            if candidate and 0 <= self.tick-candidate["simulation_tick"] <= self.config["view_policy"]["pose_hide_after_ticks"]:
+                self.selector.accept(source_id,candidate,self._message)
+                self._sensors["/robot/localization/pose"] = copy.deepcopy(self.selector.canonical)
+            self.view_revision += 1
+            self._build_view()
+            return
         if self.config["view_mode"]!="estimated" or source_id != self.contract["module_id"]:
             raise Rejected("UNAUTHORIZED")
         self.config["view"]["pose_source_id"] = source_id
@@ -277,6 +311,8 @@ class Authority:
         self.view_revision += 1
 
     def _commit(self):
+        if self.graph is not None:
+            return self._commit_graph()
         if self._pending is None or self._pending["commit"] != self.tick:
             return
         pending, self._pending = self._pending, None
@@ -345,6 +381,8 @@ class Authority:
                 self.worker.close()
 
     def _activate(self):
+        if self.graph is not None:
+            return self._activate_graph()
         if self.tick == 0 or self.tick % self.period or self._faulted or (self.campaign is not None and self.campaign.status != "active"):
             return
         inputs = []
@@ -382,11 +420,87 @@ class Authority:
             self.selector.accept("system",system,self._message)
         payload = self.gateway.build(self.tick,self.view_revision,self.selector,self._sensors,practice=practice,
                                      target_estimate=self._target_estimate, campaign=campaign)
-        schema = "view_snapshot@3" if campaign else "view_snapshot@2" if practice is not None else "view_snapshot@1"
+        schema = "view_snapshot@4" if self.graph is not None and campaign else "view_snapshot@3" if campaign else "view_snapshot@2" if practice is not None else "view_snapshot@1"
         self.view = self._message(schema, "/view/snapshot", payload, frame=None, publisher="view_gateway")
         self.validator.structure(self.view)
         import json
         self.max_view_bytes = max(self.max_view_bytes, len(json.dumps(self.view).encode()))
+
+    def graph_profile(self):
+        level = self.config.get("campaign",{}).get("active_level")
+        name = self.config["campaign"]["levels"][level].get("robot_profile") if level else None
+        return self.config.get("robot_graph",{}).get("profiles",{}).get(name) if name else None
+
+    def graph_inputs(self):
+        profile = self.graph_profile()
+        if profile is not None:
+            return profile["grants"]["inputs"]
+        from .module_profile import module_profile
+        contract, inputs, _ = module_profile(self.config)
+        return {channel:contract["inputs"][port]["schema"] for port,channel in inputs.items()
+                if channel != "/robot/sensors/radar" or (self.campaign and "sensor.radar.read" in self.campaign.definition["capabilities"])}
+
+    def graph_outputs(self):
+        profile = self.graph_profile()
+        if profile is not None:
+            return {**{name:None for name in profile["grants"]["outputs"]},**profile["grants"]["actuators"]}
+        from .module_profile import module_profile
+        contract, _, outputs = module_profile(self.config)
+        result = {p["schema"]:None for p in contract["outputs"].values()}
+        result.update({channel:contract["outputs"][port]["schema"] for port,channel in outputs.items() if channel in (
+            "/robot/cmd_vel","/robot/turret/cmd_vel","/robot/weapons/cannon/fire")})
+        return result
+
+    def _activate_graph(self):
+        if self._pending is not None or self._faulted or (self.campaign and self.campaign.status != "active"):
+            return
+        request = self.graph.request(self.tick)
+        if request is not None and self.worker.submit(request):
+            self.graph.submitted(request)
+            self._pending = {"step_id":request["request_id"],"activation":self.tick,"commit":self.tick+self.delay,"request":request}
+            self.audit.append({"event":"activation","tick":self.tick,"commit_tick":self.tick+self.delay,
+                               "modules":[m["module_id"] for m in request["payload"]["modules"]]})
+
+    def _commit_graph(self):
+        if self._pending is None or self.tick != self._pending["commit"]:
+            return
+        pending,self._pending = self._pending,None
+        response = self.worker.finish(controlled=self.controlled)
+        try:
+            if response is None:
+                raise Rejected(self.worker.fault or "MISSED_DEADLINE")
+            self.graph.commit(self.graph.check(response,pending["request"],self.validator))
+        except Rejected as error:
+            self.audit.append({"event":"rejected","tick":self.tick,"code":error.code})
+            self.logs.append("Robot Runtime: "+error.code+"\n",source="runtime",module_id=self.contract["module_id"],tick=self.tick,stream="error")
+            self._faulted = True
+            self._revoke_robot = True
+            self.worker.close()
+
+    def accept_graph_output(self, module_id, message, *, activation_tick):
+        channel, schema = message["channel"],message["schema"]
+        if channel == f"/robot/estimates/{module_id}/pose":
+            self._candidates[module_id] = copy.deepcopy(message)
+            self.selector.accept(module_id,message,self._message)
+            if self.selector.source_id == module_id:
+                self._sensors["/robot/localization/pose"] = copy.deepcopy(self.selector.canonical)
+            self.audit.append({"event":"pose_commit","module_id":module_id,"tick":self.tick,"sample_tick":message["simulation_tick"],"activation_tick":activation_tick})
+        elif channel in (f"/robot/estimates/{module_id}/target",f"/robot/estimates/{module_id}/target_pose"):
+            profile = self.graph_profile()
+            if profile is None or module_id == profile.get("target_source"):
+                old = self._target_estimate
+                if old is None or message["simulation_tick"] >= old["simulation_tick"]:
+                    self._target_estimate = copy.deepcopy(message)
+                    if self.campaign:
+                        self.campaign.estimate(message,self._target_history.get(message["simulation_tick"]))
+        elif channel == "/robot/cmd_vel":
+            self._keyboard = copy.deepcopy(message)
+        elif channel == "/robot/turret/cmd_vel":
+            self._turret_target = {**message["payload"],"source_tick":message["simulation_tick"]}
+        elif channel == "/robot/turret/cmd_accel":
+            self._turret_acceleration_target = {**message["payload"],"source_tick":message["simulation_tick"]}
+        elif channel == "/robot/weapons/cannon/fire":
+            self._queue_fire(message)
 
     def advance(self):
         """Process boundary n, then advance to S_(n+1). Player computation is never awaited in real time."""
@@ -412,12 +526,18 @@ class Authority:
         command={"op":"step","target":target,"turret_target":self._turret_target,"fire_requests":self._fire_pending,
                  "revoke":self._revoke_robot and self.config["control_sources"]["chassis"]=="robot",
                  "revoke_turret":self._revoke_robot and self.config["control_sources"]["turret"]=="robot"}
+        if self._turret_acceleration_target is not None:
+            command["turret_acceleration_target"] = self._turret_acceleration_target
+        if self.config["control_sources"]["chassis"] == "disabled":
+            command.update(target=None,revoke=True)
         if self.campaign is not None and self.campaign.status != "active":
             command.update(target=None, turret_target=None, fire_requests=[], revoke=True, revoke_turret=True)
+            command.pop("turret_acceleration_target",None)
         self.replay.append({"tick": self.tick, "target": target, "actuators":copy.deepcopy(command), "truth_pose": self._private["truth_pose"],
                             "truth_velocity": self._private["truth_velocity"]})
         self._private = self.core.call(command)
         self._turret_target=None
+        self._turret_acceleration_target=None
         self._fire_pending=[]
         self._revoke_robot=False
         for publisher,result in self._private["fire_results"]:
@@ -448,6 +568,7 @@ class Authority:
             self.campaign.finish(self.tick, passed=passed, reason=reason)
             self._pending = None
             self._keyboard = self._turret_target = None
+            self._turret_acceleration_target = None
             self._fire_pending.clear()
             self.worker.close()
             self.collect_logs(self.worker, "runtime")
@@ -491,13 +612,14 @@ class Authority:
             self.validator.structure(calibration,"wheel-calibration.schema.json")
         return {"run_id": self.run_id, "physics_hz": self.hz, "chassis": self.config["scene"]["default_chassis"],
                 "controller_profile":controller,"view_mode":self.config["view_mode"],
-                "campaign": {"active_level": campaign_level(self.config), "levels": catalog(self.config)},
+                "campaign": {"active_level": campaign_level(self.config), "levels": catalog(self.config),"chapters":copy.deepcopy(self.config.get("campaign",{}).get("chapters",[]))},
                 "radar_calibration": ({key: copy.deepcopy(self.config["campaign"]["radar"][key])
                                        for key in ("range_m", "field_of_view_rad", "update_hz", "mount_m", "yaw_rad", "frame_id")}
                                       if self.campaign is not None and self.campaign.definition["radar_profile"] else None),
                 "control_sources":copy.deepcopy(self.config["control_sources"]),
                 "turret_muzzle_offset_m":copy.deepcopy(self.config["weapons"]["turret"]["muzzle_offset_m"]),
                 "projectile_radius_m": self.config["weapons"]["projectile"]["radius_m"],
+                "armor_width_m":self.campaign.definition["target"].get("armor",{}).get("width_m") if self.campaign else None,
                 "body": {k: self.config["body"][k] for k in ("length_m", "width_m", "corner_radius_m")},
                 "walls": copy.deepcopy(self.config["scene"]["walls"]) if self.config["scene"]["public_map"] and self.config["view_policy"]["public_map"] else [],
                 "view": copy.deepcopy(self.config["view"]),

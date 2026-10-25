@@ -134,3 +134,7 @@ Authority 的有界私有记录保留 tick、执行器实际提交、真实位�
 ## M2 浏览器时间适配
 
 浏览器运行同一 Authority.advance()，固定提交不因 MessagePort 到达提前。Core Worker timer 与 rAF 独立；每个边界让出事件循环但不等待 Python。外部 iframe watchdog 终止超预算玩家 Worker，缺/晚响应在原门丢弃；tab 后台降频或设备过载影响墙钟进度，不能改 simulation_time_ns 公式或伪造补偿 tick。平台差异与测量见 [16](16_BROWSER_RUNTIME.md)。
+
+## M5 当前增量
+
+M5 多模块使用同一冻结/提交门，支持 event 去重与实际调用 dt；模块链跨批次保留测量 tick。C3/C4 新增受限角加速度力矩输入，C4 首次表面接触装甲判定不改变子步动量模型，详见 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)。

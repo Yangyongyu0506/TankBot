@@ -107,3 +107,7 @@ M4 新增独立的 Campaign 单模块 profile：标准输入是授权系统自�
 教学升级交互修复：Test 遇到旧框架时先保存草稿并打开只含运行文件/缺失文件的预览，确认后更新并继续 Test；取消不更新源码。兼容性提示不作为算法测试结论。部署按钮旁说明未启用原因，当前 revision 通过 Ready 后才启用，继续编辑会再次禁用；测试范围及证据见 [19](19_LEARNING_GUIDES_AND_SE3.md) 与 [教学升级报告](reports/TEACHING_UPGRADE_VALIDATION.md)。
 
 玩家代码保存/依赖与矩阵接口见 [23](23_PLAYER_CODE_AND_LIBRARIES.md)，stdout/traceback 的有界采集、部署版本标记和 HUD/编辑器日志见 [24](24_RUNTIME_LOGS.md)。管理状态新增 logs 与 runtime_fault；机器人 Protocol 未变。
+
+## M5 当前增量
+
+本文记录 M3 原始单模块 profile；M5 已扩展同步多模块 Contract/Topic 图、整图测试、报告执行/等待模块、原子部署与回滚，见 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)。快照、非覆盖与失败保留原则继续适用。

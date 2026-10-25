@@ -200,3 +200,7 @@ M1 实现严格 JSON、Schema、源/频道 grant、run/序号/时间/帧、PSD �
 `protocol/tankbot_protocol/transport.py` 提供有界异步 `send/receive/close` 的 In-Process、IPC、WebSocket 与 Replay/Test Adapter；send 仅返回 queued 或 rejected，不表示物理已执行。传输只处理拷贝、严格 JSON、长度和背压，Session/Validator 仍验证身份、run、帧、PSD、序号与时间。IPC 分配前检查长度，WebSocket 仅接收文本 JSON，调用方绑定身份/Origin 并设置 max_size/max_queue。断线结束该会话，不跨连接恢复控制权。Replay.inject 由外部测试调度器在记录的到达 tick 调用，没有隐含墙钟重放或持久化产品。
 
 49 个正/反协议夹具在真实 IPC/WebSocket、Memory/Replay 与浏览器 Authority 得到相同判定；单个“差速不能横移”夹具明确使用差速上下文，不由当前画面底盘改变期望。浏览器实际批次使用 MessagePort 上的 JSON 字符串，Authority 校验路径不变，私有 Core DTO 不是玩家协议。通用协商、任意订阅/服务与重连恢复仍未实现；见 [M2 报告](reports/M2_VALIDATION.md)。
+
+## M5 当前增量
+
+M5 增加 `target_points@1`（Nx2）、`target_pose_estimate@1`（敌车 x/y/yaw 和可空行优先 3×3 协方差）、`turret_acceleration@1`（`acceleration_radps2`），以及允许目标 yaw 的 `view_snapshot@4`；旧类型不变。多模块请求提供新增可选 `origin_tick`，它是调度元数据，执行器负载仍无起止字段。权限/帧/单位见 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)、[角加速度样例](examples/turret-acceleration-message.json)、[目标位姿样例](examples/target-pose-message.json)。

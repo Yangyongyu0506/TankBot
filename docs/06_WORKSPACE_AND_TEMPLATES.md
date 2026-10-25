@@ -118,3 +118,7 @@ Staging 失败保留旧部署；激活后失败进入安全控制，不能自动
 单文件脚本阻碍累积开发；任意热加载无法稳定复现；自动 AST 修改仍可能破坏玩家语义，均不作为默认。快照部署增加存储成本，需后续做有引用的 GC，不能删除仍被 Replay 引用的 artifact。
 
 开放项：浏览器存储后端、云同步冲突 UI、项目大小限额、旧 SDK 支持周期。验收：已编辑文件解锁后逐字节不变；冲突/并发/磁盘失败可恢复；同一 snapshot 得相同 artifact digest；编辑不影响 Active；导入失败不替换旧版本；回滚可追溯；恶意路径、压缩炸弹和依赖安装钩子被拒绝。
+
+## M5 当前增量
+
+M5 已扩展多模块 Manifest、整图测试与回滚，见 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)。C3/C4 模板版本 2.0.0；跨关只补缺失文件，升级计划仅含系统 wrapper、Manifest、Contract 和指定系统测试。既有 perception/ 与 weapons/ 算法不进入替换计划，旧 revision 可恢复。

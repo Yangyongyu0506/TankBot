@@ -70,6 +70,16 @@ def read_sources(root, limits):
 
 
 def starter(config):
+    level = config.get("campaign",{}).get("active_level")
+    profile_name = config["campaign"]["levels"][level].get("robot_profile") if level else None
+    if profile_name:
+        from .weapon_templates import sources
+        profile = config["robot_graph"]["profiles"][profile_name]
+        files = sources(config["campaign"]["levels"][level])
+        files["tankbot.json"] = json.dumps(profile["manifest"],indent=2)+"\n"
+        for mid,contract in profile["contracts"].items():
+            files[f"contracts/{mid}.json"] = json.dumps(contract,indent=2)+"\n"
+        return files
     from .module_profile import module_profile
     contract, inputs, outputs = module_profile(config)
     module_id = contract["module_id"]

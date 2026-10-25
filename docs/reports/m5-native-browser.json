@@ -1,0 +1,268 @@
+{
+  "url": "http://127.0.0.1:8785",
+  "capabilities": {
+    "sessionId": "14f44ed3-cd19-4e99-a4e1-7f1449ca85d9",
+    "capabilities": {
+      "acceptInsecureCerts": false,
+      "browserName": "firefox",
+      "browserVersion": "157.0.1",
+      "platformName": "linux",
+      "setWindowRect": true,
+      "unhandledPromptBehavior": "dismiss and notify",
+      "userAgent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:157.0) Gecko/20100101 Firefox/157.0",
+      "moz:buildID": "20261006030843",
+      "moz:headless": true,
+      "moz:platformVersion": "7.0.0-38-generic",
+      "moz:processID": 336069,
+      "moz:profile": "/home/yangy/Academics/TankBot/.m1-cache/m5-qa/firefox",
+      "moz:shutdownTimeout": 60000,
+      "pageLoadStrategy": "normal",
+      "timeouts": {
+        "implicit": 0,
+        "pageLoad": 300000,
+        "script": 30000
+      },
+      "strictFileInteractability": false,
+      "moz:accessibilityChecks": false,
+      "moz:webdriverClick": true,
+      "moz:windowless": false,
+      "proxy": {}
+    }
+  },
+  "levels": [
+    {
+      "level": "c3",
+      "report": {
+        "status": "Ready",
+        "sha256": "3d7cdedebaadbaf73f6afdf618af0cbfcbb57b866fbaf7ff8475147b93b20948",
+        "revision": "b47e197e82291e59142ab1cbf06a25dace1764ba9125b3c57a3ede87127705ff",
+        "environment": "95853d2280741de601f5ab86c96002cd0bf85bde7dd1d9a8dc43024a2a733e6b",
+        "unit_tests": 3,
+        "simulation_batches": 6,
+        "max_batch_ms": 1.3001190018258058,
+        "checks": [
+          "paths",
+          "syntax",
+          "manifest",
+          "contract",
+          "unit_tests",
+          "authorized_sensor_simulation",
+          "output_permissions",
+          "runtime_budget"
+        ],
+        "modules_executed": [
+          "aiming",
+          "coordinates",
+          "tracking"
+        ],
+        "modules_waiting": [],
+        "kind": "test",
+        "id": "051cb7219dfa4aab8e7ed2bfd852c09c"
+      },
+      "active": {
+        "deployment_id": "3311ebcdba5c4692af6b0b8fd46afd41",
+        "sha256": "3d7cdedebaadbaf73f6afdf618af0cbfcbb57b866fbaf7ff8475147b93b20948",
+        "revision": "b47e197e82291e59142ab1cbf06a25dace1764ba9125b3c57a3ede87127705ff",
+        "activated_tick": 90
+      },
+      "graph": {
+        "origin_tick": 90,
+        "pose_source": {
+          "mode": "system",
+          "module_id": null,
+          "fallback": "none"
+        },
+        "pose_selection_allowed": false,
+        "topics": [],
+        "modules": [
+          {
+            "module_id": "aiming",
+            "execution": {
+              "mode": "periodic",
+              "period_ticks": 6,
+              "deadline_ticks": 6,
+              "budget_ms": 6
+            },
+            "inputs": {
+              "self_pose": "/robot/localization/pose",
+              "turret": "/robot/turret/joint_states",
+              "weapon": "/robot/weapons/cannon/state",
+              "target": "/robot/estimates/tracking/target"
+            },
+            "outputs": {
+              "acceleration": "/robot/turret/cmd_accel",
+              "fire": "/robot/weapons/cannon/fire"
+            },
+            "dependencies": [
+              "tracking"
+            ],
+            "last_activation_tick": 96,
+            "failures": 0,
+            "fault": null
+          },
+          {
+            "module_id": "coordinates",
+            "execution": {
+              "mode": "periodic",
+              "period_ticks": 6,
+              "deadline_ticks": 6,
+              "budget_ms": 6
+            },
+            "inputs": {
+              "self_pose": "/robot/localization/pose",
+              "radar": "/robot/sensors/radar"
+            },
+            "outputs": {
+              "points": "/robot/modules/coordinates/points"
+            },
+            "dependencies": [],
+            "last_activation_tick": 96,
+            "failures": 0,
+            "fault": null
+          },
+          {
+            "module_id": "tracking",
+            "execution": {
+              "mode": "periodic",
+              "period_ticks": 6,
+              "deadline_ticks": 6,
+              "budget_ms": 6
+            },
+            "inputs": {
+              "points": "/robot/modules/coordinates/points"
+            },
+            "outputs": {
+              "target": "/robot/estimates/tracking/target"
+            },
+            "dependencies": [
+              "coordinates"
+            ],
+            "last_activation_tick": 90,
+            "failures": 0,
+            "fault": null
+          }
+        ]
+      },
+      "result": "通关！可选择下一关，已有源码会保留。 本次估计 RMSE：0.298 m（仅结束后公布）。",
+      "estimated_yaw_displayed": null,
+      "screenshot": ".m1-cache/m5-qa/m5-native-browser-c3.png"
+    },
+    {
+      "level": "c4",
+      "report": {
+        "status": "Ready",
+        "sha256": "17bf1b65a3c5a4bd133b1b97661591d0b8c2a4b5181965f81f4511a47420a71c",
+        "revision": "6838499aa2954c7b0dd10a54c53b4e20205ac803aa9aa5df2755aa4e28ba751c",
+        "environment": "c94ec7e230c8e00f3e1ea2c9f7a2492f570050f6b8431a09f75152c4c2335c9b",
+        "unit_tests": 3,
+        "simulation_batches": 6,
+        "max_batch_ms": 2.527812001062557,
+        "checks": [
+          "paths",
+          "syntax",
+          "manifest",
+          "contract",
+          "unit_tests",
+          "authorized_sensor_simulation",
+          "output_permissions",
+          "runtime_budget"
+        ],
+        "modules_executed": [
+          "aiming",
+          "coordinates",
+          "tracking"
+        ],
+        "modules_waiting": [],
+        "kind": "test",
+        "id": "d5b04f27fa834ff3af0c7635ef1f63ab"
+      },
+      "active": {
+        "deployment_id": "b7add69f71944b539da6bf8323277601",
+        "sha256": "17bf1b65a3c5a4bd133b1b97661591d0b8c2a4b5181965f81f4511a47420a71c",
+        "revision": "6838499aa2954c7b0dd10a54c53b4e20205ac803aa9aa5df2755aa4e28ba751c",
+        "activated_tick": 120
+      },
+      "graph": {
+        "origin_tick": 120,
+        "pose_source": {
+          "mode": "system",
+          "module_id": null,
+          "fallback": "none"
+        },
+        "pose_selection_allowed": false,
+        "topics": [],
+        "modules": [
+          {
+            "module_id": "aiming",
+            "execution": {
+              "mode": "periodic",
+              "period_ticks": 6,
+              "deadline_ticks": 6,
+              "budget_ms": 6
+            },
+            "inputs": {
+              "self_pose": "/robot/localization/pose",
+              "turret": "/robot/turret/joint_states",
+              "weapon": "/robot/weapons/cannon/state",
+              "target": "/robot/estimates/tracking/target_pose"
+            },
+            "outputs": {
+              "acceleration": "/robot/turret/cmd_accel",
+              "fire": "/robot/weapons/cannon/fire"
+            },
+            "dependencies": [
+              "tracking"
+            ],
+            "last_activation_tick": 126,
+            "failures": 0,
+            "fault": null
+          },
+          {
+            "module_id": "coordinates",
+            "execution": {
+              "mode": "periodic",
+              "period_ticks": 6,
+              "deadline_ticks": 6,
+              "budget_ms": 6
+            },
+            "inputs": {
+              "self_pose": "/robot/localization/pose",
+              "radar": "/robot/sensors/radar"
+            },
+            "outputs": {
+              "points": "/robot/modules/coordinates/points"
+            },
+            "dependencies": [],
+            "last_activation_tick": 126,
+            "failures": 0,
+            "fault": null
+          },
+          {
+            "module_id": "tracking",
+            "execution": {
+              "mode": "periodic",
+              "period_ticks": 6,
+              "deadline_ticks": 6,
+              "budget_ms": 6
+            },
+            "inputs": {
+              "points": "/robot/modules/coordinates/points"
+            },
+            "outputs": {
+              "target": "/robot/estimates/tracking/target_pose"
+            },
+            "dependencies": [
+              "coordinates"
+            ],
+            "last_activation_tick": 120,
+            "failures": 0,
+            "fault": null
+          }
+        ]
+      },
+      "result": "通关！可选择下一关，已有源码会保留。 本次估计 RMSE：0.258 m（仅结束后公布）。",
+      "estimated_yaw_displayed": true,
+      "screenshot": ".m1-cache/m5-qa/m5-native-browser-c4.png"
+    }
+  ]
+}

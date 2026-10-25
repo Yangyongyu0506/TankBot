@@ -9,15 +9,20 @@ export function attemptSummary(attempt){
   return (attempt.result?reasons[attempt.result.reason]??"本次尝试已结束":time)+health;
 }
 export async function mountCampaign(profile,browser,onState,releaseControls){
-  const $=id=>document.getElementById(id),levels=profile.campaign?.levels??[];
+  const $=id=>document.getElementById(id),levels=profile.campaign?.levels??[],chapters=profile.campaign?.chapters??[];
   if(!levels.length){$("tab-task").hidden=true;return;}
   const current=levels.find(level=>level.level_id===profile.campaign.active_level);
-  $("level-select").replaceChildren(...levels.map(level=>{
+  const options=levels.map(level=>{
     const option=document.createElement("option");option.value=level.level_id;option.textContent=level.title;
     option.selected=level===current;return option;
-  }));
+  });
+  $("level-select").replaceChildren();
+  if(chapters.length){for(const chapter of chapters){const group=document.createElement("optgroup");group.label=chapter.title;for(const level of levels)if(level.chapter_id===chapter.chapter_id)group.append(options[levels.indexOf(level)]);if(group.children.length)$("level-select").append(group);}}
+  else $("level-select").append(...options);
+  const chapter=chapters.find(item=>item.chapter_id===current?.chapter_id);
+  $("task-chapter").textContent=chapter?chapter.title:"CAMPAIGN";
   $("task-title").textContent=current?.title??"选择教学关卡";
-  $("task-problem").textContent=current?.problem??"C0–C2 依次学习驾驶、坐标变换与噪声跟踪。";
+  $("task-problem").textContent=current?.problem??"Hello Robot → Weapons → Locomotion";
   function updateHints(){$("task-hints").replaceChildren(...(current?.hints??[]).map(text=>{const li=document.createElement("li");li.textContent=bindingHint(text);return li;}));}
   updateHints();window.addEventListener("bindings-changed",updateHints);
   $("finish-level").disabled=!current;
@@ -89,7 +94,7 @@ export async function mountCampaign(profile,browser,onState,releaseControls){
             (r.rmse_m==null?"":" 本次估计 RMSE："+r.rmse_m.toFixed(3)+" m（仅结束后公布）。");
           if(save_error||browser?.saveError())$("task-message").textContent=save_error||browser.saveError();
         }else{
-          $("task-message").textContent=attempt.phase==="preparing"?(attempt.timing.start_on==="first_control"?"首次有效驾驶、炮台或开火操作后计时。":"保存 → 测试 → 部署。首次成功部署前不计时；部署后开放驾驶和开火。"):"倒计时按仿真时间推进，编辑器打开时也继续。发现问题可立即结束尝试，源码会保留。";
+          $("task-message").textContent=attempt.phase==="preparing"?(attempt.timing.start_on==="first_control"?"首次有效驾驶、炮台或开火操作后计时。":"保存 → 测试 → 部署。首次成功部署前不计时；部署后按本关权限运行机器人。"):"倒计时按仿真时间推进，编辑器打开时也继续。发现问题可立即结束尝试，源码会保留。";
         }
       }
     }catch(error){$("task-message").textContent=error.message;}

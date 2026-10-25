@@ -137,8 +137,35 @@ def teaching_sources(level_id: str) -> dict[str, str]:
 MANAGED_FILES: tuple[str, ...] = ("campaign_robot.py", "tankbot.json", "contracts/perception.json", "tests/test_coordinates.py")
 
 
+def template_version(config: dict) -> str:
+    level = config.get("campaign", {}).get("active_level")
+    profile = config["campaign"]["levels"][level].get("robot_profile") if level else None
+    return config["robot_graph"]["profiles"][profile]["template_version"] if profile else TEMPLATE_VERSION
+
+
 def framework_upgrade(config: dict, files: dict[str, str]) -> dict:
     """One compatibility check for the editor and Test; comments are not an API."""
+    level = config.get("campaign",{}).get("active_level")
+    profile_name = config["campaign"]["levels"][level].get("robot_profile") if level else None
+    if profile_name:
+        import json
+        profile = config["robot_graph"]["profiles"][profile_name]
+        try:
+            manifest = json.loads(files.get("tankbot.json","{}"))
+            current = len(manifest.get("modules",[])) > 1 and all(item["contract"] in files for item in manifest["modules"])
+            if current and manifest.get("project_id") == profile["manifest"]["project_id"]:
+                # C3 -> C4 changes the tracked value from XY to XY/yaw. Existing
+                # multi-module scaffolding is not necessarily this lesson's scaffold.
+                for item in manifest["modules"]:
+                    expected = profile["contracts"].get(item["module_id"])
+                    if expected and item["contract"] == f"contracts/{item['module_id']}.json":
+                        contract = json.loads(files[item["contract"]])
+                        current &= all({p:v["schema"] for p,v in contract[field].items()} ==
+                                       {p:v["schema"] for p,v in expected[field].items()} for field in ("inputs","outputs"))
+        except (ValueError,KeyError,TypeError):
+            current = False
+        return {"required":not current,"current_version":None,"target_version":profile["template_version"],
+                "managed_files":profile["managed_files"],"message":"本关使用多模块框架；请预览升级，已有 perception/ 和 weapons/ 算法文件会保留。" if not current else ""}
     source: str = files.get("campaign_robot.py", "")
     marker: re.Match | None = re.search(r"^\s*# TankBot managed scaffold ([0-9.]+)(?:\s|$)", source, re.MULTILINE)
     current: bool = marker is not None and marker.group(1) == TEMPLATE_VERSION

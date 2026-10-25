@@ -130,7 +130,7 @@ ctx.publish("cmd_vel", velocity, frame_id="base_link")
 
 M1 实现 `Module.setup/update/reset/teardown`、不可变值类型、`Sample`、`Inputs.latest`、`ModuleContext.simulation_tick/dt_seconds/output_commit_tick/config/publish`；输出收集到固定提交门，经 Authority 再验证。Host 从唯一 `config/game.yaml` 派生生效 Contract（period=60/10，deadline=commit_delay_ticks），避免第二份硬编码控制参数。示例端口 wheels:joint_state@1、imu:imu@1 → pose:pose2d@1；SDK 初始化仅公开起点、轮几何和模块自身配置。
 
-M1 仅运行一个 periodic Module，支持多文件 import；event、多模块依赖执行、FunctionModule/RobotApp、手动 Topic、ctx.rng/log/state、检查点与自动模板属于后续能力。标准库/宿主文件/网络在普通 CPython 进程中没有被安全隔离；只能运行本人可信代码，不能把“ctx 未暴露引擎”说成“已经沙箱化”。[实际测试](../tests/test_m1.py) 会执行本文 SDK Python 片段并检查发布类型，同时独立验证真实外部 worker。
+M1 原始子集仅运行一个 periodic Module。M5 已补同步周期/event 多模块、依赖初始化、分组校验及自动模板，当前接口见 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)。FunctionModule/RobotApp、动态手动 Topic、ctx.rng/log/state 与检查点仍未实现。标准库/宿主文件/网络在普通 CPython 进程中没有被安全隔离；只能运行本人可信代码，不能把“ctx 未暴露引擎”说成“已经沙箱化”。[实际测试](../tests/test_m1.py) 会执行本文 SDK Python 片段并检查发布类型，同时独立验证真实外部 worker。
 
 ## M1b 增量 API
 
@@ -144,7 +144,7 @@ M1 仅运行一个 periodic Module，支持多文件 import；event、多模块�
 
 新增不可变 `RadarDetection(observation_id, range_m, bearing_rad)`、`RadarData(detections)` 和 `TargetEstimate(x_m, y_m, covariance=None)`。雷达检测对象集合为 tuple；协方差使用只读 float64 ndarray（Pose 为 3×3、Target 为 2×2），SDK 在 JSON 边界转换为原来的扁平序列；`ctx.publish("target", value, frame_id="map", simulation_tick=...)` 仍通过原批次收集与提交门。自身系统位姿经授权后解码为 `Sample[Pose2D]`。
 
-C1 只需实现坐标转换函数，C2 实现保存状态的 `Tracker.update(measurements, dt)`；生成的 `CampaignRobot` Module 负责适配 Sample/端口，同一 Contract 与 Manifest 跨三关不变。模板和错误语义见 [18](18_CAMPAIGN_DESIGN.md)；这不开放 event、手动 Topic 或完整模块图。
+C1 只需实现坐标转换函数，C2 实现保存状态的 `Tracker.update(measurements, dt)`；生成的 `CampaignRobot` Module 负责适配 Sample/端口，同一 Contract 与 Manifest 跨三关不变。模板和错误语义见 [18](18_CAMPAIGN_DESIGN.md)；这是前三关的兼容包装；C3 起经预览升级为坐标变换→跟踪→瞄准三模块图，算法文件保留，接口见 26。
 
 ## 关卡学习接口与 NumPy
 

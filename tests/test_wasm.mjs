@@ -38,7 +38,14 @@ try{
     assert.equal(result.data.targets.length,1);
   }
   assert.equal((await native({op:"invalid"})).ok,false);
+  const armor=structuredClone(config);
+  armor.weapons.targets=[armor.campaign.levels.c4.target];
+  assert.equal((await exchange({op:"init",config:armor,chassis:"differential"})).ok,true);
+  for(let tick=0;tick<600;tick++){
+    assert.equal((await exchange({op:"step",turret_acceleration_target:tick%6===0?{acceleration_radps2:tick<300?25:-25,source_tick:tick}:null,
+      fire_requests:tick%18===0?[{publisher_id:"probe",request_id:`armor-${tick}`,source_tick:tick}]:[]})).ok,true);
+  }
   assert.equal(JSON.parse(wasm.call({op:"invalid"})).ok,false);
   assert.equal(wasm.exports.tankbot_input(1024*1024+1),0);
-  console.log("PASS: shared JSON ABI, 2 × 600 weapon + 1800 campaign native/WASM snapshots, invalid operation and buffer limit");
+  console.log("PASS: shared JSON ABI, 2 × 600 weapon + 1800 campaign + 600 acceleration/armor native/WASM snapshots, invalid operation and buffer limit");
 }finally{child.stdin.end();}

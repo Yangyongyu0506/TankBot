@@ -71,6 +71,9 @@
     },
     "target_estimates_allowed": {
       "type": "boolean"
+    },
+    "robot_topics_allowed": {
+      "type": "boolean"
     }
   },
   "required": [

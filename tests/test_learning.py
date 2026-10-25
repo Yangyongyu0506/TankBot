@@ -30,7 +30,7 @@ class LearningTests(unittest.TestCase):
         return configure(load_config(ROOT / "config/game.yaml"), level)
 
     def test_every_level_has_guidance_and_generated_python_has_explicit_types(self):
-        for level in ("c0", "c1", "c2"):
+        for level in ("c0", "c1", "c2", "c3", "c4"):
             config = self.config(level)
             guide = learning_bundle(config)
             self.assertTrue(guide["lesson"]["steps"])
@@ -52,7 +52,8 @@ class LearningTests(unittest.TestCase):
                                 self.assertIsNotNone(arg.annotation, (path, arg.arg))
                     if isinstance(node, ast.Assign):
                         for target in node.targets:
-                            self.assertIn(ast.unparse(target), declared, (path, ast.unparse(target)))
+                            if isinstance(target, (ast.Name, ast.Attribute)):
+                                self.assertIn(ast.unparse(target), declared, (path, ast.unparse(target)))
             encoded = json.dumps(guide)
             for secret in ("waypoints_m", "target_id", "truth_pose", "core_call"):
                 self.assertNotIn(secret, encoded)

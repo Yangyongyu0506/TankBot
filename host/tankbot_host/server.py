@@ -96,7 +96,7 @@ class LocalServer:
                         else:
                             value = copy.deepcopy(owner.authority.view)
                     self.reply(200, json.dumps(value, allow_nan=False).encode())
-                elif path in ("/", "/index.html", "/app.js", "/rendering.js", "/browser-client.js", "/style.css", "/workspace-ui.js", "/campaign-ui.js", "/learning-ui.js", "/gamepad.js", "/settings-ui.js", "/keyboard.js", "/visualization.js", "/runtime-logs.js"):
+                elif path in ("/", "/index.html", "/app.js", "/rendering.js", "/browser-client.js", "/style.css", "/workspace-ui.js", "/campaign-ui.js", "/learning-ui.js", "/gamepad.js", "/settings-ui.js", "/keyboard.js", "/visualization.js", "/runtime-logs.js", "/robot-graph.js"):
                     file = ROOT / "web" / ("index.html" if path == "/" else path[1:])
                     kind = {".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css"}[file.suffix]
                     self.reply(200, file.read_bytes(), kind)
@@ -109,7 +109,7 @@ class LocalServer:
                 if not self.valid_host() or self.headers.get("Origin") not in origins or self.headers.get("X-TankBot-Control") != owner.token:
                     self.reply(403, b'{}')
                     return
-                if self.path not in ("/api/settings", "/api/cmd_vel", "/api/turret_cmd_vel", "/api/fire", "/api/campaign/start", "/api/campaign/finish") and not self.path.startswith(("/api/workspace/", "/api/deployment/")):
+                if self.path not in ("/api/settings", "/api/cmd_vel", "/api/turret_cmd_vel", "/api/fire", "/api/campaign/start", "/api/campaign/finish", "/api/pose_source") and not self.path.startswith(("/api/workspace/", "/api/deployment/")):
                     self.reply(404, b'{}')
                     return
                 try:
@@ -145,6 +145,11 @@ class LocalServer:
                             operation = self.path.rsplit("/", 1)[1]
                             snapshot = owner.workspace.store.read(value["revision"]) if operation in ("test", "deploy") else None
                             result = owner.authority.deployment.start(operation, snapshot=snapshot, sha256=value.get("sha256"))
+                        elif self.path == "/api/pose_source":
+                            if not isinstance(value,dict) or set(value)!={"module_id"}:
+                                raise ValueError("INVALID_POSE_SOURCE_REQUEST")
+                            owner.authority.select_pose_source(value["module_id"])
+                            result = {"selected_source":owner.authority.selector.source_id}
                         elif self.path == "/api/cmd_vel":
                             owner.authority.keyboard(value)
                             result = {"accepted": True}

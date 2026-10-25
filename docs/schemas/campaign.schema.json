@@ -9,7 +9,9 @@
         null,
         "c0",
         "c1",
-        "c2"
+        "c2",
+        "c3",
+        "c4"
       ]
     },
     "module_id": {
@@ -166,6 +168,12 @@
         },
         "c2": {
           "$ref": "#/$defs/level"
+        },
+        "c3": {
+          "$ref": "#/$defs/level"
+        },
+        "c4": {
+          "$ref": "#/$defs/level"
         }
       },
       "required": [
@@ -198,6 +206,36 @@
       "uniqueItems": true,
       "minItems": 3,
       "maxItems": 3
+    },
+    "chapters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "chapter_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "levels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "chapter_id",
+          "title",
+          "description",
+          "levels"
+        ],
+        "additionalProperties": false
+      }
     }
   },
   "required": [
@@ -403,6 +441,50 @@
             null,
             "same_as_target"
           ]
+        },
+        "chapter_id": {
+          "type": "string"
+        },
+        "control_sources": {
+          "type": "object",
+          "properties": {
+            "chassis": {
+              "enum": [
+                "keyboard",
+                "robot",
+                "disabled"
+              ]
+            },
+            "turret": {
+              "enum": [
+                "keyboard",
+                "robot",
+                "disabled"
+              ]
+            },
+            "weapon": {
+              "enum": [
+                "keyboard",
+                "robot",
+                "disabled"
+              ]
+            }
+          },
+          "required": [
+            "chassis",
+            "turret",
+            "weapon"
+          ],
+          "additionalProperties": false
+        },
+        "robot_profile": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "armor_mode": {
+          "type": "boolean"
         }
       },
       "required": [

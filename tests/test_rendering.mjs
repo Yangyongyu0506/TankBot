@@ -104,6 +104,20 @@ test('camera follows xy, preserves world axes through yaw changes, and holds wit
   camera.follow(null);assert.deepEqual([camera.x,camera.y],[3,-2]);
 });
 
+test('enemy yaw comes only from player pose estimates and interpolates across the angle wrap',()=>{
+  const t=timeline();
+  for(const [tick,yaw] of [[0,Math.PI-.1],[6,-Math.PI+.1]]){
+    const msg=snapshot(tick);
+    msg.payload.target_estimates=[{simulation_tick:tick,frame_id:'map',payload:{x_m:tick/6,y_m:2,yaw_rad:yaw,covariance:null}}];
+    t.push(msg,tick*1000/60);
+  }
+  near(t.sample(250).targetEstimate.yaw_rad,Math.PI);
+  const next=snapshot(12);
+  next.payload.target_estimates=[{simulation_tick:12,frame_id:'map',payload:{x_m:2,y_m:2,covariance:null}}];
+  t.push(next,200);
+  assert.equal(t.sample(1000).targetEstimate.yaw_rad,undefined,'an XY-only estimate must not acquire true heading');
+});
+
 test('lost estimate, revision changes and pose jumps clear obsolete visual history', () => {
   const t=timeline();t.push(snapshot(0,[bullet(1,0)]),0);t.push(snapshot(6,[bullet(1,1)],pose(.5)),100);
   assert.equal(t.push(snapshot(3),110).accepted,false);

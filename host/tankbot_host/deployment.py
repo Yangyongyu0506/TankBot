@@ -39,15 +39,26 @@ def inspect_snapshot(snapshot, authority):
             except SyntaxError as error:
                 raise ValueError(f"{path}:{error.lineno}:{error.offset}: {error.msg}") from error
     from .campaign_templates import framework_upgrade
+    manifest = strict_loads(files["tankbot.json"])
     upgrade = framework_upgrade(authority.config, files)
     if upgrade["required"]:
         raise ValueError("TEACHING_TEMPLATE_UPGRADE_REQUIRED: " + upgrade["message"])
     validate_imports(files, load_policy())
-    manifest = strict_loads(files["tankbot.json"])
     validator = authority.validator
     validator.structure(manifest, "workspace.schema.json")
-    if manifest["sdk_version"] != "0.1.0" or manifest["dependencies"] or len(manifest["modules"]) != 1:
-        raise ValueError("UNSUPPORTED_WORKSPACE_PROFILE: 当前仅开放一个模块、NumPy、SDK 与指定基础标准库，不支持自行安装外部依赖。")
+    if manifest["sdk_version"] != "0.1.0" or manifest["dependencies"]:
+        raise ValueError("UNSUPPORTED_WORKSPACE_PROFILE: 仅开放 NumPy、SDK 与指定基础标准库，不支持自行安装外部依赖。")
+    if len(manifest["modules"]) != 1 or authority.graph_profile():
+        from .robot_graph import inspect_graph
+        if not authority.config.get("robot_graph") or (authority.campaign and not authority.graph_profile() and not authority.developer_mode):
+            raise ValueError("MODULE_GRAPH_NOT_UNLOCKED")
+        graph = inspect_graph(files,manifest,authority)
+        packaged = artifact_files(files)
+        env = environment(authority.config,authority.core.build_sha256,(authority.worker.startup_result or {}).get("runtime_packages",{}))
+        sha = digest({"files":{p:hashlib.sha256(s.encode()).hexdigest() for p,s in packaged.items()},"environment":env})
+        primary = next(iter(graph["modules"].values()))
+        return {"sha256":sha,"revision":revision,"environment":env,"files":packaged,"test_files":copy.deepcopy(files),
+                "contract":primary["contract"],"module_config":primary["config"],"graph":graph}
     module = manifest["modules"][0]
     contract = strict_loads(files[module["contract"]])
     validator.structure(contract, "module-contract.schema.json")
@@ -92,6 +103,7 @@ class DeploymentManager:
                               "last": self.last, "reports": list(self.reports.values()),
                               "run_id": self.authority.run_id, "tick": self.authority.tick,
                               "attempt_status": self.authority.campaign.status if self.authority.campaign else None,
+                              "graph": self.authority.graph.public() if self.authority.graph else None,
                               "runtime_fault": self.authority.worker.fault or ("MODULE_ERROR" if self.authority._faulted else None),
                               "logs": self.authority.logs.public()})
 
@@ -126,13 +138,22 @@ class DeploymentManager:
         init["test_mode"] = kind == "test"
         init["start_tick"] = a.tick
         init["reset_reason"] = "deployment"
-        worker = a.worker_factory(a.config, init, deferred=True)
         job_id = uuid.uuid4().hex
+        if "graph" in artifact:
+            from .robot_graph import bind_publishers
+            init["graph"] = bind_publishers(artifact["graph"],job_id)
+        else:
+            init.pop("graph",None)
+        worker = a.worker_factory(a.config, init, deferred=True)
         worker.deployment_id = job_id
         worker.revision = artifact["revision"]
         self.job = {"id": job_id, "kind": kind, "phase": "Starting", "sha256": sha,
                     "artifact": artifact, "worker": worker, "init": init, "count": 0, "pending": None,
                     "validator": Validator(a.config, a.run_id)}
+        if "graph" in init:
+            from .robot_graph import GraphExecution
+            self.job["graph"] = GraphExecution(a,init["graph"],a.tick)
+            self.job["modules_executed"] = set()
         self.last = None
         return self.status()
 
@@ -146,6 +167,11 @@ class DeploymentManager:
 
     def _check(self, response, job, tick):
         a, v = self.authority, job["validator"]
+        if "graph" in job:
+            accepted = job["graph"].check(response,job["request"],v,test=True)
+            job["graph"].commit(accepted,apply=False)
+            job["modules_executed"].update(m["module_id"] for m in job["request"]["payload"]["modules"])
+            return
         v.validate(response, now=a.tick, source_tick=tick, grants={("runtime", "/runtime/step", "runtime_step_result@1", None)})
         p = response["payload"]
         if response["request_id"] != f"check-{tick}" or p["step_id"] != f"check-{tick}" or response["simulation_tick"] != tick:
@@ -194,16 +220,28 @@ class DeploymentManager:
                               "environment": artifact["environment"], "unit_tests": (worker.startup_result or {}).get("unit_tests", 0),
                               "simulation_batches": job["count"], "max_batch_ms": max(worker.batch_times_ms, default=0),
                               "checks": ["paths", "syntax", "manifest", "contract", "unit_tests", "authorized_sensor_simulation", "output_permissions", "runtime_budget"]}
+                    if "graph" in job:
+                        report["modules_executed"] = sorted(job["modules_executed"])
+                        report["modules_waiting"] = sorted(job["graph"].graph["modules"].keys()-job["modules_executed"])
                     self.artifacts[artifact["sha256"]] = artifact
                     self.reports[artifact["sha256"]] = report
                     self.last = {**report, "kind": "test", "id": job["id"]}
                     worker.close()
                     self.job = None
                     return
-            if job["pending"] is None and a.tick % a.period == 0:
+            if job["pending"] is None and ("graph" in job or a.tick % a.period == 0):
                 # Observe the live authorized sensor stream; test outputs never reach actuators or the view.
                 a._sample()
                 tick = a.tick
+                if "graph" in job:
+                    request = job["graph"].request(tick,prefix="check")
+                    if request is not None:
+                        if not worker.submit(request):
+                            raise ValueError("TEST_SUBMIT_FAILED")
+                        job["graph"].submitted(request)
+                        job["request"] = request
+                        job["pending"] = tick
+                    return
                 request = envelope("runtime_step_request@1", "/runtime/step",
                     {"step_id": f"check-{tick}", "activation_tick": tick, "output_commit_tick": tick + a.delay,
                      "modules": [{"module_id": a.contract["module_id"], "dt_ticks": a.period}],
@@ -221,6 +259,14 @@ class DeploymentManager:
         a.worker = job["worker"]
         a.publisher_id = job["init"]["publisher_id"]
         a.contract = copy.deepcopy(job["artifact"]["contract"])
+        if "graph" in job:
+            from .robot_graph import GraphExecution
+            a.graph = GraphExecution(a,job["init"]["graph"],a.tick)
+            a.selector.source_id = "system" if a.graph.graph["pose_source"]["mode"] == "system" else a.graph.graph["pose_source"]["module_id"]
+        else:
+            a.graph = None
+            a.input_channels = copy.deepcopy(a.worker_init["input_channels"])
+            a.output_channels = copy.deepcopy(a.worker_init["output_channels"])
         a._pending = None
         a._last_activation = a.tick - a.period
         a._failures, a._faulted = 0, False
@@ -229,6 +275,7 @@ class DeploymentManager:
             a._keyboard = None
         if a.config["control_sources"]["turret"] == "robot":
             a._turret_target = None
+            a._turret_acceleration_target = None
         a._fire_pending = [f for f in a._fire_pending if f["publisher_id"] != old_publisher]
         a._candidates.clear()
         a._target_estimate = None

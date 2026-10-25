@@ -1,0 +1,181 @@
+{
+  "config_sha256": "5f91bf71fd77f3b41319f9790e5d476c720b2038aea65a0d63e3923cf2933c81",
+  "noise": {
+    "sample_count": 10000,
+    "detections": 8992,
+    "drop_fraction": 0.1008,
+    "range_std_m": 0.44709696291872014,
+    "bearing_std_rad": 0.08037813155654445,
+    "outside_body_fraction": 0.5890791814946619
+  },
+  "headless_cases": [
+    {
+      "level": "c3",
+      "method": "kalman",
+      "tick": 224,
+      "result": {
+        "run_id": "eb978a1ec6cc4a48b77efd029f3b196d",
+        "attempt": {
+          "level_id": "c3",
+          "status": "passed",
+          "enemy_hp": 0,
+          "phase": "finished",
+          "timing": {
+            "time_limit_s": 120,
+            "start_on": "first_deployment",
+            "started_tick": 0,
+            "elapsed_ticks": 224,
+            "remaining_s": 116.26666666666667
+          },
+          "player_hp": 3,
+          "player_max_hp": 3,
+          "enemy_max_hp": 3,
+          "progress": {
+            "moved": true,
+            "turned": true,
+            "has_estimate": true,
+            "hit": true
+          },
+          "result": {
+            "passed": true,
+            "reason": "objective_completed",
+            "finished_tick": 224,
+            "estimate_samples": 35,
+            "yaw_rmse_rad": null,
+            "rmse_m": 0.39290255178134026,
+            "scored_samples": 35,
+            "hits": 3
+          }
+        }
+      },
+      "module_faults": {},
+      "worker_fault": null
+    },
+    {
+      "level": "c3",
+      "method": "window",
+      "tick": 305,
+      "result": {
+        "run_id": "5df48af0abbc4f088be126e6c49ef830",
+        "attempt": {
+          "level_id": "c3",
+          "status": "passed",
+          "enemy_hp": 0,
+          "phase": "finished",
+          "timing": {
+            "time_limit_s": 120,
+            "start_on": "first_deployment",
+            "started_tick": 0,
+            "elapsed_ticks": 305,
+            "remaining_s": 114.91666666666667
+          },
+          "player_hp": 3,
+          "player_max_hp": 3,
+          "enemy_max_hp": 3,
+          "progress": {
+            "moved": true,
+            "turned": true,
+            "has_estimate": true,
+            "hit": true
+          },
+          "result": {
+            "passed": true,
+            "reason": "objective_completed",
+            "finished_tick": 305,
+            "estimate_samples": 48,
+            "yaw_rmse_rad": null,
+            "rmse_m": 0.4346205590197399,
+            "scored_samples": 48,
+            "hits": 3
+          }
+        }
+      },
+      "module_faults": {},
+      "worker_fault": null
+    },
+    {
+      "level": "c4",
+      "method": "kalman",
+      "tick": 793,
+      "result": {
+        "run_id": "ac9971b2f84145feb7529fb3e98df1f3",
+        "attempt": {
+          "level_id": "c4",
+          "status": "passed",
+          "enemy_hp": 0,
+          "phase": "finished",
+          "timing": {
+            "time_limit_s": 180,
+            "start_on": "first_deployment",
+            "started_tick": 0,
+            "elapsed_ticks": 793,
+            "remaining_s": 166.78333333333333
+          },
+          "player_hp": 3,
+          "player_max_hp": 3,
+          "enemy_max_hp": 3,
+          "progress": {
+            "moved": true,
+            "turned": true,
+            "has_estimate": true,
+            "hit": true
+          },
+          "result": {
+            "passed": true,
+            "reason": "objective_completed",
+            "finished_tick": 793,
+            "estimate_samples": 130,
+            "yaw_rmse_rad": 0.8959595358604966,
+            "rmse_m": 0.2719876057338113,
+            "scored_samples": 130,
+            "hits": 7
+          }
+        }
+      },
+      "module_faults": {},
+      "worker_fault": null
+    },
+    {
+      "level": "c4",
+      "method": "window",
+      "tick": 556,
+      "result": {
+        "run_id": "a987f2840d544b1cb24bf71abf9f0ee3",
+        "attempt": {
+          "level_id": "c4",
+          "status": "passed",
+          "enemy_hp": 0,
+          "phase": "finished",
+          "timing": {
+            "time_limit_s": 180,
+            "start_on": "first_deployment",
+            "started_tick": 0,
+            "elapsed_ticks": 556,
+            "remaining_s": 170.73333333333332
+          },
+          "player_hp": 2,
+          "player_max_hp": 3,
+          "enemy_max_hp": 3,
+          "progress": {
+            "moved": true,
+            "turned": true,
+            "has_estimate": true,
+            "hit": true
+          },
+          "result": {
+            "passed": true,
+            "reason": "objective_completed",
+            "finished_tick": 556,
+            "estimate_samples": 90,
+            "yaw_rmse_rad": 1.0874049542764894,
+            "rmse_m": 0.3611872800709391,
+            "scored_samples": 90,
+            "hits": 4
+          }
+        }
+      },
+      "module_faults": {},
+      "worker_fault": null
+    }
+  ]
+}

@@ -23,7 +23,7 @@ export function developerView(data,profile){
 
 export function mountVisualization(profile,settings){
   const $=id=>document.getElementById(id),developer=settings.value.developer_mode,allowed=new Set(allowedLayers(profile,developer));
-  let layers={...settings.value.layers},data=null,message=null,saveQueue=Promise.resolve();
+  let layers={...settings.value.layers},data=null,message=null,robotTopics=[],saveQueue=Promise.resolve();
   const history=new SceneTimeline(profile.physics_hz,profile.rendering,profile.view.interpolation_jump_m);
   $("visualization-note").textContent=developer?"开发者图层 · 可独立显示真值、估计和传感器；不会把真值发给玩家代码。":"只列出本关授权图层；显示来源仍由关卡权限决定。";
   $("layer-list").replaceChildren(...[...allowed].map(key=>{
@@ -46,6 +46,7 @@ export function mountVisualization(profile,settings){
     const values={view:message};
     for(const item of message?.payload.local_observations??[])values[item.channel]=item;
     for(const item of message?.payload.target_estimates??[])values[item.channel]=item;
+    for(const item of robotTopics)values[item.channel]=item;
     if(developer&&data){
       values["developer/truth"]=data.truth;values["developer/pose_candidates"]=data.pose_candidates;
       values["developer/selected_pose"]=data.selected_pose;values["developer/target_estimate"]=data.target_estimate;
@@ -60,6 +61,7 @@ export function mountVisualization(profile,settings){
     $("message-data").textContent=$("show-message").checked?JSON.stringify(values[$("message-topic").value],null,2):"消息内容已隐藏";
   }
   $("message-topic").onchange=inspect;$("show-message").onchange=inspect;
+  window.addEventListener("tankbot-deployment-status",event=>{robotTopics=event.detail.graph?.topics??[];inspect();});
   applyPanels();
   return {enabled,developer,get data(){return data;},get message(){return message;},
     update(view,debug,now){message=view;data=developer?debug:null;if(data)history.push(developerView(data,profile),now);applyPanels();inspect();},

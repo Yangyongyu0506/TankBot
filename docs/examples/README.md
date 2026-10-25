@@ -35,3 +35,5 @@
 示例与正文变更应一起提交。检查命令见 [Schema 说明](../schemas/README.md)；完整语义与时间规则见 [03](../03_PROTOCOL_SPECIFICATION.md)、[07](../07_SIMULATION_DESIGN.md)。
 
 M3 可运行单模块 Manifest/Contract 对应 [m3-workspace.json](m3-workspace.json) 和 [m3-module-contract.json](m3-module-contract.json)，模板与 Schema 一致；通用 `tankbot.json` 的 build_robot 图组装留待 M5。
+
+M5 新增 `m5-workspace.json`、`m5-module-contract.json`、`target-pose-message.json`、`turret-acceleration-message.json`；语义与权限见 [26](../26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)。

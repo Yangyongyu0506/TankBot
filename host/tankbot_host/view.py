@@ -1,6 +1,7 @@
 """Estimated-only selector and view projection. Neither class accepts a World/truth object."""
 import copy
 import math
+import json
 
 
 class PoseSelector:
@@ -18,6 +19,17 @@ class PoseSelector:
 class ViewGateway:
     def __init__(self, policy):
         self.policy = copy.deepcopy(policy)
+
+    def robot_topics(self, cache, max_bytes):
+        if not self.policy.get("robot_topics_allowed",False):
+            return []
+        result, size = [],0
+        for message in sorted(cache.values(),key=lambda m:(-m["simulation_tick"],m["channel"])):
+            length = len(json.dumps(message,ensure_ascii=False).encode())
+            if size+length <= max_bytes:
+                result.append(copy.deepcopy(message))
+                size += length
+        return result
 
     def build(self, tick, revision, selector, sensors, *, practice=None, target_estimate=None, campaign=False):
         policy = self.policy

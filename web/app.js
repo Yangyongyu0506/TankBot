@@ -7,6 +7,7 @@ import {mountSettings} from "/settings-ui.js";
 import {binding,controlKey,keyLabel} from "/keyboard.js";
 import {mountVisualization,drawVisualization} from "/visualization.js";
 import {mountRuntimeLogs} from "/runtime-logs.js";
+import {mountRobotGraph} from "/robot-graph.js";
 
 const $ = id => document.getElementById(id);
 const canvas = $("arena"), ctx = canvas.getContext("2d");
@@ -239,6 +240,7 @@ function draw(now) {
         ctx.save(); ctx.translate(...point(object.pose.x_m, object.pose.y_m)); ctx.rotate(-object.pose.yaw_rad);
         const l = profile.body.length_m * scale, w = profile.body.width_m * scale;
         ctx.fillStyle = "#af6972"; ctx.beginPath(); ctx.roundRect(-l / 2, -w / 2, l, w, profile.body.corner_radius_m * scale); ctx.fill();
+        if(profile.armor_width_m){const half=profile.armor_width_m*scale/2;ctx.strokeStyle="#82e5f3";ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(l/2,-half);ctx.lineTo(l/2,half);ctx.moveTo(-l/2,-half);ctx.lineTo(-l/2,half);ctx.moveTo(-half,w/2);ctx.lineTo(half,w/2);ctx.moveTo(-half,-w/2);ctx.lineTo(half,-w/2);ctx.stroke();}
         ctx.fillStyle = "#fff0de"; ctx.fillText(String(object.hits), -4, 4); ctx.restore();
       }
     }
@@ -269,6 +271,13 @@ function draw(now) {
       ctx.beginPath();ctx.arc(x,y,profile.body.width_m*scale/2,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
       ctx.beginPath();ctx.moveTo(x-7,y);ctx.lineTo(x+7,y);ctx.moveTo(x,y-7);ctx.lineTo(x,y+7);ctx.stroke();
       ctx.font="12px sans-serif";ctx.fillText("目标估计",x+12,y-12);
+      if(Number.isFinite(p.yaw_rad)){
+        ctx.save();ctx.translate(x,y);ctx.rotate(-p.yaw_rad);
+        ctx.strokeRect(-profile.body.length_m*scale/2,-profile.body.width_m*scale/2,profile.body.length_m*scale,profile.body.width_m*scale);
+        ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(profile.body.length_m*scale*.7,0);ctx.stroke();
+        if(profile.armor_width_m){const half=profile.armor_width_m*scale/2,l=profile.body.length_m*scale/2,w=profile.body.width_m*scale/2;ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(l,-half);ctx.lineTo(l,half);ctx.moveTo(-l,-half);ctx.lineTo(-l,half);ctx.moveTo(-half,w);ctx.lineTo(half,w);ctx.moveTo(-half,-w);ctx.lineTo(half,-w);ctx.stroke();}
+        ctx.restore();
+      }
     }
     if(visualization)drawVisualization(ctx,point,frame,debugFrame,visualization,profile,scale);
     ctx.fillStyle = "#8ba69a"; ctx.font = "12px monospace";
@@ -291,6 +300,7 @@ function draw(now) {
     canvas.dataset.projectileY = firstProjectile?.y_m ?? "";
     canvas.dataset.targetEstimateX=frame.targetEstimate?.x_m??"";
     canvas.dataset.targetEstimateY=frame.targetEstimate?.y_m??"";
+    canvas.dataset.targetEstimateYaw=frame.targetEstimate?.yaw_rad??"";
     frames++;
     if (now - statsSince >= profile.rendering.stats_interval_ms) {
       renderFps = Math.round(frames * 1000 / (now - statsSince)); frames = 0; statsSince = now;
@@ -331,7 +341,13 @@ try {
   }
   $("mode-label").textContent = profile.view_mode === "weapons-practice" ? "真值练习视图 / Ground Truth · 跟随平移，世界方向固定" : "估计视图 / Estimated State · 相机跟随授权估计";
   $("fire").disabled = profile.control_sources.weapon !== "keyboard";
+  mountRobotGraph(profile,browser);
   mountWorkspace(browser).catch(error=>$("workspace-message").textContent="编辑器加载失败："+error.message+"。请运行 python3 tools/build.py 后刷新页面。");
+  if(profile.control_sources.chassis!=="keyboard"){
+    $("controls").textContent="Weapons 章节：底盘锁定，零目标主动制动；后坐与受击继续按真实物理计算。";
+    document.querySelectorAll('[data-key="KeyW"],[data-key="KeyS"],[data-key="KeyA"],[data-key="KeyD"],[data-key="KeyQ"],[data-key="KeyE"]').forEach(button=>button.disabled=true);
+  }
+  if(profile.control_sources.turret!=="keyboard")document.querySelectorAll('[data-key="KeyJ"],[data-key="KeyL"]').forEach(button=>button.disabled=true);
   mountCampaign(profile,browser,state=>{
     const ended=Boolean(state&&state.status!=="active");
     campaignWaiting=Boolean(state?.phase==="preparing"&&state?.timing.start_on==="first_deployment");

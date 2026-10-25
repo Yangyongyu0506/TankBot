@@ -98,8 +98,66 @@ class TargetEstimate:
 
 
 @dataclass(frozen=True)
+class TargetPoseEstimate:
+    x_m: float
+    y_m: float
+    yaw_rad: float
+    covariance: NDArray[np.float64] | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self,"covariance",_covariance_matrix(self.covariance,3))
+
+
+@dataclass(frozen=True)
+class TargetPoints:
+    """Current map-frame measurement matrix, shape (N, 2); never an implicit history."""
+    positions_m: NDArray[np.float64]
+
+    def __post_init__(self) -> None:
+        array = np.asarray(self.positions_m,dtype=np.float64)
+        if array.shape == (0,):
+            array = array.reshape(0,2)
+        if array.ndim != 2 or array.shape[1] != 2:
+            raise ValueError("positions_m 必须是 shape=(N,2) 的数值数组")
+        object.__setattr__(self,"positions_m",np.frombuffer(array.tobytes(),dtype=np.float64).reshape(array.shape))
+
+
+@dataclass(frozen=True)
 class TurretVelocity:
     velocity_radps: float
+
+
+@dataclass(frozen=True)
+class TurretAcceleration:
+    acceleration_radps2: float
+
+
+@dataclass(frozen=True)
+class AimInput:
+    target_xy: NDArray[np.float64] | None
+    target_age_s: float
+    own_pose: NDArray[np.float64]
+    turret_angle_rad: float
+    turret_rate_radps: float
+    weapon_ready: bool
+    target_yaw_rad: float | None = None
+
+    def __post_init__(self) -> None:
+        pose = np.asarray(self.own_pose,dtype=np.float64)
+        if pose.shape != (3,):
+            raise ValueError("own_pose 必须为 [x,y,yaw]，shape=(3,)")
+        object.__setattr__(self,"own_pose",np.frombuffer(pose.tobytes(),dtype=np.float64))
+        if self.target_xy is not None:
+            target = np.asarray(self.target_xy,dtype=np.float64)
+            if target.shape != (2,):
+                raise ValueError("target_xy 必须为 [x,y]，shape=(2,)")
+            object.__setattr__(self,"target_xy",np.frombuffer(target.tobytes(),dtype=np.float64))
+
+
+@dataclass(frozen=True)
+class AimOutput:
+    acceleration_radps2: float
+    fire: bool
 
 
 @dataclass(frozen=True)
@@ -184,12 +242,14 @@ class ModuleContext:
 
     def publish(self, port: str, value: Any, *, frame_id: str,
                 simulation_tick: int | None = None) -> None:
-        types: dict[type, str] = {Pose2D: "pose2d@1", TargetEstimate: "target_estimate@1", Twist: "twist@1", TurretVelocity: "turret_velocity@1"}
+        types: dict[type, str] = {Pose2D: "pose2d@1", TargetEstimate: "target_estimate@1", TargetPoseEstimate:"target_pose_estimate@1", TargetPoints:"target_points@1", Twist: "twist@1", TurretVelocity: "turret_velocity@1", TurretAcceleration:"turret_acceleration@1"}
         if type(value) not in types:
             raise TypeError("Unsupported output value")
         payload: dict[str, Any] = asdict(value)
-        if isinstance(value, (Pose2D, TargetEstimate)) and value.covariance is not None:
+        if isinstance(value, (Pose2D, TargetEstimate, TargetPoseEstimate)) and value.covariance is not None:
             payload["covariance"] = value.covariance.ravel(order="C").tolist()
+        if isinstance(value,TargetPoints):
+            payload["positions_m"] = value.positions_m.tolist()
         payload = _wire_scalars(payload)
         self._outputs.append((port, types[type(value)], payload, frame_id,
                               self.simulation_tick if simulation_tick is None else simulation_tick))

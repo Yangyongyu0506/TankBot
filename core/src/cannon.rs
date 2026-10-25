@@ -42,6 +42,14 @@ pub struct TargetConfig {
     pub pose: [f64; 3],
     pub motion: Option<crate::enemy::PatrolConfig>,
     pub health: Option<crate::enemy::HealthConfig>,
+    pub armor: Option<ArmorConfig>,
+}
+
+#[derive(Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ArmorConfig {
+    pub layout: String,
+    pub width_m: f64,
 }
 #[derive(Clone, Deserialize, Serialize, Debug)]
 #[serde(deny_unknown_fields)]
@@ -105,6 +113,8 @@ pub struct CannonSystem {
     pub dynamic_targets: BTreeMap<String, DynamicTarget>,
     pub shots: Vec<Projectile>,
     pub target_hits: BTreeMap<String, u64>,
+    pub damage_hits: BTreeMap<String, u64>,
+    armor: BTreeMap<String, ArmorConfig>,
     pub shots_fired: u64,
     pub hits_received: u64,
     pub results: Vec<(String, FireResult)>,
@@ -224,9 +234,21 @@ impl CannonSystem {
             })
             .collect();
         let mut target_hits = BTreeMap::new();
+        let mut armor = BTreeMap::new();
         for t in &config.targets {
             if target_hits.insert(t.target_id.clone(), 0).is_some() {
                 return Err("Duplicate target ID".into());
+            }
+            if let Some(panel) = &t.armor {
+                if panel.layout != "four_side_centers"
+                    || !panel.width_m.is_finite()
+                    || panel.width_m <= 0.0
+                    || panel.width_m
+                        > (body.length_m.min(body.width_m) - 2.0 * body.corner_radius_m)
+                {
+                    return Err("Invalid four-side armor profile".into());
+                }
+                armor.insert(t.target_id.clone(), panel.clone());
             }
             obstacles.push(Obstacle {
                 pose: Pose::new(Vector::new(t.pose[0], t.pose[1]), t.pose[2]),
@@ -241,7 +263,9 @@ impl CannonSystem {
             obstacles,
             dynamic_targets: BTreeMap::new(),
             shots: vec![],
+            damage_hits: target_hits.clone(),
             target_hits,
+            armor,
             shots_fired: 0,
             hits_received: 0,
             results: vec![],
@@ -591,6 +615,31 @@ impl CannonSystem {
                     let p = &self.shots[e.shot];
                     if let Some(id) = target {
                         *self.target_hits.get_mut(id).expect("Registered target") += 1;
+                        let pose = self
+                            .dynamic_targets
+                            .get(id)
+                            .map(|d| d.motion.position_at_time(elapsed))
+                            .unwrap_or_else(|| {
+                                self.obstacles
+                                    .iter()
+                                    .find(|o| o.target_id.as_ref() == Some(id))
+                                    .expect("Registered target geometry")
+                                    .pose
+                            });
+                        let local = pose.inverse() * *point;
+                        let damaging = self.armor.get(id).is_none_or(|panel| {
+                            let epsilon = self.numerics.spatial_epsilon_m;
+                            ((local.x.abs() - body.length_m / 2.0).abs() <= epsilon
+                                && local.y.abs() <= panel.width_m / 2.0 + epsilon)
+                                || ((local.y.abs() - body.width_m / 2.0).abs() <= epsilon
+                                    && local.x.abs() <= panel.width_m / 2.0 + epsilon)
+                        });
+                        if damaging {
+                            *self
+                                .damage_hits
+                                .get_mut(id)
+                                .expect("Registered damage counter") += 1;
+                        }
                         if let Some(dynamic) = self.dynamic_targets.get(id) {
                             target_impulses.push((
                                 dynamic.body,
@@ -697,6 +746,51 @@ mod tests {
             born_s: 0.0,
             bounces: 0,
             owner_armed: true,
+        }
+    }
+
+    #[test]
+    fn moving_rotated_armor_uses_first_surface_point_and_nonarmor_absorbs_impulse() {
+        let raw: serde_json::Value =
+            serde_json::from_str(include_str!("../tests/fixtures/default-profile.json")).unwrap();
+        for yaw in [0.0, 1.2] {
+            for side in [0, 1] {
+                for armored in [true, false] {
+                    let mut config: Config = serde_json::from_value(raw.clone()).unwrap();
+                    config.scene.walls.clear();
+                    let mut target: TargetConfig =
+                        serde_json::from_value(raw["campaign"]["levels"]["c4"]["target"].clone())
+                            .unwrap();
+                    target.pose[2] = yaw;
+                    let id = target.target_id.clone();
+                    config.weapons.targets = vec![target];
+                    let mut c = GameCore::new(config, "differential").unwrap();
+                    let enemy = &c.enemies[&id];
+                    let handle = enemy.body;
+                    let mass = c.world.bodies[handle].mass();
+                    let pose = *c.world.bodies[handle].position();
+                    let offset = if armored { 0.0 } else { 0.2 };
+                    let (p, v) = if side == 0 {
+                        (Vector::new(0.55, offset), Vector::new(-30.0, 0.0))
+                    } else {
+                        (Vector::new(offset, 0.45), Vector::new(0.0, -30.0))
+                    };
+                    c.cannon
+                        .as_mut()
+                        .unwrap()
+                        .shots
+                        .push(shot(0, pose * p, pose.rotation * v));
+                    c.step().unwrap();
+                    let cannon = c.cannon.as_ref().unwrap();
+                    assert!(cannon.shots.is_empty());
+                    assert_eq!(cannon.target_hits[&id], 1);
+                    assert_eq!(cannon.damage_hits[&id], u64::from(armored));
+                    assert_eq!(c.world.bodies[handle].mass(), mass);
+                    if !armored && side == 0 {
+                        assert!(c.world.bodies[handle].angvel().abs() > 0.001);
+                    }
+                }
+            }
         }
     }
     fn advance(c: &mut GameCore, dt: f64) {
@@ -865,6 +959,7 @@ mod tests {
         let r = c.config.weapons.projectile.radius_m;
         let cannon = c.cannon.as_mut().unwrap();
         cannon.target_hits.insert("test".into(), 0);
+        cannon.damage_hits.insert("test".into(), 0);
         cannon.obstacles.push(Obstacle {
             pose: Pose::translation(1.1, 2.0),
             shape: SharedShape::cuboid(0.1, 0.1),

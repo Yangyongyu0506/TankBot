@@ -76,7 +76,7 @@ export async function mountWorkspace(browser){
     $("rollback-workspace").disabled=ended||busy||Boolean(status?.job)||!$("deployment-history").value;
   }
   function open(path){selected=path;$("editor-path").textContent=path;editor.open(path,files[path]);learning?.file(path);refresh();}
-  function accept(value){snapshot=value;files={...value.files};const preferred=level==="c2"?"perception/tracker.py":level==="c1"?"perception/transforms.py":level==="c0"?"campaign_robot.py":null;open(files[selected]!==undefined?selected:(preferred&&preferred in files?preferred:Object.keys(files).find(p=>p.endsWith("odometry.py"))||Object.keys(files)[0]));}
+  function accept(value){snapshot=value;files={...value.files};const preferred=level==="c4"?"perception/pose_tracker.py":level==="c3"?"weapons/auto_aim.py":level==="c2"?"perception/tracker.py":level==="c1"?"perception/transforms.py":level==="c0"?"campaign_robot.py":null;open(files[selected]!==undefined?selected:(preferred&&preferred in files?preferred:Object.keys(files).find(p=>p.endsWith("odometry.py"))||Object.keys(files)[0]));}
   async function save(){
     const changes={};for(const p of new Set([...Object.keys(files),...Object.keys(snapshot.files)]))if(files[p]!==snapshot.files[p])changes[p]=files[p]??null;
     if(Object.keys(changes).length)accept(await http("save",{revision:snapshot.revision,changes}));
@@ -179,6 +179,7 @@ export async function mountWorkspace(browser){
   async function poll(){
     try{
       status=await runtime("");root.dataset.deployment=JSON.stringify(status);root.dataset.revision=snapshot.revision;
+      window.dispatchEvent(new CustomEvent("tankbot-deployment-status",{detail:status}));
       $("active-deployment").textContent=status.active?status.active.sha256.slice(0,12)+" · tick "+status.active.activated_tick:"启动示例（尚未部署工作区）";
       $("deployment-state").textContent=status.attempt_status&&status.attempt_status!=="active"?"关卡已结束":status.job?(status.job.kind+" / "+status.job.phase):status.runtime_fault?"程序已停止 · "+status.runtime_fault:status.last?.status||"Editing";
       const history=$("deployment-history"),choice=history.value;

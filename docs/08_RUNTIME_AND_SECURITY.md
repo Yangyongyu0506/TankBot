@@ -81,3 +81,7 @@ CSP 允许 Runtime origin 的固定只读资源请求，MEMFS 可写；浏览器
 ## M3 测试与部署边界
 
 Test/import/setup/玩家 unittest 也在独立 Runtime 中执行；原生仍仅可信本机代码，浏览器复用 M2 的独立 origin。候选不收到完整 Workspace 存储或 World，只收到固定源码与授权配置/传感器；其输出在 Test 中不会提交执行器。原子切换生成新 publisher 身份、清除旧提交队列/控制目标，旧 Worker 结果无法用于新租约。归档报告只供审计，不能恢复 Ready 授权。详见 [17](17_EDITOR_AND_DEPLOYMENT.md)。
+
+## M5 当前增量
+
+M5 每台机器人仍共享一个 Worker；每模块预算仅作准入，总批次硬预算与外部终止沿用原方案。模块之间不构成安全隔离，候选测试独立缓存不驱动实时执行器。图/连接/公开 Topic 均有 YAML 上限；见 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)。服务端 OS 沙箱仍待实现。

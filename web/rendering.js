@@ -115,6 +115,7 @@ export class SceneTimeline {
     const targetPair = this.latest.payload.target_estimates?.length ? bracket(this.targets,this.renderTime) : null;
     const targetEstimate = targetPair ? {x_m:lerp(targetPair[0].point.x_m,targetPair[1].point.x_m,targetPair[2]),
                                        y_m:lerp(targetPair[0].point.y_m,targetPair[1].point.y_m,targetPair[2])} : null;
+    if(targetEstimate&&Number.isFinite(targetPair[0].point.yaw_rad)&&Number.isFinite(targetPair[1].point.yaw_rad))targetEstimate.yaw_rad=targetPair[0].point.yaw_rad+shortAngle(targetPair[1].point.yaw_rad-targetPair[0].point.yaw_rad)*targetPair[2];
     return {pose, objects, turretAngle, targetEstimate, simulationTimeMs: this.renderTime};
   }
 }

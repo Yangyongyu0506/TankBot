@@ -2,9 +2,9 @@
 
 TankBot 将二维坦克运动、机器人算法学习与多文件 Python 编程结合。玩家通过传感器和自己的算法重建世界认知。
 
-当前完成 **M1 + M1b 本机闭环原型**：Rust/Rapier2D 权威物理、差速/四轮径向全向轮底盘、理想轮编码器与质心 IMU、外部 Python 里程计、固定 tick 提交、Pose Selector、View Policy 和 Canvas 页面。M1b 增加双刚体炮台、单发/冷却、连续弹道/反弹/弹丸互毁、后坐/受击冲量、靶标与 Python 武器接口；M2 增加真实浏览器 Rust/WASM + Pyodide 双 Worker、独立 Runtime origin 与多 Adapter 验证；M3 增加 CodeMirror/Vim、多文件 Workspace、模板预览、快照测试、部署与回滚。后续课程与 Arena 尚未实现。
+当前完成 **M1 + M1b 本机闭环原型**：Rust/Rapier2D 权威物理、差速/四轮径向全向轮底盘、理想轮编码器与质心 IMU、外部 Python 里程计、固定 tick 提交、Pose Selector、View Policy 和 Canvas 页面。M1b 增加双刚体炮台、单发/冷却、连续弹道/反弹/弹丸互毁、后坐/受击冲量、靶标与 Python 武器接口；M2 增加真实浏览器 Rust/WASM + Pyodide 双 Worker、独立 Runtime origin 与多 Adapter 验证；M3 增加 CodeMirror/Vim、多文件 Workspace、模板预览、快照测试、部署与回滚。M5 增加多模块图与 C3/C4 自动武器；Locomotion、规划和 Arena 尚未实现。
 
-M4 增加 C0–C2 教学关卡：真值驾驶练习、理想雷达 SE(3) 矩阵变换、带噪声/丢失的移动敌车跟踪与击杀。开始方式见下节；完整后续课程、自动规划和 Arena 仍待实现。
+M4 增加 C0–C2 教学关卡：真值驾驶练习、理想雷达 SE(3) 矩阵变换、带噪声/丢失的移动敌车跟踪与击杀。开始方式见下节；M5 的 C3 自动瞄准、C4 敌车 x/y/yaw 估计与装甲瞄准已接入；自身定位课程、建图、规划与 Arena 仍待实现。
 
 ## 构建与运行
 
@@ -100,7 +100,7 @@ python3 tools/tankbot.py browser --workspace /path/to/robot-seed --workspace-sto
 
 `--workspace` 仅作为只读种子，不会回写玩家目录。模板更新和项目导入先展示旧模板/当前文件/新建议，默认保留已有文件；可按完整 revision 预览历史源码。重新启动使用启动示例，已保存草稿不会自动执行，须重新测试与部署。报告归档可导出，但不能绕过重新测试。
 
-当前支持一个周期 Module 及其多文件依赖、`tests/test_*.py` 的 unittest；完整多模块图属于 M5。测试还检查语法/合同/权限和 6 个授权传感器仿真批次，测试输出不控制当前世界。原生测试只适用于本人可信代码；浏览器测试在独立 Runtime origin 的 Worker 中进行。细节见 [M3 设计](docs/17_EDITOR_AND_DEPLOYMENT.md)。
+当前支持单模块兼容包装与多模块 Contract/Topic 图、同步周期/event 调度及 `tests/test_*.py` 的 unittest；多模块接口见 [M5 设计](docs/26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)。测试还检查语法/合同/权限和 6 个授权传感器仿真批次，测试输出不控制当前世界。原生测试只适用于本人可信代码；浏览器测试在独立 Runtime origin 的 Worker 中进行。细节见 [M3 设计](docs/17_EDITOR_AND_DEPLOYMENT.md)。
 
 ## 玩家代码、依赖与运行日志
 
@@ -152,3 +152,11 @@ M2 浏览器验收需先启动带 `--browser-qa` 的 browser 服务及启用 Mar
 M3 UI 验收使用独立临时编辑库启动服务和 Marionette Firefox，再运行 `python3 tools/browser_m3.py`；原生模式使用 `--url http://127.0.0.1:8765 --output docs/reports/m3-native-ui.json`。脚本会修改该测试编辑库，勿指向日常项目。
 
 弹窗/固定视口回归：启动本机服务与 Marionette Firefox 后运行 `python3 tools/browser_dialog.py`，检查 F2/按钮/×、草稿保留、焦点与按键隔离，以及不同窗口尺寸下无页面滚动。截图与测量写入 `.m1-cache/dialog-*.png` 和 `.m1-cache/dialog-report.json`。
+
+## M5：Weapons 与多模块机器人
+
+关卡按 **Hello Robot（C0）→ Weapons（C1–C4）→ 后续 Locomotion** 分组。C1–C4 底盘零目标制动、禁止驾驶，继续提供系统自身位姿；C1/C2 人工炮台，C3/C4 程序输出相对角加速度并请求单发。C4 只有敌车四侧中央装甲扣血，玩家根据中心 Radar 估计敌车 x/y/yaw 并计算装甲位置。C2–C4 雷达噪声统一为 σr=0.45m、σθ=0.08rad、10% 丢失，C1 保持理想。
+
+通关后按存档顺序解锁；开发者可选 `python3 tools/tankbot.py serve --developer --level c3` 或 `browser --developer --level c4` 练习。打开编辑器查看本关说明和类型参考；已有 C1/C2 源码保留，提示升级时先预览系统脚手架。三模块为坐标变换→跟踪→瞄准，玩家仅填写算法；「模块」页可查端口、预算、执行和错误，「日志」用于调试。C3/C4 时限 120/180 仿真秒，首次成功部署起算。
+
+协议新类型、数值方程、管线时延和资源限制见 [26](docs/26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)，实测与平台边界见 [M5 验收](docs/reports/M5_VALIDATION.md)。

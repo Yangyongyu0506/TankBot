@@ -1,5 +1,5 @@
 # Game parameters and level definitions. Edit YAML; JSON test fixtures are generated.
-config_version: '1.7'
+config_version: '1.8'
 confirmation_status: confirmed
 body:
   length_m: 0.8
@@ -192,6 +192,24 @@ validation:
   contact_measurement_tolerance_m: 0.005
   odom_error_tolerance_m: 0.1
   covariance_max_iterations: 64
+  reference_aim:
+    kp: 18.0
+    kd: 8.0
+    fire_tolerance_rad: 0.035
+    velocity_window_s: 1.5
+    max_target_speed_mps: 1.2
+    yaw_speed_threshold_mps: 0.15
+    minimum_track_samples: 4
+    maximum_track_samples: 40
+    minimum_fit_span_s: 0.3
+    armor_facing_cosine: 0.2
+    yaw_alpha: 0.3
+    initial_variance: 2.0
+    process_acceleration_std: 1.0
+    measurement_std_m: 0.5
+    position_window_s: 1.5
+    intercept_iterations: 3
+    minimum_distance_squared: 0.01
 solver:
   dt: 0.004166666666666667
   min_ccd_dt: 0.00016666666666666666
@@ -280,6 +298,10 @@ weapons:
     initial_relative_angle_rad: 0.0
     initial_relative_rate_radps: 0.0
     cmd_vel_timeout_s: 0.5
+    acceleration_control:
+      max_relative_acceleration_radps2: 25.0
+      timeout_s: 0.5
+      rate_limit_braking_tau_s: 0.1
   projectile:
     mass_kg: 0.05
     radius_m: 0.03
@@ -483,8 +505,8 @@ campaign:
         bearing_stddev_rad: 0.0
         drop_probability: 0.0
       noisy:
-        range_stddev_m: 0.15
-        bearing_stddev_rad: 0.02
+        range_stddev_m: 0.45
+        bearing_stddev_rad: 0.08
         drop_probability: 0.1
   levels:
     c0:
@@ -517,6 +539,13 @@ campaign:
       time_limit_s: 60
       timer_start: first_control
       player_health: null
+      chapter_id: hello_robot
+      control_sources:
+        chassis: keyboard
+        turret: keyboard
+        weapon: keyboard
+      robot_profile: null
+      armor_mode: false
     c1:
       title: C1 · 用 SE(3) 矩阵变换坐标
       problem: 敌车已隐藏。实现返回 4×4 NumPy SE(3) 矩阵的函数；游戏用矩阵乘法把雷达点变成地图上的目标估计。
@@ -524,10 +553,10 @@ campaign:
       - F2 打开编辑器，阅读任务说明，完成 perception/transforms.py 的 radar_to_map。
       - F1 查看 Pose2D 字段、NumPy 返回类型及矩阵实验：前三列是基向量，最后一列是原点位置。
       - 系统负责极坐标展开和 T @ p；保存 → 测试快照 → 部署，然后手动瞄准命中。
+      - Weapons 章节底盘锁定：本关只练习瞄准，W/A/S/D/Q/E 不控制移动；后坐和受击仍是真实物理。
       capabilities:
       - system.pose.read
       - estimate.target.publish
-      - control.manual.drive
       - control.manual.turret
       - control.manual.fire
       - sensor.radar.read
@@ -547,6 +576,13 @@ campaign:
       time_limit_s: 60
       timer_start: first_deployment
       player_health: null
+      chapter_id: weapons
+      control_sources:
+        chassis: disabled
+        turret: keyboard
+        weapon: keyboard
+      robot_profile: null
+      armor_mode: false
     c2:
       title: C2 · 噪声中跟踪与击杀
       problem: 敌我双方均有 {max_hp} HP。雷达带噪声和丢失；复用坐标转换，稳定跟踪，在 {time_limit_s} 秒内存活并击杀敌车。反弹的己方炮弹也会造成伤害。
@@ -554,10 +590,10 @@ campaign:
       - 完成 perception/tracker.py；C1 的 transforms.py 继续用于矩阵坐标变换。
       - 空测量时也可输出合理预测；不要把每个 observation_id 当作同一实体 ID。
       - J/L 手动瞄准，给移动目标留出弹丸飞行时间。HP 是授权反馈；误差在结束后显示。
+      - Weapons 章节底盘锁定：本关只练习瞄准，W/A/S/D/Q/E 不控制移动；后坐和受击仍是真实物理。
       capabilities:
       - system.pose.read
       - estimate.target.publish
-      - control.manual.drive
       - control.manual.turret
       - control.manual.fire
       - sensor.radar.read
@@ -607,6 +643,155 @@ campaign:
       time_limit_s: 120
       timer_start: first_deployment
       player_health: same_as_target
+      chapter_id: weapons
+      control_sources:
+        chassis: disabled
+        turret: keyboard
+        weapon: keyboard
+      robot_profile: null
+      armor_mode: false
+    c3:
+      title: C3 · 让炮台自己瞄准
+      problem: 底盘锁定，炮台与开火交给 Python。复用坐标变换和跟踪，用相对角加速度控制炮台、预测目标并自动击杀。
+      hints:
+      - F2 查看自动生成的模块链；C1 的 transforms.py、C2 的 tracker.py 会保留。
+      - 炮台只能发布相对角加速度（rad/s²），不能直接设置角度或角速度。
+      - 使用角速度反馈制动，考虑目标测量年龄和弹丸飞行时间；没有目标时不盲射。
+      - 保存 → 测试 → 部署后计时；J/L 和空格不再直接操控武器，可随时结束尝试。
+      capabilities:
+      - system.pose.read
+      - estimate.target.publish
+      - sensor.radar.read
+      - view.enemy.health
+      - view.player.health
+      - control.robot.turret_acceleration
+      - control.robot.fire
+      - view.robot_topics
+      - module.graph.manage
+      radar_profile: noisy
+      target:
+        target_id: patrol_enemy
+        pose:
+        - -4.5
+        - -2.0
+        - 0.0
+        motion:
+          chassis: differential
+          initial_velocity:
+          - 0.0
+          - 0.0
+          - 0.0
+          initial_turret_angle_rad: 0.0
+          initial_turret_rate_radps: 0.0
+          control_hz: 10
+          waypoints_m:
+          - - -1.5
+            - -2.0
+          - - -1.5
+            - 2.0
+          - - -4.5
+            - 2.0
+          - - -4.5
+            - -2.0
+          forward_speed_mps: 0.6
+          heading_gain_per_s: 2.0
+          max_yaw_rate_radps: 1.5
+          turn_in_place_threshold_rad: 0.35
+          arrival_radius_m: 0.25
+        health:
+          max_hp: 3
+          damage_per_hit: 1
+          collision_damage: 0
+          death_behavior: remove_at_substep_end
+      objective:
+        movement_m: 0.0
+        turn_rad: 0.0
+        required_hits: 0
+        required_estimates: 0
+        kind: destroy_target
+      time_limit_s: 120
+      timer_start: first_deployment
+      player_health: same_as_target
+      chapter_id: weapons
+      control_sources:
+        chassis: disabled
+        turret: robot
+        weapon: robot
+      robot_profile: weapons_auto
+      armor_mode: false
+    c4:
+      title: C4 · 从底盘中心推算装甲瞄准点
+      problem: 雷达仍只测底盘中心。估计敌车 x/y/yaw，结合公开的差速模型与四面装甲安装位置，选择装甲点并自动击杀。原地转向的 yaw 不可直接观测。
+      hints:
+      - F2 查看自动生成的模块链；C1 的 transforms.py、C2 的 tracker.py 会保留。
+      - 炮台只能发布相对角加速度（rad/s²），不能直接设置角度或角速度。
+      - 原地转向时仅中心观测无法唯一确定敌车 yaw；可预测或暂不射击。
+      - 保存 → 测试 → 部署后计时；J/L 和空格不再直接操控武器，可随时结束尝试。
+      capabilities:
+      - system.pose.read
+      - estimate.target.publish
+      - sensor.radar.read
+      - view.enemy.health
+      - view.player.health
+      - control.robot.turret_acceleration
+      - control.robot.fire
+      - view.robot_topics
+      - module.graph.manage
+      - estimate.target_pose.publish
+      radar_profile: noisy
+      target:
+        target_id: patrol_enemy
+        pose:
+        - -4.5
+        - -2.0
+        - 0.0
+        motion:
+          chassis: differential
+          initial_velocity:
+          - 0.0
+          - 0.0
+          - 0.0
+          initial_turret_angle_rad: 0.0
+          initial_turret_rate_radps: 0.0
+          control_hz: 10
+          waypoints_m:
+          - - -1.5
+            - -2.0
+          - - -1.5
+            - 2.0
+          - - -4.5
+            - 2.0
+          - - -4.5
+            - -2.0
+          forward_speed_mps: 0.6
+          heading_gain_per_s: 2.0
+          max_yaw_rate_radps: 1.5
+          turn_in_place_threshold_rad: 0.35
+          arrival_radius_m: 0.25
+        health:
+          max_hp: 3
+          damage_per_hit: 1
+          collision_damage: 0
+          death_behavior: remove_at_substep_end
+        armor:
+          layout: four_side_centers
+          width_m: 0.24
+      objective:
+        movement_m: 0.0
+        turn_rad: 0.0
+        required_hits: 0
+        required_estimates: 0
+        kind: destroy_target
+      time_limit_s: 180
+      timer_start: first_deployment
+      player_health: same_as_target
+      chapter_id: weapons
+      control_sources:
+        chassis: disabled
+        turret: robot
+        weapon: robot
+      robot_profile: weapons_armor
+      armor_mode: true
   lessons:
     c0:
       title: C0 · 先认识坐标与控制
@@ -667,7 +852,408 @@ campaign:
         measurement: TargetEstimate
         self.estimate: TargetEstimate
         T_map_radar: ndarray
+    c3:
+      title: C3 · 让炮台自己瞄准
+      summary: 只填写自瞄算法：输入为已授权观测，输出角加速度与开火意图；模块通信与控制权限由框架处理。
+      steps:
+      - Weapons 章节锁定玩家底盘；自身位姿继续由系统提供，本阶段不要求实现自身定位。
+      - C1 的矩阵变换、C2 的跟踪分别运行在独立模块；所有模块读冻结输入，输出固定在后续 tick 提交。
+      - 完成 weapons/auto_aim.py 的 AutoAim.update；先转向，再制动，最后增加提前量和开火条件。
+      - F1 可查看 AimInput / AimOutput，每个 NumPy 字段的 shape、单位与参考系均有说明。
+      - 可通过「模块」页查看连线、预算、输入等待或错误；「日志」显示 print 和调用栈。
+      files:
+      - path: weapons/auto_aim.py
+        role: 角加速度控制与开火条件。
+      - path: perception/tracker.py
+        role: 复用 C2 跟踪器。
+      - path: perception/transforms.py
+        role: 复用 C1 坐标矩阵。
+      default_type: AimInput
+      functions:
+      - path: weapons/auto_aim.py
+        name: update
+      aliases:
+        observation: AimInput
+        result: AimOutput
+        measurements: ndarray
+      completion: 存活并让敌车 HP 归零。有效击中点以真实弹丸接触判定；运行中不公布真值误差。
+      common_errors:
+      - 角加速度不是角速度；零角加速度不会立即停止转动。
+      - 注意目标估计的延迟，开火前确认武器已冷却。
+    c4:
+      title: C4 · 从底盘中心推算装甲瞄准点
+      summary: 估计敌车底盘中心与 yaw，将公开装甲安装偏移变换为瞄准点，再复用 C3 控制器。
+      steps:
+      - Weapons 章节锁定玩家底盘；自身位姿继续由系统提供，本阶段不要求实现自身定位。
+      - C1 的矩阵变换、C2 的跟踪分别运行在独立模块；所有模块读冻结输入，输出固定在后续 tick 提交。
+      - 完成 perception/pose_tracker.py 的 PoseTracker.update，再完成 weapons/armor_aim.py。
+      - 敌车只前进、不倒车，可原地转向；原地转向时的 yaw 不能仅靠中心位置唯一恢复。
+      - 可通过「模块」页查看连线、预算、输入等待或错误；「日志」显示 print 和调用栈。
+      files:
+      - path: perception/pose_tracker.py
+        role: 敌车中心与航向估计。
+      - path: weapons/armor_aim.py
+        role: 装甲点选择与预测。
+      - path: weapons/auto_aim.py
+        role: 复用 C3 控制器。
+      default_type: TargetPoseEstimate
+      functions:
+      - path: perception/pose_tracker.py
+        name: update
+      - path: weapons/armor_aim.py
+        name: update
+      aliases:
+        observation: AimInput
+        result: AimOutput
+        measurements: ndarray
+      completion: 存活并让敌车 HP 归零。有效击中点以真实弹丸接触判定；运行中不公布真值误差。
+      common_errors:
+      - 角加速度不是角速度；零角加速度不会立即停止转动。
+      - 必须先估计敌车 yaw，不能把雷达方位角当成敌车航向。
   outcome_priority:
   - player_dead
   - objective_completed
   - timeout
+  chapters:
+  - chapter_id: hello_robot
+    title: Hello Robot
+    description: 认识机器人、世界坐标与人工操控。
+    levels:
+    - c0
+  - chapter_id: weapons
+    title: Weapons
+    description: 锁定底盘，依次学习坐标变换、目标跟踪、自瞄和装甲瞄准。
+    levels:
+    - c1
+    - c2
+    - c3
+    - c4
+  - chapter_id: locomotion
+    title: Locomotion
+    description: 后续章节：底盘驱动、运动控制、自身状态估计，再逐步引入定位与建图。
+    levels: []
+robot_graph:
+  max_modules: 8
+  max_connections: 64
+  schemas:
+    pose2d@1:
+    - map
+    target_estimate@1:
+    - map
+    target_points@1:
+    - map
+    joint_state@1:
+    - base_link
+    imu@1:
+    - base_link
+    radar@1:
+    - radar_link
+    weapon_state@1:
+    - base_link
+    twist@1:
+    - base_link
+    turret_velocity@1:
+    - base_link
+    fire_command@1:
+    - null
+    turret_acceleration@1:
+    - base_link
+    target_pose_estimate@1:
+    - map
+  internal_schemas:
+  - pose2d@1
+  - target_estimate@1
+  - target_points@1
+  - twist@1
+  - target_pose_estimate@1
+  profiles:
+    weapons_auto:
+      template_version: 2.0.0
+      manifest:
+        manifest_version: '1.0'
+        sdk_version: 0.1.0
+        protocol_version: '1.0'
+        project_id: weapons-robot
+        entry_point: robot_modules.weapons:CoordinatesModule
+        modules:
+        - module_id: coordinates
+          contract: contracts/coordinates.json
+          config: {}
+        - module_id: tracking
+          contract: contracts/tracking.json
+          config: {}
+        - module_id: aiming
+          contract: contracts/aiming.json
+          config: {}
+        connections:
+        - from: /robot/localization/pose
+          to: coordinates.self_pose
+        - from: /robot/sensors/radar
+          to: coordinates.radar
+        - from: coordinates.points
+          to: /robot/modules/coordinates/points
+        - from: /robot/modules/coordinates/points
+          to: tracking.points
+        - from: tracking.target
+          to: /robot/estimates/tracking/target
+        - from: /robot/localization/pose
+          to: aiming.self_pose
+        - from: /robot/turret/joint_states
+          to: aiming.turret
+        - from: /robot/weapons/cannon/state
+          to: aiming.weapon
+        - from: /robot/estimates/tracking/target
+          to: aiming.target
+        - from: aiming.acceleration
+          to: /robot/turret/cmd_accel
+        - from: aiming.fire
+          to: /robot/weapons/cannon/fire
+        dependencies: []
+        pose_source:
+          mode: system
+          module_id: null
+          fallback: none
+      contracts:
+        coordinates:
+          contract_version: '1.0'
+          module_id: coordinates
+          entry_point: robot_modules.weapons:CoordinatesModule
+          inputs:
+            self_pose:
+              schema: pose2d@1
+              required: true
+              max_age_ticks: 24
+            radar:
+              schema: radar@1
+              required: true
+              max_age_ticks: 24
+          outputs:
+            points:
+              schema: target_points@1
+          execution:
+            mode: periodic
+            period_ticks: 6
+            deadline_ticks: 6
+            budget_ms: 6
+          dependencies: []
+          state_version: '1'
+        tracking:
+          contract_version: '1.0'
+          module_id: tracking
+          entry_point: robot_modules.weapons:TrackingModule
+          inputs:
+            points:
+              schema: target_points@1
+              required: true
+              max_age_ticks: 24
+          outputs:
+            target:
+              schema: target_estimate@1
+          execution:
+            mode: periodic
+            period_ticks: 6
+            deadline_ticks: 6
+            budget_ms: 6
+          dependencies:
+          - coordinates
+          state_version: '1'
+        aiming:
+          contract_version: '1.0'
+          module_id: aiming
+          entry_point: robot_modules.weapons:AimingModule
+          inputs:
+            self_pose:
+              schema: pose2d@1
+              required: true
+              max_age_ticks: 24
+            turret:
+              schema: joint_state@1
+              required: true
+              max_age_ticks: 24
+            weapon:
+              schema: weapon_state@1
+              required: true
+              max_age_ticks: 24
+            target:
+              schema: target_estimate@1
+              required: false
+              max_age_ticks: 24
+          outputs:
+            acceleration:
+              schema: turret_acceleration@1
+            fire:
+              schema: fire_command@1
+          execution:
+            mode: periodic
+            period_ticks: 6
+            deadline_ticks: 6
+            budget_ms: 6
+          dependencies:
+          - tracking
+          state_version: '1'
+      grants:
+        inputs:
+          /robot/localization/pose: pose2d@1
+          /robot/sensors/radar: radar@1
+          /robot/turret/joint_states: joint_state@1
+          /robot/weapons/cannon/state: weapon_state@1
+        outputs:
+        - target_estimate@1
+        actuators:
+          /robot/turret/cmd_accel: turret_acceleration@1
+          /robot/weapons/cannon/fire: fire_command@1
+      target_source: tracking
+      managed_files:
+      - tankbot.json
+      - robot_modules/weapons.py
+      - contracts/coordinates.json
+      - contracts/tracking.json
+      - contracts/aiming.json
+      - tests/test_coordinates.py
+      - tests/test_auto_aim.py
+    weapons_armor:
+      template_version: 2.0.0
+      manifest:
+        manifest_version: '1.0'
+        sdk_version: 0.1.0
+        protocol_version: '1.0'
+        project_id: weapons-robot
+        entry_point: robot_modules.weapons:CoordinatesModule
+        modules:
+        - module_id: coordinates
+          contract: contracts/coordinates.json
+          config: {}
+        - module_id: tracking
+          contract: contracts/tracking.json
+          config: {}
+        - module_id: aiming
+          contract: contracts/aiming.json
+          config: {}
+        connections:
+        - from: /robot/localization/pose
+          to: coordinates.self_pose
+        - from: /robot/sensors/radar
+          to: coordinates.radar
+        - from: coordinates.points
+          to: /robot/modules/coordinates/points
+        - from: /robot/modules/coordinates/points
+          to: tracking.points
+        - from: tracking.target
+          to: /robot/estimates/tracking/target_pose
+        - from: /robot/localization/pose
+          to: aiming.self_pose
+        - from: /robot/turret/joint_states
+          to: aiming.turret
+        - from: /robot/weapons/cannon/state
+          to: aiming.weapon
+        - from: /robot/estimates/tracking/target_pose
+          to: aiming.target
+        - from: aiming.acceleration
+          to: /robot/turret/cmd_accel
+        - from: aiming.fire
+          to: /robot/weapons/cannon/fire
+        dependencies: []
+        pose_source:
+          mode: system
+          module_id: null
+          fallback: none
+      contracts:
+        coordinates:
+          contract_version: '1.0'
+          module_id: coordinates
+          entry_point: robot_modules.weapons:CoordinatesModule
+          inputs:
+            self_pose:
+              schema: pose2d@1
+              required: true
+              max_age_ticks: 24
+            radar:
+              schema: radar@1
+              required: true
+              max_age_ticks: 24
+          outputs:
+            points:
+              schema: target_points@1
+          execution:
+            mode: periodic
+            period_ticks: 6
+            deadline_ticks: 6
+            budget_ms: 6
+          dependencies: []
+          state_version: '1'
+        tracking:
+          contract_version: '1.0'
+          module_id: tracking
+          entry_point: robot_modules.weapons:PoseTrackingModule
+          inputs:
+            points:
+              schema: target_points@1
+              required: true
+              max_age_ticks: 24
+          outputs:
+            target:
+              schema: target_pose_estimate@1
+          execution:
+            mode: periodic
+            period_ticks: 6
+            deadline_ticks: 6
+            budget_ms: 6
+          dependencies:
+          - coordinates
+          state_version: '1'
+        aiming:
+          contract_version: '1.0'
+          module_id: aiming
+          entry_point: robot_modules.weapons:AimingModule
+          inputs:
+            self_pose:
+              schema: pose2d@1
+              required: true
+              max_age_ticks: 24
+            turret:
+              schema: joint_state@1
+              required: true
+              max_age_ticks: 24
+            weapon:
+              schema: weapon_state@1
+              required: true
+              max_age_ticks: 24
+            target:
+              schema: target_pose_estimate@1
+              required: false
+              max_age_ticks: 24
+          outputs:
+            acceleration:
+              schema: turret_acceleration@1
+            fire:
+              schema: fire_command@1
+          execution:
+            mode: periodic
+            period_ticks: 6
+            deadline_ticks: 6
+            budget_ms: 6
+          dependencies:
+          - tracking
+          state_version: '1'
+      grants:
+        inputs:
+          /robot/localization/pose: pose2d@1
+          /robot/sensors/radar: radar@1
+          /robot/turret/joint_states: joint_state@1
+          /robot/weapons/cannon/state: weapon_state@1
+        outputs:
+        - target_pose_estimate@1
+        actuators:
+          /robot/turret/cmd_accel: turret_acceleration@1
+          /robot/weapons/cannon/fire: fire_command@1
+      target_source: tracking
+      managed_files:
+      - tankbot.json
+      - robot_modules/weapons.py
+      - contracts/coordinates.json
+      - contracts/tracking.json
+      - contracts/aiming.json
+      - tests/test_coordinates.py
+      - tests/test_auto_aim.py
+  max_batch_outputs: 128
+  max_view_topic_bytes: 32768
