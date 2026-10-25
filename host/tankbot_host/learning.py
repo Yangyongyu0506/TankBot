@@ -26,7 +26,7 @@ TYPE_TEXT: dict[str, tuple[str, dict[str, str]]] = {
         "weapon_ready":"本机是否已冷却，bool。","target_yaw_rad":"C3 为 None；C4 为玩家估计的敌车朝向，rad。不是雷达方位角。"}),
     "AimOutput": ("算法的自瞄结果，由框架转换为合法控制消息。", {"acceleration_radps2":"炮台相对角加速度目标，rad/s²；不能直接写角度/角速度。","fire":"bool，True 请求单发；框架处理冷却和请求 ID。"}),
     "TurretAcceleration": ("炮台相对角加速度 Topic 的类型化负载。", {"acceleration_radps2":"目标角加速度，rad/s²；真实响应仍由受限力矩和双刚体动力学决定。"}),
-    "Pose2D": ("自身的二维位姿。C0–C2 由系统公开提供；位置在 map 中，车头方向用 yaw 表示。", {
+    "Pose2D": ("自身的二维位姿，可由任务授权提供；位置在 map 中，车头方向用 yaw 表示。", {
         "x_m": "地图横坐标，单位 m，向右为正。", "y_m": "地图纵坐标，单位 m，向上为正。",
         "yaw_rad": "车头相对地图 +x 的逆时针角，单位 rad；π/2 表示朝向 +y。",
         "covariance": "None 或只读 float64 NumPy 矩阵，shape=(3,3)，依次对应 x、y、yaw；本关可以忽略。",
@@ -106,7 +106,7 @@ def sdk_reference() -> list[dict[str, Any]]:
                 methods.append({"name": method_name, "signature": method_name + str(signature), "description": METHOD_TEXT[method_name]})
         constructor: str = name + "(" + ", ".join(constructor_parts) + ")" if is_dataclass(cls) else name + str(inspect.signature(cls))
         result.append({"name": name, "description": description, "constructor": constructor, "fields": members, "methods": methods})
-    result.append({"name": "ndarray", "description": "NumPy 数组。C1 返回 float64 的 (4,4) 矩阵；@ 表示矩阵与向量相乘。", "constructor": "np.array(rows, dtype=np.float64) / np.eye(4, dtype=np.float64)",
+    result.append({"name": "ndarray", "description": "NumPy 数组。SE(3) 转换返回 float64 的 (4,4) 矩阵；@ 表示矩阵与向量相乘。", "constructor": "np.array(rows, dtype=np.float64) / np.eye(4, dtype=np.float64)",
                    "fields": [{"name": "shape", "type": "tuple[int, ...]", "description": "数组形状；SE(3) 必须是 (4,4)。"},
                               {"name": "dtype", "type": "np.dtype", "description": "元素类型；本关使用 np.float64。"},
                               {"name": "T", "type": "ndarray", "description": "转置。注意转置通常不等于 SE(3) 的逆。"}], "methods": []})
@@ -136,60 +136,40 @@ def learning_bundle(config: dict[str, Any]) -> dict[str, Any]:
     lesson: dict[str, Any] = copy.deepcopy(config["campaign"]["lessons"][level_id]) if level_id else {
         "title": "机器人工作区说明", "summary": "示例里程计已提供；可查阅类型并修改自己的算法。", "steps": ["先阅读文件中的类型注解与说明，再保存、测试和部署。"],
         "files": [], "functions": [], "aliases": {}, "default_type": "Pose2D"}
-    from .weapon_templates import AUTO_AIM,POSE_TRACKER,ARMOR_AIM
-    sources = {"perception/transforms.py": TRANSFORMS, "perception/tracker.py": TRACKER,"weapons/auto_aim.py":AUTO_AIM,
-               "perception/pose_tracker.py":POSE_TRACKER,"weapons/armor_aim.py":ARMOR_AIM}
-    lesson["functions"] = [function_reference(entry["path"], sources[entry["path"]], entry["name"]) for entry in lesson["functions"]]
-    lesson["execution"] = "本关无需编程；关闭代码编辑器后使用键盘驾驶。"
-    lesson["completion"] = "可查阅类型、修改算法，并保存、测试和部署。"
-    lesson["common_errors"] = ["编辑器打开时，驾驶按键用于编辑代码；关闭后才能控制坦克。"]
+    from .workspace import starter
+    sources=starter(config)
     if level_id:
-        definition: dict[str, Any] = config["campaign"]["levels"][level_id]
-        objective: dict[str, Any] = definition["objective"]
-        if level_id == "c0":
-            lesson["completion"] = f"相对起点移动至少 {objective['movement_m']:g} m、车体转向至少 {objective['turn_rad']:g} rad，并命中靶标 {objective['required_hits']} 次。"
-        else:
-            lesson["execution"] = (f"框架按 {config['clock']['algorithm_hz']} Hz 仿真频率调度，雷达按 {config['campaign']['radar']['update_hz']} Hz 采样；"
-                                   "每个新雷达帧调用一次算法，包括空检测帧。dt 使用仿真秒；部署和重试重新初始化状态。")
-            lesson["completion"] = ("发布合法的地图目标估计，并命中靶标 " + str(objective["required_hits"]) + " 次。" if level_id == "c1" else
-                                    "把敌车 HP 减到 0 即通关；误差评分在尝试结束后显示，不作为额外门槛。")
-            lesson["common_errors"] = (["返回 np.ndarray，形状必须是 (4,4)；不能返回 list 或 TargetEstimate。",
-                                          "yaw 已经是弧度，矩阵方向为 radar → map；用 @ 做矩阵乘法，最后一行为 [0,0,0,1]。"] if level_id == "c1" else
-                                         ["先检查 measurements 是否为空；没有测量不代表目标坐标为 (0,0)。",
-                                          "状态保存在 self 的字段中；dt 单位是秒，不要用真实时间或每次调用都清空状态。"])
-        if definition.get("robot_profile"):
-            lesson["completion"] = config["campaign"]["lessons"][level_id]["completion"]
-            lesson["common_errors"] = copy.deepcopy(config["campaign"]["lessons"][level_id]["common_errors"])
-            lesson["execution"] = "三个独立模块通过冻结 Topic 快照交互，按各自 Contract 调度。输出在固定提交门生效；target_age_s 已包含本次提交等待。缺输入时模块等待，正常异常只影响对应模块，整个 Worker 超时则终止本台机器人的所有模块。"
+        definition=config["campaign"]["levels"][level_id]
+        lesson=copy.deepcopy(definition["tutorial"]["lesson"])
+        health=definition["target"].get("health",{})
+        context={**definition["rules"]["parameters"],"time_limit_s":definition["time_limit_s"],"max_hp":health.get("max_hp"),"damage_per_hit":health.get("damage_per_hit"),"algorithm_hz":config["clock"]["algorithm_hz"]}
+        if definition["radar"]:context.update(radar_hz=definition["radar"]["update_hz"],**definition["radar"]["noise"])
+        lesson["completion"]=lesson["completion"].format(**context)
+        lesson["execution"]=lesson["execution"].format(**context)
+        if "calibration" in lesson:
+            target=definition["target"];motion=target.get("motion",{})
+            length,width=config["body"]["length_m"],config["body"]["width_m"]
             import math
-            lesson["calibration"] = {"enemy_drive_model":"differential","enemy_forward_only":True,
-                "kinematics":"车体系 vy=0；vx=r(ω_right+ω_left)/2；wz=r(ω_right−ω_left)/track。中心轨迹在运动时提供航向线索；原地转向的 yaw 不可唯一观测。",
-                "wheel_radius_m":config["wheels"]["radius_m"],"track_m":config["wheels"]["differential_track_m"],
-                "body_length_m":config["body"]["length_m"],"body_width_m":config["body"]["width_m"],
-                "projectile_speed_mps":config["weapons"]["projectile"]["relative_speed_mps"],
-                "max_acceleration_radps2":config["weapons"]["turret"]["acceleration_control"]["max_relative_acceleration_radps2"]}
-            if definition.get("armor_mode"):
-                length,width=config["body"]["length_m"],config["body"]["width_m"]
-                lesson["calibration"].update(armor_width_m=definition["target"]["armor"]["width_m"],
-                    armor_mounts=[[length/2,0,0],[-length/2,0,-math.pi],[0,width/2,math.pi/2],[0,-width/2,-math.pi/2]],
-                    armor_columns="[底盘系 x_m, 底盘系 y_m, 向外法线 yaw_rad]；依次前、后、左、右；接触点落在中央装甲段才扣血。")
-        if definition["radar_profile"]:
-            noise=config["campaign"]["radar"]["profiles"][definition["radar_profile"]]
-            lesson["execution"] += f" 雷达距离 σ={noise['range_stddev_m']:g} m，方位 σ={noise['bearing_stddev_rad']:g} rad，独立丢失 {noise['drop_probability']:.0%}。"
-        lesson["completion"] += f" 限时 {definition['time_limit_s']} 仿真秒。" + (
-            "首次有效人工操作开始计时。" if definition["timer_start"] == "first_control" else
-            "首次成功部署后开始计时，之前的编辑和测试不计时；重复部署不重置。")
-        lesson["steps"].append("正式尝试持续计时，打开编辑器不暂停；可在任务页或编辑器点击「结束本次尝试」，修改保存后重试。")
-        if definition["player_health"]:
-            health = definition["target"]["health"]
-            lesson["completion"] += f" 我方与敌方均为 {health['max_hp']} HP，每发命中扣 {health['damage_per_hit']} HP；反弹自伤也扣血，碰墙不扣血。我方死亡判失败，同时死亡也失败。"
+            public={"target_drive_model":motion.get("chassis"),"target_forward_only":motion.get("forward_speed_mps",0)>0,
+                "wheel_radius_m":config["wheels"]["radius_m"],"differential_track_m":config["wheels"]["differential_track_m"],
+                "body_length_m":length,"body_width_m":width,"projectile_speed_mps":config["weapons"]["projectile"]["relative_speed_mps"],
+                "max_acceleration_radps2":config["weapons"]["turret"]["acceleration_control"]["max_relative_acceleration_radps2"],
+                "armor_width_m":target.get("armor",{}).get("width_m"),"armor_mounts":[[length/2,0,0],[-length/2,0,-math.pi],[0,width/2,math.pi/2],[0,-width/2,-math.pi/2]]}
+            lesson["calibration"]={key:public[value["source"]] if "source" in value else value["text"] for key,value in lesson["calibration"].items()}
+    else:
+        lesson.update(execution="本关无需编程；关闭代码编辑器后使用键盘驾驶。",completion="可查阅类型、修改算法，并保存、测试和部署。",common_errors=["编辑器打开时，驾驶按键用于编辑代码；关闭后才能控制坦克。"])
+    lesson["functions"]=[function_reference(entry["path"],sources[entry["path"]],entry["name"]) for entry in lesson["functions"]]
+    types_reference=copy.deepcopy(sdk_reference())
+    for item in types_reference:
+        notes=lesson.get("type_notes",{}).get(item["name"])
+        if notes:
+            item["description"]=notes["description"]
+            for field in item["fields"]:field["description"]=notes["fields"][field["name"]]
+    lesson.pop("type_notes",None)
     from .campaign_templates import framework_upgrade
     managed = framework_upgrade(config,{})["managed_files"]
     return {"version": "1.0", "template_version": template_version(config), "lesson": lesson,
             "dependencies": load_policy(),
-            "types": copy.deepcopy(sdk_reference()), "python": copy.deepcopy(PYTHON_BASICS),
-            "testing": {"checks": ["Python 语法与导入；项目接口、连线和发布权限。",
-                                     "tests/test_*.py 中的单元测试；C1/C2 默认包含 SE(3) 合法性、旋转/平移与方向样例。",
-                                     f"使用获授权传感器输入试运行 {config['workspace']['test_batches']} 个批次，检查异常、超时和输出消息。"],
-                        "meaning": "通过表示此快照可以加载并通过这些样例和短时间试运行，不代表算法效果完美或关卡通关。测试输出不会控制坦克，也不会进入正式画面。"},
+            "types": types_reference, "python": copy.deepcopy(PYTHON_BASICS),
+            "testing": {"checks":[text.format(test_batches=config["workspace"]["test_batches"]) for text in definition["tutorial"]["testing"]["checks"]],"meaning":definition["tutorial"]["testing"]["meaning"]} if level_id else {"checks":["Python 语法、合同、单元测试和授权仿真。"],"meaning":"通过后可部署。"},
             "managed_files": list(managed)}

@@ -163,15 +163,19 @@ class CampaignRobot(Module):
     def test_c1_function_estimate_and_hit_complete_the_problem(self):
         a = self.authority("c1")
         aim = AimHarness()
+        saw_projectile = False
         for _ in range(1800):
             if a.tick % a.period == 0:
                 aim.step(a)
             a.advance()
-            self.assertEqual(a.view["payload"]["objects"], [])
+            objects = a.view["payload"]["objects"]
+            self.assertTrue(all(obj["kind"] == "projectile" for obj in objects))
+            saw_projectile |= bool(objects)
             self.assertEqual(a.view["payload"]["effects"], [])
             if a.campaign.status == "passed":
                 break
         self.assertEqual(a.campaign.status, "passed", a.campaign_status())
+        self.assertTrue(saw_projectile)
         self.assertLess(a.campaign.result["rmse_m"], 1e-10)
 
     def test_c2_two_tracking_methods_kill_using_estimates_and_authorized_controls(self):
@@ -180,16 +184,20 @@ class CampaignRobot(Module):
                 a = self.authority("c2", tracker)
                 aim = AimHarness()
                 positions = []
+                saw_projectile = False
                 for _ in range(7200):
                     if a.tick % a.period == 0:
                         aim.step(a)
                     a.advance()
                     positions.append(a._private["targets"][0]["pose"][:2])
-                    self.assertEqual(a.view["payload"]["objects"], [])
+                    objects = a.view["payload"]["objects"]
+                    self.assertTrue(all(obj["kind"] == "projectile" for obj in objects))
+                    saw_projectile |= bool(objects)
                     if a.campaign.status == "passed":
                         break
                     self.assertIsNone(a.campaign_status()["attempt"]["result"])
                 self.assertEqual(a.campaign.status, "passed", a.campaign_status())
+                self.assertTrue(saw_projectile)
                 self.assertEqual(a.campaign.hp, 0)
                 self.assertFalse(a._private["targets"][0]["alive"])
                 self.assertGreater(math.dist(positions[0], positions[min(180, len(positions)-1)]), .5)
@@ -201,7 +209,31 @@ class CampaignRobot(Module):
                 with self.assertRaisesRegex(Rejected, "ATTEMPT_ENDED"):
                     a.fire_keyboard({"request_id": "after-end"})
 
-    def test_hidden_truth_never_enters_profile_runtime_or_view_and_scoring_is_terminal(self):
+    def test_weapons_projectiles_are_visible_without_enemy_truth_or_runtime_access(self):
+        for level in ("c1", "c2", "c3", "c4"):
+            with self.subTest(level=level):
+                a = Authority(self.config(level), controlled=True)
+                try:
+                    self.assertFalse(a.developer_mode)
+                    a._private["projectiles"] = [{"projectile_id": 7, "position": [1.5, .5]}]
+                    a._build_view()
+                    self.assertEqual(a.view["payload"]["objects"], [{
+                        "kind": "projectile", "projectile_id": 7, "x_m": 1.5, "y_m": .5,
+                        "radius_m": a.config["weapons"]["projectile"]["radius_m"]}])
+                    definition = a.campaign.definition
+                    self.assertIn("projectiles", definition["visualization"]["initial_enabled"])
+                    self.assertIn("projectiles", definition["visualization"]["user_toggleable"])
+                    self.assertEqual(definition["visualization"]["sources"]["projectiles"], "authorized_truth")
+                    self.assertFalse(any("projectile" in channel for channel in a.runtime_inputs()))
+                    self.assertFalse(any("projectile" in channel for channel in a._sensors))
+                    payload = copy.deepcopy(a.view["payload"])
+                    a._private["targets"][0]["pose"] = [123, 456, .7]
+                    a._build_view()
+                    self.assertEqual(payload, a.view["payload"])
+                finally:
+                    a.close()
+
+    def test_enemy_truth_never_enters_profile_runtime_or_view_and_scoring_is_terminal(self):
         a = self.authority("c2")
         for _ in range(60):
             a.advance()

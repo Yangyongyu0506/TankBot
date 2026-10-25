@@ -5,11 +5,11 @@ import base64
 import json
 from pathlib import Path
 import sys
-import yaml
 from browser_driver import Browser
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT / p) for p in ("tests", "host", "protocol", "sdk/python")]
+from tankbot_host.authority import load_config
 from tankbot_host.campaign import configure
 from weapons_support import solutions
 
@@ -22,7 +22,7 @@ def main():
     args = parser.parse_args()
     b = Browser(args.port)
     evidence = {"url":args.url,"capabilities":b.capabilities,"levels":[]}
-    config = yaml.safe_load((ROOT / "config/game.yaml").read_text())
+    config = load_config(ROOT / "config/game.yaml")
 
     def click(identifier):
         b.until("return !document.getElementById("+json.dumps(identifier)+").disabled&&document.getElementById('workspace-panel').dataset.busy!=='true';")

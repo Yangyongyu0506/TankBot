@@ -1,0 +1,57 @@
+{
+  "date": "2026-10-25",
+  "url": "http://127.0.0.1:8795",
+  "browser": "157.0.1",
+  "preview_only_managed_files": [
+    "campaign_robot.py",
+    "contracts/perception.json",
+    "tankbot.json",
+    "tests/test_coordinates.py"
+  ],
+  "cancel_preserves_saved_algorithm": true,
+  "algorithm_files_preserved": true,
+  "upgrade_notice_cleared": true,
+  "edit_disables_deployment": true,
+  "test": {
+    "status": "Ready",
+    "sha256": "e475e7a4f39b0af1650dc76d85c997fc0640e120005a9e801ed93a363c9007e3",
+    "revision": "4facef09806df669af7b1fd3e28ad3faa61c9b38c7aa31df1a7cee5973c5cc90",
+    "environment": "b461e919d653bc5f6d17c23635b4d34f2d577afc6d49b845364f5352d212db7e",
+    "unit_tests": 4,
+    "simulation_batches": 6,
+    "max_batch_ms": 8.802672000456369,
+    "checks": [
+      "paths",
+      "syntax",
+      "manifest",
+      "contract",
+      "unit_tests",
+      "authorized_sensor_simulation",
+      "output_permissions",
+      "runtime_budget"
+    ],
+    "kind": "test",
+    "id": "651ab9a100e64145831f3d2ffdddb193"
+  },
+  "active": {
+    "deployment_id": "ed3aced8663a4d8fb0933f16b45fb7a3",
+    "sha256": "e475e7a4f39b0af1650dc76d85c997fc0640e120005a9e801ed93a363c9007e3",
+    "revision": "4facef09806df669af7b1fd3e28ad3faa61c9b38c7aa31df1a7cee5973c5cc90",
+    "activated_tick": 468
+  },
+  "screenshots": [
+    ".m1-cache/native-ui-preview.png",
+    ".m1-cache/native-ui-ready.png"
+  ],
+  "sources": {
+    "web/workspace-ui.js": "1afa3d7d70e567d9a82200d6564ceea1936f0e4de0bf59d8db3bebb3184c41bc",
+    "web/learning-ui.js": "9bd6bbc97b6c55de39a6fe7abb0aa3a447d9b7da4c8ac6c6a5888759b9f14b0d",
+    "web/index.html": "1325e9b0fa5f407236fc0361455c9fb182eec69e217063d35fd0c9695477a257",
+    "web/style.css": "fc56827731e63d85d58e90b740ab310da01533739e553c5ca4eae683e4a0c576",
+    "host/tankbot_host/campaign_templates.py": "dc4a5b8035988a7c79f9242b0ce8b7028f2481bf4de157aa0d7dadd9347ed4e5",
+    "host/tankbot_host/workspace_api.py": "c3a214e891cf2189c2c1c8fe995a8c963092f249d590213ed533e249396fe268",
+    "host/tankbot_host/deployment.py": "a87d052148770a1e345a5e25c6a63d589f3bb4bdcbcc8b1dfe2b782887cd9bde",
+    "host/tankbot_host/learning.py": "3bb706eba049d12bd0faa9cc19dbf3e92546c0f5c7de5ea1c218a43f68e36d40",
+    "tools/browser_template_upgrade.py": "ad40c1c8ed5a508922d9ab80001c64841fe9e6672d4f1387bbc84371ba03d969"
+  }
+}

@@ -1,12 +1,15 @@
 """Materialize a validated snapshot inside a fresh player runtime, never the Authority."""
 import contextlib
-import io
 from pathlib import Path
 import re
 import sys
 import tempfile
 import unittest
 from tankbot._imports import install_workspace_imports, WorkspaceLoader
+
+
+class PlayerTestsFailed(ValueError):
+    """unittest has already written the complete failures to the player's stderr."""
 
 
 def prepare(init):
@@ -35,7 +38,7 @@ def prepare(init):
                 module = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(module)
                 suite.addTests(unittest.defaultTestLoader.loadTestsFromModule(module))
-            result = unittest.TextTestRunner(stream=io.StringIO()).run(suite)
+            result = unittest.TextTestRunner(stream=sys.stderr, verbosity=2).run(suite)
             count = result.testsRun
             if not result.wasSuccessful():
                 test, trace = (result.failures + result.errors)[0]
@@ -43,5 +46,5 @@ def prepare(init):
                 for filename, line in re.findall(r'File "([^"]+)", line ([0-9]+)', trace):
                     if Path(filename).is_relative_to(root):
                         location = str(Path(filename).relative_to(root)) + ":" + line
-                raise ValueError("PLAYER_TEST_FAILED " + location + ": " + trace.strip().splitlines()[-1][:160])
+                raise PlayerTestsFailed("PLAYER_TEST_FAILED " + location + ": " + trace.strip().splitlines()[-1][:160])
     return temporary, count

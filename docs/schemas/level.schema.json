@@ -1,0 +1,1359 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tankbot.example/schemas/v1/level.schema.json",
+  "title": "TankBot declarative level plugin 1.0",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_.-]{0,63}$"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "chapter": {
+          "type": "object",
+          "properties": {
+            "chapter_id": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_.-]{0,63}$"
+            },
+            "title": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "chapter_id",
+            "title",
+            "description"
+          ],
+          "additionalProperties": false
+        },
+        "order": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "learning_objectives": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "recommended_algorithms": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "prerequisites": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,63}$"
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "chapter",
+        "order",
+        "version",
+        "learning_objectives",
+        "recommended_algorithms",
+        "prerequisites"
+      ],
+      "additionalProperties": false
+    },
+    "world": {
+      "type": "object",
+      "properties": {
+        "dimension": {
+          "const": 2
+        },
+        "frame_id": {
+          "const": "map"
+        },
+        "simulation": {
+          "$ref": "https://tankbot.example/schemas/v1/simulation-profile.schema.json#/properties/clock"
+        },
+        "map": {
+          "type": "object",
+          "properties": {
+            "source": {
+              "enum": [
+                "inline",
+                "asset"
+              ]
+            },
+            "walls": {
+              "type": "array",
+              "items": {
+                "$ref": "https://tankbot.example/schemas/v1/simulation-profile.schema.json#/properties/scene/properties/walls/items"
+              }
+            },
+            "path": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "source"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "dimension",
+        "frame_id",
+        "simulation",
+        "map"
+      ],
+      "additionalProperties": false
+    },
+    "robots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,63}$"
+          },
+          "type": {
+            "enum": [
+              "tank",
+              "static_tank_target",
+              "patrol_tank"
+            ]
+          },
+          "role": {
+            "enum": [
+              "player",
+              "target"
+            ]
+          },
+          "model": {
+            "enum": [
+              "scene_selected",
+              "differential",
+              "omnidirectional"
+            ]
+          },
+          "initial_pose": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "initial_velocity": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "health": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "max_hp": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "damage_per_hit": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "collision_damage": {
+                    "const": 0
+                  },
+                  "death_behavior": {
+                    "const": "remove_at_substep_end"
+                  }
+                },
+                "required": [
+                  "max_hp",
+                  "damage_per_hit",
+                  "collision_damage",
+                  "death_behavior"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "control_sources": {
+            "$ref": "https://tankbot.example/schemas/v1/simulation-profile.schema.json#/properties/control_sources"
+          },
+          "sensors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/sensor"
+            }
+          },
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "motion": {
+                "$ref": "campaign.schema.json#/$defs/patrol"
+              },
+              "health": {
+                "$ref": "campaign.schema.json#/$defs/health"
+              },
+              "armor": {
+                "type": "object",
+                "properties": {
+                  "layout": {
+                    "const": "four_side_centers"
+                  },
+                  "width_m": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  }
+                },
+                "required": [
+                  "layout",
+                  "width_m"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "role",
+          "initial_pose"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "role": {
+                  "const": "player"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "model",
+                "initial_velocity",
+                "health",
+                "control_sources",
+                "sensors"
+              ],
+              "properties": {
+                "type": {
+                  "const": "tank"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "role": {
+                  "const": "target"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "parameters"
+              ],
+              "properties": {
+                "type": {
+                  "enum": [
+                    "static_tank_target",
+                    "patrol_tank"
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      },
+      "minItems": 2
+    },
+    "communication": {
+      "type": "object",
+      "properties": {
+        "runtime": {
+          "type": "object",
+          "properties": {
+            "template_version": {
+              "type": "string"
+            },
+            "manifest": {
+              "$ref": "https://tankbot.example/schemas/v1/workspace.schema.json"
+            },
+            "contracts": {
+              "type": "object",
+              "minProperties": 1,
+              "additionalProperties": {
+                "$ref": "https://tankbot.example/schemas/v1/module-contract.schema.json"
+              }
+            },
+            "target_source": {
+              "type": "string"
+            },
+            "managed_files": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "mode": {
+              "enum": [
+                "single",
+                "graph"
+              ]
+            },
+            "profile_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "logical_module": {
+              "type": "object",
+              "properties": {
+                "module_id": {
+                  "type": "string"
+                },
+                "entry_point": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "module_id",
+                "entry_point"
+              ],
+              "additionalProperties": false
+            },
+            "processing": {
+              "enum": [
+                "passive",
+                "transform",
+                "track",
+                "modules"
+              ]
+            }
+          },
+          "required": [
+            "template_version",
+            "manifest",
+            "contracts",
+            "target_source",
+            "managed_files",
+            "mode",
+            "profile_id",
+            "logical_module",
+            "processing"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "runtime"
+      ],
+      "additionalProperties": false
+    },
+    "permissions": {
+      "type": "object",
+      "properties": {
+        "data_access": {
+          "type": "object",
+          "properties": {
+            "inputs": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "outputs": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "actuators": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "inputs",
+            "outputs",
+            "actuators"
+          ],
+          "additionalProperties": false
+        },
+        "visualization": {
+          "type": "object",
+          "properties": {
+            "view_policy": {
+              "$ref": "https://tankbot.example/schemas/v1/view-policy.schema.json"
+            },
+            "allowed_layers": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "view_policy",
+            "allowed_layers"
+          ],
+          "additionalProperties": false
+        },
+        "public_initial_pose": {
+          "type": "boolean"
+        },
+        "public_map": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "data_access",
+        "visualization",
+        "public_initial_pose",
+        "public_map"
+      ],
+      "additionalProperties": false
+    },
+    "visualization": {
+      "type": "object",
+      "properties": {
+        "initial_enabled": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "user_toggleable": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "sources": {
+          "type": "object",
+          "additionalProperties": {
+            "enum": [
+              "authorized_truth",
+              "map",
+              "selected_pose",
+              "player_estimate",
+              "local_observation"
+            ]
+          }
+        },
+        "preserve_user_settings": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "initial_enabled",
+        "user_toggleable",
+        "sources",
+        "preserve_user_settings"
+      ],
+      "additionalProperties": false
+    },
+    "objectives": {
+      "type": "object",
+      "properties": {
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "movement_m": {
+              "type": "number",
+              "minimum": 0
+            },
+            "turn_rad": {
+              "type": "number",
+              "minimum": 0
+            },
+            "required_hits": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "required_estimates": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "movement_m",
+            "turn_rad",
+            "required_hits",
+            "required_estimates"
+          ],
+          "additionalProperties": false
+        },
+        "progress": {
+          "type": "object",
+          "properties": {
+            "moved": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "displacement"
+                },
+                "parameter": {
+                  "enum": [
+                    "movement_m",
+                    "turn_rad"
+                  ]
+                },
+                "sticky": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "type",
+                "parameter",
+                "sticky"
+              ],
+              "additionalProperties": false
+            },
+            "turned": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "heading_change"
+                },
+                "parameter": {
+                  "enum": [
+                    "movement_m",
+                    "turn_rad"
+                  ]
+                },
+                "sticky": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "type",
+                "parameter",
+                "sticky"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "moved",
+            "turned"
+          ],
+          "additionalProperties": false
+        },
+        "success": {
+          "$ref": "#/$defs/rule"
+        },
+        "outcomes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "reason": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_.-]{0,63}$"
+              },
+              "result": {
+                "enum": [
+                  "success",
+                  "failure"
+                ]
+              },
+              "when": {
+                "$ref": "#/$defs/rule"
+              }
+            },
+            "required": [
+              "reason",
+              "result",
+              "when"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "time_limit_s": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "timer_start": {
+          "enum": [
+            "first_control",
+            "first_deployment"
+          ]
+        },
+        "target": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "parameters",
+        "progress",
+        "success",
+        "outcomes",
+        "time_limit_s",
+        "timer_start",
+        "target"
+      ],
+      "additionalProperties": false
+    },
+    "evaluation": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "terminal_diagnostics"
+        },
+        "publish_on": {
+          "const": "terminal"
+        },
+        "metrics": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "type": {
+                "enum": [
+                  "position_rmse",
+                  "yaw_rmse"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "type",
+        "publish_on",
+        "metrics"
+      ],
+      "additionalProperties": false
+    },
+    "randomization": {
+      "type": "object",
+      "properties": {
+        "seed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reset_on": {
+          "const": "new_run"
+        },
+        "generator": {
+          "const": "python_random_v1"
+        }
+      },
+      "required": [
+        "seed",
+        "reset_on",
+        "generator"
+      ],
+      "additionalProperties": false
+    },
+    "tutorial": {
+      "type": "object",
+      "properties": {
+        "problem": {
+          "type": "string"
+        },
+        "hints": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "lesson": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "summary": {
+              "type": "string"
+            },
+            "steps": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "files": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  },
+                  "role": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "path",
+                  "role"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "default_type": {
+              "type": "string"
+            },
+            "functions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "path",
+                  "name"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "aliases": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "execution": {
+              "type": "string"
+            },
+            "completion": {
+              "type": "string"
+            },
+            "common_errors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "calibration": {
+              "type": "object",
+              "additionalProperties": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "source": {
+                        "enum": [
+                          "target_drive_model",
+                          "target_forward_only",
+                          "wheel_radius_m",
+                          "differential_track_m",
+                          "body_length_m",
+                          "body_width_m",
+                          "projectile_speed_mps",
+                          "max_acceleration_radps2",
+                          "armor_width_m",
+                          "armor_mounts"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "source"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "text": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "text"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            },
+            "type_notes": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "description": {
+                    "type": "string"
+                  },
+                  "fields": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "description",
+                  "fields"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "ui": {
+              "type": "object",
+              "properties": {
+                "state_heading": {
+                  "type": "string"
+                },
+                "legend_pose": {
+                  "type": "string"
+                },
+                "view_note": {
+                  "type": "string"
+                },
+                "mode_label": {
+                  "type": "string"
+                },
+                "freshness_message": {
+                  "type": "string"
+                },
+                "progress_layout": {
+                  "type": "string"
+                },
+                "default_file": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "state_heading",
+                "legend_pose",
+                "view_note",
+                "mode_label",
+                "freshness_message",
+                "progress_layout",
+                "default_file"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "title",
+            "summary",
+            "steps",
+            "files",
+            "default_type",
+            "functions",
+            "aliases",
+            "execution",
+            "completion",
+            "common_errors",
+            "type_notes",
+            "ui"
+          ],
+          "additionalProperties": false
+        },
+        "testing": {
+          "type": "object",
+          "properties": {
+            "checks": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "meaning": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "checks",
+            "meaning"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "problem",
+        "hints",
+        "lesson",
+        "testing"
+      ],
+      "additionalProperties": false
+    },
+    "scaffolding": {
+      "type": "object",
+      "properties": {
+        "components": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "campaign_adapter",
+              "empty_perception_package",
+              "se3_transform",
+              "se3_tests",
+              "point_tracker",
+              "weapons_adapters",
+              "auto_aim",
+              "armor_aim",
+              "auto_aim_tests",
+              "pose_tracker"
+            ]
+          }
+        },
+        "documentation": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "function": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "function",
+                "text"
+              ],
+              "additionalProperties": false
+            }
+          }
+        }
+      },
+      "required": [
+        "components",
+        "documentation"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema_version",
+    "metadata",
+    "world",
+    "robots",
+    "communication",
+    "permissions",
+    "visualization",
+    "objectives",
+    "evaluation",
+    "randomization",
+    "tutorial",
+    "scaffolding"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "sensor": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "wheel_encoder",
+            "imu",
+            "turret_joint",
+            "weapon_state",
+            "radar"
+          ]
+        },
+        "topic": {
+          "type": "string"
+        },
+        "schema": {
+          "type": "string"
+        },
+        "frame_id": {
+          "enum": [
+            "base_link",
+            "radar_link"
+          ]
+        },
+        "update_hz": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "mount_m": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "yaw_rad": {
+              "type": "number"
+            },
+            "frame_id": {
+              "const": "radar_link"
+            },
+            "range_m": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "field_of_view_rad": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 6.283185307179586
+            },
+            "update_hz": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "occlusion": {
+              "const": "walls"
+            },
+            "measurement": {
+              "const": "target_center"
+            },
+            "latency_ticks": {
+              "const": 0
+            },
+            "range_bias_m": {
+              "const": 0
+            },
+            "bearing_bias_rad": {
+              "const": 0
+            },
+            "noise": {
+              "type": "object",
+              "properties": {
+                "range_stddev_m": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "bearing_stddev_rad": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "drop_probability": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              },
+              "required": [
+                "range_stddev_m",
+                "bearing_stddev_rad",
+                "drop_probability"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "mount_m",
+            "yaw_rad",
+            "frame_id",
+            "range_m",
+            "field_of_view_rad",
+            "update_hz",
+            "occlusion",
+            "measurement",
+            "latency_ticks",
+            "range_bias_m",
+            "bearing_bias_rad",
+            "noise"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "topic",
+        "schema",
+        "frame_id",
+        "update_hz"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "radar"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "parameters"
+            ]
+          }
+        }
+      ]
+    },
+    "rule": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "enum": [
+                "all",
+                "any"
+              ]
+            },
+            "conditions": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/rule"
+              }
+            }
+          },
+          "required": [
+            "type",
+            "conditions"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "not"
+            },
+            "condition": {
+              "$ref": "#/$defs/rule"
+            }
+          },
+          "required": [
+            "type",
+            "condition"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "compare"
+            },
+            "metric": {
+              "enum": [
+                "moved",
+                "turned",
+                "hits",
+                "estimates",
+                "target_alive",
+                "player_alive",
+                "objective_complete",
+                "elapsed_ticks"
+              ]
+            },
+            "operator": {
+              "enum": [
+                "==",
+                "!=",
+                "<",
+                "<=",
+                ">",
+                ">="
+              ]
+            },
+            "value": {
+              "type": [
+                "number",
+                "boolean"
+              ]
+            },
+            "parameter": {
+              "enum": [
+                "movement_m",
+                "turn_rad",
+                "required_hits",
+                "required_estimates",
+                "limit_ticks"
+              ]
+            }
+          },
+          "required": [
+            "type",
+            "metric",
+            "operator"
+          ],
+          "additionalProperties": false,
+          "oneOf": [
+            {
+              "required": [
+                "value"
+              ],
+              "not": {
+                "required": [
+                  "parameter"
+                ]
+              }
+            },
+            {
+              "required": [
+                "parameter"
+              ],
+              "not": {
+                "required": [
+                  "value"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "runtime": {
+      "type": "object",
+      "properties": {
+        "template_version": {
+          "type": "string"
+        },
+        "manifest": {
+          "$ref": "https://tankbot.example/schemas/v1/workspace.schema.json"
+        },
+        "contracts": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "$ref": "https://tankbot.example/schemas/v1/module-contract.schema.json"
+          }
+        },
+        "target_source": {
+          "type": "string"
+        },
+        "managed_files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "mode": {
+          "enum": [
+            "single",
+            "graph"
+          ]
+        },
+        "profile_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "logical_module": {
+          "type": "object",
+          "properties": {
+            "module_id": {
+              "type": "string"
+            },
+            "entry_point": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "module_id",
+            "entry_point"
+          ],
+          "additionalProperties": false
+        },
+        "processing": {
+          "enum": [
+            "passive",
+            "transform",
+            "track",
+            "modules"
+          ]
+        }
+      },
+      "required": [
+        "template_version",
+        "manifest",
+        "contracts",
+        "target_source",
+        "managed_files",
+        "mode",
+        "profile_id",
+        "logical_module",
+        "processing"
+      ],
+      "additionalProperties": false
+    },
+    "grants": {
+      "type": "object",
+      "properties": {
+        "inputs": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "outputs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "actuators": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "inputs",
+        "outputs",
+        "actuators"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

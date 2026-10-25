@@ -68,7 +68,8 @@ class ApplicationState:
         self.progress_path = Path(progress_path or ROOT / "userdata/progress.json")
         if self.settings_path.resolve() == self.progress_path.resolve():
             raise ValueError("设置文件和存档文件必须使用不同路径。")
-        self.levels = sorted(config.get("campaign", {}).get("levels", {}), key=lambda name: int(name[1:]))
+        self.levels = list(config.get("campaign", {}).get("levels", {}))
+        self.prerequisites={key:value["metadata"]["prerequisites"] for key,value in config.get("campaign",{}).get("levels",{}).items()}
         self.lock = threading.RLock()
         self.tickets = {}
         self.defaults = load_settings(ROOT / "config/settings.yaml")
@@ -157,7 +158,8 @@ class ApplicationState:
                 or not isinstance(value["completed_levels"], list) or not isinstance(value["completions"], dict)):
             raise ValueError("存档格式错误；请恢复备份，原文件未被重置。")
         completed = value["completed_levels"]
-        if (completed != self.levels[:len(completed)] or len(completed) > len(self.levels)
+        if (completed != [lid for lid in self.levels if lid in completed] or len(completed) > len(self.levels)
+                or any(not set(self.prerequisites[lid])<=set(completed) for lid in completed if lid in self.prerequisites)
                 or set(value["completions"]) != set(completed)
                 or value["current_level"] not in self.levels + [None]):
             raise ValueError("存档关卡顺序无效；原文件未被重置。")
@@ -165,7 +167,7 @@ class ApplicationState:
             if not isinstance(record, dict) or set(record) != {"completed_at"} or not isinstance(record["completed_at"], str):
                 raise ValueError("存档通关记录无效；原文件未被重置。")
             datetime.fromisoformat(record["completed_at"])
-        if value["current_level"] is not None and value["current_level"] not in self.levels[:min(len(completed)+1, len(self.levels))]:
+        if value["current_level"] is not None and value["current_level"] not in [lid for lid in self.levels if set(self.prerequisites[lid])<=set(completed)]:
             raise ValueError("存档中的当前关卡尚未解锁；原文件未被重置。")
         return value
 
@@ -173,7 +175,7 @@ class ApplicationState:
         with self.transaction(self.progress_path):
             value = self.read_progress()
         count = len(value["completed_levels"])
-        return {**value, "unlocked_levels": self.levels[:min(count + 1, len(self.levels))], "developer_mode": self.developer}
+        return {**value, "unlocked_levels": [lid for lid in self.levels if set(self.prerequisites[lid])<=set(value["completed_levels"])], "developer_mode": self.developer}
 
     def require_level(self, level_id):
         if level_id not in self.levels:
@@ -207,9 +209,10 @@ class ApplicationState:
                 with self.transaction(self.progress_path):
                     value = self.read_progress()
                     if level_id not in value["completed_levels"]:
-                        if self.levels[len(value["completed_levels"])] != level_id:
+                        if not set(self.prerequisites[level_id])<=set(value["completed_levels"]):
                             raise ValueError("LEVEL_LOCKED")
                         value["completed_levels"].append(level_id)
+                        value["completed_levels"].sort(key=self.levels.index)
                         value["completions"][level_id] = {"completed_at": datetime.now(timezone.utc).isoformat()}
                         self.write(self.progress_path, value)
             return self.progress()

@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 
 
-def load_yaml(path):
+def load_yaml(path, *, content=None):
     import yaml
     class Loader(yaml.SafeLoader):
         pass
@@ -17,7 +17,7 @@ def load_yaml(path):
         return result
     Loader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, mapping)
     try:
-        data = yaml.load(Path(path).read_text(encoding="utf-8"), Loader=Loader)
+        data = yaml.load(Path(path).read_text(encoding="utf-8") if content is None else content, Loader=Loader)
         # Disallow cyclic aliases, non-finite numbers, dates and Python-specific values.
         return json.loads(json.dumps(data, allow_nan=False))
     except (yaml.YAMLError, RecursionError, TypeError) as error:

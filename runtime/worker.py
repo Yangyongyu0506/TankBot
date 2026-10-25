@@ -5,7 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT / "runtime"), str(ROOT / "sdk/python"), str(ROOT / "protocol")]
 from module_runner import ModuleRunner, runtime_packages
-from source_loader import prepare
+from source_loader import prepare, PlayerTestsFailed
 from tankbot_protocol.wire import receive, send
 
 
@@ -18,7 +18,8 @@ def main():
         temporary, tests = prepare(init)
         runner = ModuleRunner(init)
     except Exception as error:
-        traceback.print_exc(file=sys.stderr)
+        if not isinstance(error, PlayerTestsFailed):
+            traceback.print_exc(file=sys.stderr)
         send(sink, {"ready": False, "error": type(error).__name__ + ": " + str(error)[:256]}, limit)
         if temporary:
             temporary.cleanup()

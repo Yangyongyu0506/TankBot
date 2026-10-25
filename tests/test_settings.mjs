@@ -25,11 +25,13 @@ test('remapped physical keys preserve chassis semantics and release old bindings
   setBindings({});
 });
 
-test('player display choices never expose developer layers or forbidden projectile truth',()=>{
+test('Weapons allows projectile layers while keeping enemy and developer truth hidden',()=>{
   const profile=level=>({campaign:{active_level:level,levels:Object.entries(config.campaign.levels).map(([level_id,v])=>({level_id,...v}))},view_mode:'campaign',radar_calibration:level==='c0'?null:{}});
-  const c1=allowedLayers(profile('c1'),false);
-  for(const key of ['truth_robot','truth_targets','projectiles','velocities','colliders'])assert.ok(!c1.includes(key));
-  assert.ok(c1.includes('target_estimates'));assert.ok(c1.includes('radar'));
+  for(const level of ['c1','c2','c3','c4']){
+    const allowed=allowedLayers(profile(level),false);
+    for(const key of ['truth_robot','truth_targets','velocities','colliders'])assert.ok(!allowed.includes(key));
+    for(const key of ['projectiles','target_estimates','radar'])assert.ok(allowed.includes(key));
+  }
   assert.ok(allowedLayers(profile('c0'),false).includes('truth_targets'));
   assert.deepEqual(allowedLayers(profile('c2'),true),Object.keys(layerLabels));
 });

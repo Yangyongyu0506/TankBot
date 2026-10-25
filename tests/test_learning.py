@@ -176,7 +176,7 @@ def radar_to_map(own_pose: Pose2D) -> NDArray[np.float64]:
         snapshot = {"files": files, "ledger": {}}
         from tankbot_host.workspace import digest
         snapshot["revision"] = digest(snapshot)
-        with self.assertRaisesRegex(ValueError, "campaign_robot.py:1:"):
+        with self.assertRaisesRegex(ValueError, 'File "campaign_robot.py", line 1'):
             inspect_snapshot(snapshot, SimpleNamespace(config=config))
 
 

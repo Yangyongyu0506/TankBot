@@ -2,17 +2,19 @@
 
 ## 目的与范围
 
-实现 C0 手动熟悉、C1 理想 Radar 的 SE(3) 矩阵坐标变换、C2 噪声下跟踪与击杀。复用同一 Authority、固定提交门、Python Runtime、Workspace 和 View Policy；M5 的模块图与 C3/C4 已实现，当前章节/控制边界以 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md) 为准。Radar、巡逻、血量及销毁规则已由用户逐项确认。当前配置版本为 `1.8`，参数集中于 `config/game.yaml`，关卡数据在 `campaign` 段；仍能读取不含 Campaign 的 `1.5` 沙盒配置。计时、玩家生命和 YAML 迁移以 [25](25_ATTEMPT_RULES_AND_CONFIGURATION.md) 为准。
+实现 C0 手动熟悉、C1 理想 Radar 的 SE(3) 矩阵坐标变换、C2 噪声下跟踪与击杀。复用同一 Authority、固定提交门、Python Runtime、Workspace 和 View Policy；M5 的模块图与 C3/C4 已实现，当前章节/控制边界以 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md) 为准。Radar、巡逻、血量及销毁规则已由用户逐项确认。当前应用配置版本为 `1.9`，通用模型在 `config/game.yaml`，关卡数据在独立 `levels/*.yaml`，由加载器生成内部 `campaign` DTO，见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)；仍能读取不含 Campaign 的 `1.5` 沙盒配置。计时、玩家生命和 YAML 迁移以 [25](25_ATTEMPT_RULES_AND_CONFIGURATION.md) 为准。
 
 ## 关卡与数据流
 
 | 关卡 | 提供与撤回的信息 | 玩家任务与完成条件 |
 | --- | --- | --- |
 | C0 | 系统自定位、真实靶标与弹道；无 Radar | 离开初态至少 1 m、车体转向至少 0.5 rad、命中靶标一次 |
-| C1 | 保留自身系统位姿与地图；隐藏目标、真实弹道和命中特效位置 | 完成返回 NumPy SE(3) 矩阵的函数，由框架执行 T @ p，至少发布一个合法目标估计并命中一次 |
+| C1 | 保留自身系统位姿与地图，炮弹可见；隐藏目标真值和命中特效位置 | 完成返回 NumPy SE(3) 矩阵的函数，由框架执行 T @ p，至少发布一个合法目标估计并命中一次 |
 | C2 | 理想 Radar 改为噪声/丢失；保留手动炮台/单发，禁用驾驶，授权双方 HP | 复用 C1 函数，编写跟踪状态类；限时内存活并击杀，算法误差用于复盘 |
 
 三关玩家初态均为零位姿/零速度，复用原地图；C0 靶标 `(-3, 0, 0)`，C1 换新靶标 `(-3, 1.5, 0)`，C2 使用新敌车场景。切换建立新纪元，不能把 C0 已公开的目标原地改称秘密。玩家按 C0 → C1 → C2 解锁；开发者模式可直接选择任一关练习，详见 [22](22_SETTINGS_MODES_AND_PROGRESS.md)。首期没有账号。
+
+按用户后续要求，整个 Weapons 章节 C1–C4 都授权显示真实炮弹，默认开启，玩家可在设置中切换。各关 YAML 声明 world_effects、projectiles 图层及其 authorized_truth 来源；Authority 仍裁剪敌车真实模型和命中特效，Python 输入权限不变。可见弹道提供射击反馈，弹丸消失也可能间接提示碰撞，这是本章节明确接受的视觉信息。
 
 ```mermaid
 flowchart LR

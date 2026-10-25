@@ -18,9 +18,17 @@ from .logs import RuntimeLogs
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def core_configuration(config):
+    # Level discovery/tutorials belong to Host. Preserve the existing private physics DTO.
+    return {key:value for key,value in config.items() if key not in ("campaign","level_plugins","robot_graph")}
+
+
 def load_config(path):
     from .configuration import load_yaml
     config = load_yaml(path) if Path(path).suffix in (".yaml", ".yml") else strict_loads(Path(path).read_bytes())
+    if config.get("level_plugins") and "campaign" not in config:
+        from .level_plugins import assemble
+        config=assemble(config)
     Validator(config, "configuration").structure(config, "simulation-profile.schema.json")
     if config["confirmation_status"] != "confirmed":
         raise ValueError("Physical profile not confirmed")
@@ -70,6 +78,8 @@ class CoreAdapter:
             raise
 
     def call(self, request):
+        if "config" in request:
+            request={**request,"config":core_configuration(request["config"])}
         send(self.proc.stdin, request, self.limit)
         response = receive(self.proc.stdout, self.limit)
         if not response["ok"]:
@@ -155,7 +165,8 @@ class Authority:
             if workspace is not None:
                 init["sources"].update(read_sources(workspace, config["workspace"]))
             init["config"]["lesson"] = {"level_id": config["campaign"]["active_level"],
-                                          "transform_tolerance": config["validation"]["numeric_tolerance"]}
+                                          "transform_tolerance": config["validation"]["numeric_tolerance"],
+                                          "processing":self.campaign.definition["runtime"]["processing"]}
             if self.graph_profile():
                 import math
                 init["config"]["lesson"]["tick_duration_s"] = 1/self.hz
@@ -204,10 +215,12 @@ class Authority:
             return
         self._sampled_tick = self.tick
         if self.config.get("campaign", {}).get("active_level"):
-            pose = SystemPoseProvider.pose(self._private, self.config)
-            candidate = self._message("pose2d@1", "/system/pose", pose, frame="map", publisher="system_pose_provider")
-            self.selector.accept("system", candidate, self._message)
-            self._sensors["/robot/localization/pose"] = copy.deepcopy(self.selector.canonical)
+            runtime_authorized="/robot/localization/pose" in self.runtime_inputs()
+            if self.selector.source_id=="system" and (runtime_authorized or self.config["view_policy"]["system_pose_allowed"]):
+                pose = SystemPoseProvider.pose(self._private, self.config, runtime_authorized=runtime_authorized)
+                candidate = self._message("pose2d@1", "/system/pose", pose, frame="map", publisher="system_pose_provider")
+                self.selector.accept("system", candidate, self._message)
+                self._sensors["/robot/localization/pose"] = copy.deepcopy(self.selector.canonical)
             radar = self.radar.sample(self._private, self.tick)
             if radar is not None:
                 msg = self._message("radar@1", "/robot/sensors/radar", radar, frame="radar_link", publisher="sensor:radar")
@@ -216,6 +229,8 @@ class Authority:
         for key, schema, channel in (("joint_states","joint_state@1","/robot/sensors/joint_states"),
                 ("imu","imu@1","/robot/sensors/imu"),("turret_joint_states","joint_state@1","/robot/turret/joint_states"),
                 ("weapon_state","weapon_state@1","/robot/weapons/cannon/state")):
+            if self.campaign and channel not in {sensor["topic"] for sensor in self.campaign.definition["sensors"]}:
+                continue
             if key not in values:
                 continue
             msg = self._message(schema, channel, values[key], frame="base_link")
@@ -387,7 +402,8 @@ class Authority:
             return
         inputs = []
         for port, binding in self.contract["inputs"].items():
-            msg = self._sensors.get(self.input_channels[port])
+            channel=self.input_channels[port]
+            msg = self._sensors.get(channel) if self.campaign is None or channel in self.runtime_inputs() else None
             if msg is None or self.tick-msg["simulation_tick"] > binding["max_age_ticks"]:
                 if binding["required"]:
                     self.audit.append({"event": "skipped", "tick": self.tick, "code": "INPUT_UNAVAILABLE"})
@@ -412,12 +428,13 @@ class Authority:
         if not self._private.get("player_alive", True):
             self.selector.canonical = None
             self._sensors.clear()
-        elif self.selector.source_id == "system" and self.config["view_policy"]["system_pose_allowed"]:
-            if self.config["view_policy"]["world_effects"]:
+        else:
+            if self.config["view_mode"] in ("campaign","weapons-practice") and (self.config["view_policy"]["world_effects"] or self.config["view_policy"]["true_enemy_objects"]):
                 practice=SystemPoseProvider.project(self._private,self.config,self.tick)
-            pose = SystemPoseProvider.pose(self._private, self.config)
-            system=self._message("pose2d@1","/system/pose",pose,frame="map",publisher="system_pose_provider")
-            self.selector.accept("system",system,self._message)
+            if self.selector.source_id=="system" and self.config["view_policy"]["system_pose_allowed"]:
+                pose=SystemPoseProvider.pose(self._private,self.config)
+                system=self._message("pose2d@1","/system/pose",pose,frame="map",publisher="system_pose_provider")
+                self.selector.accept("system",system,self._message)
         payload = self.gateway.build(self.tick,self.view_revision,self.selector,self._sensors,practice=practice,
                                      target_estimate=self._target_estimate, campaign=campaign)
         schema = "view_snapshot@4" if self.graph is not None and campaign else "view_snapshot@3" if campaign else "view_snapshot@2" if practice is not None else "view_snapshot@1"
@@ -431,7 +448,12 @@ class Authority:
         name = self.config["campaign"]["levels"][level].get("robot_profile") if level else None
         return self.config.get("robot_graph",{}).get("profiles",{}).get(name) if name else None
 
+    def runtime_inputs(self):
+        return self.campaign.definition["permissions"]["data_access"]["inputs"] if self.campaign else self.input_channels.values()
+
     def graph_inputs(self):
+        if self.campaign:
+            return self.campaign.definition["permissions"]["data_access"]["inputs"]
         profile = self.graph_profile()
         if profile is not None:
             return profile["grants"]["inputs"]
@@ -441,6 +463,9 @@ class Authority:
                 if channel != "/robot/sensors/radar" or (self.campaign and "sensor.radar.read" in self.campaign.definition["capabilities"])}
 
     def graph_outputs(self):
+        if self.campaign:
+            grants=self.campaign.definition["permissions"]["data_access"]
+            return {**{schema:None for schema in grants["outputs"]},**grants["actuators"]}
         profile = self.graph_profile()
         if profile is not None:
             return {**{name:None for name in profile["grants"]["outputs"]},**profile["grants"]["actuators"]}
@@ -546,7 +571,7 @@ class Authority:
         if self.campaign is not None:
             outcome = self.campaign.outcome(self._private, self.tick)
             if outcome:
-                self._finish_campaign(passed=outcome == "objective_completed", reason=outcome)
+                self._finish_campaign(passed=self.campaign.outcome_passed(outcome), reason=outcome)
         self.tick_times_ms.append((time.monotonic()-started)*1000)
 
     def collect_logs(self, worker, source):

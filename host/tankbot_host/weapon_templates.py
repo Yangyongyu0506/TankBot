@@ -12,22 +12,7 @@ class AutoAim:
         self.previous_target: NDArray[np.float64] | None = None
 
     def update(self, observation: AimInput, dt: float) -> AimOutput:
-        """输入仅含本关授权数据，不需要自己处理 Topic 或 JSON。
-
-        observation.target_xy: None 或 shape=(2,) 的地图目标估计 [x,y]，单位 m。
-        observation.target_age_s: 在本批控制提交时，该目标估计已过去的仿真秒。
-        observation.own_pose: shape=(3,) 的系统自身位姿 [x,y,yaw]，单位 m、rad。
-        observation.turret_angle_rad: 炮台相对车体的累计角，rad（允许连续旋转）。
-        observation.turret_rate_radps: 相对角速度，rad/s。
-        observation.weapon_ready: 本机武器当前是否已冷却完成。
-        dt: 本模块两次实际调用间的仿真秒；与传感器采样间隔并非同一概念。
-        返回 AimOutput(acceleration_radps2=相对角加速度, fire=是否请求单发)。
-
-        先用目标与自身位置计算期望朝向；角误差用 atan2(sin(e),cos(e))。
-        只能输出角加速度，不可直接设角度/角速度；考虑角速度反馈与制动。
-        可以用跨调用的 NumPy 状态估计目标速度，补偿观测延迟和飞行时间。
-        没有目标时不要盲射。框架负责冷却检查、幂等请求与控制权限。
-        """
+        """Algorithm input/output contract; see level guidance."""
         # TODO: 实现转向、制动、运动预测与开火条件。零输出可以先部署观察。
         return AimOutput(acceleration_radps2=0.0, fire=False)
 '''
@@ -43,15 +28,7 @@ class PoseTracker:
         self.previous_position: NDArray[np.float64] | None = None
 
     def update(self, measurements: NDArray[np.float64], dt: float) -> TargetPoseEstimate | None:
-        """measurements 是本帧敌车底盘中心的地图测量，shape=(N,2)，N 为 0 或 1。
-        列为 x/y，单位 m；空数组 shape=(0,2)，不是历史轨迹。
-        dt 为距上次调用的仿真秒。返回敌车中心 x/y、车头 yaw 的估计；None 表示尚无估计。
-        TargetPoseEstimate(x_m: float, y_m: float, yaw_rad: float, covariance=None)。
-        yaw 是 map +x 起逆时针弧度，归一化到 [-pi,pi)；协方差可空或 (3,3) NumPy 矩阵。
-        敌车本关仅向车头前进、可原地转向，不倒车；运动时可由平滑轨迹估计航向。
-        仅凭中心位置不能唯一知道原地转向时的 yaw；应预测/保持并表达不确定性。
-        保留带上限的历史或固定维数的 NumPy 状态，不要无限追加。
-        """
+        """Algorithm input/output contract; see level guidance."""
         # TODO: 复用 C2 的位置估计思路，同时估计敌车航向。
         return self.estimate
 '''
@@ -70,14 +47,7 @@ class ArmorAim:
         self.armor_mounts: NDArray[np.float64] = armor_mounts
 
     def update(self, observation: AimInput, dt: float) -> AimOutput:
-        """输入与 C3 一致，但 target_xy 是敌车底盘中心，target_yaw_rad 是玩家估计的敌车朝向。
-        雷达始终观测底盘中心，不会给真实 yaw 或装甲坐标。
-        armor_mounts: shape=(4,3)，安装偏移单位 m、法线角单位 rad。
-        公开差速模型：车体系 vy=0，只前进，可原地转向；具体巡逻路径不是传感器数据。
-        将装甲安装偏移用估计 yaw 旋转后加上中心位置，得到地图瞄准点。
-        可复用 C1 的矩阵方法、C3 AutoAim 的控制逻辑，并考虑敌车未来姿态。
-        没有可靠 yaw 时可保持/预测或暂不射击。输出仍只能是角加速度和单发意图。
-        """
+        """Algorithm input/output contract; see level guidance."""
         # TODO: 选择可击中的装甲并计算瞄准点，然后复用/扩展 C3 控制器。
         return AimOutput(acceleration_radps2=0.0, fire=False)
 '''
@@ -190,14 +160,3 @@ class AutoAimContractTest(unittest.TestCase):
         self.assertIsInstance(result.fire,bool)
         self.assertTrue(np.isfinite(result.acceleration_radps2))
 '''
-
-
-def sources(level):
-    from .campaign_templates import TRANSFORMS, TRACKER, COORDINATE_TEST
-    result = {"robot_modules/__init__.py":"","robot_modules/weapons.py":MODULES,
-              "perception/__init__.py":"","perception/transforms.py":TRANSFORMS,"perception/tracker.py":TRACKER,
-              "weapons/__init__.py":"","weapons/auto_aim.py":AUTO_AIM,"weapons/armor_aim.py":ARMOR_AIM,
-              "tests/test_coordinates.py":COORDINATE_TEST,"tests/test_auto_aim.py":TEST}
-    if level.get("armor_mode"):
-        result["perception/pose_tracker.py"] = POSE_TRACKER
-    return result

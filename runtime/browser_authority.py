@@ -5,7 +5,7 @@ import hashlib
 import time
 import uuid
 from tankbot_protocol.wire import strict_loads
-from tankbot_host.authority import Authority, load_config
+from tankbot_host.authority import Authority, load_config, core_configuration
 from tankbot_host.logs import RuntimeLogs
 
 
@@ -13,7 +13,7 @@ class WasmCore:
     def __init__(self, config, chassis, binary=None):
         from js import core_build_sha256
         self.build_sha256 = str(core_build_sha256)
-        self.snapshot = self.call({"op":"init", "config":config, "chassis":chassis})
+        self.snapshot = self.call({"op":"init", "config":core_configuration(config), "chassis":chassis})
 
     def call(self, request):
         from js import core_call

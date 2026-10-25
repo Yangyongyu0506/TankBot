@@ -6,15 +6,15 @@
 
 ## YAML 为唯一可编辑配置源
 
-`config/game.yaml` 集中定义物理、控制、传感器、场景、渲染、Runtime、关卡目标和教学说明。`campaign.levels` 包含每关 `time_limit_s`、`timer_start`、`player_health`、目标与巡逻数据；`campaign.lessons` 包含步骤、练习文件和函数引用；`campaign.outcome_priority` 定义终局优先级。课程库策略在 `config/player-dependencies.yaml`，个人键位与模式仍在 `userdata/settings.yaml`。
+`config/game.yaml` 定义通用物理、控制、渲染、Runtime、预算及插件目录。独立 `levels/*.yaml` 定义每关的世界/机器人组合、传感器、权限、目标、时限、终局顺序和教学说明，见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)。`campaign.levels`、`campaign.lessons` 等旧形状由加载器生成，供既有内部接口使用，不能作为第二套手工配置。课程库策略在 `config/player-dependencies.yaml`，个人键位与模式仍在 `userdata/settings.yaml`。
 
-后续新增可调整数值、模型系数、容量、频率和关卡数据必须放入相应 YAML，并在 Schema 中声明；不得在 Python/Rust/JavaScript 中复制默认参数或失败时静默填入数值。数学定义、单位换算、类型/协议标识符属于接口语义，不能为了外置参数而改变其含义。新增关卡仍需对应的行为实现与教学验收，不能仅添加配置就声称引擎支持新规则。
+后续新增可调整数值、模型系数、容量、频率和关卡数据必须放入相应 YAML，并在 Schema 中声明；不得在 Python/Rust/JavaScript 中复制默认参数或失败时静默填入数值。数学定义、单位换算、类型/协议标识符属于接口语义，不能为了外置参数而改变其含义。新关卡复用已注册组件时只需添加 YAML 并完成教学验收；未知组件/规则须先扩展引擎和验证，不能仅添加配置就声称已支持。
 
 宿主使用 SafeLoader，拒绝重复键、对象标签、循环别名、非有限数值和不能表示为 JSON 的值，再执行 Schema/领域校验。YAML 不直接发送给玩家 Runtime。宿主把解析后的受信配置通过既有私有 JSON DTO 交给 Rust/WASM；JSON 协议、存档、Schema 和依赖锁文件保持其格式。
 
 Rust/Node 测试及 WASM probe 使用生成的 `core/tests/fixtures/default-profile.json`，禁止手工维护第二份数值。`python3 tools/build.py` 自动运行 `tools/export_profile.py`；直接 Cargo/Node 开发前可执行 `python3 tools/export_profile.py --offline`。`python3 tools/export_profile.py --check --offline`、文档检查和配置单测都会拒绝过期夹具。默认 CLI 改为 YAML；自定义 JSON 仍可作为私有 Adapter/兼容输入，但新版本 Campaign 必须提供所有新字段，缺失时明确拒绝，不猜测时限。
 
-配置基线 `1.8`。旧报告记录的 JSON 路径和源码摘要描述当时构建，不能当作当前 YAML 的验证摘要。
+应用配置基线 `1.9`，关卡 Schema 为 `1.0`。旧报告记录的 JSON 路径和源码摘要描述当时构建，不能当作当前 YAML 的验证摘要。
 
 ## 时间与开始边界
 

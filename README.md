@@ -35,7 +35,7 @@ python3 tools/tankbot.py browser --level c0
 
 在「任务」面板选择 C0/C1/C2，点击「开始 / 重试」。C0 先移动至少 1 m、转动车体至少 0.5 rad，并命中可见靶标。C1 隐藏敌车，F2 打开编辑器，完成自动生成的 `perception/transforms.py`，返回 `NDArray[np.float64]` 形式的 4×4 SE(3) 矩阵，测试并部署，利用目标估计瞄准命中。C2 保留该矩阵函数，追加 `perception/tracker.py`；处理带噪声和 10% 丢失的雷达，跟踪巡逻敌车，保持存活并击中三次使敌车 HP 归零即可通关。
 
-前三关保留系统自定位、公开地图与手动控制。Radar 是车体系局部观测，地图上的目标标记来自玩家 Python；玩家 C1/C2 不显示真实敌车、真实弹道或命中特效位置。C2 显示双方 HP。通关或点击「结束本次尝试」后关闭玩家程序，再显示估计误差；物理与已有弹丸继续运行。重试建立新场景，新关只补缺失文件，已有源码保留；保存的草稿须重新 Test/Deploy。玩家按 C0 → C1 → C2 解锁，通关写入存档；开发者模式可自由选关练习。
+前三关保留系统自定位、公开地图与手动控制。Radar 是车体系局部观测，地图上的目标标记来自玩家 Python；Weapons C1–C4 默认显示炮弹，可在图层设置中开关；真实敌车和命中特效位置仍隐藏，Python 输入权限不变。C2 显示双方 HP。通关或点击「结束本次尝试」后关闭玩家程序，再显示估计误差；物理与已有弹丸继续运行。重试建立新场景，新关只补缺失文件，已有源码保留；保存的草稿须重新 Test/Deploy。玩家按 C0 → C1 → C2 解锁，通关写入存档；开发者模式可自由选关练习。
 
 F1 或编辑器中的「关卡说明 / 类型」可随时查看每关步骤、输入输出签名、SDK 字段/单位、Python 速查与交互矩阵实验；悬停及 Ctrl+Space 提供类型提示。新模板显式标注变量和返回类型。旧工作区可预览模板升级并选择系统脚手架，已有算法默认保留。原生 NumPy 随首次启动自动准备；浏览器运行 `prepare_browser.py` 准备锁定的 Pyodide/NumPy 资源。
 
@@ -47,7 +47,7 @@ C0/C1/C2 分别限时 **60/60/120 仿真秒**。C0 首次有效人工操作起�
 
 默认炮台 J/L 转动，空格或按钮单发（长按不连射）。开发者自由试验场的估计视图隐藏真实弹丸，保留炮台与武器局部反馈；`--developer --view weapons-practice` 明确授权练习图层。Python 输入权限不增加。`--robot-demo` 使用独立的 [weapon_demo.py](examples/robot/weapon_demo.py) 控制炮台/开火，人工底盘仍可用；对应人工武器入口会拒绝。想观察程序控制可运行 `python3 tools/tankbot.py serve --developer --robot-demo --view weapons-practice`。
 
-所有物理模型、控制器数值、场景及运行 profile 集中在 [config/game.yaml](config/game.yaml)，缺项报错，不补隐藏默认值。底盘只能在场景启动时选择。可在网页中保存、测试并部署 Python 项目；编辑与部署分离，成功部署不重置物理世界。示例算法在 [examples/robot](examples/robot/localization/odometry.py)，支持多文件 import，启动不会改写源码。
+通用物理模型、控制器数值及平台参数在 [config/game.yaml](config/game.yaml)；五关的地图组合、传感器、权限、规则、合同和教材分别在 [levels/](levels/README.md) 的独立 YAML 中，缺项报错，不补隐藏默认值。底盘只能在场景启动时选择。可在网页中保存、测试并部署 Python 项目；编辑与部署分离，成功部署不重置物理世界。示例算法在 [examples/robot](examples/robot/localization/odometry.py)，支持多文件 import，启动不会改写源码。
 
 ## 设置、玩家存档与开发者图层
 
@@ -123,6 +123,7 @@ node tests/test_rendering.mjs  # Node 22+，浏览器表现行为测试
 node tests/test_sdk_hints.mjs  # 学习类型与成员提示
 node tests/test_gamepad.mjs    # 模拟量、按键、设备切换和恢复边界
 node tests/test_settings.mjs   # 改键语义、图层权限和真值/估计独立
+node tests/test_runtime_logs.mjs # 连续 Python 日志、版本隔离和源码行号
 node tests/test_wasm.mjs       # 先构建原生 debug 与 WASM release
 python3 docs/tools/check_design.py
 python3 tools/build.py --format-check
@@ -141,7 +142,7 @@ python3 tools/measure_omni.py
 
 物理 60 Hz（4 子步）、视图快照 30 Hz、显示 requestAnimationFrame 独立运行；面板分别显示 SIM / VIEW / FPS。车体、炮台与授权弹丸按仿真时间缓存插值，断流不外推。相机跟随显示车体 x/y，世界 +x 向右、+y 向上，不跟随 yaw。没有合法估计时不显示全局车体，也不转为跟随真实位置。
 
-显示参数在 `config/game.yaml` 的 rendering，默认练习缓存 80 ms、估计缓存 220 ms；差速 tracked 与全向 radial_omni 使用独立部件/颜色配置。配置内部版本现为 1.7，包含关卡时限、玩家生命与教学数据；仍支持 1.5 沙盒配置，使用教学关卡须显式添加新配置，启动不会自动覆盖。设计与浏览器证据见 [显示设计](docs/15_RENDERING_DESIGN.md) 和 [验收报告](docs/reports/RENDERING_VALIDATION.md)。
+显示参数在 `config/game.yaml` 的 rendering，默认练习缓存 80 ms、估计缓存 220 ms；差速 tracked 与全向 radial_omni 使用独立部件/颜色配置。应用配置版本现为 1.9、关卡 Schema 为 1.0，包含关卡时限、玩家生命与教学数据；仍支持 1.5 沙盒配置，使用教学关卡须显式添加新配置，启动不会自动覆盖。设计与浏览器证据见 [显示设计](docs/15_RENDERING_DESIGN.md) 和 [验收报告](docs/reports/RENDERING_VALIDATION.md)。
 
 ## 当前边界与设计入口
 
@@ -162,3 +163,9 @@ M3 UI 验收使用独立临时编辑库启动服务和 Marionette Firefox，再�
 通关后按存档顺序解锁；开发者可选 `python3 tools/tankbot.py serve --developer --level c3` 或 `browser --developer --level c4` 练习。打开编辑器查看本关说明和类型参考；已有 C1/C2 源码保留，提示升级时先预览系统脚手架。三模块为坐标变换→跟踪→瞄准，玩家仅填写算法；「模块」页可查端口、预算、执行和错误，「日志」用于调试。C3/C4 时限 120/180 仿真秒，首次成功部署起算。
 
 协议新类型、数值方程、管线时延和资源限制见 [26](docs/26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)，实测与平台边界见 [M5 验收](docs/reports/M5_VALIDATION.md)。
+
+## YAML 关卡插件
+
+当前 C0–C4 通过同一加载器自动发现，稳定 ID、存档、Topic 和玩法保持兼容。复用已有组件时，只需在 `levels/` 添加一个符合 Schema 的 YAML，无需修改引擎、UI 或注册列表；程序输入权限与 UI 显示权限独立配置。启动器会为原生和浏览器生成同一关卡目录，新增文件后重启服务。未知组件会明确拒绝，不支持 YAML 执行脚本。
+
+编写及启动流程见 [关卡指南](levels/README.md)，架构与原五关审计见 [27](docs/27_LEVEL_PLUGIN_ARCHITECTURE.md)，测试与限制见 [迁移验收](docs/reports/LEVEL_PLUGINS_VALIDATION.md)。

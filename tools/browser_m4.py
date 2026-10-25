@@ -20,8 +20,9 @@ def main():
     parser.add_argument("--url", default="http://127.0.0.1:8765/?runtime=browser")
     parser.add_argument("--output", type=Path, default=ROOT / "docs/reports/m4-browser.json")
     parser.add_argument("--learning", action="store_true", help="Check lesson guides, type help and SE(3) matrix experiment")
+    parser.add_argument("--browser-port",type=int,default=2828)
     args = parser.parse_args()
-    b = Browser()
+    b = Browser(args.browser_port)
     learning_evidence = {"lessons": [], "screenshots": []}
 
     def screenshot(suffix):
@@ -130,7 +131,7 @@ def main():
                   state.turned ||= Math.abs(p.yaw_rad)>=.5;
                   await post('/api/cmd_vel',{linear:{x:state.moved?0:1,y:0,z:0},angular:{x:0,y:0,z:state.moved&&!state.turned?1:0}});
                 }else{
-                  if(m.payload.objects.length)throw Error('hidden truth object leaked');
+                  if(m.payload.objects.some(object=>object.kind!=='projectile'))throw Error('hidden enemy truth object leaked');
                   const e=m.payload.target_estimates?.[0];
                   if(!e){setTimeout(repeat,100);return;}
                   x=e.payload.x_m;y=e.payload.y_m;sampleTick=e.simulation_tick;

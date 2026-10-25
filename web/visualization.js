@@ -3,6 +3,7 @@ import {SceneTimeline} from "./rendering.js";
 export const layerLabels={map:"静态地图",robot:"本关授权车体位姿",trail:"授权位姿轨迹",target_estimates:"玩家目标估计",radar:"Radar 观测",imu:"IMU 数据 / 加速度箭头",encoders:"轮编码器数据",turret:"炮台与武器观测",truth_robot:"真实车体与炮台",truth_targets:"真实目标",projectiles:"真实弹丸",frames:"坐标系",velocities:"真实速度向量",colliders:"碰撞外形"};
 export function allowedLayers(profile,developer){
   const current=profile.campaign?.levels.find(l=>l.level_id===profile.campaign.active_level),caps=current?.capabilities??[];
+  if(current?.allowed_layers)return developer?Object.keys(layerLabels):current.allowed_layers;
   return Object.keys(layerLabels).filter(key=>{
     if(["truth_robot","velocities","colliders"].includes(key))return developer;
     if(key==="truth_targets")return developer||profile.view_mode==="weapons-practice"||caps.includes("view.enemy.truth");
@@ -23,12 +24,14 @@ export function developerView(data,profile){
 
 export function mountVisualization(profile,settings){
   const $=id=>document.getElementById(id),developer=settings.value.developer_mode,allowed=new Set(allowedLayers(profile,developer));
-  let layers={...settings.value.layers},data=null,message=null,robotTopics=[],saveQueue=Promise.resolve();
+  const current=profile.campaign?.levels.find(level=>level.level_id===profile.campaign.active_level),configuration=current?.visualization;
+  let layers=configuration&&!configuration.preserve_user_settings?Object.fromEntries(Object.keys(layerLabels).map(key=>[key,configuration.initial_enabled.includes(key)])):{...settings.value.layers},data=null,message=null,robotTopics=[],saveQueue=Promise.resolve();
   const history=new SceneTimeline(profile.physics_hz,profile.rendering,profile.view.interpolation_jump_m);
   $("visualization-note").textContent=developer?"开发者图层 · 可独立显示真值、估计和传感器；不会把真值发给玩家代码。":"只列出本关授权图层；显示来源仍由关卡权限决定。";
   $("layer-list").replaceChildren(...[...allowed].map(key=>{
-    const label=document.createElement("label"),input=document.createElement("input");input.type="checkbox";input.checked=layers[key];input.dataset.layer=key;
+    const label=document.createElement("label"),input=document.createElement("input");input.type="checkbox";input.checked=layers[key];input.dataset.layer=key;input.disabled=Boolean(configuration&&!configuration.user_toggleable.includes(key));
     input.onchange=()=>{
+      if(input.disabled)return;
       layers[key]=input.checked;applyPanels();
       const candidate={...layers};
       saveQueue=saveQueue.catch(()=>{}).then(()=>settings.saveLayers(candidate)).then(()=>{$("layers-message").textContent="图层设置已保存。";}).catch(error=>{$("layers-message").textContent="保存失败："+error.message;});

@@ -126,14 +126,14 @@ def read_sources(root, limits):
 
 def starter(config):
     level = config.get("campaign",{}).get("active_level")
-    profile_name = config["campaign"]["levels"][level].get("robot_profile") if level else None
-    if profile_name:
-        from .weapon_templates import sources
-        profile = config["robot_graph"]["profiles"][profile_name]
-        files = sources(config["campaign"]["levels"][level])
-        files["tankbot.json"] = json.dumps(profile["manifest"],indent=2)+"\n"
+    if level:
+        from .level_templates import sources
+        definition=config["campaign"]["levels"][level]
+        profile=definition["runtime"]
+        files=sources(definition)
+        files["tankbot.json"]=json.dumps(profile["manifest"],indent=2)+"\n"
         for mid,contract in profile["contracts"].items():
-            files[f"contracts/{mid}.json"] = json.dumps(contract,indent=2)+"\n"
+            files[f"contracts/{mid}.json"]=json.dumps(contract,indent=2)+"\n"
         return files
     from .module_profile import module_profile
     contract, inputs, outputs = module_profile(config)
@@ -144,13 +144,7 @@ def starter(config):
                 "connections": [{"from": channel, "to": f"{module_id}.{port}"} for port, channel in inputs.items()] +
                                [{"from": f"{module_id}.{port}", "to": channel} for port, channel in outputs.items()],
                 "dependencies": [], "pose_source": {"mode": "player", "module_id": module_id, "fallback": "none"}}
-    level = config.get("campaign", {}).get("active_level")
-    if level:
-        from .campaign_templates import teaching_sources
-        files = teaching_sources(level)
-        manifest["pose_source"] = {"mode": "system", "module_id": None, "fallback": "none"}
-    else:
-        files = read_sources(ROOT / "examples/robot", config["workspace"])
+    files = read_sources(ROOT / "examples/robot", config["workspace"])
     files["tankbot.json"] = json.dumps(manifest, indent=2) + "\n"
     files[f"contracts/{module_id}.json"] = json.dumps(contract, indent=2) + "\n"
     if not level:

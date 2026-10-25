@@ -9,7 +9,8 @@
         "1.5",
         "1.6",
         "1.7",
-        "1.8"
+        "1.8",
+        "1.9"
       ]
     },
     "confirmation_status": {
@@ -2102,6 +2103,65 @@
         "max_view_topic_bytes"
       ],
       "additionalProperties": false
+    },
+    "level_plugins": {
+      "type": "object",
+      "properties": {
+        "directory": {
+          "type": "string",
+          "minLength": 1
+        },
+        "limits": {
+          "type": "object",
+          "properties": {
+            "max_files": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "max_file_bytes": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "max_depth": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "max_nodes": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "max_robots": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "max_sensors": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "max_files",
+            "max_file_bytes",
+            "max_depth",
+            "max_nodes",
+            "max_robots",
+            "max_sensors"
+          ],
+          "additionalProperties": false
+        },
+        "planned_chapters": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      },
+      "required": [
+        "directory",
+        "limits",
+        "planned_chapters"
+      ],
+      "additionalProperties": false
     }
   },
   "required": [
@@ -2203,6 +2263,28 @@
         }
       },
       "then": {
+        "properties": {
+          "workspace": {
+            "required": [
+              "storage"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "config_version": {
+            "const": "1.9"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "level_plugins",
+          "campaign"
+        ],
         "properties": {
           "workspace": {
             "required": [

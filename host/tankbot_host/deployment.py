@@ -9,6 +9,7 @@ from tankbot_protocol.validation import Validator, Rejected, envelope
 from tankbot_protocol.wire import strict_loads
 from .workspace import digest, validate_files, artifact_files, ROOT
 from tankbot._imports import load_policy, validate_imports
+from .logs import python_diagnostic
 
 
 def environment(config, core_sha256, runtime_packages=None):
@@ -37,7 +38,8 @@ def inspect_snapshot(snapshot, authority):
             try:
                 ast.parse(source, filename=path)
             except SyntaxError as error:
-                raise ValueError(f"{path}:{error.lineno}:{error.offset}: {error.msg}") from error
+                import traceback
+                raise ValueError("".join(traceback.format_exception_only(error)).rstrip()) from error
     from .campaign_templates import framework_upgrade
     manifest = strict_loads(files["tankbot.json"])
     upgrade = framework_upgrade(authority.config, files)
@@ -98,6 +100,10 @@ class DeploymentManager:
         self.authority.collect_logs(self.authority.worker, "runtime")
         if self.job:
             self.authority.collect_logs(self.job["worker"], self.job["kind"])
+        logs=self.authority.logs.public()
+        worker=self.authority.worker
+        runtime_entries=[e for e in logs["entries"] if e.get("source")=="runtime" and e.get("deployment_id")==getattr(worker,"deployment_id","startup")]
+        files=self.artifacts[self.active["sha256"]]["files"] if self.active else self.authority.worker_init.get("sources",{})
         return copy.deepcopy({"active": self.active, "history": self.history,
                               "job": None if self.job is None else {k: self.job[k] for k in ("id", "kind", "phase", "sha256")},
                               "last": self.last, "reports": list(self.reports.values()),
@@ -105,7 +111,7 @@ class DeploymentManager:
                               "attempt_status": self.authority.campaign.status if self.authority.campaign else None,
                               "graph": self.authority.graph.public() if self.authority.graph else None,
                               "runtime_fault": self.authority.worker.fault or ("MODULE_ERROR" if self.authority._faulted else None),
-                              "logs": self.authority.logs.public()})
+                              "runtime_diagnostic": python_diagnostic(runtime_entries,files), "logs": logs})
 
     def start(self, kind, snapshot=None, sha256=None):
         if self.authority.campaign is not None and self.authority.campaign.status != "active":
@@ -147,6 +153,9 @@ class DeploymentManager:
         worker = a.worker_factory(a.config, init, deferred=True)
         worker.deployment_id = job_id
         worker.revision = artifact["revision"]
+        if kind=="test":
+            a.logs.append("运行项目单元测试（tests/test_*.py）…\n",source=kind,module_id=a.contract["module_id"],tick=a.tick,
+                          stream="status",deployment_id=job_id,revision=artifact["revision"])
         self.job = {"id": job_id, "kind": kind, "phase": "Starting", "sha256": sha,
                     "artifact": artifact, "worker": worker, "init": init, "count": 0, "pending": None,
                     "validator": Validator(a.config, a.run_id)}
@@ -161,8 +170,13 @@ class DeploymentManager:
         job = self.job
         job["worker"].close()
         self.authority.collect_logs(job["worker"], job["kind"])
-        self.authority.logs.append(str(error) + "\n", source=job["kind"], module_id=self.authority.contract["module_id"], tick=self.authority.tick, stream="error", deployment_id=job["id"], revision=job["artifact"]["revision"])
+        entries=[e for e in self.authority.logs.public()["entries"] if e.get("deployment_id")==job["id"]]
+        diagnostic=python_diagnostic(entries,job["artifact"]["test_files"])
+        message=diagnostic["summary"] if diagnostic else str(error)
+        self.authority.logs.append(message + "\n", source=job["kind"], module_id=self.authority.contract["module_id"], tick=self.authority.tick, stream="error", deployment_id=job["id"], revision=job["artifact"]["revision"])
         self.last = {"id": job["id"], "kind": job["kind"], "sha256": job["sha256"], "revision": job["artifact"]["revision"], "status": "Failed", "error": str(error)}
+        if diagnostic is not None:
+            self.last["diagnostic"]=diagnostic
         self.job = None
 
     def _check(self, response, job, tick):
@@ -213,6 +227,8 @@ class DeploymentManager:
                     raise ValueError(worker.fault or "MISSED_DEADLINE")
                 self._check(response, job, pending)
                 job["count"] += 1
+                a.logs.append(f"授权传感器仿真 {job['count']}/{a.config['workspace']['test_batches']} … 通过\n",source="test",
+                              module_id=a.contract["module_id"],tick=a.tick,stream="status",deployment_id=job["id"],revision=job["artifact"]["revision"])
                 job["pending"] = None
                 if job["count"] >= a.config["workspace"]["test_batches"]:
                     artifact = job["artifact"]
@@ -245,7 +261,7 @@ class DeploymentManager:
                 request = envelope("runtime_step_request@1", "/runtime/step",
                     {"step_id": f"check-{tick}", "activation_tick": tick, "output_commit_tick": tick + a.delay,
                      "modules": [{"module_id": a.contract["module_id"], "dt_ticks": a.period}],
-                     "inputs": [copy.deepcopy(a._sensors[channel]) for channel in a.input_channels.values() if channel in a._sensors]}, tick=tick, hz=a.hz, run_id=a.run_id,
+                     "inputs": [copy.deepcopy(a._sensors[channel]) for channel in a.input_channels.values() if channel in a._sensors and (a.campaign is None or channel in a.runtime_inputs())]}, tick=tick, hz=a.hz, run_id=a.run_id,
                     publisher_id="supervisor", sequence=tick, message_type="service_request", request_id=f"check-{tick}")
                 if not worker.submit(request):
                     raise ValueError("TEST_SUBMIT_FAILED")

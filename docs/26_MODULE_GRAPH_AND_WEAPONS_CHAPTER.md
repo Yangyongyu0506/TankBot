@@ -18,7 +18,9 @@ M5 在原有物理、权限与 Edit/Test/Deploy 上实现多模块机器人项�
 
 C1–C4 保留系统自身位姿和公开地图。底盘锁定为零目标主动制动，仍受后坐、弹丸和炮台反向力矩影响，不冻结物理刚体。Router 与 Authority 拒绝人工或程序驾驶；C3/C4 不授权旧炮台速度接口。C2–C4 双方 3 HP、每次有效命中扣 1、反弹可自伤；玩家死亡优先失败，存活并在最后预算 tick 内击杀可通过。结束按钮、重试、计时与不可变结算沿用 [25](25_ATTEMPT_RULES_AND_CONFIGURATION.md)。
 
-所有关卡数值、控制参数、Profile、模板合同、预算和验收参考控制器参数来自 `config/game.yaml`；YAML→JSON Core DTO 不增加玩家读取私有场景的权限。
+Weapons 全部关卡默认显示炮弹，可在设置中开关 projectiles 图层；显示权限由各关 YAML 声明，沿用现有插值。敌车真实位姿/装甲模型仍不显示，算法不能订阅炮弹真值，开火、动力学和评分规则不变。
+
+关卡组合、目标、教学说明、Profile 与模板合同来自 `levels/*.yaml`；通用模型、控制参数、预算和验收参考控制器参数仍在 `config/game.yaml`。加载器及迁移边界见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)；YAML→JSON Core DTO 不增加玩家读取私有场景的权限。
 
 ## 模块职责与数据流
 
@@ -36,6 +38,8 @@ flowchart LR
 ```
 
 生成的 `robot_modules/weapons.py` 只做类型、时间与端口适配。玩家继续编辑 `perception/transforms.py`、`perception/tracker.py`，C3 增加 `weapons/auto_aim.py`，C4 增加 `perception/pose_tracker.py` 和 `weapons/armor_aim.py`。同模块内算法直接调用；模块间只能经声明端口/Topic 交互。单文件入口不限制整个项目，Manifest 的 `entry_point` 必须对应图中某个模块，但不会作为另一个总控模块重复执行。
+
+返回早期单模块关卡时，共用项目中后关的三模块 Manifest 需要按当前配置预览适配；检测同时检查运行声明和包装版本。算法保留，系统文件经确认后创建新 revision，不要求玩家改算法或删除 userdata；具体流程见 [19](19_LEARNING_GUIDES_AND_SE3.md)。
 
 连接形式为 `module.port → /topic` 与 `/topic → module.port`。内部频道限定 `/robot/modules/<module_id>/<port>`，类型必须登记；位姿候选限定 `/robot/estimates/<module_id>/pose`，目标估计为 `.../target` 或 `.../target_pose`。每个 Topic 一个发布者，每个端口一个连接，所有端口必须绑定。输入必须为 Topic；离散 fire Command 只能作为输出，请读 weapon_state 获得反馈。未知频道、真值输入、类型不匹配、重复 ID、循环 setup 依赖或超额预算均在执行前拒绝。Contract/Manifest 正例见 [C3 Manifest](examples/m5-workspace.json) 与 [tracking Contract](examples/m5-module-contract.json)。
 

@@ -62,7 +62,7 @@ json.dumps(checks)
       self.postMessage({op:"progress",phase:"Module initialization"});
       const init={...data.value.init,sources:data.value.init.sources??data.sources};
       py.globals.set("_init_json",JSON.stringify(init));
-      py.runPython("from module_runner import ModuleRunner, runtime_packages\nfrom source_loader import prepare\nimport traceback\n_init=json.loads(_init_json)\ntry:\n _temporary,_tests=prepare(_init)\n runner=ModuleRunner(_init)\nexcept Exception:\n traceback.print_exc()\n raise\ndel _init_json");
+      py.runPython("from module_runner import ModuleRunner, runtime_packages\nfrom source_loader import prepare, PlayerTestsFailed\nimport traceback\n_init=json.loads(_init_json)\ntry:\n _temporary,_tests=prepare(_init)\n runner=ModuleRunner(_init)\nexcept Exception as _error:\n if not isinstance(_error,PlayerTestsFailed):\n  traceback.print_exc(file=sys.stderr)\n raise\ndel _init_json");
       runner = py.globals.get("runner");
       self.postMessage({op:"ready",security,unit_tests:py.runPython("_tests"),runtime_packages:JSON.parse(py.runPython("json.dumps(runtime_packages())")),memory_bytes:py._module.HEAPU8.buffer.byteLength});
     } else if(data.op==="probe_ping") {
@@ -70,7 +70,7 @@ json.dumps(checks)
     } else if(data.op==="step") {
       logBytes=0;logLines=0;logTruncated=false;
       py.globals.set("_step_json",data.raw);
-      const raw=py.runPython("json.dumps(runner.step(json.loads(_step_json)),allow_nan=False)");
+      const raw=py.runPython("try:\n _result=runner.step(json.loads(_step_json))\n _raw=json.dumps(_result,allow_nan=False)\nexcept Exception:\n traceback.print_exc(file=sys.stderr)\n raise\n_raw");
       self.postMessage({op:"result",raw});
     }
   } catch(error) { self.postMessage({op:"fault",code:"MODULE_ERROR",detail:String(error).slice(-256)}); }

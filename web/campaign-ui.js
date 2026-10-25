@@ -29,10 +29,10 @@ export async function mountCampaign(profile,browser,onState,releaseControls){
   if(current){
     document.querySelector("h1").textContent=current.title;
     $("tab-task").click();
-    $("state-heading").textContent="02 / AUTHORIZED SELF POSE";
-    $("legend-pose").textContent="系统自定位";
-    $("view-note").textContent=current.level_id==="c0"?"C0 真值练习：车体、靶标与弹道均获授权显示。":"系统只提供自身位姿；敌车位置来自 Python 的估计。雷达图仅显示车体系观测。";
-    $("mode-label").textContent=current.level_id==="c0"?"C0 · 真值练习":"教学视图 · 系统自定位 / 玩家目标估计";
+    $("state-heading").textContent=current.ui.state_heading;
+    $("legend-pose").textContent=current.ui.legend_pose;
+    $("view-note").textContent=current.ui.view_note;
+    $("mode-label").textContent=current.ui.mode_label;
   }
   const initial=await (await fetch("/api/workspace")).json(),token=initial.control_token;
   async function updateProgress(){
@@ -86,7 +86,7 @@ export async function mountCampaign(profile,browser,onState,releaseControls){
       if(attempt){
         const p=attempt.progress;
         $("task-progress").textContent=attempt.player_hp!=null?`我方 HP：${attempt.player_hp} / ${attempt.player_max_hp}　敌车 HP：${attempt.enemy_hp} / ${attempt.enemy_max_hp}`:
-          attempt.level_id==="c0"?`移动 ≥ ${current.objective.movement_m} m ${p.moved?"✓":"○"}　转向 ≥ ${current.objective.turn_rad} rad ${p.turned?"✓":"○"}　命中 ${p.hit?"✓":"○"}`:
+          current.ui.progress_layout==="movement"?`移动 ≥ ${current.objective.movement_m} m ${p.moved?"✓":"○"}　转向 ≥ ${current.objective.turn_rad} rad ${p.turned?"✓":"○"}　命中 ${p.hit?"✓":"○"}`:
           `目标估计 ${p.has_estimate?"✓":"○"}　命中 ${p.hit?"✓":"○"}`;
         if(attempt.result){
           const r=attempt.result;

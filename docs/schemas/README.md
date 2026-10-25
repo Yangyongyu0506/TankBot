@@ -13,8 +13,9 @@
 | [view-policy.schema.json](view-policy.schema.json) | 受信策略字段；不是玩家授权申请格式 |
 | [chassis-controller.schema.json](chassis-controller.schema.json) | 受信底盘类型、速度轴限值、cmd_vel_timeout；不是逐条速度消息 |
 | [wheel-calibration.schema.json](wheel-calibration.schema.json) | radial_omni@1 公开轮组标定和可复用几何结构 |
-| [simulation-profile.schema.json](simulation-profile.schema.json) | M1 唯一配置文件的必填结构，跨字段/数值可行性另由 Host/Core 校验 |
-| [campaign.schema.json](campaign.schema.json) | M4 受信关卡、Radar、巡逻与血量配置；由单文件配置引用 |
+| [simulation-profile.schema.json](simulation-profile.schema.json) | 通用配置与生成的内部 DTO；跨字段/数值可行性另由 Host/Core 校验 |
+| [campaign.schema.json](campaign.schema.json) | 生成的 Campaign 兼容 DTO，以及既有 Radar、巡逻与血量组件定义 |
+| [level.schema.json](level.schema.json) | 独立 YAML 关卡 1.0：元数据、世界、机器人、接口、权限、规则、诊断和教材 |
 | [gamepad-input.schema.json](gamepad-input.schema.json) | 可选的手柄映射、死区、速度与发送周期；不授予执行器权限 |
 
 payload 标识为 `joint_state@1`、`pose2d@1`、`imu@1`、`encoder@1`、`radar@1`、`twist@1`、`view_snapshot@1`、`error@1`、`negotiate_request@1`、`negotiate_response@1`、`runtime_step_request@1`、`runtime_step_result@1`。Twist 保留 linear.x/y/z、angular.x/y/z，二维的 linear.z/angular.x/angular.y 限定为零，底盘是否支持非零 linear.y 由领域层判定。首发 `view_snapshot@1` 的 objects/effects 为空；实体/效果、scan、地图瓦片、pose_fix、选源服务仍须补齐结构和权限后才能注册，不以任意 object 扩展绕过审查。
@@ -71,3 +72,7 @@ M4 内部配置为 **1.6**，增加必填 campaign；1.5 沙盒仍可读。新�
 课程依赖增量：player-dependencies.schema.json 约束受信库策略结构，实际跨文件导入/相对模块/运行检查由 SDK 内部 loader 与 Authority 执行。策略见 [23](../23_PLAYER_CODE_AND_LIBRARIES.md)。协方差 JSON 仍为行优先扁平数组；SDK 使用二维 ndarray，不改消息 Schema。
 
 游戏可编辑配置为 `config/game.yaml`，仍以 `simulation-profile.schema.json` 校验解析后的结构。`campaign.schema.json` 新增每关时间/起算/生命、目标类型、教学数据及结算顺序。生成的 `core/tests/fixtures/default-profile.json` 只供 Rust/Node 测试与探针；数值从 YAML 导出，不得单独维护。详见 [25](../25_ATTEMPT_RULES_AND_CONFIGURATION.md)。
+
+## YAML 关卡插件增量
+
+应用配置 1.9 的 `level_plugins` 声明目录与资源限额；`levels/*.yaml` 经 `level.schema.json` 及交叉引用/组件/权限验证后，编译为上述内部 DTO。安全加载器限制文件大小、节点、嵌套深度与组件数量，拒绝别名、重复键、任意对象标签、无效地图路径及未注册类型。权限不是仅靠 Schema 执行，实际数据仍由 Authority 裁剪。现有五关和生成夹具由同一加载器校验；文档工具也检查该流程和关卡编写指南。格式与精确错误路径见 [27](../27_LEVEL_PLUGIN_ARCHITECTURE.md)。

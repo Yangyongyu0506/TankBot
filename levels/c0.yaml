@@ -1,0 +1,487 @@
+schema_version: '1.0'
+metadata:
+  id: c0
+  name: C0 · 认识坦克与坐标
+  description: 驾驶坦克、转动车体，并命中可见靶标。此关明确开放真值练习。
+  chapter:
+    chapter_id: hello_robot
+    title: Hello Robot
+    description: 认识机器人、世界坐标与人工操控。
+  order: 0
+  version: 1.0.0
+  learning_objectives:
+  - 本关不需要编程。先熟悉车头方向、地图方向、炮台与射击。
+  recommended_algorithms: []
+  prerequisites: []
+world:
+  dimension: 2
+  frame_id: map
+  simulation:
+    physics_hz: 60
+    substeps: 4
+    sensor_hz: 30
+    algorithm_hz: 10
+  map:
+    source: inline
+    walls:
+    - center:
+      - 6.1
+      - 0.0
+      size:
+      - 0.2
+      - 8.4
+    - center:
+      - -6.1
+      - 0.0
+      size:
+      - 0.2
+      - 8.4
+    - center:
+      - 0.0
+      - 4.1
+      size:
+      - 12.0
+      - 0.2
+    - center:
+      - 0.0
+      - -4.1
+      size:
+      - 12.0
+      - 0.2
+    - center:
+      - 2.0
+      - 0.0
+      size:
+      - 0.2
+      - 3.0
+robots:
+- id: player
+  type: tank
+  role: player
+  model: scene_selected
+  initial_pose:
+  - 0.0
+  - 0.0
+  - 0.0
+  initial_velocity:
+  - 0.0
+  - 0.0
+  - 0.0
+  health: null
+  control_sources:
+    chassis: keyboard
+    turret: keyboard
+    weapon: keyboard
+  sensors:
+  - type: wheel_encoder
+    topic: /robot/sensors/joint_states
+    schema: joint_state@1
+    frame_id: base_link
+    update_hz: 30
+  - type: imu
+    topic: /robot/sensors/imu
+    schema: imu@1
+    frame_id: base_link
+    update_hz: 30
+  - type: turret_joint
+    topic: /robot/turret/joint_states
+    schema: joint_state@1
+    frame_id: base_link
+    update_hz: 30
+  - type: weapon_state
+    topic: /robot/weapons/cannon/state
+    schema: weapon_state@1
+    frame_id: base_link
+    update_hz: 30
+- id: training_target
+  type: static_tank_target
+  role: target
+  initial_pose:
+  - -3.0
+  - 0.0
+  - 0.0
+  parameters: {}
+communication:
+  runtime:
+    template_version: 1.2.0
+    manifest:
+      manifest_version: '1.0'
+      sdk_version: 0.1.0
+      protocol_version: '1.0'
+      project_id: my-first-robot
+      entry_point: campaign_robot:CampaignRobot
+      modules:
+      - module_id: perception
+        contract: contracts/perception.json
+        config: {}
+      connections:
+      - from: /robot/localization/pose
+        to: perception.self_pose
+      - from: /robot/sensors/radar
+        to: perception.radar
+      - from: perception.target
+        to: /robot/estimates/perception/target
+      dependencies: []
+      pose_source:
+        mode: system
+        module_id: null
+        fallback: none
+    contracts:
+      perception:
+        contract_version: '1.0'
+        module_id: perception
+        entry_point: campaign_robot:CampaignRobot
+        inputs:
+          self_pose:
+            schema: pose2d@1
+            required: true
+            max_age_ticks: 12
+          radar:
+            schema: radar@1
+            required: false
+            max_age_ticks: 12
+        outputs:
+          target:
+            schema: target_estimate@1
+        execution:
+          mode: periodic
+          period_ticks: 6
+          deadline_ticks: 6
+          budget_ms: 20
+        dependencies: []
+        state_version: '1'
+    target_source: perception
+    managed_files:
+    - campaign_robot.py
+    - tankbot.json
+    - contracts/perception.json
+    - tests/test_coordinates.py
+    mode: single
+    profile_id: null
+    logical_module:
+      module_id: perception
+      entry_point: campaign_robot:CampaignRobot
+    processing: passive
+permissions:
+  data_access:
+    inputs:
+      /robot/localization/pose: pose2d@1
+    outputs:
+    - target_estimate@1
+    actuators: {}
+  visualization:
+    view_policy:
+      policy_id: campaign-c0
+      system_pose_allowed: true
+      player_pose_allowed: false
+      allowed_pose_frames:
+      - map
+      public_map: m1-test-map
+      local_observation_channels:
+      - /robot/sensors/joint_states
+      - /robot/sensors/imu
+      - /robot/turret/joint_states
+      - /robot/weapons/cannon/state
+      true_enemy_objects: true
+      world_effects: true
+      camera_source: selected_pose_or_manual
+      pose_fresh_ticks: 12
+      pose_hide_after_ticks: 60
+      robot_topics_allowed: false
+      target_estimates_allowed: true
+    allowed_layers:
+    - map
+    - robot
+    - trail
+    - target_estimates
+    - imu
+    - encoders
+    - turret
+    - truth_targets
+    - projectiles
+    - frames
+  public_initial_pose: true
+  public_map: true
+visualization:
+  initial_enabled:
+  - map
+  - robot
+  - trail
+  - target_estimates
+  - imu
+  - encoders
+  - turret
+  - truth_targets
+  - projectiles
+  user_toggleable:
+  - map
+  - robot
+  - trail
+  - target_estimates
+  - imu
+  - encoders
+  - turret
+  - truth_targets
+  - projectiles
+  - frames
+  sources:
+    map: map
+    robot: selected_pose
+    trail: selected_pose
+    target_estimates: player_estimate
+    imu: local_observation
+    encoders: local_observation
+    turret: local_observation
+    truth_targets: authorized_truth
+    projectiles: authorized_truth
+    frames: selected_pose
+  preserve_user_settings: true
+objectives:
+  parameters:
+    movement_m: 1.0
+    turn_rad: 0.5
+    required_hits: 1
+    required_estimates: 0
+  progress:
+    moved:
+      type: displacement
+      parameter: movement_m
+      sticky: true
+    turned:
+      type: heading_change
+      parameter: turn_rad
+      sticky: true
+  success:
+    type: all
+    conditions:
+    - type: compare
+      metric: moved
+      operator: ==
+      value: true
+    - type: compare
+      metric: turned
+      operator: ==
+      value: true
+    - type: compare
+      metric: hits
+      operator: '>='
+      parameter: required_hits
+    - type: compare
+      metric: estimates
+      operator: '>='
+      parameter: required_estimates
+  outcomes:
+  - reason: player_dead
+    result: failure
+    when:
+      type: compare
+      metric: player_alive
+      operator: ==
+      value: false
+  - reason: objective_completed
+    result: success
+    when:
+      type: all
+      conditions:
+      - type: compare
+        metric: objective_complete
+        operator: ==
+        value: true
+      - type: compare
+        metric: elapsed_ticks
+        operator: <=
+        parameter: limit_ticks
+  - reason: timeout
+    result: failure
+    when:
+      type: compare
+      metric: elapsed_ticks
+      operator: '>='
+      parameter: limit_ticks
+  time_limit_s: 60
+  timer_start: first_control
+  target: training_target
+evaluation:
+  type: terminal_diagnostics
+  publish_on: terminal
+  metrics:
+  - id: rmse_m
+    type: position_rmse
+  - id: yaw_rmse_rad
+    type: yaw_rmse
+randomization:
+  seed: 0
+  reset_on: new_run
+  generator: python_random_v1
+tutorial:
+  problem: 驾驶坦克、转动车体，并命中可见靶标。此关明确开放真值练习。
+  hints:
+  - W/S 前后，差速 A/D 转向；全向 Q/E 转向。
+  - J/L 转动炮台，空格单发。炮弹会反弹；瞄准左侧红色靶标。
+  lesson:
+    title: C0 · 先认识坐标与控制
+    summary: 本关不需要编程。先熟悉车头方向、地图方向、炮台与射击。
+    steps:
+    - W/S 前后；差速 A/D 转动车体，全向 A/D 横移、Q/E 转向。
+    - 按任务面板要求移动、转向，再用 J/L 瞄准、空格单发。
+    - 地图 +x 向右、+y 向上；yaw 从 +x 逆时针为正，视角不会跟着车体旋转。
+    - 此关明确显示真值。后续关卡会逐步撤回信息，并提供替代观测与算法模板。
+    - 正式尝试持续计时，打开编辑器不暂停；可在任务页或编辑器点击「结束本次尝试」，修改保存后重试。
+    files: []
+    default_type: Pose2D
+    functions: []
+    aliases: {}
+    execution: 本关无需编程；关闭代码编辑器后使用键盘驾驶。
+    completion: 相对起点移动至少 {movement_m:g} m、车体转向至少 {turn_rad:g} rad，并命中靶标 {required_hits} 次。 限时 {time_limit_s} 仿真秒。首次有效人工操作开始计时。
+    common_errors:
+    - 编辑器打开时，驾驶按键用于编辑代码；关闭后才能控制坦克。
+    type_notes:
+      TargetPoints:
+        description: 当前帧地图坐标测量矩阵，不包含历史。
+        fields:
+          positions_m: 只读 float64 NumPy 数组，shape=(N,2)，列为 x/y，单位 m；无检测时 shape=(0,2)。
+      TargetPoseEstimate:
+        description: 玩家估计的敌车底盘中心与车头朝向，与自身位姿完全分离。
+        fields:
+          x_m: 敌车中心在 map 中的 x，m。
+          y_m: 敌车中心在 map 中的 y，m。
+          yaw_rad: 敌车车头相对 map +x 的逆时针角，rad，范围 [-π,π)。
+          covariance: None 或只读 (3,3) NumPy 协方差，对应 x/y/yaw；原地转向时 yaw 不可直接观测。
+      AimInput:
+        description: 自瞄函数的授权输入；数组都是只读 NumPy，玩家无需处理 Topic。
+        fields:
+          target_xy: None 或 shape=(2,) 的地图目标位置 [x,y]，m；C4 仍为敌车底盘中心。
+          target_age_s: 在本批控制提交时，目标估计已经过去的仿真秒；包含等待提交的延迟。
+          own_pose: shape=(3,) 的系统自身位姿 [x,y,yaw]，单位 m、rad。Weapons 阶段不要求估计自己。
+          turret_angle_rad: 炮台相对车体的累计角，rad；可连续旋转。
+          turret_rate_radps: 炮台相对角速度，rad/s。
+          weapon_ready: 本机是否已冷却，bool。
+          target_yaw_rad: C3 为 None；C4 为玩家估计的敌车朝向，rad。不是雷达方位角。
+      AimOutput:
+        description: 算法的自瞄结果，由框架转换为合法控制消息。
+        fields:
+          acceleration_radps2: 炮台相对角加速度目标，rad/s²；不能直接写角度/角速度。
+          fire: bool，True 请求单发；框架处理冷却和请求 ID。
+      TurretAcceleration:
+        description: 炮台相对角加速度 Topic 的类型化负载。
+        fields:
+          acceleration_radps2: 目标角加速度，rad/s²；真实响应仍由受限力矩和双刚体动力学决定。
+      Pose2D:
+        description: 自身的二维位姿。C0–C2 由系统公开提供；位置在 map 中，车头方向用 yaw 表示。
+        fields:
+          x_m: 地图横坐标，单位 m，向右为正。
+          y_m: 地图纵坐标，单位 m，向上为正。
+          yaw_rad: 车头相对地图 +x 的逆时针角，单位 rad；π/2 表示朝向 +y。
+          covariance: None 或只读 float64 NumPy 矩阵，shape=(3,3)，依次对应 x、y、yaw；本关可以忽略。
+          child_frame_id: 被描述的车体系名称，通常为 base_link；本关可以忽略。
+      RadarDetection:
+        description: 一次雷达检测。先在车体系里测量，不能直接当作地图坐标。
+        fields:
+          observation_id: 仅本次观测的标签；不能用它识别跨帧的同一敌车。
+          range_m: 传感器中心到目标中心的距离，单位 m。
+          bearing_rad: 相对车头的方位角，单位 rad；前方为 0，左侧为正。
+      RadarData:
+        description: 一帧雷达数据。没有检测时 detections 是空元组 ()。
+        fields:
+          detections: 不可变的 RadarDetection 元组；逐项读取，不需要解析 JSON。
+      TargetEstimate:
+        description: 算法在 map 中估计的目标位置。C2 跟踪器返回这个值；C1 的矩阵结果由框架转换为它。
+        fields:
+          x_m: 目标估计的地图横坐标，单位 m。
+          y_m: 目标估计的地图纵坐标，单位 m。
+          covariance: None 或只读 float64 NumPy 矩阵，shape=(2,2)，对应 x、y；入门时保留 None。
+      Sample:
+        description: 框架使用的带采样时刻的数据包装；入门函数收到的是内部 data，无需手动拆包。
+        fields:
+          data: 类型参数 T 对应的数据，例如 Pose2D 或 RadarData。
+          simulation_tick: 数据采样的仿真 tick，不是网络到达时间。
+          frame_id: 数据参考坐标系名称。
+          sequence_number: 该数据流递增的序号。
+      JointState:
+        description: 按轮名排列的关节角、角速度和力矩，主要用于后续里程计。
+        fields:
+          name: 轮/关节名称元组。
+          position: 与 name 对齐的累计角，单位 rad。
+          velocity: 与 name 对齐的角速度，单位 rad/s。
+          effort: 力矩，单位 N·m；未报告时为空元组。
+      ImuData:
+        description: 车体系内的惯性观测。
+        fields:
+          angular_velocity_z_radps: 绕 z 的角速度，rad/s。
+          linear_acceleration_x_mps2: 沿车头 x 的加速度，m/s²。
+          linear_acceleration_y_mps2: 沿车体左方 y 的加速度，m/s²。
+      EncoderData:
+        description: 累计轮距的旧示例类型；当前轮组观测使用 JointState。
+        fields:
+          left_distance_m: 本 run 起的左轮累计距离，m。
+          right_distance_m: 本 run 起的右轮累计距离，m。
+      Vector3:
+        description: 三维向量；具体单位由使用它的接口决定。
+        fields:
+          x: x 分量。
+          y: y 分量。
+          z: z 分量。
+      Twist:
+        description: 车体系目标速度。二维模型只使用 linear.x/y 和 angular.z。
+        fields:
+          linear: 线速度，m/s。
+          angular: 角速度，rad/s。
+      TurretVelocity:
+        description: 炮台相对车体的目标角速度。
+        fields:
+          velocity_radps: 逆时针为正，单位 rad/s。
+      FireCommand:
+        description: 一次单发开火意图，进阶接口由 ModuleContext.fire 生成幂等请求。
+        fields: {}
+      FireResult:
+        description: 自己提交的开火请求结果；不含命中坐标。
+        fields:
+          request_id: 请求标识。
+          status: fired/cooldown/blocked/resource_limit。
+          processed_tick: 处理请求的仿真 tick。
+      WeaponState:
+        description: 自己的武器状态。
+        fields:
+          ready: 是否可以开火。
+          cooldown_remaining_ticks: 剩余冷却 tick。
+          shots_fired: 本 run 已发射数量。
+          hits_received: 自己的受击计数。
+          last_result: 最近一次开火结果，无结果时为 None。
+      Inputs:
+        description: 框架端口输入集合；入门关卡已替你取出具体数据。
+        fields: {}
+      ModuleContext:
+        description: 框架提供的时间、只读配置和输出接口。
+        fields:
+          simulation_tick: 当前算法激活 tick。
+          dt_seconds: 距上次调用的仿真秒。
+          output_commit_tick: 本批次输出的固定提交 tick。
+          config: 任务授予的只读配置，不包含敌车真值。
+      Module:
+        description: 框架模块生命周期。入门时使用生成的包装，不需要自己编写消息或管理进程。
+        fields: {}
+      ndarray:
+        description: NumPy 数组。C1 返回 float64 的 (4,4) 矩阵；@ 表示矩阵与向量相乘。
+        fields:
+          shape: 数组形状；SE(3) 必须是 (4,4)。
+          dtype: 元素类型；本关使用 np.float64。
+          T: 转置。注意转置通常不等于 SE(3) 的逆。
+    ui:
+      state_heading: 02 / AUTHORIZED SELF POSE
+      legend_pose: 系统自定位
+      view_note: C0 真值练习：车体、靶标与弹道均获授权显示。
+      mode_label: C0 · 真值练习
+      freshness_message: 系统提供自身位姿；敌车只有玩家目标估计
+      progress_layout: movement
+      default_file: campaign_robot.py
+  testing:
+    checks:
+    - Python 语法与导入；项目接口、连线和发布权限。
+    - tests/test_*.py 中的单元测试；C1/C2 默认包含 SE(3) 合法性、旋转/平移与方向样例。
+    - 使用获授权传感器输入试运行 {test_batches} 个批次，检查异常、超时和输出消息。
+    meaning: 通过表示此快照可以加载并通过这些样例和短时间试运行，不代表算法效果完美或关卡通关。测试输出不会控制坦克，也不会进入正式画面。
+scaffolding:
+  components:
+  - campaign_adapter
+  - empty_perception_package
+  documentation: {}

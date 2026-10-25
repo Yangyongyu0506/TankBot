@@ -41,7 +41,7 @@ class ViewGateway:
                 selected = {"source_id": selector.source_id, "frame_id": candidate["frame_id"],
                             "simulation_tick": candidate["simulation_tick"], "freshness": "fresh" if age <= policy["pose_fresh_ticks"] else "stale",
                             "pose": copy.deepcopy(candidate["payload"])}
-        objects=copy.deepcopy(practice["objects"]) if practice is not None and policy["world_effects"] else []
+        objects=[copy.deepcopy(obj) for obj in practice["objects"] if (obj["kind"]=="projectile" and policy["world_effects"]) or (obj["kind"]=="target" and policy["true_enemy_objects"])] if practice is not None else []
         observations = [copy.deepcopy(sensors[c]) for c in policy["local_observation_channels"] if c in sensors]
         payload = {"view_revision": revision, "policy_id": policy["policy_id"], "selected_pose": selected,
                    "local_observations": observations, "objects": objects, "effects": []}
@@ -57,8 +57,8 @@ class ViewGateway:
 class SystemPoseProvider:
     """Authority-only projection; the private DTO never goes directly to ViewGateway."""
     @staticmethod
-    def pose(private, config):
-        if not config["view_policy"]["system_pose_allowed"] or "map" not in config["view_policy"]["allowed_pose_frames"]:
+    def pose(private, config, *, runtime_authorized=False):
+        if not runtime_authorized and (not config["view_policy"]["system_pose_allowed"] or "map" not in config["view_policy"]["allowed_pose_frames"]):
             raise ValueError("System self-pose denied")
         x, y, yaw = private["truth_pose"]
         return {"x_m": x, "y_m": y, "yaw_rad": yaw, "covariance": None, "child_frame_id": "base_link"}
@@ -66,7 +66,7 @@ class SystemPoseProvider:
     @staticmethod
     def project(private,config,tick):
         policy=config["view_policy"]
-        if config["view_mode"] not in ("weapons-practice", "campaign") or not policy["system_pose_allowed"] or not policy["world_effects"] or "map" not in policy["allowed_pose_frames"]:
+        if config["view_mode"] not in ("weapons-practice", "campaign") or not (policy["world_effects"] or policy["true_enemy_objects"]):
             raise ValueError("Truth projection denied")
         def pose(value):
             return {"x_m":value[0],"y_m":value[1],"yaw_rad":value[2],"covariance":None,"child_frame_id":"base_link"}

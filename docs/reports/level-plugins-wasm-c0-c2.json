@@ -1,0 +1,248 @@
+{
+  "date": "2026-10-25",
+  "url": "http://127.0.0.1:8785/?runtime=browser",
+  "browser": {
+    "browserName": "firefox",
+    "browserVersion": "157.0.1",
+    "platformName": "linux"
+  },
+  "c0": {
+    "run_id": "d4199eafb8fd40138a8d8f89e40de952",
+    "attempt": {
+      "level_id": "c0",
+      "status": "passed",
+      "enemy_hp": null,
+      "phase": "finished",
+      "timing": {
+        "time_limit_s": 60,
+        "start_on": "first_control",
+        "started_tick": 6,
+        "elapsed_ticks": 202,
+        "remaining_s": 56.63333333333333
+      },
+      "player_hp": null,
+      "player_max_hp": null,
+      "enemy_max_hp": null,
+      "progress": {
+        "moved": true,
+        "turned": true,
+        "has_estimate": false,
+        "hit": true
+      },
+      "result": {
+        "passed": true,
+        "reason": "objective_completed",
+        "finished_tick": 208,
+        "estimate_samples": 0,
+        "rmse_m": null,
+        "yaw_rmse_rad": null,
+        "scored_samples": 0,
+        "hits": 1
+      }
+    }
+  },
+  "c1": {
+    "run_id": "7b3e5e0f8734430386b258fa6f54a7c0",
+    "attempt": {
+      "level_id": "c1",
+      "status": "passed",
+      "enemy_hp": null,
+      "phase": "finished",
+      "timing": {
+        "time_limit_s": 60,
+        "start_on": "first_deployment",
+        "started_tick": 258,
+        "elapsed_ticks": 151,
+        "remaining_s": 57.483333333333334
+      },
+      "player_hp": null,
+      "player_max_hp": null,
+      "enemy_max_hp": null,
+      "progress": {
+        "moved": true,
+        "turned": true,
+        "has_estimate": true,
+        "hit": true
+      },
+      "result": {
+        "passed": true,
+        "reason": "objective_completed",
+        "finished_tick": 409,
+        "estimate_samples": 25,
+        "rmse_m": 1.0648885158809838e-15,
+        "yaw_rmse_rad": null,
+        "scored_samples": 25,
+        "hits": 1
+      }
+    }
+  },
+  "c2": {
+    "run_id": "bb006c4b7807435abd7feadda2cdaefc",
+    "attempt": {
+      "level_id": "c2",
+      "status": "passed",
+      "enemy_hp": 0,
+      "phase": "finished",
+      "timing": {
+        "time_limit_s": 120,
+        "start_on": "first_deployment",
+        "started_tick": 288,
+        "elapsed_ticks": 199,
+        "remaining_s": 116.68333333333334
+      },
+      "player_hp": 3,
+      "player_max_hp": 3,
+      "enemy_max_hp": 3,
+      "progress": {
+        "moved": true,
+        "turned": true,
+        "has_estimate": true,
+        "hit": true
+      },
+      "result": {
+        "passed": true,
+        "reason": "objective_completed",
+        "finished_tick": 487,
+        "estimate_samples": 33,
+        "rmse_m": 0.2257898265660717,
+        "yaw_rmse_rad": null,
+        "scored_samples": 33,
+        "hits": 3
+      }
+    }
+  },
+  "c1_deployment": {
+    "deployment_id": "a887e3b27e024987b32ca8c5835eb244",
+    "sha256": "f510725ddb82662b5e043300418fdb3e027b584e91654609a9264ddca8cc616b",
+    "revision": "ae74ff296d7fc5cb5ba05ee2027d78bdd6800a269c23c52f560f61dc191f4f32",
+    "activated_tick": 258
+  },
+  "c2_deployment": {
+    "deployment_id": "7239bd5b7fa444fcb33f04d75f60d3ab",
+    "sha256": "342ccf96c02ff9f514c3c5da99bf756ea9c085e1edf6067d9a963166672b7d40",
+    "revision": "5442f49995bc806d3efeb291eff09363649028014326743277b4f8cd26f4fe60",
+    "activated_tick": 288
+  },
+  "source_preserved": true,
+  "new_run_per_level": true,
+  "layout": [
+    {
+      "width": 1280,
+      "height": 714,
+      "scrollHeight": 714,
+      "clientHeight": 714,
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "width": 500,
+      "height": 654,
+      "scrollHeight": 654,
+      "clientHeight": 654,
+      "scrollWidth": 500,
+      "clientWidth": 500
+    }
+  ],
+  "learning_checks": false,
+  "learning_evidence": {
+    "lessons": [],
+    "screenshots": []
+  },
+  "screenshot": ".m1-cache/level-plugins-wasm-c0-c2-tracking.png",
+  "artifacts": {
+    "config/game.yaml": "cf5b51c08603047314de19301188c8687b9e4943f9d7a14b20bce7f43a43665f",
+    "package-lock.json": "06e868ede2f42ad8ab8b556d481dcb4d6e5922052fe9ea40a1828c7b260b9640",
+    "target/debug/core_worker": "f89efcc24f5432a8f46f9e8c9bbf276c2dd7193500f97b3c0f7b0b72c5ddd8b9",
+    "build/web/editor-bundle.js": "9d856fd4a442dd710f54e6e31645a94e149a5a356501f34540c930cb04c5f8dd",
+    "build/browser/authority-bundle.json": "99b668bb996cf585d46e3b34599f69f339e2343b662ef41c05957131a8f1fdac",
+    "build/browser/player-bundle.json": "598def941d6d77068160668bc11b256ff32433af0f9aeb50bd5a3e3c98147bdd",
+    "target/wasm32-unknown-unknown/release/tankbot_core.wasm": "3939b9f89f89212ffa6d284d054b903c9120266fac392e7401fabe6eeb52a333"
+  },
+  "sources": {
+    "core/src/bin/core_worker.rs": "7434afcc8d8f125a617cd2fd6bd4a08c1c4253502412ab0b118707b5ae5732b8",
+    "core/src/cannon.rs": "bcc1ebe9ac4b504ca134c6bdc5b0dced6685062763f2bef88f522ef9dc5d7d66",
+    "core/src/enemy.rs": "e01b1eb19741677661f9dccd71c8db89642befdce564f6dfea34d69ce4826c81",
+    "core/src/lib.rs": "d82f8549e0ffad796de0aff2d6b60efeec893bbc795c76b5be89395a9d9dbf49",
+    "core/src/player_health_tests.rs": "a529252cb7de3e9d4d8fa6a583dbe60fd79154aa9037fdda1bf0692524e427d5",
+    "core/src/session.rs": "032eccc314bd25cde6d17873c4d91faa28823d6d94104ec9322a081d1ce08116",
+    "core/src/turret.rs": "9740e5781852dff45d582587dbd9d8b934cefe01ea710311e1b527f1eb68da1d",
+    "core/src/wasm.rs": "26e532b7da41ecc4e3ed49f253c011229555a97ba3113b43c7ce0345c24d257a",
+    "core/src/wheels.rs": "64ef89d50a33830491cd383770a0a0711e2b9a3dc8453fb4f81f5c279257ff8f",
+    "docs/schemas/campaign.schema.json": "0c472f3aad41c4cd7b4b5e684591d43de7b1b08a2a8fc42b95673a79850f9be3",
+    "docs/schemas/chassis-controller.schema.json": "63e0520ae3dc054959e13874dceb00e32c1c68498904caf2593361145d86bbd4",
+    "docs/schemas/envelope.schema.json": "c3339b26effbd46b70e87a00bb318d9ad9b4ba2f7aaf5da5b98e8cee02caad01",
+    "docs/schemas/gamepad-input.schema.json": "8115307edb6d0fffb3684553f23571f287d6d69e22d25e4b9bca8ceb6b13cd0c",
+    "docs/schemas/level.schema.json": "67e2f043c05d51941c041208daa0ad318620302d09d7959185a6a6b6aee957c2",
+    "docs/schemas/module-contract.schema.json": "e3182ed2a11e390dd1b5439bc123d1f9910cd7b4bb4f88652d420a73e73c410e",
+    "docs/schemas/payloads.schema.json": "e16b3ead68abef404b87cc7ac3b87b861228b778af206d22af45d80efc7e03c5",
+    "docs/schemas/player-dependencies.schema.json": "aa58d16e5c4b929de97e82fc970b2a2019f3056eaf2747c4a59c294c11b74c77",
+    "docs/schemas/progress.schema.json": "66fd083c1db1118e947c4c060e535ea4e017409e77895bdffec7c5be6a8bb998",
+    "docs/schemas/settings.schema.json": "0cf0f5aed387ebfef1dfda2a6d86da46a130de4ecd0d9a24ebc5c6eec3d5774f",
+    "docs/schemas/simulation-profile.schema.json": "cb6a4293ab95e7f346cd1cbce873bc6913f1332fc5291a60ca166d9ed715108c",
+    "docs/schemas/view-policy.schema.json": "814e8d5e30f54598f36c1c153fbe10f76f6d8500d84b7f2267c2e85095694517",
+    "docs/schemas/wheel-calibration.schema.json": "f6f2df6dc57ad85b58faa8220be14a47d39d8c4041b2943e271f01f693e8e819",
+    "docs/schemas/workspace.schema.json": "5115327a09c8bc86fa20c526cd90edac77e71cb8409d909a7acc7a51738ddf83",
+    "host/tankbot_host/__init__.py": "763c3b1f903b5ac960ac4b176ab5ddcc41c8f58601260a13b553d6193e7a9be4",
+    "host/tankbot_host/application.py": "cd9cfff8040d4e22bdca2aeb8e870163b70ab3b23e912e242de68af1772e1f2c",
+    "host/tankbot_host/authority.py": "c159eab99041d9d170ba8ca2c3435061cd84df6c2633f92d307ac76f762c785d",
+    "host/tankbot_host/browser_server.py": "49e267be103e71ef292e4337124173f2a0102142ac7f53b4c795fcb032de1bce",
+    "host/tankbot_host/campaign.py": "7b2d9edf3f670711d5a55d6288aaa77f2eafa88c838258d848b15d4f6ccf6ead",
+    "host/tankbot_host/campaign_templates.py": "83389cc8857d11adc7481d9c5b5f375b3b9e89853539153739f9ff074bcf2421",
+    "host/tankbot_host/cli.py": "a1022b5884bfa15cf1d26de087e23cd430592b36204aca863ecfd9efea993762",
+    "host/tankbot_host/configuration.py": "4b20a7b6319f0504bf50d7cc9a3ea69b88ca280bd865d70ce546f29d156609d0",
+    "host/tankbot_host/deployment.py": "a2ee707d1e4fbcfbea266d82ebc849f27b6c87611be918730b8b745e727c358b",
+    "host/tankbot_host/learning.py": "3bb706eba049d12bd0faa9cc19dbf3e92546c0f5c7de5ea1c218a43f68e36d40",
+    "host/tankbot_host/level_plugins.py": "3638edda4a8ac2d8cc6db4078497ed1cec933ff80966b2df825ddff37aa32bfb",
+    "host/tankbot_host/level_rules.py": "da7e3eebed95bf1016c2926f3f93207e922fb13af03d4d200b115ecd37a640e1",
+    "host/tankbot_host/level_templates.py": "884a6f65edfd670a2f6559bce6c533c1523cafe4e15210afd9362ae5a7c641db",
+    "host/tankbot_host/logs.py": "71f50bb2d4a21aa1d56d25a80289f2750722bbbc1109cc15b19e673f961f9294",
+    "host/tankbot_host/module_profile.py": "6120a50b6a9811812a583612b851f0352064a9c2d976b9e6db129166d71276f0",
+    "host/tankbot_host/robot_graph.py": "77f638ae72c474b079240cac723a0ecce074f2e9610020f0019ee2967aef3849",
+    "host/tankbot_host/server.py": "e92e235f47b07961eaff8c43caf322a000b34bd55d88570649c2da37a0c0ae0f",
+    "host/tankbot_host/supervisor.py": "91f8879f145748341ddbb3b7ff81c5f82bd7b6212939c1e1ce7164a63200f5f3",
+    "host/tankbot_host/view.py": "ce19a10fbef6b3cc23dd495f7306ab8973cc84ccfc9f490b3d6173bed4e34a27",
+    "host/tankbot_host/weapon_templates.py": "80ca60c55c4b44c8529684e683c8842d8d4550d5dfb5af75b95f8144d634f9c9",
+    "host/tankbot_host/wheel_geometry.py": "428f2662224b4a5c641a43ecce10a1f7c7c693f4540acadd89baa8edc85690e9",
+    "host/tankbot_host/workspace.py": "96b19308c7558e464dab660bbe4020d4e4897b632ead8cd09a58ed7d0b7f36c6",
+    "host/tankbot_host/workspace_api.py": "75df1ddee418fcb318f470b9845e1316c80a402e7e2da9de3c0d77da420b1330",
+    "protocol/tankbot_protocol/__init__.py": "0f7f794a2bbdcd6f5b5d59e22378ce97f4f75f51704408206bd173cd719e008c",
+    "protocol/tankbot_protocol/conformance.py": "9e5479e874503017a6f68c98ea42627efbe4bedf9e126607ac5d2378fe36a045",
+    "protocol/tankbot_protocol/message.py": "16b1cc299814b13c8bdcec1a4232cad988985e394ae04bfb8f41748280756d2b",
+    "protocol/tankbot_protocol/transport.py": "68add66e7334450ec44d14c8d7b56ee4139034daef7a206673f1c2bc788a6795",
+    "protocol/tankbot_protocol/validation.py": "f0c5a0e4b062ba82019f3d3788ac41093b1e141aea382fb9a75aee0bef87c79a",
+    "protocol/tankbot_protocol/wire.py": "99221bf373078424017fd9b7b16906c42e6cfb029921382a11908e1bfdfbe7fa",
+    "runtime/browser_authority.py": "f5490b05a21dc44b646c1dc263b6ae790512e346ecf05eeec98f2d2125f6370e",
+    "runtime/graph_runner.py": "a1795091ba516c5521c62a6b987ef6e42b5df5c82551dc0f0c500e735a8babe4",
+    "runtime/module_runner.py": "4a88c22c507c786ad0e183a3f423aa91d91f95452b890c8996148799b0363733",
+    "runtime/source_loader.py": "5ec4609f13370a9e9450026e1abb90d2ff35eb144380d398bee14c79664260b2",
+    "runtime/worker.py": "3aeef84c921c2d80c82ed8afb7c5552ebc4f81f895e4c9759b53a36fa3872cf2",
+    "sdk/python/tankbot/__init__.py": "fa2468a2d4c3d4db892d709c3c0c377b1035c5b0558d2f87d26fbaa6063146e0",
+    "sdk/python/tankbot/_imports.py": "25e7cd895f25dd432eff1f4ebddc920443919426a12900bfa23a0e5f7d63c440",
+    "sdk/python/tankbot/transforms.py": "8d97f236cde6598886f770ae53dbdf3bd6197134424777689fb94eeefe98a7e9",
+    "tests/campaign_support.py": "4a19cb1066379c91008723a1bff06bcabe705e192dc10964ee8a7691b3c8d25a",
+    "tools/browser_m4.py": "075cface0e36d723a9eed2f3498c7b38692f8011e44db0bc23a82a8992b77b87",
+    "web/app.js": "d9fea9ee1525e98cb57998cf53194e206b2a4d29ae910558de5e147f17fa96d0",
+    "web/browser-client.js": "54db543b8c893258eb9cb0aabd8dc4b00ab8e8649bdde6c1da3413da6cfd3e74",
+    "web/campaign-ui.js": "e4555c349a759f3424c9b35327eb37cb629d364ce8084d684b12e2ae32eef6ef",
+    "web/core-worker.js": "0df52bb146f783298e13970fbec608983a7d18f6e4c24005103750d54455fc19",
+    "web/editor.js": "3b393ddda08c5ce66e6c45a5b34c446b63ecd989bfcf2906d734f0e066239bf8",
+    "web/gamepad.js": "24d76cc0aa50418e56f294b566d8f16b71325d9bd872e817f10094559c6ec6ca",
+    "web/index.html": "1325e9b0fa5f407236fc0361455c9fb182eec69e217063d35fd0c9695477a257",
+    "web/keyboard.js": "6021b8dc6c04ebcf6403fcc7aeacf1aa0f1abeefb2df80ab0032ccd0ea8a8382",
+    "web/learning-ui.js": "9bd6bbc97b6c55de39a6fe7abb0aa3a447d9b7da4c8ac6c6a5888759b9f14b0d",
+    "web/python-bootstrap.js": "5b9b24713786a2ec2f18da3f7fcc7c346bbaa6fe0b32597ab2808d86bce6ec5d",
+    "web/python-loader.js": "75e4b71e4816489efc9014f9316b70c966dabd58a2009aa66e46fd72d5c67624",
+    "web/rendering.js": "6dc2ae0436e0a1dd7ce3536b78379a38e580632c8ab539e6f4377c5fdf73e216",
+    "web/robot-graph.js": "49a2c0db391c84592db524edbfe967e85d6b5ccd7a690f1c96da8a4ee93f0736",
+    "web/robot-worker.js": "79b90a13a27c7677999df72f1f32fbba282e94215a53614fd32b16061a59d521",
+    "web/runtime-frame.html": "4646a42fcdb08d1dddaf4288c54e8fccdf5b74e3c20883ab498ffb0855a3ba0d",
+    "web/runtime-frame.js": "8c72243fb6493b182e12f5d028d24f2be14c0c92fbda4462b2e9472bafd4c4cc",
+    "web/runtime-logs.js": "6fb828c49922aaf4ef7bf29d62573101118e92ec7c58637b3b7667c6dd76cc63",
+    "web/sdk-hints.js": "33d0d56aa67f5fbdc6c84bacf916eaa4fbb83135db2358d33bc9c45ff6df12b6",
+    "web/settings-ui.js": "ac572a81b418c9d81ce286066dea7183d5bcf5978a2470b5c4dc0339bb30d435",
+    "web/style.css": "1b4b8351ff18bd1ae67a3db7a211ec93355c0f91b09f463749f9ea3f03b774ea",
+    "web/visualization.js": "c67c06f4f03db0246d8fffeec37a1401d1f819c918b3ce4083af6c76c79905c0",
+    "web/wasm-core.js": "d03756544028a58af10818ade6fcb383450edb9ee45f74daa33966160ffaa635",
+    "web/workspace-ui.js": "b5fb753db2c5870a3142462f5e6e5aac9db4da30ea3b777b66be45e2e384e697"
+  }
+}

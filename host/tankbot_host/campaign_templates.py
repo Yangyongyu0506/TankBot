@@ -1,5 +1,6 @@
 """Bundled teaching scaffolds. Never execute these helpers in a player Runtime."""
 import ast
+import json
 import re
 
 TEMPLATE_VERSION: str = "1.2.0"
@@ -20,13 +21,13 @@ class CampaignRobot(Module):
     def setup(self, ctx: ModuleContext) -> None:
         self.tracker: Tracker | None = None
         self.last_sample: int | None = None
-        if ctx.config["lesson"]["level_id"] == "c2":
+        if ctx.config["lesson"]["processing"] == "track":
             from perception.tracker import Tracker
             self.tracker = Tracker()
 
     def update(self, inputs: Inputs, ctx: ModuleContext) -> None:
-        level: str = ctx.config["lesson"]["level_id"]
-        if level == "c0":
+        processing: str = ctx.config["lesson"]["processing"]
+        if processing == "passive":
             return
         pose: Sample[Pose2D] | None = cast("Sample[Pose2D] | None", inputs.latest("self_pose"))
         radar: Sample[RadarData] | None = cast("Sample[RadarData] | None", inputs.latest("radar"))
@@ -58,22 +59,7 @@ import math
 
 
 def radar_to_map(own_pose: Pose2D) -> NDArray[np.float64]:
-    """返回 T_map_radar：把雷达坐标变为地图坐标的 SE(3) 元素。
-
-    输入（使用 own_pose.字段名 读取）：
-      own_pose.x_m / y_m: float，自身在地图中的位置，单位 m。
-      own_pose.yaw_rad: float，车头相对地图 +x 的逆时针角，单位 rad。
-
-    返回：numpy.ndarray，shape=(4,4)，dtype=float64。
-    左上 3x3 放旋转 R，右上 3x1 放雷达原点在 map 中的位置 t。
-    最后一行固定为 [0,0,0,1]；本关 z=0，只需考虑绕 z 轴旋转。
-    三个旋转列是雷达基向量在地图中的方向，平移列是雷达原点。
-    游戏会实际执行 point_map = T_map_radar @ point_radar。
-    point_radar 是 [x,y,0,1]，你不需要处理检测列表或消息发布。
-
-    自测：自身 (1,3,pi/2)，雷达点 [2,0,0,1] 应变为 [1,5,0,1]。
-    F1 /「关卡说明 / 类型」中的矩阵实验可调整位姿并查看每一行乘法。
-    """
+    """Algorithm input/output contract; see level guidance."""
     T_map_radar: NDArray[np.float64] = np.eye(4, dtype=np.float64)
     # TODO: 填写旋转和位移。完成后把下一行替换成 return T_map_radar。
     raise NotImplementedError("请完成 perception/transforms.py 中的 SE(3) 矩阵")
@@ -88,16 +74,7 @@ class Tracker:
         self.estimate: TargetEstimate | None = None
 
     def update(self, measurements: tuple[TargetEstimate, ...], dt: float) -> TargetEstimate | None:
-        """输入已经用 C1 的 SE(3) 矩阵转换到地图系，无需处理网络。
-
-        measurements: tuple[TargetEstimate, ...]，不可变的测量列表。
-          有回波时 measurements[0] 的 x_m / y_m 是 float，单位 m。
-          丢失时为 ()；先检查 if measurements，再访问第一个元素。
-        dt: float，距上次算法调用的仿真秒，不是实际等待时间。
-        返回：TargetEstimate 表示当前地图目标估计；None 表示尚无估计。
-        更新 self.estimate 可保留状态；不要每次调用都把状态清空。
-        平滑、窗口或预测等方法均可。F1 可查看类型定义与调用示例。
-        """
+        """Algorithm input/output contract; see level guidance."""
         # TODO: 减少抖动，并为没有测量的时刻保留合理的状态。
         return self.estimate
 '''
@@ -124,23 +101,12 @@ class CoordinateTest(unittest.TestCase):
 '''
 
 
-def teaching_sources(level_id: str) -> dict[str, str]:
-    files: dict[str, str] = {"campaign_robot.py": WRAPPER, "perception/__init__.py": ""}
-    if level_id in ("c1", "c2"):
-        files.update({"perception/__init__.py": "", "perception/transforms.py": TRANSFORMS,
-                      "tests/test_coordinates.py": COORDINATE_TEST})
-    if level_id == "c2":
-        files["perception/tracker.py"] = TRACKER
-    return files
-
-
 MANAGED_FILES: tuple[str, ...] = ("campaign_robot.py", "tankbot.json", "contracts/perception.json", "tests/test_coordinates.py")
 
 
 def template_version(config: dict) -> str:
     level = config.get("campaign", {}).get("active_level")
-    profile = config["campaign"]["levels"][level].get("robot_profile") if level else None
-    return config["robot_graph"]["profiles"][profile]["template_version"] if profile else TEMPLATE_VERSION
+    return config["campaign"]["levels"][level]["runtime"]["template_version"] if level else TEMPLATE_VERSION
 
 
 def framework_upgrade(config: dict, files: dict[str, str]) -> dict:
@@ -148,7 +114,6 @@ def framework_upgrade(config: dict, files: dict[str, str]) -> dict:
     level = config.get("campaign",{}).get("active_level")
     profile_name = config["campaign"]["levels"][level].get("robot_profile") if level else None
     if profile_name:
-        import json
         profile = config["robot_graph"]["profiles"][profile_name]
         try:
             manifest = json.loads(files.get("tankbot.json","{}"))
@@ -175,7 +140,21 @@ def framework_upgrade(config: dict, files: dict[str, str]) -> dict:
             current = ast.dump(ast.parse(source)) == ast.dump(ast.parse(WRAPPER))
         except SyntaxError:
             current = True  # Let Test report the syntax error before classifying framework compatibility.
+    manifest_mismatch = False
+    if level and "tankbot.json" in files:
+        try:
+            manifest = json.loads(files["tankbot.json"])
+            modules = manifest.get("modules")
+            expected = config["campaign"]["levels"][level]["runtime"]["manifest"]["modules"]
+            # A compatible wrapper can survive a later lesson's graph upgrade.
+            # Check the active declaration too, without rewriting any player files.
+            if isinstance(modules,list) and modules and all(isinstance(item,dict) and isinstance(item.get("module_id"),str) for item in modules):
+                manifest_mismatch = len(modules)!=1 or modules[0]["module_id"]!=expected[0]["module_id"]
+                current &= not manifest_mismatch
+        except (ValueError,AttributeError,TypeError):
+            pass  # Invalid manifests still belong to the ordinary Schema validator.
     required: bool = bool(config.get("campaign", {}).get("active_level") and not current)
     return {"required": required, "current_version": marker.group(1) if marker else None,
-            "target_version": TEMPLATE_VERSION, "managed_files": list(MANAGED_FILES),
-            "message": "当前项目的课程运行框架需要更新，算法尚未开始测试。预览后可保留算法文件，更新框架并继续测试。" if required else ""}
+            "target_version": TEMPLATE_VERSION, "managed_files": config["campaign"]["levels"][level]["runtime"]["managed_files"] if level else list(MANAGED_FILES),
+            "message": ("当前工作区的模块配置与本关不匹配；本关使用单模块框架。请预览并切换本关运行配置，已有算法文件和历史版本会保留。"
+                        if manifest_mismatch else "当前项目的课程运行框架需要更新，算法尚未开始测试。预览后可保留算法文件，更新框架并继续测试。") if required else ""}

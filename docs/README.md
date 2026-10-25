@@ -2,7 +2,7 @@
 
 ## 阅读方式与规范状态
 
-文档基线：`m5-0.1`，更新日期：2026-10-25。已完成 M1/M1b、M2 本机浏览器/Transport、M3 编辑部署和 M4 C0–C2 教学闭环验收：实现与限制见 [运行入口](../README.md)、[M4 验证报告](reports/M4_VALIDATION.md)；模型由用户逐项确认，见 [13](13_PHYSICS_MODEL_DECISIONS.md)、[18](18_CAMPAIGN_DESIGN.md)。M5 已实现多模块图、C3/C4 Weapons、角加速度与装甲，当前边界及验收见 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)、[M5 报告](reports/M5_VALIDATION.md)。Locomotion、自身定位课程、建图、规划与 Arena 尚未实现。
+文档基线：`m5-level-plugins-1.0`，更新日期：2026-10-25。已完成 M1/M1b、M2 本机浏览器/Transport、M3 编辑部署和 M4 C0–C2 教学闭环验收：实现与限制见 [运行入口](../README.md)、[M4 验证报告](reports/M4_VALIDATION.md)；模型由用户逐项确认，见 [13](13_PHYSICS_MODEL_DECISIONS.md)、[18](18_CAMPAIGN_DESIGN.md)。M5 已实现多模块图、C3/C4 Weapons、角加速度与装甲，当前边界及验收见 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)、[M5 报告](reports/M5_VALIDATION.md)。现有五关已重构为独立 YAML 插件，见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)。Locomotion、自身定位课程、建图、规划与 Arena 尚未实现。
 
 “必须／不得”为设计约束；“建议／拟采用”为待验证方案。Accepted ADR 表示接受设计原则或接口方向，不表示实现或平台验证完成；Proposed 技术不得当作既成依赖。协议 `1.0` 是**未发布草案**，首次发布前由兼容性审查冻结；发布后执行版本规则。
 
@@ -13,6 +13,9 @@
 | 文档 | 负责的设计与接口 |
 | --- | --- |
 | [26 多模块与 Weapons](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md) | M5 图、调度、章节、C3/C4 控制与装甲边界 |
+| [27 YAML 关卡插件](27_LEVEL_PLUGIN_ARCHITECTURE.md) | 五关审计、Schema、自动发现/生命周期、组件、权限、规则与迁移 |
+| [关卡编写指南](../levels/README.md) | 配置来源、已有组件、校验、启动与扩展流程 |
+| [关卡插件验收](reports/LEVEL_PLUGINS_VALIDATION.md) | 冻结基线、旧源码/存档、临时插件和两种 Runtime 五关通关 |
 | [01 项目愿景](01_PROJECT_VISION.md) | 目标、范围、假设、模式与成功标准 |
 | [02 系统架构](02_SYSTEM_ARCHITECTURE.md) | 模块依赖、三种架构视角、技术选型、部署 |
 | [03 协议规范](03_PROTOCOL_SPECIFICATION.md) | Envelope、频道、版本、Transport、校验链 |
@@ -37,6 +40,7 @@
 | [22 设置与游戏模式](22_SETTINGS_MODES_AND_PROGRESS.md) | YAML 改键、开发者图层、玩家关卡解锁与存档 |
 | [23 玩家代码与依赖](23_PLAYER_CODE_AND_LIBRARIES.md) | 完整源码保留、课程库白名单与 NumPy 矩阵 |
 | [24 运行日志](24_RUNTIME_LOGS.md) | 程序输出、traceback、版本与源码定位 |
+| [Python 测试日志验收](reports/PYTHON_TEST_LOG_VALIDATION.md) | 原生测试输出、异常摘要、连续调用栈与两种 Runtime 实际调试 |
 | [25 计时、生命与参数](25_ATTEMPT_RULES_AND_CONFIGURATION.md) | 60/60/120 秒、主动结束、玩家死亡、YAML 参数源与生成夹具 |
 | [关卡规则验收](reports/ATTEMPT_RULES_VALIDATION.md) | 准备/部署计时、终局边界、反弹自伤和原生/WASM 界面 |
 | [M1–M4 核对](reports/M1_M4_STATUS_AUDIT.md) | 当前完成范围、平台/资源/教学开放项 |

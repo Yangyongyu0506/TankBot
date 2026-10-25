@@ -34,3 +34,16 @@ python3 docs/tools/check_design.py
 浏览器脚本要求先启动相应 `serve` / `browser` 服务及启用 Marionette 的 Firefox；服务使用 `--level c1 --workspace-store <新测试存储>`。本次复制配置后仅将 `host.port` / `browser.runtime_port` 改为 8775 / 8776，Marionette 使用 2829，避免占用玩家服务。每种模式使用独立的新存储；脚本拒绝覆盖已有 HEAD。截图路径与源码摘要见 JSON 记录，截图保存在本机缓存。
 
 已验证 Linux / Firefox 157.0.1 的两种 Runtime；未据此宣称其他浏览器、操作系统或远程 Arena 已验证。加载此次修复需重启服务并刷新页面；实际 Workspace 的升级仍由玩家预览确认。
+
+## 2026-10-25 返回早期关卡的配置兼容修复
+
+复现：工作区进入 C3 后，tankbot.json 已变为 coordinates/tracking/aiming 三模块声明；旧的 campaign_robot.py 仍保留正确版本标记。原检查仅凭包装文件认定兼容，返回 C1/C2 后 Test 才报 MODULE_GRAPH_NOT_UNLOCKED。此问题与玩家算法修改无关。
+
+检查现同时核对当前 YAML 要求的模块数量和模块标识。检测到不匹配时使用原有非覆盖预览，说明应切回本关配置；确认后新建 revision，只替换本关系统管理文件并继续测试，不放宽模块图/执行器权限。合法自定义单模块入口仍受支持。
+
+- 新增 3 项自动测试，覆盖 C3/C4 遗留当前版本包装、C3→C1→C2→C4→C2→C3→C1 往返、每次实际 Test/Deploy、算法/自定义文件/历史保留，以及自定义单模块入口。
+- 完整 Python 回归 **158项通过**。现有玩家项目的只读快照在独立临时副本适配后，C1/C2 均取得 Ready，实际 userdata 未改写。
+- [原生网页记录](framework-return-native.json)、[WASM/Pyodide 网页记录](framework-return-browser.json) 均以三模块遗留配置进入 C1，验证明确的不匹配提示、保存草稿、预览/取消、确认适配、Ready 按钮和实际部署；算法、自定义测试与历史内容保留。
+- 文档、Schema/生成夹具和 git diff --check 通过。浏览器资源包已重新生成；适用平台仍为本机 Linux/Firefox。
+
+已有项目无需删除存档或 userdata。重启服务并刷新页面后，在 C1/C2 点击测试快照，检查配置适配预览，再点击“保留算法，更新框架并继续测试”。配置文件中的玩家自定义修改会列在预览中，旧 revision 保留可恢复。

@@ -1,6 +1,7 @@
 // Workspace changes are explicit revisions; renderer and input controls do not own player code.
 import {mountLearning} from "/learning-ui.js";
 import {shortcut} from "/keyboard.js";
+import {sourceLocation} from "/runtime-logs.js";
 export function setupWorkspaceDialog(releaseControls){
   const dialog=document.getElementById("workspace-dialog"),toggle=document.getElementById("open-workspace");
   let previousFocus,editorFocus;
@@ -38,8 +39,9 @@ export function setupWorkspaceDialog(releaseControls){
 
 export async function mountWorkspace(browser){
   const $=id=>document.getElementById(id),root=$("workspace-panel");
-  let snapshot,files,selected,editor,plan,status,busy=false,token,level,learning,needsUpgrade=false;
+  let snapshot,files,selected,editor,plan,status,busy=false,token,level,learning,needsUpgrade=false,editorDefaultFile=null;
   const message=text=>{$("workspace-message").textContent=text;};
+  const showLogs=source=>window.dispatchEvent(new CustomEvent("tankbot-show-runtime-logs",{detail:{source}}));
   const dirty=()=>JSON.stringify(files)!==JSON.stringify(snapshot.files);
   async function http(operation,value){
     const r=await fetch("/api/workspace/"+operation,{method:"POST",headers:{"Content-Type":"application/json","X-TankBot-Control":token},body:JSON.stringify(value)});
@@ -76,7 +78,7 @@ export async function mountWorkspace(browser){
     $("rollback-workspace").disabled=ended||busy||Boolean(status?.job)||!$("deployment-history").value;
   }
   function open(path){selected=path;$("editor-path").textContent=path;editor.open(path,files[path]);learning?.file(path);refresh();}
-  function accept(value){snapshot=value;files={...value.files};const preferred=level==="c4"?"perception/pose_tracker.py":level==="c3"?"weapons/auto_aim.py":level==="c2"?"perception/tracker.py":level==="c1"?"perception/transforms.py":level==="c0"?"campaign_robot.py":null;open(files[selected]!==undefined?selected:(preferred&&preferred in files?preferred:Object.keys(files).find(p=>p.endsWith("odometry.py"))||Object.keys(files)[0]));}
+  function accept(value){snapshot=value;files={...value.files};const preferred=editorDefaultFile;open(files[selected]!==undefined?selected:(preferred&&preferred in files?preferred:Object.keys(files).find(p=>p.endsWith("odometry.py"))||Object.keys(files)[0]));}
   async function save(){
     const changes={};for(const p of new Set([...Object.keys(files),...Object.keys(snapshot.files)]))if(files[p]!==snapshot.files[p])changes[p]=files[p]??null;
     if(Object.keys(changes).length)accept(await http("save",{revision:snapshot.revision,changes}));
@@ -87,11 +89,11 @@ export async function mountWorkspace(browser){
       try{await previewUpgrade();}catch(next){message(next.message);}
     }else{message(error.message);locate(error.message);}
   }finally{busy=false;refresh();}}
-  function locate(text){const match=text.match(/([A-Za-z_][\w/]*\.py):(\d+):/);if(match&&files[match[1]]!==undefined){open(match[1]);editor.go(Number(match[2]));}}
+  function locate(text){const location=sourceLocation(text);if(location&&files[location.path]!==undefined){open(location.path);editor.go(location.line);}}
   function showPlan(value){
     plan=value;$("migration-panel").hidden=false;$("migration-list").replaceChildren();
     const guided=plan.purpose==="teaching-framework-upgrade";
-    $("migration-explanation").textContent=guided?"本次只替换下列课程运行文件，并补齐缺失文件。perception/ 等已有算法文件不参与替换；运行文件中自己的修改可从旧版本恢复。确认预览后，可更新框架并继续测试。":"已有文件默认保留；请逐项检查后应用。";
+    $("migration-explanation").textContent=guided?(plan.message?plan.message+" ":"")+"本次只替换下列课程运行文件，并补齐缺失文件。perception/ 等已有算法文件不参与替换；运行文件中自己的修改可从旧版本恢复。确认预览后，可更新框架并继续测试。":"已有文件默认保留；请逐项检查后应用。";
     $("upgrade-and-test").hidden=!guided;$("apply-migration").hidden=guided;$("select-framework-upgrade").hidden=guided;
     for(const entry of plan.entries){
       const detail=document.createElement("details"),summary=document.createElement("summary");summary.textContent=entry.path+" · "+(entry.action==="create"?"新增":guided?"运行文件：确认后更新":"已有文件：默认保留");detail.append(summary);
@@ -117,9 +119,10 @@ export async function mountWorkspace(browser){
   async function testSnapshot(){
     await save();
     if(await refreshUpgrade()){await previewUpgrade();return;}
+    showLogs("test");
     status=await runtime("test",{revision:snapshot.revision,snapshot});message("正在独立运行环境中测试此快照…");
   }
-  const initial=await (await fetch("/api/workspace")).json();token=initial.control_token;level=initial.level_id;snapshot=initial.snapshot;files={...snapshot.files};
+  const initial=await (await fetch("/api/workspace")).json();token=initial.control_token;level=initial.level_id;editorDefaultFile=initial.learning.lesson.ui?.default_file;snapshot=initial.snapshot;files={...snapshot.files};
   $("test-workspace").title=initial.learning.testing.checks.join("\n")+"\n"+initial.learning.testing.meaning;
   const {createEditor}=await import("/editor-bundle.js");
   editor=createEditor($("code-editor"),(path,text)=>{files[path]=text;refresh();},()=>action(save),initial.learning);
@@ -175,20 +178,25 @@ export async function mountWorkspace(browser){
   });
   $("restore-revision").onclick=()=>action(async()=>{await save();const value=await http("revision",{revision:$("revision-input").value.trim()});showPlan(await http("import",{revision:snapshot.revision,files:value.files}));});
   window.addEventListener("beforeunload",e=>{if(dirty()){e.preventDefault();e.returnValue="";}});
-  let previousLast="";
+  let previousLast="",previousFault="";
   async function poll(){
     try{
       status=await runtime("");root.dataset.deployment=JSON.stringify(status);root.dataset.revision=snapshot.revision;
       window.dispatchEvent(new CustomEvent("tankbot-deployment-status",{detail:status}));
       $("active-deployment").textContent=status.active?status.active.sha256.slice(0,12)+" · tick "+status.active.activated_tick:"启动示例（尚未部署工作区）";
-      $("deployment-state").textContent=status.attempt_status&&status.attempt_status!=="active"?"关卡已结束":status.job?(status.job.kind+" / "+status.job.phase):status.runtime_fault?"程序已停止 · "+status.runtime_fault:status.last?.status||"Editing";
+      $("deployment-state").textContent=status.attempt_status&&status.attempt_status!=="active"?"关卡已结束":status.job?(status.job.kind+" / "+status.job.phase):status.runtime_fault?"程序已停止 · "+(status.runtime_diagnostic?.summary??status.runtime_fault):status.last?.status||"Editing";
+      const faultKey=status.runtime_fault?JSON.stringify([status.active?.deployment_id,status.runtime_fault]):"";
+      if(faultKey&&faultKey!==previousFault)showLogs("runtime");
+      previousFault=faultKey;
       const history=$("deployment-history"),choice=history.value;
       history.replaceChildren(...[...new Map(status.history.map(d=>[d.sha256,d])).values()].map(d=>{const o=document.createElement("option");o.value=d.sha256;o.textContent=d.sha256.slice(0,12)+" · "+d.revision.slice(0,8);return o;}));
       if([...history.options].some(o=>o.value===choice))history.value=choice;
       if(status.last&&JSON.stringify(status.last)!==previousLast){previousLast=JSON.stringify(status.last);
         const last=status.last;
-        message(last.status==="Failed"?"失败："+last.error:last.status==="Ready"?`测试通过：${last.unit_tests} 个单元测试，${last.simulation_batches} 个传感器仿真批次；摘要 ${last.sha256.slice(0,12)}`:`已激活 ${last.sha256.slice(0,12)}；物理世界继续运行。`);
-        if(last.status==="Failed")locate(last.error);
+        const diagnostic=last.diagnostic,location=diagnostic?.path?`${diagnostic.path}:${diagnostic.line}: `:"";
+        message(last.status==="Failed"?`${last.kind==="test"?"测试":"启动"}失败：${location}${diagnostic?.summary??last.error}。完整输出见下方日志。`:last.status==="Ready"?`测试通过：${last.unit_tests} 个单元测试，${last.simulation_batches} 个传感器仿真批次；摘要 ${last.sha256.slice(0,12)}`:`已激活 ${last.sha256.slice(0,12)}；物理世界继续运行。`);
+        if(last.status==="Failed"){showLogs(last.kind);locate(location||last.error);}
+        else if(last.status==="Active")showLogs("all");
         if(last.revision)http("archive",{revision:last.revision,record:{run_id:status.run_id,...last}}).catch(error=>message("运行结果已生效，但记录归档失败："+error.message));
       }
       refresh();

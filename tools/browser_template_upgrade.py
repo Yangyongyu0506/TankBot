@@ -16,19 +16,26 @@ ROOT=Path(__file__).resolve().parents[1]
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--prepare-store',type=Path)
+    parser.add_argument('--graph-origin',choices=('c3','c4'),help='Prepare a later lesson graph with the old compatible single wrapper retained')
     parser.add_argument('--url',default='http://127.0.0.1:8775')
     parser.add_argument('--browser-port',type=int,default=2829)
     parser.add_argument('--output',type=Path,default=ROOT/'docs/reports/teaching-upgrade-native.json')
     args=parser.parse_args()
     if args.prepare_store:
         sys.path[:0]=[str(ROOT/name) for name in ('host','protocol','sdk/python','tests')]
+        from tankbot_host.authority import load_config
         from tankbot_host.campaign import configure
         from tankbot_host.workspace import WorkspaceStore
+        from tankbot_host.workspace import starter
         from campaign_support import solutions
-        config=configure(yaml.safe_load((ROOT/'config/game.yaml').read_text()),'c1')
+        config=configure(load_config(ROOT/'config/game.yaml'),'c1')
         if (args.prepare_store/'HEAD.json').exists():raise SystemExit('Use a new disposable store')
         files=solutions(config)
-        files['campaign_robot.py']='# old unversioned framework\n'
+        if args.graph_origin:
+            solved_transform=files['perception/transforms.py']
+            files.update(starter(configure(load_config(ROOT/'config/game.yaml'),args.graph_origin)))
+            files['perception/transforms.py']=solved_transform
+        else:files['campaign_robot.py']='# old unversioned framework\n'
         files['perception/coordinates.py']='# historical algorithm; preserve exactly\n'
         files['tests/test_player_custom.py']='import unittest\nclass PlayerTest(unittest.TestCase):\n    def test_example(self) -> None:\n        self.assertEqual(1 + 1, 2)\n'
         snapshot=WorkspaceStore(args.prepare_store,files,config['workspace']).read()
@@ -57,6 +64,8 @@ def main():
         source=original['snapshot']['files']['perception/transforms.py']+'\n# Keep this unsaved algorithm edit.\n'
         edit(source);b.until("return !document.getElementById('save-workspace').disabled;")
         click('test-workspace');b.until("return !document.getElementById('migration-panel').hidden;")
+        if args.graph_origin:
+            assert '模块配置与本关不匹配' in b.script("return document.getElementById('migration-explanation').textContent;")
         expected={'campaign_robot.py','tankbot.json','contracts/perception.json','tests/test_coordinates.py'}
         listed=b.script("return [...document.querySelectorAll('#migration-list summary')].map(n=>n.textContent.split(' · ')[0]);")
         assert set(listed)==expected,listed

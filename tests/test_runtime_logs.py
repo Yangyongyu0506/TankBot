@@ -13,10 +13,79 @@ from tankbot_host.authority import Authority,load_config
 from tankbot_host.deployment import DeploymentManager
 from tankbot_host.logs import RuntimeLogs
 from tankbot_host.workspace import starter,digest
+from tankbot_host.campaign import configure
+from campaign_support import TRANSFORMS
 from browser_authority import BrowserSupervisor,runtime_event
 
 
 class RuntimeLogTests(unittest.TestCase):
+    def snapshot(self,files):
+        value={"files":files,"ledger":{}}
+        value["revision"]=digest(value)
+        return value
+
+    def finish(self,a):
+        deadline=time.monotonic()+10
+        while a.deployment.job and time.monotonic()<deadline:
+            a.advance()
+            if a.deployment.job and not a.deployment.job["worker"].ready:time.sleep(.002)
+        self.assertIsNone(a.deployment.job)
+        return a.deployment.status()
+
+    def test_failed_c2_snapshot_exposes_actual_python_exception_and_location(self):
+        config=configure(load_config(ROOT/"config/game.yaml"),"c2")
+        a=Authority(config,controlled=True);self.addCleanup(a.close)
+        a.deployment=DeploymentManager(a)
+        files=starter(config);files["perception/transforms.py"]=TRANSFORMS
+        files["perception/tracker.py"]='''class Tracker:
+    def update(self, measurements, dt):
+        return H
+'''
+        a.deployment.start("test",self.snapshot(files))
+        state=self.finish(a)
+        self.assertEqual(state["last"]["error"],"MODULE_ERROR")
+        diagnostic=state["last"]["diagnostic"]
+        self.assertIn("NameError: name 'H' is not defined",diagnostic["summary"])
+        self.assertEqual((diagnostic["path"],diagnostic["line"]),("perception/tracker.py",3))
+        text="".join(row["text"] for row in state["logs"]["entries"] if row["source"]=="test")
+        for expected in ('Traceback (most recent call last):','return H','test_rotated_robot','Ran 2 tests','OK'):
+            self.assertIn(expected,text)
+        self.assertFalse(a._faulted)
+
+    def test_all_unittest_failures_and_stdout_are_preserved(self):
+        config=load_config(ROOT/"config/game.yaml")
+        a=Authority(config,controlled=True);self.addCleanup(a.close)
+        a.deployment=DeploymentManager(a)
+        files=starter(config)
+        files["tests/test_feedback.py"]='''import unittest
+class FeedbackTests(unittest.TestCase):
+    def test_first(self):
+        print("测试中间值", 42)
+        self.assertEqual(1, 2, "first failure")
+    def test_second(self):
+        raise ValueError("second failure")
+'''
+        a.deployment.start("test",self.snapshot(files))
+        state=self.finish(a)
+        self.assertEqual(state["last"]["status"],"Failed")
+        self.assertEqual(state["last"]["diagnostic"]["path"],"tests/test_feedback.py")
+        text="".join(row["text"] for row in state["logs"]["entries"] if row["source"]=="test")
+        for expected in ('test_first','test_second','测试中间值 42','first failure','second failure','Traceback (most recent call last):','FAILED (failures=1, errors=1)'):
+            self.assertIn(expected,text)
+        self.assertNotIn('/tmp/tankbot-deployment-',text)
+        self.assertNotIn('PlayerTestsFailed:',text)
+
+    def test_syntax_error_feedback_has_python_source_and_caret(self):
+        config=load_config(ROOT/"config/game.yaml")
+        a=Authority(config,controlled=True);self.addCleanup(a.close)
+        a.deployment=DeploymentManager(a)
+        files=starter(config);files['bad.py']='def broken(:\n'
+        with self.assertRaises(ValueError) as error:a.deployment.start('test',self.snapshot(files))
+        text=str(error.exception)
+        for expected in ('File "bad.py", line 1','def broken(:','^','SyntaxError'):
+            self.assertIn(expected,text)
+        self.assertIn(text,''.join(row['text'] for row in a.deployment.status()['logs']['entries']))
+
     def test_byte_bound_unicode_retention_drain_and_monotonic_sequence(self):
         logs=RuntimeLogs(2048)
         for _ in range(1000):logs.append("玩家输出 🙂\n"*10,source="runtime",tick=2)

@@ -12,8 +12,22 @@
 - 异常保留错误类型、消息与调用栈；点击项目文件行号定位到代码。
 - 当前源码已改变时提示行号可能来自旧快照；不会为定位错误覆盖草稿。
 - 「清空显示」清除两个面板的当前显示，后续新输出继续出现。
+- 「测试快照」自动展开测试日志；失败摘要显示实际 Python 异常与项目行号，完整调用栈连续显示，文件行可直接点击。
+- 「复制日志」复制当前筛选的原始文本，便于在游戏外检查；重复的模块/版本信息只在连续输出块顶部显示。
 
 正常 `print("value", x)` 即可使用，不要求额外日志库。语法/导入拒绝同时出现在编辑器下方与测试来源日志；超时/Worker 停止有 Runtime 失败反馈。失败部署继续保留旧程序；运行已停止时编辑器显示故障状态，可修复后重新 Test/Deploy。
+
+项目单元测试使用标准 `unittest.TextTestRunner` 的详细输出，包含测试名称、print、全部 FAIL/ERROR 调用栈、Ran/OK/FAILED 汇总；随后列出授权传感器仿真批次结果。语法错误按 Python 格式输出文件、源代码、`^` 和异常类型。示例：
+
+```text
+Traceback (most recent call last):
+  File "perception/tracker.py", line 50, in update
+    K = P_pred @ H.T @ np.linalg.inv(S)
+                 ^
+NameError: name 'H' is not defined
+```
+
+`MODULE_ERROR` 仍是调度/协议层错误码，不能代替面向玩家的 Python 异常。代码更改后须重新保存并测试；日志绑定快照 revision，修复后的源码不会改变旧日志。
 
 ## 数据流与接口
 
@@ -35,6 +49,8 @@ flowchart LR
 
 `runtime_fault` 说明当前程序停止的原因；它不等于测试是否 Ready。Traceback 的 SDK/Runtime 帧保留作上下文，只为项目内路径提供跳转。输出使用 textContent，不能作为 HTML 执行。
 
+失败任务的 `last` 可附加 `diagnostic: {summary, path?, line?}`，当前程序另有可空 `runtime_diagnostic`。摘要仅从相应候选/当前部署的有界 Python 输出提取；项目定位须匹配该快照中的文件，旧部署日志不能替换新任务的诊断。原 `error`/`runtime_fault` 错误码字段保持，机器人消息协议不变。
+
 ## 容量与生命周期
 
 复用 `config/game.yaml.runtime.max_log_bytes`，当前 32768 字节；每个 Supervisor 和 Authority 聚合缓冲均按序列化字节数及最多 512 条记录裁剪旧日志，单条长文本继续拆分。原生不完整行也有长度上限；浏览器每个初始化/step 阶段额外限制输出字节与 128 条消息，超出后提示省略。
@@ -48,3 +64,5 @@ flowchart LR
 采用现有管理状态和固定旁路，避免引入通用日志中间件。当前只提供输出、错误、文件定位与重新部署反馈；没有断点、单步、交互式 pdb、任意变量求值或完整 LSP。日志不修改控制权、View Policy 或算法输入；开发者 Inspector 与玩家日志为不同数据来源。
 
 验收：两种 Runtime 的 print/测试输出可见，运行异常含文件/行号且能定位；来源筛选、清空显示、修复后重新部署正常；UTF-8、大输出裁剪、失败候选保留日志，页面不滚动。报告见 [玩家 Runtime 验收](reports/PLAYER_RUNTIME_VALIDATION.md)。其他平台的路径清理、日志洪泛压力与持久日志导出仍待验证。
+
+原生 Python 风格的测试输出、具体异常摘要及连续调用栈的增量验收见 [Python 测试日志报告](reports/PYTHON_TEST_LOG_VALIDATION.md)。

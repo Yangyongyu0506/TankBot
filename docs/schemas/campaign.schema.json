@@ -1,17 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://tankbot.example/schemas/v1/campaign.schema.json",
-  "title": "TankBot M4 Campaign profile",
+  "title": "TankBot compiled level catalogue (generated from YAML plugins)",
   "type": "object",
   "properties": {
     "active_level": {
-      "enum": [
-        null,
-        "c0",
-        "c1",
-        "c2",
-        "c3",
-        "c4"
+      "type": [
+        "string",
+        "null"
       ]
     },
     "module_id": {
@@ -38,78 +34,107 @@
       "maxItems": 3
     },
     "radar": {
-      "type": "object",
-      "properties": {
-        "mount_m": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "minItems": 2,
-          "maxItems": 2
-        },
-        "yaw_rad": {
-          "type": "number"
-        },
-        "frame_id": {
-          "const": "radar_link"
-        },
-        "range_m": {
-          "type": "number",
-          "exclusiveMinimum": 0
-        },
-        "field_of_view_rad": {
-          "type": "number",
-          "exclusiveMinimum": 0,
-          "maximum": 6.283185307179586
-        },
-        "update_hz": {
-          "type": "integer",
-          "minimum": 1
-        },
-        "occlusion": {
-          "const": "walls"
-        },
-        "measurement": {
-          "const": "target_center"
-        },
-        "latency_ticks": {
-          "const": 0
-        },
-        "range_bias_m": {
-          "const": 0
-        },
-        "bearing_bias_rad": {
-          "const": 0
-        },
-        "profiles": {
+      "anyOf": [
+        {
           "type": "object",
           "properties": {
-            "ideal": {
+            "mount_m": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "yaw_rad": {
+              "type": "number"
+            },
+            "frame_id": {
+              "const": "radar_link"
+            },
+            "range_m": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "field_of_view_rad": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 6.283185307179586
+            },
+            "update_hz": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "occlusion": {
+              "const": "walls"
+            },
+            "measurement": {
+              "const": "target_center"
+            },
+            "latency_ticks": {
+              "const": 0
+            },
+            "range_bias_m": {
+              "const": 0
+            },
+            "bearing_bias_rad": {
+              "const": 0
+            },
+            "profiles": {
               "type": "object",
               "properties": {
-                "range_stddev_m": {
-                  "type": "number",
-                  "minimum": 0
+                "ideal": {
+                  "type": "object",
+                  "properties": {
+                    "range_stddev_m": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "bearing_stddev_rad": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "drop_probability": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    }
+                  },
+                  "required": [
+                    "range_stddev_m",
+                    "bearing_stddev_rad",
+                    "drop_probability"
+                  ],
+                  "additionalProperties": false
                 },
-                "bearing_stddev_rad": {
-                  "type": "number",
-                  "minimum": 0
-                },
-                "drop_probability": {
-                  "type": "number",
-                  "minimum": 0,
-                  "maximum": 1
+                "noisy": {
+                  "type": "object",
+                  "properties": {
+                    "range_stddev_m": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "bearing_stddev_rad": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "drop_probability": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    }
+                  },
+                  "required": [
+                    "range_stddev_m",
+                    "bearing_stddev_rad",
+                    "drop_probability"
+                  ],
+                  "additionalProperties": false
                 }
               },
-              "required": [
-                "range_stddev_m",
-                "bearing_stddev_rad",
-                "drop_probability"
-              ],
               "additionalProperties": false
             },
-            "noisy": {
+            "noise": {
               "type": "object",
               "properties": {
                 "range_stddev_m": {
@@ -135,64 +160,39 @@
             }
           },
           "required": [
-            "ideal",
-            "noisy"
+            "mount_m",
+            "yaw_rad",
+            "frame_id",
+            "range_m",
+            "field_of_view_rad",
+            "update_hz",
+            "occlusion",
+            "measurement",
+            "latency_ticks",
+            "range_bias_m",
+            "bearing_bias_rad",
+            "profiles",
+            "noise"
           ],
           "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "maxProperties": 0
         }
-      },
-      "required": [
-        "mount_m",
-        "yaw_rad",
-        "frame_id",
-        "range_m",
-        "field_of_view_rad",
-        "update_hz",
-        "occlusion",
-        "measurement",
-        "latency_ticks",
-        "range_bias_m",
-        "bearing_bias_rad",
-        "profiles"
-      ],
-      "additionalProperties": false
+      ]
     },
     "levels": {
       "type": "object",
-      "properties": {
-        "c0": {
-          "$ref": "#/$defs/level"
-        },
-        "c1": {
-          "$ref": "#/$defs/level"
-        },
-        "c2": {
-          "$ref": "#/$defs/level"
-        },
-        "c3": {
-          "$ref": "#/$defs/level"
-        },
-        "c4": {
-          "$ref": "#/$defs/level"
-        }
-      },
-      "required": [
-        "c0",
-        "c1",
-        "c2"
-      ],
-      "additionalProperties": false
+      "additionalProperties": {
+        "$ref": "#/$defs/level"
+      }
     },
     "lessons": {
       "type": "object",
       "additionalProperties": {
         "type": "object"
-      },
-      "required": [
-        "c0",
-        "c1",
-        "c2"
-      ]
+      }
     },
     "outcome_priority": {
       "type": "array",
@@ -485,6 +485,48 @@
         },
         "armor_mode": {
           "type": "boolean"
+        },
+        "scene": {
+          "type": "object"
+        },
+        "runtime": {
+          "type": "object"
+        },
+        "world_simulation": {
+          "type": "object"
+        },
+        "evaluation": {
+          "type": "object"
+        },
+        "randomization": {
+          "type": "object"
+        },
+        "permissions": {
+          "type": "object"
+        },
+        "visualization": {
+          "type": "object"
+        },
+        "rules": {
+          "type": "object"
+        },
+        "tutorial": {
+          "type": "object"
+        },
+        "scaffolding": {
+          "type": "object"
+        },
+        "metadata": {
+          "type": "object"
+        },
+        "sensors": {
+          "type": "array"
+        },
+        "radar": {
+          "type": [
+            "object",
+            "null"
+          ]
         }
       },
       "required": [

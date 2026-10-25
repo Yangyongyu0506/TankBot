@@ -86,9 +86,9 @@ def main():
     for filename, schema in schemas.items():
         Draft202012Validator.check_schema(schema)
         validators[(filename, None)] = Draft202012Validator(schema, registry=registry)
-    sys.path.insert(0, str(ROOT / "host"))
-    from tankbot_host.configuration import load_yaml
-    profile = load_yaml(ROOT / "config/game.yaml")
+    sys.path[:0]=[str(ROOT/p) for p in ("host","protocol","sdk/python")]
+    from tankbot_host.authority import load_config
+    profile = load_config(ROOT / "config/game.yaml")
     validators[("simulation-profile.schema.json", None)].validate(profile)
     if strict_json((ROOT/"core/tests/fixtures/default-profile.json").read_text()) != profile:
         raise ValueError("Generated profile is stale; run tools/export_profile.py")
@@ -128,7 +128,7 @@ def main():
             assert not errors, f"领域负例被结构层提前拒绝: {case['case_id']}"
             domain_cases += 1
 
-    markdown = sorted(DOCS.rglob("*.md")) + [ROOT / "README.md", ROOT / "AGENTS.md"]
+    markdown = sorted(DOCS.rglob("*.md")) + [ROOT / "README.md", ROOT / "AGENTS.md", ROOT / "levels/README.md"]
     json_blocks = python_blocks = local_links = 0
     canonical = {
         "03_PROTOCOL_SPECIFICATION.md": [("pose-message.json", None), ("cmd-vel-message.json", "payload"), ("chassis-controller.json", None)],

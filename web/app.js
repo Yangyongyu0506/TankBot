@@ -173,7 +173,7 @@ async function poll() {
         for (const [id, value] of [["x", selected.pose.x_m], ["y", selected.pose.y_m], ["yaw", selected.pose.yaw_rad]]) $(id).textContent = value.toFixed(3);
         $("tick").textContent = selected.simulation_tick;
         $("pose-label").textContent = `${selected.source_id} / ${selected.frame_id} · ${selected.freshness}`;
-        $("freshness").textContent = profile.view_mode === "campaign" ? "系统提供自身位姿；敌车只有玩家目标估计" : profile.view_mode === "weapons-practice" ? "显式真值练习视图 · Python 仍只接收传感器" : selected.freshness === "fresh" ? "相机跟随估计 x/y · 世界坐标方向固定" : "估计过期，暂留位置；超龄后隐藏";
+        $("freshness").textContent = profile.view_mode === "campaign" ? profile.campaign.levels.find(level=>level.level_id===profile.campaign.active_level).ui.freshness_message : profile.view_mode === "weapons-practice" ? "显式真值练习视图 · Python 仍只接收传感器" : selected.freshness === "fresh" ? "相机跟随估计 x/y · 世界坐标方向固定" : "估计过期，暂留位置；超龄后隐藏";
       } else {
         trail = [];
         for (const id of ["x", "y", "yaw", "tick"]) $(id).textContent = "—";

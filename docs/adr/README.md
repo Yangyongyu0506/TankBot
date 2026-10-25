@@ -38,6 +38,7 @@ ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评
 | [0030](0030-yaml-parameter-source.md) | YAML 参数源、教学数据与生成测试夹具 | Accepted |
 | [0031](0031-multi-module-graph-execution.md) | 多模块图、冻结输入与整图部署 | Accepted |
 | [0032](0032-weapons-curriculum-and-armor.md) | Weapons 章节、角加速度、装甲与噪声 | Accepted |
+| [0033](0033-declarative-level-plugins.md) | 独立 YAML 关卡、自动发现、声明式规则与独立权限 | Accepted |
 
 ## 变更流程与完成条件
 

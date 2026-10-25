@@ -12,6 +12,8 @@
 
 采用 `config/game.yaml` 集中保存已有参数及关卡教学数据，`config/player-dependencies.yaml` 保存课程库规则。宿主安全解析并校验后，向 Rust/WASM 传递已有 JSON 私有 DTO。Rust/Node 测试夹具由 YAML 生成，build 自动刷新，检查工具拒绝过期副本。
 
+关卡存储位置现由 [ADR-0033](0033-declarative-level-plugins.md) 局部修订：关卡专属数据与教材在 `levels/*.yaml`，通用模型、平台与预算仍在 `config/game.yaml`；内部 Campaign DTO 自动生成，不再手工维护。其余参数源和无隐藏默认值约束不变。
+
 JSON Schema、协议、存档和上游锁文件是接口/产物格式；不为 YAML 迁移改变其语义。代码保留数学定义和类型标识符；所有可调整数值、模型/控制系数、频率、预算及关卡阈值必须有明确 YAML 配置字段，禁止静默数值 fallback。
 
 ## Alternatives

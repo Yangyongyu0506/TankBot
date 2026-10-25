@@ -2,7 +2,25 @@
 from collections import deque
 import copy
 import json
+import re
 import threading
+
+
+def python_diagnostic(entries, files):
+    """Extract a human summary and a project location; full output stays in bounded logs."""
+    text = "".join(entry["text"] for entry in entries if entry.get("stream","output")=="output")
+    if "Traceback (most recent call last):" not in text:
+        return None
+    summaries = [line for line in text.splitlines()
+                 if re.match(r"^[A-Za-z_][\w.]*: .", line) and "PLAYER_TEST_FAILED" not in line]
+    if not summaries:
+        return None
+    locations = [(path, int(line)) for path, line in re.findall(r'File "([^"]+\.py)", line ([0-9]+)', text)
+                 if path in files]
+    result = {"summary": summaries[-1]}
+    if locations:
+        result.update(path=locations[-1][0], line=locations[-1][1])
+    return result
 
 
 class RuntimeLogs:

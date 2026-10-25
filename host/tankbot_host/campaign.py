@@ -17,87 +17,57 @@ def ensure_native_numpy() -> None:
 def validate_profile(config):
     if "campaign" not in config:
         return
-    c = config["campaign"]
-    if set(c["levels"]) - c["lessons"].keys():
-        raise ValueError("Every level requires a complete learning guide")
-    r = c["radar"]
-    if config["clock"]["physics_hz"] % r["update_hz"] or config["clock"]["sensor_hz"] % r["update_hz"]:
-        raise ValueError("Radar rate must divide physics and sensor rates")
-    if r["mount_m"] != [0, 0] or r["yaw_rad"] != 0:
-        raise ValueError("M4 supports only the confirmed center-aligned Radar")
-    if any(r["profiles"]["ideal"].values()):
-        raise ValueError("C1 requires an ideal Radar")
-    if config["view_mode"] == "campaign" and not active(config):
+    c=config["campaign"]
+    if config["view_mode"]=="campaign" and not active(config):
         raise ValueError("Campaign mode requires an active level")
-    required = {"system.pose.read", "estimate.target.publish"}
-    if config["config_version"] == "1.8":
-        chapters = c["chapters"]
-        ids = [chapter["chapter_id"] for chapter in chapters]
-        if len(ids) != len(set(ids)) or [level for chapter in chapters for level in chapter["levels"]] != list(c["levels"]):
-            raise ValueError("Chapters must contain every level once in progression order")
-        for chapter in chapters:
-            if any(c["levels"][level]["chapter_id"] != chapter["chapter_id"] for level in chapter["levels"]):
-                raise ValueError("Level chapter disagrees with chapter catalog")
-    for level_id, level in c["levels"].items():
-        if type(level.get("time_limit_s")) is not int or level["time_limit_s"] <= 0:
-            raise ValueError("Each level requires a positive time_limit_s in the scenario configuration")
-        if level.get("timer_start") not in ("first_control", "first_deployment"):
-            raise ValueError("Each level requires an explicit timer_start")
-        if level.get("player_health") == "same_as_target" and not level["target"].get("health"):
-            raise ValueError("Player health requires the target health profile")
-        caps = set(level["capabilities"])
-        if config["config_version"] == "1.8":
-            if level["armor_mode"] != bool(level["target"].get("armor")):
-                raise ValueError("Armor lesson and physical target disagree")
-            profile_name = level.get("robot_profile")
-            if profile_name:
-                profile = config["robot_graph"]["profiles"].get(profile_name)
-                if profile is None or profile["target_source"] not in profile["contracts"]:
-                    raise ValueError("Unknown robot graph profile or target source")
-                for channel in profile["grants"]["actuators"]:
-                    capability, actuator = {
-                        "/robot/turret/cmd_accel":("control.robot.turret_acceleration","turret"),
-                        "/robot/weapons/cannon/fire":("control.robot.fire","weapon")}.get(channel,(None,None))
-                    if capability not in caps or level["control_sources"].get(actuator) != "robot":
-                        raise ValueError("Actuator graph grant and lesson capability disagree")
-        if not required <= caps:
-            raise ValueError("Weapons requires system self-pose and target publication")
-        sources = level.get("control_sources",{"chassis":"keyboard","turret":"keyboard","weapon":"keyboard"})
-        for actuator,capability in (("chassis","control.manual.drive"),("turret","control.manual.turret"),("weapon","control.manual.fire")):
-            if (sources[actuator] == "keyboard") != (capability in caps):
-                raise ValueError("Control source and capability disagree")
-        if (level["radar_profile"] is not None) != ("sensor.radar.read" in caps):
-            raise ValueError("Radar profile and capability disagree")
-        if level_id != "c0" and caps & {"view.enemy.truth", "view.projectiles.truth"}:
-            raise ValueError("C1/C2 cannot grant enemy or projectile truth")
+    if set(c["levels"])-c["lessons"].keys():
+        raise ValueError("Every level requires a learning guide")
+    chapters=c["chapters"]
+    if [lid for chapter in chapters for lid in chapter["levels"]]!=list(c["levels"]):
+        raise ValueError("Chapters must contain every level once in progression order")
+    for lid,level in c["levels"].items():
+        if type(level["time_limit_s"]) is not int or level["time_limit_s"]<=0:
+            raise ValueError("Each level requires a positive time_limit_s")
+        if level["armor_mode"]!=bool(level["target"].get("armor")):
+            raise ValueError("Armor lesson and physical target disagree")
+        name=level.get("robot_profile")
+        if name and name not in config["robot_graph"]["profiles"]:
+            raise ValueError("Unknown robot graph profile")
+        if name:
+            from .level_plugins import ACTUATORS
+            for channel in config["robot_graph"]["profiles"][name]["grants"]["actuators"]:
+                if channel not in ACTUATORS or level["control_sources"][ACTUATORS[channel][1]]!="robot":
+                    raise ValueError("Actuator graph grant and lesson control disagree")
 
 
 def configure(config, level_id):
-    """Resolve trusted lesson data. Never accept a player-supplied policy or model."""
-    if level_id not in config.get("campaign", {}).get("levels", {}):
+    """Compile one already validated plugin into the existing simulation/runtime adapters."""
+    if level_id not in config.get("campaign",{}).get("levels",{}):
         raise ValueError("UNKNOWN_LEVEL")
-    c = copy.deepcopy(config)
-    campaign = c["campaign"]
-    campaign["active_level"] = level_id
-    level = campaign["levels"][level_id]
-    c["view_mode"] = "campaign"
-    c["module"].update(module_id=campaign["module_id"], entry_point=campaign["entry_point"], fault="none")
-    c["module"]["weapon_demo"]["enabled"] = False
-    c["control_sources"] = copy.deepcopy(level.get("control_sources",{"chassis":"keyboard","turret":"keyboard","weapon":"keyboard"}))
-    c["scene"].update(initial_pose=campaign["initial_pose"], initial_velocity=campaign["initial_velocity"],
-                       public_initial_pose=True, public_map=True)
-    c["weapons"]["enabled"] = True
-    c["weapons"]["targets"] = [copy.deepcopy(level["target"])]
-    c["scene"]["player_health"] = copy.deepcopy(level["target"]["health"]) if level["player_health"] == "same_as_target" else None
-    c["view"]["pose_source_id"] = "system"
-    caps = set(level["capabilities"])
-    c["view_policy"].update(policy_id="campaign-" + level_id, system_pose_allowed=True, player_pose_allowed=False,
-        robot_topics_allowed="view.robot_topics" in caps,
-        target_estimates_allowed=True, true_enemy_objects="view.enemy.truth" in caps,
-        world_effects="view.projectiles.truth" in caps,
-        local_observation_channels=["/robot/sensors/joint_states", "/robot/sensors/imu",
-                                    "/robot/turret/joint_states", "/robot/weapons/cannon/state"] +
-                                   (["/robot/sensors/radar"] if "sensor.radar.read" in caps else []))
+    c=copy.deepcopy(config)
+    campaign=c["campaign"];campaign["active_level"]=level_id
+    level=campaign["levels"][level_id]
+    c["view_mode"]="campaign"
+    c["module"].update(**level["runtime"]["logical_module"],fault="none")
+    c["module"]["weapon_demo"]["enabled"]=False
+    c["control_sources"]=copy.deepcopy(level["control_sources"])
+    c["clock"]=copy.deepcopy(level["world_simulation"])
+    c["solver"]["dt"]=1/(c["clock"]["physics_hz"]*c["clock"]["substeps"])
+    c["scene"].update(copy.deepcopy(level["scene"]))
+    c["weapons"]["enabled"]=True
+    c["weapons"]["targets"]=[copy.deepcopy(level["target"])]
+    c["view_policy"]=copy.deepcopy(level["permissions"]["visualization"]["view_policy"])
+    c["view"]["pose_source_id"]="system" if level["runtime"]["manifest"]["pose_source"]["mode"]=="system" else level["runtime"]["manifest"]["pose_source"]["module_id"]
+    c["runtime"]["seed"]=level["randomization"]["seed"]
+    campaign["outcome_priority"]=[o["reason"] for o in level["rules"]["outcomes"]]
+    # Compatibility DTO for existing diagnostics/tools; the active noise is a direct component parameter.
+    radar=copy.deepcopy(level["radar"])
+    if radar:
+        profiles=copy.deepcopy(campaign.get("radar",{}).get("profiles",{}))
+        profiles[level["radar_profile"]]=radar["noise"]
+        campaign["radar"]={**radar,"profiles":profiles}
+    else:
+        campaign["radar"]={}
     validate_profile(c)
     return c
 
@@ -106,7 +76,7 @@ def catalog(config):
     result = []
     for key, value in config.get("campaign", {}).get("levels", {}).items():
         item = {"level_id": key, **{name: copy.deepcopy(value[name]) for name in ("title", "problem", "hints", "capabilities", "objective", "time_limit_s", "timer_start")},
-                "chapter_id":value.get("chapter_id"),"control_sources":copy.deepcopy(value.get("control_sources")),"armor_mode":value.get("armor_mode",False)}
+                "chapter_id":value.get("chapter_id"),"control_sources":copy.deepcopy(value.get("control_sources")),"armor_mode":value.get("armor_mode",False),"ui":copy.deepcopy(value["tutorial"]["lesson"]["ui"]),"visualization":copy.deepcopy(value["visualization"]),"allowed_layers":copy.deepcopy(value["permissions"]["visualization"]["allowed_layers"])}
         item["problem"] = item["problem"].format(time_limit_s=value["time_limit_s"], max_hp=value["target"].get("health", {}).get("max_hp"))
         result.append(item)
     return result
@@ -137,7 +107,7 @@ class RadarSimulator:
         self.config = config
         self.settings = config["campaign"]["radar"]
         profile = config["campaign"]["levels"][active(config)]["radar_profile"]
-        self.noise = self.settings["profiles"][profile] if profile else None
+        self.noise = self.settings["noise"] if profile else None
         self.random = random.Random(config["runtime"]["seed"])
         self.last_tick = None
 
@@ -179,6 +149,8 @@ class CampaignSession:
         self.error_count = 0
         self.yaw_squared_error = 0.0
         self.yaw_error_count = 0
+        from .level_rules import Diagnostics
+        self.diagnostics = Diagnostics(self.definition["evaluation"])
         self.started_tick = None
         self.elapsed_ticks = 0
         self.limit_ticks = self.definition["time_limit_s"] * config["clock"]["physics_hz"]
@@ -195,12 +167,12 @@ class CampaignSession:
         self.elapsed_ticks = tick-self.started_tick
         completed = self.observe(private)
         self.player_hp = private.get("player_hp")
-        outcomes = {"player_dead": not private.get("player_alive", True),
-                    "objective_completed": completed and self.elapsed_ticks <= self.limit_ticks,
-                    "timeout": self.elapsed_ticks >= self.limit_ticks}
-        for reason in self.config["campaign"]["outcome_priority"]:
-            if outcomes[reason]:
-                return reason
+        from .level_rules import evaluate
+        facts={"player_alive":private.get("player_alive",True),"objective_complete":completed,"elapsed_ticks":self.elapsed_ticks,
+               "moved":self.moved,"turned":self.turned,"hits":self.hits,"estimates":self.estimates,"target_alive":self.hp is None or self.hp>0}
+        parameters={**self.definition["rules"]["parameters"],"limit_ticks":self.limit_ticks}
+        for outcome in self.definition["rules"]["outcomes"]:
+            if evaluate(outcome["when"],facts,parameters):return outcome["reason"]
         return None
 
     def estimate(self, message, truth):
@@ -208,29 +180,30 @@ class CampaignSession:
             return
         self.last_estimate_tick = message["simulation_tick"]
         self.estimates += 1
-        if truth is not None:
-            point = message["payload"]
-            error = math.hypot(point["x_m"]-truth[0], point["y_m"]-truth[1])
-            self.squared_error += error*error
-            self.error_count += 1
-            if "yaw_rad" in point:
-                error_yaw = (point["yaw_rad"]-truth[2]+math.pi)%math.tau-math.pi
-                self.yaw_squared_error += error_yaw*error_yaw
-                self.yaw_error_count += 1
+        self.diagnostics.observe(message["payload"],truth)
+        self.error_count=self.diagnostics.counts.get("rmse_m",0)
+        self.squared_error=self.diagnostics.squared.get("rmse_m",0.0)
+        self.yaw_error_count=self.diagnostics.counts.get("yaw_rmse_rad",0)
+        self.yaw_squared_error=self.diagnostics.squared.get("yaw_rmse_rad",0.0)
 
     def observe(self, private):
         if self.status != "active":
             return False
         p, origin = private["truth_pose"], self.config["scene"]["initial_pose"]
-        objective = self.definition["objective"]
-        self.moved |= math.hypot(p[0]-origin[0], p[1]-origin[1]) >= objective["movement_m"]
-        self.turned |= abs((p[2]-origin[2]+math.pi) % math.tau-math.pi) >= objective["turn_rad"]
+        from .level_rules import PROGRESS, evaluate
+        parameters=self.definition["rules"]["parameters"]
+        for key,spec in self.definition["rules"]["progress"].items():
+            reached=PROGRESS[spec["type"]](p,origin)>=parameters[spec["parameter"]]
+            setattr(self,key,(getattr(self,key) or reached) if spec["sticky"] else reached)
         target = next(item for item in private["targets"] if item["target_id"] == self.definition["target"]["target_id"])
         self.hits = private["target_hits"].get(target["target_id"], 0)
         self.hp = target["hp"]
-        if objective["kind"] == "destroy_target":
-            return not target["alive"]
-        return self.moved and self.turned and self.hits >= objective["required_hits"] and self.estimates >= objective["required_estimates"]
+        facts={"moved":self.moved,"turned":self.turned,"hits":self.hits,"estimates":self.estimates,
+               "target_alive":target["alive"],"player_alive":private.get("player_alive",True),"objective_complete":False,"elapsed_ticks":self.elapsed_ticks}
+        return evaluate(self.definition["rules"]["success"],facts,{**parameters,"limit_ticks":self.limit_ticks})
+
+    def outcome_passed(self, reason):
+        return next(o["result"]=="success" for o in self.definition["rules"]["outcomes"] if o["reason"]==reason)
 
     def finish(self, tick, *, passed=False, reason="aborted"):
         if self.status != "active":
@@ -238,11 +211,8 @@ class CampaignSession:
         self.status = "passed" if passed else "ended"
         if self.started_tick is not None:
             self.elapsed_ticks = tick-self.started_tick
-        rmse = math.sqrt(self.squared_error/self.error_count) if self.error_count else None
-        self.result = {"passed": passed, "reason": reason, "finished_tick": tick, "estimate_samples": self.estimates,
-                       "yaw_rmse_rad":math.sqrt(self.yaw_squared_error/self.yaw_error_count) if self.yaw_error_count else None,
-                       "rmse_m": rmse if rmse is None or math.isfinite(rmse) else None,
-                       "scored_samples": self.error_count, "hits": self.hits}
+        self.result = {"passed":passed,"reason":reason,"finished_tick":tick,"estimate_samples":self.estimates,
+                       **self.diagnostics.report(),"scored_samples":self.error_count,"hits":self.hits}
         return self.public()
 
     def public(self):

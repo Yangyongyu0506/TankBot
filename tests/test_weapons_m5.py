@@ -32,8 +32,12 @@ class WeaponsM5Tests(unittest.TestCase):
                     config = self.config(level)
                     a = Authority(config, controlled=True, startup_sources=solutions(config, kind))
                     try:
+                        saw_projectile = False
                         for _ in range(round(config["campaign"]["levels"][level]["time_limit_s"] * a.hz)):
                             a.advance()
+                            objects = a.view["payload"]["objects"]
+                            self.assertTrue(all(obj["kind"] == "projectile" for obj in objects))
+                            saw_projectile |= bool(objects)
                             if a.campaign.status in ("passed", "ended"):
                                 break
                         status = a.campaign_status()
@@ -42,7 +46,7 @@ class WeaponsM5Tests(unittest.TestCase):
                         print(json.dumps(evidence[-1], ensure_ascii=False), flush=True)
                         self.assertEqual(a.campaign.status, "passed", evidence[-1])
                         self.assertEqual(a.graph.faults, {})
-                        self.assertEqual(a.view["payload"]["objects"], [])
+                        self.assertTrue(saw_projectile)
                         self.assertEqual(a.view["payload"]["effects"], [])
                     finally:
                         a.close()

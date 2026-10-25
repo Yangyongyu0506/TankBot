@@ -40,13 +40,15 @@ class WorkspaceAPI:
                 raise ValueError("NO_TEACHING_UPGRADE")
             snapshot = self.store.read()
             sources = starter(self.config)
-            managed = framework_upgrade(self.config,snapshot["files"])["managed_files"]
+            upgrade = framework_upgrade(self.config,snapshot["files"])
+            managed = upgrade["managed_files"]
             # Existing algorithms never enter the replacement plan, including user tests outside managed paths.
             sources = {path: source for path, source in sources.items()
                        if path in managed or path not in snapshot["files"]}
             plan = self.store.plan("campaign-starter", template_version(self.config), sources, value["revision"],
                                    {"purpose": "teaching-framework-upgrade", "preserve_existing_algorithms": True})
             plan["purpose"] = "teaching-framework-upgrade"
+            plan["message"] = upgrade["message"]
             return plan
         if operation == "template":
             template_id = "campaign-starter" if self.config.get("campaign", {}).get("active_level") else "odometry-starter"
