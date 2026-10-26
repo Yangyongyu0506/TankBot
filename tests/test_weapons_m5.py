@@ -17,23 +17,26 @@ from tankbot_host.workspace_api import WorkspaceAPI
 from tankbot_host.deployment import DeploymentManager
 from tankbot_protocol.message import envelope
 from tankbot_protocol.validation import Validator, Rejected
-from weapons_support import solutions
+from weapons_curriculum_support import solutions, ManualAimHarness
 
 
 class WeaponsM5Tests(unittest.TestCase):
     def config(self, level):
         return configure(load_config(ROOT / "config/game.yaml"), level)
 
-    def test_two_numerical_methods_complete_c3_and_c4_from_authorized_inputs(self):
+    def test_revised_curriculum_completes_c3_c4_c5_from_authorized_inputs(self):
         evidence = []
-        for level in ("c3", "c4"):
-            for kind in ("kalman", "window"):
+        for level in ("c3", "c4", "c5"):
+            for kind in ("ekf",):
                 with self.subTest(level=level, method=kind):
                     config = self.config(level)
                     a = Authority(config, controlled=True, startup_sources=solutions(config, kind))
+                    manual = ManualAimHarness(config)
                     try:
                         saw_projectile = False
                         for _ in range(round(config["campaign"]["levels"][level]["time_limit_s"] * a.hz)):
+                            if level!="c5" and a.tick%(a.hz//config["clock"]["algorithm_hz"])==0:
+                                manual.step(a)
                             a.advance()
                             objects = a.view["payload"]["objects"]
                             self.assertTrue(all(obj["kind"] == "projectile" for obj in objects))
@@ -56,13 +59,16 @@ class WeaponsM5Tests(unittest.TestCase):
 
     def test_stage_permissions_and_center_only_information(self):
         zero = {"linear":{"x":1.,"y":0.,"z":0.},"angular":{"x":0.,"y":0.,"z":0.}}
-        for level in ("c1", "c2", "c3", "c4"):
+        for level in ("c1", "c2", "c3", "c4", "c5"):
             a = Authority(self.config(level), controlled=True)
             try:
                 with self.assertRaises(ValueError): a.keyboard(zero)
-                if level in ("c3", "c4"):
+                if level == "c5":
                     with self.assertRaises(ValueError): a.turret_keyboard({"velocity_radps":1.})
                     with self.assertRaises(ValueError): a.fire_keyboard({"request_id":"manual"})
+                else:
+                    self.assertEqual(a.config["control_sources"]["turret"],"keyboard")
+                    self.assertEqual(a.config["control_sources"]["weapon"],"keyboard")
                 profile = a.public_profile()
                 encoded = json.dumps(profile)
                 self.assertNotIn("waypoints_m", encoded)
@@ -83,13 +89,13 @@ class WeaponsM5Tests(unittest.TestCase):
             current = api.get()["snapshot"]
             changes = {"perception/transforms.py":"# preserved SE3\n", "perception/tracker.py":"# preserved tracker\n"}
             api.post("save", {"revision":current["revision"],"changes":changes})
-            for level in ("c3", "c4"):
+            for level in ("c3", "c4", "c5"):
                 view = api.unlock(self.config(level));snapshot = view["snapshot"]
                 self.assertTrue(view["learning"]["upgrade_required"],level)
                 for path, source in changes.items():self.assertEqual(snapshot["files"][path], source)
                 plan = api.post("upgrade", {"revision":snapshot["revision"]})
                 self.assertFalse(any(entry["path"] in changes for entry in plan["entries"]))
-                self.assertEqual(plan["template_version"], "2.0.0")
+                self.assertEqual(plan["template_version"], "3.0.0")
                 managed = set(view["learning"]["managed_files"])
                 current = api.post("apply", {"revision":plan["base_revision"],"plan_id":plan["plan_id"],
                     "resolutions":{e["path"]:"incoming" if e["path"] in managed else "keep" for e in plan["entries"]}})
@@ -122,6 +128,6 @@ class WeaponsM5Tests(unittest.TestCase):
             c = copy.deepcopy(config)
             if case == "order":c["campaign"]["chapters"][1]["levels"].reverse()
             if case == "armor":c["campaign"]["levels"]["c4"]["target"].pop("armor")
-            if case == "grant":c["robot_graph"]["profiles"]["weapons_auto"]["grants"]["actuators"]["/robot/cmd_vel"]="twist@1"
+            if case == "grant":c["robot_graph"]["profiles"]["weapons_predictive"]["grants"]["actuators"]["/robot/cmd_vel"]="twist@1"
             if case == "profile":c["campaign"]["levels"]["c3"]["robot_profile"]="missing"
             with self.subTest(case=case),self.assertRaises(ValueError):validate_profile(c)

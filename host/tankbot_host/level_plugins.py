@@ -13,6 +13,7 @@ SENSORS = {
     "turret_joint":("/robot/turret/joint_states","joint_state@1","base_link","turret"),
     "weapon_state":("/robot/weapons/cannon/state","weapon_state@1","base_link","weapon"),
     "radar":("/robot/sensors/radar","radar@1","radar_link",None),
+    "intercepted_gps":("/robot/sensors/intercepted_gps","gps_fix@1","map",None),
 }
 ACTUATORS = {"/robot/cmd_vel":("twist@1","chassis","control.robot.drive"),
               "/robot/turret/cmd_vel":("turret_velocity@1","turret","control.robot.turret_velocity"),
@@ -88,6 +89,11 @@ def _validate(value, filename, config, validator):
     if value["objectives"]["target"]!=target["id"]:fail("objectives.target","unknown objective target robot")
     if target["type"]=="patrol_tank" and not target["parameters"].get("motion"):fail("robots","patrol_tank requires motion parameters")
     if target["type"]=="static_tank_target" and target["parameters"].get("motion"):fail("robots","static target cannot declare a patrol")
+    motion=target["parameters"].get("motion",{})
+    if target["parameters"].get("armor",{}).get("source")=="chassis_profile" and motion.get("chassis",config["scene"]["default_chassis"]) not in config.get("chassis_profiles",{}):
+        fail(f"robots[{robots.index(target)}].parameters.armor.source","chassis profile is not registered")
+    if motion.get("spin_rate_radps") is not None and (motion["chassis"]!="omnidirectional" or abs(motion["spin_rate_radps"])>config["motion_limits"]["max_wz_radps"]):
+        fail(f"robots[{robots.index(target)}].parameters.motion.spin_rate_radps","spin requires an omnidirectional chassis and a rate within motion limits")
     clock = value["world"]["simulation"]
     if clock["physics_hz"]%clock["sensor_hz"] or clock["physics_hz"]%clock["algorithm_hz"]:fail("world.simulation","rates must divide physics_hz")
     if clock["physics_hz"]%config["view"]["snapshot_hz"]:fail("world.simulation.physics_hz","view frequency must divide physics frequency")
@@ -102,11 +108,12 @@ def _validate(value, filename, config, validator):
         sensor_ids.append(sensor["type"])
         sensor_topics[topic]=schema
         if clock["physics_hz"]%sensor["update_hz"] or clock["sensor_hz"]%sensor["update_hz"]:fail(path+".update_hz","rate must divide physics and sensor rates")
-        if sensor["type"]!="radar" and sensor["update_hz"]!=clock["sensor_hz"]:fail(path+".update_hz","this component samples at the base sensor rate")
+        if sensor["type"] not in ("radar","intercepted_gps") and sensor["update_hz"]!=clock["sensor_hz"]:fail(path+".update_hz","this component samples at the base sensor rate")
         if sensor["type"]=="radar":
             p = sensor["parameters"]
             if p["update_hz"]!=sensor["update_hz"]:fail(path+".parameters.update_hz","sensor rates disagree")
             if p["mount_m"]!=[0,0] or p["yaw_rad"]!=0:fail(path+".parameters.mount_m","current Radar supports only center-aligned mounting")
+        if sensor["type"]=="intercepted_gps" and sensor["parameters"]["target_robot"]!=target["id"]:fail(path+".parameters.target_robot","unknown GPS target robot")
     if len(sensor_ids)!=len(set(sensor_ids)):fail("robots[0].sensors","duplicate sensor/Topic")
     grants = value["permissions"]["data_access"]
     for channel,schema in grants["inputs"].items():
@@ -151,6 +158,8 @@ def _validate(value, filename, config, validator):
     if value["tutorial"]["lesson"]["ui"]["default_file"] not in files:fail("tutorial.lesson.ui.default_file","unknown editor file")
     for index,fn in enumerate(value["tutorial"]["lesson"]["functions"]):
         if fn["path"] not in files or not any(isinstance(n,ast.FunctionDef) and n.name==fn["name"] for n in ast.walk(ast.parse(files[fn["path"]]))):fail(f"tutorial.lesson.functions[{index}]","unknown scaffold function")
+    for index,path in enumerate(value["tutorial"]["lesson"].get("edit_files",[])):
+        if path not in files or path in runtime["managed_files"]:fail(f"tutorial.lesson.edit_files[{index}]","highlight must reference a player algorithm file")
     from .level_templates import sources
     from string import Formatter
     fields={"movement_m","turn_rad","required_hits","required_estimates","time_limit_s","max_hp","damage_per_hit","algorithm_hz","radar_hz","range_stddev_m","bearing_stddev_rad","drop_probability"}
@@ -166,7 +175,7 @@ def _validate(value, filename, config, validator):
         for path,source in generated.items():
             if path.endswith(".py"):ast.parse(source,filename=path)
     except (ValueError,SyntaxError) as exc:fail("scaffolding",str(exc))
-    player_files={"perception/transforms.py","perception/tracker.py","perception/pose_tracker.py","weapons/auto_aim.py","weapons/armor_aim.py"}
+    player_files={"perception/transforms.py","perception/tracker.py","perception/pose_tracker.py","perception/polar_tracker.py","perception/fusion_tracker.py","weapons/auto_aim.py","weapons/armor_aim.py","weapons/target_prediction.py"}
     registered={p for component in COMPONENTS.values() for p in component}
     managed={p for p in registered|set(generated) if p not in player_files and not p.endswith("__init__.py")}
     if not set(runtime["managed_files"])<=managed:fail("communication.runtime.managed_files","managed files must exclude player algorithms and custom files")
@@ -264,7 +273,7 @@ def _map(definition, source, config):
     return result["walls"]
 
 
-def _compile(value, walls):
+def _compile(value, walls, config):
     p=next(r for r in value["robots"] if r["role"]=="player")
     target=next(r for r in value["robots"] if r["role"]=="target")
     d=copy.deepcopy(value)
@@ -283,12 +292,12 @@ def _compile(value, walls):
     if "map" not in layers:policy["public_map"]=None
     observation_layers={"/robot/sensors/joint_states":"encoders","/robot/sensors/imu":"imu",
                         "/robot/turret/joint_states":"turret","/robot/weapons/cannon/state":"turret",
-                        "/robot/sensors/radar":"radar"}
+                        "/robot/sensors/radar":"radar","/robot/sensors/intercepted_gps":"radar"}
     policy["local_observation_channels"]=[channel for channel in policy["local_observation_channels"] if observation_layers.get(channel) in layers]
     runtime["grants"]=copy.deepcopy(grants)
     caps=[]
     if "/robot/localization/pose" in grants["inputs"]:caps.append("system.pose.read")
-    if set(grants["outputs"])&{"target_estimate@1","target_pose_estimate@1"}:caps.append("estimate.target.publish")
+    if set(grants["outputs"])&{"target_estimate@1","target_pose_estimate@1","target_polar_estimate@1"}:caps.append("estimate.target.publish")
     caps += [cap for actuator,cap in (("chassis","control.manual.drive"),("turret","control.manual.turret"),("weapon","control.manual.fire")) if p["control_sources"][actuator]=="keyboard"]
     if radar and radar["noise"] is not None:caps.append("sensor.radar.read")
     if policy["true_enemy_objects"]:caps.append("view.enemy.truth")
@@ -311,6 +320,9 @@ def _compile(value, walls):
         "world_simulation":d["world"]["simulation"],"radar":radar,"runtime":runtime,"sensors":p["sensors"],
         "rules":d["objectives"],"evaluation":d["evaluation"],"randomization":d["randomization"],"permissions":d["permissions"],"visualization":d["visualization"],
         "tutorial":d["tutorial"],"scaffolding":d["scaffolding"],"metadata":meta}
+    if definition["target"].get("armor",{}).get("source")=="chassis_profile":
+        name=definition["target"].get("motion",{}).get("chassis",config["scene"]["default_chassis"])
+        definition["target"]["armor"]=copy.deepcopy(config["chassis_profiles"][name]["armor"])
     return definition
 
 
@@ -328,7 +340,7 @@ def discover(config):
         if meta["id"] in ids:raise LevelValidationError(path,"metadata.id","duplicate level ID")
         if meta["order"] in orders:raise LevelValidationError(path,"metadata.order","duplicate progression order")
         ids.add(meta["id"]);orders.add(meta["order"])
-        entries.append((meta["order"],path,_compile(value,_map(value,path,config))))
+        entries.append((meta["order"],path,_compile(value,_map(value,path,config),config)))
     entries.sort(key=lambda x:x[0])
     levels={d["metadata"]["id"]:d for _,_,d in entries}
     known=set()

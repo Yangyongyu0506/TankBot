@@ -47,7 +47,10 @@ class ViewGateway:
                    "local_observations": observations, "objects": objects, "effects": []}
         if campaign:
             payload["target_estimates"] = []
+            projected = target_estimate is not None and target_estimate.get("channel")=="/view/target_estimate" and target_estimate.get("publisher_id")=="view_gateway"
+            projection_visible = not projected or (policy["system_pose_allowed"] and "map" in policy["allowed_pose_frames"])
             if (policy.get("target_estimates_allowed", False) and target_estimate is not None
+                    and projection_visible
                     and target_estimate["frame_id"] == "map"
                     and 0 <= tick-target_estimate["simulation_tick"] <= policy["pose_hide_after_ticks"]):
                 payload["target_estimates"].append(copy.deepcopy(target_estimate))

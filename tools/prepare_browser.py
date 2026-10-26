@@ -69,6 +69,7 @@ def main():
     trusted += list((ROOT/"docs/schemas").glob("*.schema.json"))
     trusted += list((ROOT/"docs/examples").glob("*.json"))
     trusted += [ROOT/"requirements.txt", ROOT/"config/browser-assets.lock.json", ROOT/"config/player-dependencies.yaml", ROOT/"config/game.yaml"]
+    trusted += list((ROOT/"config/chassis").glob("*.yaml"))
     from python_env import relaunch_if_needed
     relaunch_if_needed(Path(__file__).resolve(), offline=args.offline)
     import sys

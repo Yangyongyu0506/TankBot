@@ -68,6 +68,8 @@ def configure(config, level_id):
         campaign["radar"]={**radar,"profiles":profiles}
     else:
         campaign["radar"]={}
+    from .chassis_profiles import apply_profiles
+    apply_profiles(c)
     validate_profile(c)
     return c
 

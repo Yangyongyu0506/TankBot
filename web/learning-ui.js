@@ -62,7 +62,7 @@ export function mountLearning(reference,openFile,previewTemplate){
     detail.append(element("h4","构造方式"),element("pre",type.constructor));
     detail.append(element("pre",`class ${type.name}:\n`+(type.fields.length?type.fields.map(field=>`    ${field.name}: ${field.type}`).join("\n"):"    # 公开方法如下")));
     const table=element("dl");
-    for(const field of type.fields)table.append(element("dt",`${field.name}: ${field.type}`),element("dd",field.description));
+    for(const field of [...type.fields,...(type.properties??[])])table.append(element("dt",`${field.name}: ${field.type}`),element("dd",field.description));
     for(const method of type.methods)table.append(element("dt",method.signature),element("dd",method.description));
     detail.append(table);
   }

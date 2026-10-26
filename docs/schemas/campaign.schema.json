@@ -310,6 +310,9 @@
         "arrival_radius_m": {
           "type": "number",
           "exclusiveMinimum": 0
+        },
+        "spin_rate_radps": {
+          "type": "number"
         }
       },
       "required": [

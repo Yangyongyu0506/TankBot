@@ -212,6 +212,34 @@ export function drawChassis(ctx, model, scale, stale = false, calibration = null
   ctx.closePath(); ctx.fill();
 }
 
+// The caller supplies the authorized target pose transform. Vehicle appearance
+// comes from that target's model, independently of the player's chassis.
+export function drawTarget(ctx, target, profile, scale) {
+  const geometry=target.visual?.body?target.visual:profile.target_geometry??profile;
+  const l = geometry.body.length_m * scale, w = geometry.body.width_m * scale;
+  if (target.visual) {
+    drawChassis(ctx, target.visual.chassis_visual, scale, false, target.visual.wheel_calibration);
+  } else {
+    ctx.fillStyle = "#af6972"; ctx.beginPath();
+    ctx.roundRect(-l / 2, -w / 2, l, w, geometry.body.corner_radius_m * scale); ctx.fill();
+  }
+  drawArmor(ctx,geometry,scale);
+  ctx.fillStyle = "#fff0de"; ctx.fillText(String(target.hits), -4, 4);
+}
+
+export function drawArmor(ctx, geometry, scale) {
+  if (geometry.armor_width_m) {
+    const half = geometry.armor_width_m * scale / 2;
+    const mounts=geometry.armor_mounts??[[geometry.body.length_m/2,0,0],[-geometry.body.length_m/2,0,Math.PI],[0,geometry.body.width_m/2,Math.PI/2],[0,-geometry.body.width_m/2,-Math.PI/2]];
+    ctx.strokeStyle = "#82e5f3"; ctx.lineWidth = 5; ctx.beginPath();
+    for(const [x,y,yaw] of mounts){
+      const dx=-Math.sin(yaw)*half,dy=Math.cos(yaw)*half;
+      ctx.moveTo(x*scale-dx,-y*scale+dy);ctx.lineTo(x*scale+dx,-y*scale-dy);
+    }
+    ctx.stroke();
+  }
+}
+
 export function drawTurret(ctx, model, scale, angle, muzzleOffset, barrelWidth) {
   ctx.save(); ctx.rotate(-angle);
   ctx.strokeStyle = model.colors.barrel; ctx.lineWidth = barrelWidth * scale;

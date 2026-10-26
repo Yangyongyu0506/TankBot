@@ -14,16 +14,21 @@ from .campaign_templates import template_version, TRANSFORMS, TRACKER, MANAGED_F
 
 
 TYPE_TEXT: dict[str, tuple[str, dict[str, str]]] = {
+    "PolarTargetEstimate": ("玩家在当前我方车体系估计的敌车中心距离与方位。对外输出极坐标，内部模型由玩家选择。", {
+        "range_m":"敌车中心到我方质心的估计距离，m，非负。","bearing_rad":"相对我方车头的估计方位，rad，范围 [-π,π)。",
+        "covariance":"None 或只读 (2,2) NumPy 协方差，顺序为距离/方位；不是 x/y 协方差。"}),
+    "GpsFixData": ("截获的敌车车头 GPS 位置；是带噪观测，不是敌车中心或真实位姿。", {
+        "positions_m":"只读 float64 NumPy 数组，shape=(N,2)，每行地图系 x/y，m；无本帧 fix 时 shape=(0,2)。"}),
     "TargetPoints": ("当前帧地图坐标测量矩阵，不包含历史。", {"positions_m":"只读 float64 NumPy 数组，shape=(N,2)，列为 x/y，单位 m；无检测时 shape=(0,2)。"}),
     "TargetPoseEstimate": ("玩家估计的敌车底盘中心与车头朝向，与自身位姿完全分离。", {
         "x_m":"敌车中心在 map 中的 x，m。","y_m":"敌车中心在 map 中的 y，m。","yaw_rad":"敌车车头相对 map +x 的逆时针角，rad，范围 [-π,π)。",
-        "covariance":"None 或只读 (3,3) NumPy 协方差，对应 x/y/yaw；原地转向时 yaw 不可直接观测。"}),
-    "AimInput": ("自瞄函数的授权输入；数组都是只读 NumPy，玩家无需处理 Topic。", {
-        "target_xy":"None 或 shape=(2,) 的地图目标位置 [x,y]，m；C4 仍为敌车底盘中心。",
+        "covariance":"None 或只读 (3,3) NumPy 协方差，对应 x/y/yaw。"}),
+    "AimInput": ("自瞄函数的授权输入；额外只读属性 target_rt 提供当前我方车体系 [r,theta]，shape=(2,)，无目标时 None。target_xy/own_pose 保留以兼容已有代码。", {
+        "target_xy":"None 或 shape=(2,) 的地图目标点 [x,y]，m；预测器读取敌车中心，控制器接收预测后的装甲瞄准点。保留此字段以兼容已有代码。",
         "target_age_s":"在本批控制提交时，目标估计已经过去的仿真秒；包含等待提交的延迟。",
         "own_pose":"shape=(3,) 的系统自身位姿 [x,y,yaw]，单位 m、rad。Weapons 阶段不要求估计自己。",
         "turret_angle_rad":"炮台相对车体的累计角，rad；可连续旋转。","turret_rate_radps":"炮台相对角速度，rad/s。",
-        "weapon_ready":"本机是否已冷却，bool。","target_yaw_rad":"C3 为 None；C4 为玩家估计的敌车朝向，rad。不是雷达方位角。"}),
+        "weapon_ready":"本机是否已冷却，bool。","target_yaw_rad":"玩家估计的敌车地图系朝向，rad；没有朝向估计时为 None。不是雷达方位角。"}),
     "AimOutput": ("算法的自瞄结果，由框架转换为合法控制消息。", {"acceleration_radps2":"炮台相对角加速度目标，rad/s²；不能直接写角度/角速度。","fire":"bool，True 请求单发；框架处理冷却和请求 ID。"}),
     "TurretAcceleration": ("炮台相对角加速度 Topic 的类型化负载。", {"acceleration_radps2":"目标角加速度，rad/s²；真实响应仍由受限力矩和双刚体动力学决定。"}),
     "Pose2D": ("自身的二维位姿，可由任务授权提供；位置在 map 中，车头方向用 yaw 表示。", {
@@ -64,6 +69,7 @@ TYPE_TEXT: dict[str, tuple[str, dict[str, str]]] = {
 }
 
 METHOD_TEXT: dict[str, str] = {
+    "with_target_polar":"用当前我方车体系的预测 [r,theta] 生成控制输入副本，供预测与炮台控制分文件复用。",
     "latest": "读取指定端口的最新 Sample；没有输入时返回 None。",
     "publish": "收集类型化输出，经过 Authority 校验后在固定 tick 提交。",
     "fire": "请求单发开火，返回请求 ID；需任务授权。",
@@ -105,7 +111,10 @@ def sdk_reference() -> list[dict[str, Any]]:
                 signature = signature.replace(parameters=[p for p in signature.parameters.values() if p.name != "self"])
                 methods.append({"name": method_name, "signature": method_name + str(signature), "description": METHOD_TEXT[method_name]})
         constructor: str = name + "(" + ", ".join(constructor_parts) + ")" if is_dataclass(cls) else name + str(inspect.signature(cls))
-        result.append({"name": name, "description": description, "constructor": constructor, "fields": members, "methods": methods})
+        item={"name": name, "description": description, "constructor": constructor, "fields": members, "methods": methods}
+        if name=="AimInput":
+            item["properties"]=[{"name":"target_rt","type":"NDArray[np.float64] | None","description":"当前我方 base_link 的 [range_m,bearing_rad]，只读 shape=(2,)；由已授权估计与自身位姿计算，不是额外真值输入。"}]
+        result.append(item)
     result.append({"name": "ndarray", "description": "NumPy 数组。SE(3) 转换返回 float64 的 (4,4) 矩阵；@ 表示矩阵与向量相乘。", "constructor": "np.array(rows, dtype=np.float64) / np.eye(4, dtype=np.float64)",
                    "fields": [{"name": "shape", "type": "tuple[int, ...]", "description": "数组形状；SE(3) 必须是 (4,4)。"},
                               {"name": "dtype", "type": "np.dtype", "description": "元素类型；本关使用 np.float64。"},
@@ -147,14 +156,20 @@ def learning_bundle(config: dict[str, Any]) -> dict[str, Any]:
         lesson["completion"]=lesson["completion"].format(**context)
         lesson["execution"]=lesson["execution"].format(**context)
         if "calibration" in lesson:
+            from .chassis_profiles import target_geometry
             target=definition["target"];motion=target.get("motion",{})
-            length,width=config["body"]["length_m"],config["body"]["width_m"]
+            geometry=target_geometry(config,target)
+            length,width=geometry["body"]["length_m"],geometry["body"]["width_m"]
             import math
             public={"target_drive_model":motion.get("chassis"),"target_forward_only":motion.get("forward_speed_mps",0)>0,
                 "wheel_radius_m":config["wheels"]["radius_m"],"differential_track_m":config["wheels"]["differential_track_m"],
                 "body_length_m":length,"body_width_m":width,"projectile_speed_mps":config["weapons"]["projectile"]["relative_speed_mps"],
                 "max_acceleration_radps2":config["weapons"]["turret"]["acceleration_control"]["max_relative_acceleration_radps2"],
-                "armor_width_m":target.get("armor",{}).get("width_m"),"armor_mounts":[[length/2,0,0],[-length/2,0,-math.pi],[0,width/2,math.pi/2],[0,-width/2,-math.pi/2]]}
+                "armor_width_m":geometry["armor_width_m"],"armor_mounts":geometry["armor_mounts"]}
+            radar_noise=definition["radar"]["noise"] if definition["radar"] else None
+            gps=next((sensor for sensor in definition["sensors"] if sensor["type"]=="intercepted_gps"),None)
+            public.update(gps_mount=geometry["gps_mount_m"],radar_covariance=[[radar_noise["range_stddev_m"]**2,0],[0,radar_noise["bearing_stddev_rad"]**2]] if radar_noise else None,
+                          gps_covariance=[[gps["parameters"]["noise"]["position_stddev_m"]**2,0],[0,gps["parameters"]["noise"]["position_stddev_m"]**2]] if gps else None)
             lesson["calibration"]={key:public[value["source"]] if "source" in value else value["text"] for key,value in lesson["calibration"].items()}
     else:
         lesson.update(execution="本关无需编程；关闭代码编辑器后使用键盘驾驶。",completion="可查阅类型、修改算法，并保存、测试和部署。",common_errors=["编辑器打开时，驾驶按键用于编辑代码；关闭后才能控制坦克。"])

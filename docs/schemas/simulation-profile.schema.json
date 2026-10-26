@@ -10,7 +10,8 @@
         "1.6",
         "1.7",
         "1.8",
-        "1.9"
+        "1.9",
+        "2.0"
       ]
     },
     "confirmation_status": {
@@ -652,6 +653,22 @@
             "minimum_distance_squared": {
               "type": "number",
               "exclusiveMinimum": 0
+            },
+            "process_yaw_acceleration_std": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "yaw_window_s": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "manual_aim_gain_per_s": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "manual_aim_rate_radps": {
+              "type": "number",
+              "exclusiveMinimum": 0
             }
           },
           "required": [
@@ -1275,6 +1292,19 @@
                   "width_m": {
                     "type": "number",
                     "exclusiveMinimum": 0
+                  },
+                  "mounts_m": {
+                    "type": "array",
+                    "minItems": 4,
+                    "maxItems": 4,
+                    "items": {
+                      "type": "array",
+                      "minItems": 3,
+                      "maxItems": 3,
+                      "items": {
+                        "type": "number"
+                      }
+                    }
                   }
                 },
                 "required": [
@@ -1282,6 +1312,9 @@
                   "width_m"
                 ],
                 "additionalProperties": false
+              },
+              "body": {
+                "$ref": "#/properties/body"
               }
             },
             "required": [
@@ -2162,6 +2195,13 @@
         "planned_chapters"
       ],
       "additionalProperties": false
+    },
+    "chassis_profiles": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "chassis-profile.schema.json"
+      }
     }
   },
   "required": [

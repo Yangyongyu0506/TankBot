@@ -28,7 +28,7 @@ class FrameworkTransitionTests(unittest.TestCase):
                     config=configure(self.base,level)
                     files={**starter(config),**starter(configure(self.base,graph_level))}
                     self.assertIn('managed scaffold 1.2.0',files['campaign_robot.py'])
-                    self.assertEqual(len(json.loads(files['tankbot.json'])['modules']),3)
+                    self.assertEqual(len(json.loads(files['tankbot.json'])['modules']),len(self.base['campaign']['levels'][graph_level]['runtime']['manifest']['modules']))
                     upgrade=framework_upgrade(config,files)
                     self.assertTrue(upgrade['required'])
                     self.assertIn('模块配置与本关不匹配',upgrade['message'])

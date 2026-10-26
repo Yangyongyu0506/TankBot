@@ -1,5 +1,6 @@
 """M1 authority: fixed gates, explicit permissions, private core adapter and view projection."""
 import copy
+import math
 from collections import deque
 import hashlib
 import os
@@ -26,6 +27,8 @@ def core_configuration(config):
 def load_config(path):
     from .configuration import load_yaml
     config = load_yaml(path) if Path(path).suffix in (".yaml", ".yml") else strict_loads(Path(path).read_bytes())
+    from .chassis_profiles import load_profiles
+    load_profiles(config)
     if config.get("level_plugins") and "campaign" not in config:
         from .level_plugins import assemble
         config=assemble(config)
@@ -98,6 +101,8 @@ class Authority:
     def __init__(self, config, *, workspace=None, binary=None, controlled=False,
                  core_factory=CoreAdapter, worker_factory=Supervisor, startup_sources=None, developer_mode=False,
                  startup_is_deployment=None):
+        from .chassis_profiles import apply_profiles
+        config = apply_profiles(copy.deepcopy(config))
         self.developer_mode = developer_mode
         if config["view_mode"]=="estimated" and (config["view_policy"]["system_pose_allowed"] or config["view_policy"]["world_effects"]):
             raise ValueError("Estimated view cannot grant truth")
@@ -127,6 +132,9 @@ class Authority:
         self._target_estimate = None
         self.campaign = CampaignSession(config) if campaign_level(config) else None
         self.radar = RadarSimulator(config) if self.campaign else None
+        from .weapon_sensors import GpsInterceptSimulator
+        self.intercepted_gps = GpsInterceptSimulator(config)
+        self._public_pose_history = {}
         self._target_history = {}
         self._sequences = {}
         self._pending = None
@@ -160,6 +168,8 @@ class Authority:
         from tankbot._imports import load_policy
         init["import_policy"] = load_policy()
         if config.get("campaign", {}).get("active_level"):
+            from .chassis_profiles import target_geometry
+            geometry=target_geometry(config)
             from .workspace import starter, read_sources
             init["sources"] = starter(config)
             if workspace is not None:
@@ -167,14 +177,19 @@ class Authority:
             init["config"]["lesson"] = {"level_id": config["campaign"]["active_level"],
                                           "transform_tolerance": config["validation"]["numeric_tolerance"],
                                           "processing":self.campaign.definition["runtime"]["processing"]}
+            if self.graph_profile() and self.radar.noise is not None:
+                noise = self.radar.noise
+                init["config"]["observations"] = {"radar_covariance":[[noise["range_stddev_m"]**2,0],[0,noise["bearing_stddev_rad"]**2]]}
+            if self.intercepted_gps.sensor:
+                variance = self.intercepted_gps.sensor["parameters"]["noise"]["position_stddev_m"]**2
+                init["config"]["observations"].update(gps_covariance=[[variance,0],[0,variance]],gps_mount=geometry["gps_mount_m"])
             if self.graph_profile():
                 import math
                 init["config"]["lesson"]["tick_duration_s"] = 1/self.hz
                 armor = self.campaign.definition.get("armor_mode",False)
-                length,width = config["body"]["length_m"],config["body"]["width_m"]
                 init["config"]["actuators"] = {"projectile_speed_mps":config["weapons"]["projectile"]["relative_speed_mps"],
                     "max_acceleration_radps2":config["weapons"]["turret"]["acceleration_control"]["max_relative_acceleration_radps2"],
-                    "armor_mounts":[[length/2,0,0],[-length/2,0,-math.pi],[0,width/2,math.pi/2],[0,-width/2,-math.pi/2]] if armor else [],
+                    "armor_mounts":geometry["armor_mounts"] if armor else [],
                     "enemy_drive_model":self.campaign.definition["target"]["motion"]["chassis"],
                     "enemy_forward_only":self.campaign.definition["target"]["motion"]["forward_speed_mps"] > 0}
         if startup_sources is not None:
@@ -221,10 +236,18 @@ class Authority:
                 candidate = self._message("pose2d@1", "/system/pose", pose, frame="map", publisher="system_pose_provider")
                 self.selector.accept("system", candidate, self._message)
                 self._sensors["/robot/localization/pose"] = copy.deepcopy(self.selector.canonical)
+                self._public_pose_history[self.tick] = copy.deepcopy(pose)
+                cutoff = self.tick-self.config["runtime"]["estimate_history_ticks"]
+                self._public_pose_history = {tick:value for tick,value in self._public_pose_history.items() if tick>=cutoff}
             radar = self.radar.sample(self._private, self.tick)
             if radar is not None:
                 msg = self._message("radar@1", "/robot/sensors/radar", radar, frame="radar_link", publisher="sensor:radar")
                 self.validator.validate(msg, now=self.tick, grants={("sensor:radar", msg["channel"], msg["schema"], "radar_link")})
+                self._sensors[msg["channel"]] = msg
+            gps = self.intercepted_gps.sample(self._private,self.tick)
+            if gps is not None:
+                msg = self._message("gps_fix@1","/robot/sensors/intercepted_gps",gps,frame="map",publisher="sensor:intercepted_gps")
+                self.validator.validate(msg,now=self.tick,grants={("sensor:intercepted_gps",msg["channel"],msg["schema"],"map")})
                 self._sensors[msg["channel"]] = msg
         for key, schema, channel in (("joint_states","joint_state@1","/robot/sensors/joint_states"),
                 ("imu","imu@1","/robot/sensors/imu"),("turret_joint_states","joint_state@1","/robot/turret/joint_states"),
@@ -510,9 +533,13 @@ class Authority:
             if self.selector.source_id == module_id:
                 self._sensors["/robot/localization/pose"] = copy.deepcopy(self.selector.canonical)
             self.audit.append({"event":"pose_commit","module_id":module_id,"tick":self.tick,"sample_tick":message["simulation_tick"],"activation_tick":activation_tick})
-        elif channel in (f"/robot/estimates/{module_id}/target",f"/robot/estimates/{module_id}/target_pose"):
+        elif channel in (f"/robot/estimates/{module_id}/target",f"/robot/estimates/{module_id}/target_pose",f"/robot/estimates/{module_id}/target_polar"):
             profile = self.graph_profile()
             if profile is None or module_id == profile.get("target_source"):
+                if schema=="target_polar_estimate@1":
+                    message = self._project_polar_estimate(message)
+                    if message is None:
+                        return
                 old = self._target_estimate
                 if old is None or message["simulation_tick"] >= old["simulation_tick"]:
                     self._target_estimate = copy.deepcopy(message)
@@ -526,6 +553,21 @@ class Authority:
             self._turret_acceleration_target = {**message["payload"],"source_tick":message["simulation_tick"]}
         elif channel == "/robot/weapons/cannon/fire":
             self._queue_fire(message)
+
+    def _project_polar_estimate(self, message):
+        """Display/evaluation projection using the same published self-pose the player may read."""
+        pose = self._public_pose_history.get(message["simulation_tick"])
+        if pose is None:
+            return None
+        p = message["payload"]
+        angle = pose["yaw_rad"]+p["bearing_rad"]
+        c,s,r = math.cos(angle),math.sin(angle),p["range_m"]
+        covariance = p["covariance"]
+        if covariance is not None:
+            jacobian = [[c,-r*s],[s,r*c]]
+            covariance = [sum(jacobian[i][a]*covariance[2*a+b]*jacobian[j][b] for a in range(2) for b in range(2)) for i in range(2) for j in range(2)]
+        return self._message("target_estimate@1","/view/target_estimate",{"x_m":pose["x_m"]+r*c,"y_m":pose["y_m"]+r*s,"covariance":covariance},
+                             frame="map",publisher="view_gateway",tick=message["simulation_tick"])
 
     def advance(self):
         """Process boundary n, then advance to S_(n+1). Player computation is never awaited in real time."""
@@ -614,8 +656,21 @@ class Authority:
         """Explicit developer grant; never included in PlayerViewSnapshot or Runtime inputs."""
         if not self.developer_mode:
             raise Rejected("UNAUTHORIZED")
+        target_visuals = {}
+        from .chassis_profiles import target_geometry
+        for target in self.config["weapons"]["targets"]:
+            motion = target.get("motion")
+            if motion is None:
+                continue
+            chassis = motion["chassis"]
+            target_visuals[target["target_id"]] = {
+                **target_geometry(self.config,target),
+                "chassis_visual": copy.deepcopy(self.config["rendering"]["chassis_models"][chassis]),
+                "wheel_calibration": public_calibration(self.config["wheels"]) if chassis == "omnidirectional" else None,
+            }
         return {"version": 1, "run_id": self.run_id, "simulation_tick": self.tick,
                 "truth": copy.deepcopy(self._private), "sensors": copy.deepcopy(self._sensors),
+                "target_visuals": target_visuals,
                 "pose_candidates": copy.deepcopy(self._candidates),
                 "selected_pose": copy.deepcopy(self.selector.canonical),
                 "target_estimate": copy.deepcopy(self._target_estimate),
@@ -624,6 +679,7 @@ class Authority:
                             "control_sources": copy.deepcopy(self.config["control_sources"])}}
 
     def public_profile(self):
+        from .chassis_profiles import target_geometry
         limits = copy.deepcopy(self.config["motion_limits"])
         chassis = self.config["scene"]["default_chassis"]
         if not self.config["chassis"][chassis]["lateral_actuation"]:
@@ -645,6 +701,7 @@ class Authority:
                 "turret_muzzle_offset_m":copy.deepcopy(self.config["weapons"]["turret"]["muzzle_offset_m"]),
                 "projectile_radius_m": self.config["weapons"]["projectile"]["radius_m"],
                 "armor_width_m":self.campaign.definition["target"].get("armor",{}).get("width_m") if self.campaign else None,
+                "target_geometry":target_geometry(self.config),
                 "body": {k: self.config["body"][k] for k in ("length_m", "width_m", "corner_radius_m")},
                 "walls": copy.deepcopy(self.config["scene"]["walls"]) if self.config["scene"]["public_map"] and self.config["view_policy"]["public_map"] else [],
                 "view": copy.deepcopy(self.config["view"]),

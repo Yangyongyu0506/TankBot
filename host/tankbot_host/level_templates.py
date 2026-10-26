@@ -2,6 +2,7 @@
 import ast
 from . import campaign_templates as basic
 from . import weapon_templates as weapons
+from . import weapon_curriculum as curriculum
 
 COMPONENTS = {
     "campaign_adapter":{"campaign_robot.py":basic.WRAPPER},
@@ -14,6 +15,15 @@ COMPONENTS = {
     "armor_aim":{"weapons/armor_aim.py":weapons.ARMOR_AIM},
     "pose_tracker":{"perception/pose_tracker.py":weapons.POSE_TRACKER},
     "auto_aim_tests":{"tests/test_auto_aim.py":weapons.TEST},
+    "polar_tracker":{"perception/__init__.py":"","perception/polar_tracker.py":curriculum.POLAR_TRACKER},
+    "fusion_tracker":{"perception/fusion_tracker.py":curriculum.FUSION_TRACKER},
+    "raw_sensor_adapters":{"robot_modules/__init__.py":"","robot_modules/observations.py":curriculum.RAW_ADAPTERS},
+    "predictive_aiming_adapter":{"robot_modules/aiming.py":curriculum.PREDICTIVE_ADAPTER,"weapons/__init__.py":""},
+    "polar_auto_aim":{"weapons/auto_aim.py":curriculum.POLAR_AUTO_AIM},
+    "target_prediction":{"weapons/target_prediction.py":curriculum.TARGET_PREDICTION},
+    "polar_contract_tests":{"tests/test_polar_contract.py":curriculum.POLAR_TEST},
+    "fusion_contract_tests":{"tests/test_fusion_contract.py":curriculum.FUSION_TEST},
+    "predictive_contract_tests":{"tests/test_prediction_contract.py":curriculum.PREDICTIVE_TEST},
 }
 
 

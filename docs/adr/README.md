@@ -40,6 +40,8 @@ ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评
 | [0032](0032-weapons-curriculum-and-armor.md) | Weapons 章节、角加速度、装甲与噪声 | Accepted |
 | [0033](0033-declarative-level-plugins.md) | 独立 YAML 关卡、自动发现、声明式规则与独立权限 | Accepted |
 | [0034](0034-authorized-live-evaluation.md) | 显式授权的运行中累计 RMSE 与教学 UI | Accepted |
+| [0035](0035-progressive-weapons-estimation.md) | C3 极坐标、C4 车头 GPS、C5 小陀螺预测/控制与文件树 | Accepted |
+| [0036](0036-shared-chassis-geometry.md) | 独立底盘配置、目标碰撞外形与统一装甲/GPS 安装 | Accepted |
 
 ## 变更流程与完成条件
 

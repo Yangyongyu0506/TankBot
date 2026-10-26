@@ -1,5 +1,5 @@
 """Typed values and synchronous module contract for the M1 local worker."""
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from types import MappingProxyType
 from typing import Any, Generic, Mapping, TypeVar
 import numpy as np
@@ -123,6 +123,25 @@ class TargetPoints:
 
 
 @dataclass(frozen=True)
+class GpsFixData:
+    """Intercepted front-mounted GPS points in map; current sample only, shape (N,2)."""
+    positions_m: NDArray[np.float64]
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self,"positions_m",TargetPoints(self.positions_m).positions_m)
+
+
+@dataclass(frozen=True)
+class PolarTargetEstimate:
+    range_m: float
+    bearing_rad: float
+    covariance: NDArray[np.float64] | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self,"covariance",_covariance_matrix(self.covariance,2))
+
+
+@dataclass(frozen=True)
 class TurretVelocity:
     velocity_radps: float
 
@@ -152,6 +171,25 @@ class AimInput:
             if target.shape != (2,):
                 raise ValueError("target_xy 必须为 [x,y]，shape=(2,)")
             object.__setattr__(self,"target_xy",np.frombuffer(target.tobytes(),dtype=np.float64))
+
+    @property
+    def target_rt(self) -> NDArray[np.float64] | None:
+        """Target relative to the authorized own pose, [range_m,bearing_rad]."""
+        if self.target_xy is None:
+            return None
+        delta: NDArray[np.float64] = self.target_xy-self.own_pose[:2]
+        angle: float = float(np.arctan2(delta[1],delta[0])-self.own_pose[2])
+        value: NDArray[np.float64] = np.array([np.linalg.norm(delta),np.arctan2(np.sin(angle),np.cos(angle))],dtype=np.float64)
+        return np.frombuffer(value.tobytes(),dtype=np.float64)
+
+    def with_target_polar(self, target_rt: NDArray[np.float64]) -> "AimInput":
+        """Retarget a controller using a player-predicted point in current base_link."""
+        value: NDArray[np.float64] = np.asarray(target_rt,dtype=np.float64)
+        if value.shape!=(2,) or not np.isfinite(value).all() or value[0]<0:
+            raise ValueError("预测点必须是有限的 [range_m,bearing_rad]，shape=(2,)，距离非负")
+        angle: float = float(value[1]+self.own_pose[2])
+        point: NDArray[np.float64] = self.own_pose[:2]+value[0]*np.array([np.cos(angle),np.sin(angle)],dtype=np.float64)
+        return replace(self,target_xy=point)
 
 
 @dataclass(frozen=True)
@@ -242,11 +280,11 @@ class ModuleContext:
 
     def publish(self, port: str, value: Any, *, frame_id: str,
                 simulation_tick: int | None = None) -> None:
-        types: dict[type, str] = {Pose2D: "pose2d@1", TargetEstimate: "target_estimate@1", TargetPoseEstimate:"target_pose_estimate@1", TargetPoints:"target_points@1", Twist: "twist@1", TurretVelocity: "turret_velocity@1", TurretAcceleration:"turret_acceleration@1"}
+        types: dict[type, str] = {Pose2D: "pose2d@1", TargetEstimate: "target_estimate@1", TargetPoseEstimate:"target_pose_estimate@1", TargetPoints:"target_points@1", PolarTargetEstimate:"target_polar_estimate@1", Twist: "twist@1", TurretVelocity: "turret_velocity@1", TurretAcceleration:"turret_acceleration@1"}
         if type(value) not in types:
             raise TypeError("Unsupported output value")
         payload: dict[str, Any] = asdict(value)
-        if isinstance(value, (Pose2D, TargetEstimate, TargetPoseEstimate)) and value.covariance is not None:
+        if isinstance(value, (Pose2D, TargetEstimate, TargetPoseEstimate, PolarTargetEstimate)) and value.covariance is not None:
             payload["covariance"] = value.covariance.ravel(order="C").tolist()
         if isinstance(value,TargetPoints):
             payload["positions_m"] = value.positions_m.tolist()

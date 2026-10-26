@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {SceneTimeline, FollowCamera, drawChassis, omniMounts} from '../web/rendering.js';
+import {SceneTimeline, FollowCamera, drawChassis, drawTarget, drawArmor, omniMounts} from '../web/rendering.js';
 
 const config = JSON.parse(readFileSync(new URL('../core/tests/fixtures/default-profile.json', import.meta.url)));
 const settings = {...config.rendering, interpolation_delay_ms:100, estimate_interpolation_delay_ms:200};
@@ -41,6 +41,23 @@ test('developer moving targets interpolate position and shortest-angle orientati
   const middle=t.sample(150).objects[0];
   near(middle.pose.x_m,1);near(middle.pose.yaw_rad,Math.PI);
   near(t.sample(1000).objects[0].pose.x_m,2);
+});
+
+test('spinning target keeps its own model through multiple interpolated revolutions',()=>{
+  const t=timeline(),visual={chassis_visual:config.rendering.chassis_models.omnidirectional,
+    wheel_calibration:{radius_m:config.wheels.radius_m,...config.wheels.omnidirectional}};
+  let previous=null,turn=0;
+  for(let tick=0;tick<=300;tick+=2){
+    const angle=3*tick/60,yaw=Math.atan2(Math.sin(angle),Math.cos(angle));
+    t.push(snapshot(tick,[{kind:'target',target_id:'enemy',pose:pose(.6*tick/60,1,yaw),hits:0,visual}]),tick*1000/60);
+    for(const offset of [0,8,16,24]){
+      const displayed=t.sample(tick*1000/60+offset).objects[0];
+      assert.equal(displayed.visual,visual);
+      if(previous!==null){const delta=Math.atan2(Math.sin(displayed.pose.yaw_rad-previous),Math.cos(displayed.pose.yaw_rad-previous));assert.ok(delta>=-1e-12&&delta<.11);turn+=delta;}
+      previous=displayed.pose.yaw_rad;
+    }
+  }
+  assert.ok(turn>4*Math.PI,'show continuous spinning, including across +/-pi');
 });
 
 test('identity and snapshot boundaries control births and disappearance', () => {
@@ -163,5 +180,32 @@ test('independent chassis configurations draw tracks versus four radial omni whe
       assert.ok(calls.some(c=>c[0]==='roundRect' && Math.abs(c[3]-2*calibration.radius_m*100)<1e-12));
     }
     assert.equal(calls.filter(c=>c[0]==='clip').length,model.kind==='radial_omni'?4:0);
+  }
+});
+
+test('enemy renderer draws its own wheels and heading marker instead of the player model',()=>{
+  const calibration={radius_m:config.wheels.radius_m,...config.wheels.omnidirectional};
+  for(const chassis of ['differential','omnidirectional']){
+    const calls=[],ctx=new Proxy({}, {get:(_,name)=>(...args)=>calls.push([name,...args]),set:()=>true});
+    const model=config.rendering.chassis_models[chassis];
+    drawTarget(ctx,{hits:0,visual:{chassis_visual:model,wheel_calibration:chassis==='omnidirectional'?calibration:null}},
+      {body:config.body,armor_width_m:.24,chassis_visual:config.rendering.chassis_models[chassis==='differential'?'omnidirectional':'differential']},100);
+    assert.equal(calls.filter(c=>c[0]==='clip').length,chassis==='omnidirectional'?4:0);
+    assert.ok(calls.some(c=>c[0]==='moveTo'&&c[1]===model.forward_marker_m[0][0]*100&&c[2]===-model.forward_marker_m[0][1]*100));
+    assert.ok(calls.some(c=>c[0]==='fillText'&&c[1]==='0'));
+  }
+});
+
+test('compact enemy armor uses the published mounts instead of the player body dimensions',()=>{
+  const geometry={body:config.chassis_profiles.omnidirectional.body,
+    armor_width_m:config.chassis_profiles.omnidirectional.armor.width_m,
+    armor_mounts:config.chassis_profiles.omnidirectional.armor.mounts_m};
+  const calls=[],ctx=new Proxy({}, {get:(_,name)=>(...args)=>calls.push([name,...args]),set:()=>true});
+  drawArmor(ctx,geometry,100);
+  const endpoints=calls.filter(c=>c[0]==='moveTo'||c[0]==='lineTo');
+  assert.equal(endpoints.length,8);
+  for(const [_,x,y] of endpoints){
+    assert.ok(Math.max(Math.abs(x),Math.abs(y))<=21+1e-10,'armor cannot float at the old +/-40 or +/-30 cm bounds');
+    assert.ok(Math.abs(Math.max(Math.abs(x),Math.abs(y))-21)<1e-10);
   }
 });

@@ -19,7 +19,7 @@ export function developerView(data,profile){
     selected_pose:truth.player_alive===false?null:{source_id:"system",frame_id:"map",simulation_tick:tick,freshness:"fresh",pose:{x_m:x,y_m:y,yaw_rad:yaw}},
     local_observations:Object.values(data.sensors),objects:[
       ...truth.projectiles.map(p=>({kind:"projectile",projectile_id:p.projectile_id,x_m:p.position[0],y_m:p.position[1],radius_m:p.radius_m??profile.projectile_radius_m})),
-      ...truth.targets.filter(t=>t.alive).map(t=>({kind:"target",target_id:t.target_id,pose:{x_m:t.pose[0],y_m:t.pose[1],yaw_rad:t.pose[2]},hits:truth.target_hits[t.target_id]}))]}};
+      ...truth.targets.filter(t=>t.alive).map(t=>({kind:"target",target_id:t.target_id,pose:{x_m:t.pose[0],y_m:t.pose[1],yaw_rad:t.pose[2]},hits:truth.target_hits[t.target_id],visual:data.target_visuals?.[t.target_id]??null}))]}};
 }
 
 export function mountVisualization(profile,settings){
@@ -29,7 +29,7 @@ export function mountVisualization(profile,settings){
   const history=new SceneTimeline(profile.physics_hz,profile.rendering,profile.view.interpolation_jump_m);
   $("visualization-note").textContent=developer?"开发者图层 · 可独立显示真值、估计和传感器；不会把真值发给玩家代码。":"只列出本关授权图层；显示来源仍由关卡权限决定。";
   $("layer-list").replaceChildren(...[...allowed].map(key=>{
-    const label=document.createElement("label"),input=document.createElement("input");input.type="checkbox";input.checked=layers[key];input.dataset.layer=key;input.disabled=Boolean(configuration&&!configuration.user_toggleable.includes(key));
+    const label=document.createElement("label"),input=document.createElement("input");input.type="checkbox";input.checked=layers[key];input.dataset.layer=key;input.disabled=Boolean(!developer&&configuration&&!configuration.user_toggleable.includes(key));
     input.onchange=()=>{
       if(input.disabled)return;
       layers[key]=input.checked;applyPanels();
@@ -110,7 +110,7 @@ export function drawVisualization(ctx,point,frame,debugFrame,panel,profile,scale
     }
   }
   if(panel.enabled("colliders")&&data){
-    const poses=[...(data.truth.player_alive===false?[]:[data.truth.truth_pose]),...data.truth.targets.filter(t=>t.alive).map(t=>t.pose)];
-    for(const [x,y,yaw] of poses){ctx.save();ctx.translate(...point(x,y));ctx.rotate(-yaw);ctx.strokeStyle="#ff9dd2";ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.beginPath();ctx.roundRect(-profile.body.length_m*scale/2,-profile.body.width_m*scale/2,profile.body.length_m*scale,profile.body.width_m*scale,profile.body.corner_radius_m*scale);ctx.stroke();ctx.restore();}
+    const bodies=[...(data.truth.player_alive===false?[]:[{pose:data.truth.truth_pose,body:profile.body}]),...data.truth.targets.filter(t=>t.alive).map(t=>({pose:t.pose,body:data.target_visuals?.[t.target_id]?.body??profile.target_geometry?.body??profile.body}))];
+    for(const {pose:[x,y,yaw],body} of bodies){ctx.save();ctx.translate(...point(x,y));ctx.rotate(-yaw);ctx.strokeStyle="#ff9dd2";ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.beginPath();ctx.roundRect(-body.length_m*scale/2,-body.width_m*scale/2,body.length_m*scale,body.width_m*scale,body.corner_radius_m*scale);ctx.stroke();ctx.restore();}
   }
 }

@@ -8,7 +8,7 @@
 
 物理保持 60 Hz / 4 子步，传感器 30 Hz、算法 10 Hz。视图快照从 10 Hz 改为独立的 30 Hz，HTTP 轮询间隔 33 ms；显示使用 requestAnimationFrame，随浏览器/显示器可用刷新率运行，不用刷新回调推进物理。低频授权数据必须插值，不能仅提高 Canvas 重绘次数。
 
-所有显示参数仍在唯一 `config/game.yaml`：`view` 负责快照/轮询；新增 `rendering` 负责缓存时延、相机视宽、网格和独立外观。内部配置升为 1.3，旧自定义配置须显式补充字段；不自动覆盖文件。协议仍为 1.0 草案，消息 Schema 未改。
+`config/game.yaml` 的 `view/rendering` 负责快照/轮询、缓存时延、相机视宽和网格。底盘几何、装甲/GPS 安装与独立外观现由 `config/chassis/*.yaml` 定义并编译，见 [29](29_CHASSIS_PROFILES.md)；旧自定义配置不会自动覆盖。协议仍为 1.0 草案。
 
 ## Proposed Design：显示数据流
 
@@ -46,6 +46,10 @@ flowchart LR
 
 按 [ADR-0019](adr/0019-fourfold-omni-wheel-layout.md)，取消原平行麦轮绘制。`omniMounts(wheel_calibration)` 从公开标定派生轮心 `R*[cosα,sinα]` 与滚动角 `α+π/2`，轮径直接用标定 `2r`；显示配置只保存部件样式/宽度，不再复制四组安装坐标。参考和验收见 [全向轮报告](reports/OMNI_VALIDATION.md)。
 
+开发者真实目标图层按**每个目标自身的底盘**选择外观，不复用玩家的 `chassis_visual`。Authority 在受开发者 grant 保护的管理 DTO 中提供 `target_visuals[target_id] = {chassis_visual, wheel_calibration}`，从目标 `motion.chassis` 和既有显示/标定配置派生；静态靶标没有车辆描述，继续绘制原矩形。`developerView()` 将描述关联到真实目标，`drawTarget()` 复用 `drawChassis()` 绘制履带或四轮全向底盘，并保留有效装甲和车头标记。
+
+真实目标的位置与 yaw 来自私有物理快照，经独立 `SceneTimeline` 插值；外观配置不能驱动旋转。C5 的持续自转因此会带动四个轮组、装甲及车头标记整体旋转，世界相机保持不旋转。描述只通过开发者入口提供，不加入普通 PlayerViewSnapshot、公开 profile 或玩家 Runtime 输入；关闭开发者模式后清理该数据与历史。
+
 
 ## Interfaces / Constraints
 
@@ -60,6 +64,8 @@ public_profile 包含 rendering（不含全套 chassis_models）与当前 chassi
 ## Acceptance Criteria
 
 JS 行为测试验证不同接收间隔的插值、断流/迟到、出生/消失、角度、估计延迟、权限/跳变、相机矩阵与四轮/履带绘制。Python 回归验证显示配置不改变物理结果、两底盘配置独立且不下发内部对象。浏览器在实际 RAF 中采样，确认同一快照序号下弹丸位置继续改变，转向时车体居中且 camera_yaw=0；分别检查两底盘截图。
+
+`tools/browser_developer_chassis.py` 使用独立开发者存档检查 C5 全向敌车与 C2 差速敌车、连续多圈 yaw 插值、真实目标开关和开发者 grant 撤回；启动时选玩家差速底盘，以检测敌车错误继承玩家模型的问题。分别对原生与浏览器服务运行该检查，勿指向玩家日常存档。
 
 ## M4 目标估计显示
 

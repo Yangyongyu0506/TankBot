@@ -179,7 +179,7 @@ ROS2/DDS 超出部署和学习负担；直接函数调用只允许在模块内�
 
 `/robot/sensors/joint_states` 使用新增 `joint_state@1`，形状参考 ROS JointState，字段 `name/position/velocity/effort` 均为数组。position 是自 run 重置以来累计轮角（rad），velocity 是采样边界角速度（rad/s），effort 为空表示未建模。位置数组长度必须等于 name；velocity/effort 长度为零或与 name 相同，由领域层校验，不能假设 Schema 已完成跨数组关联。M1 固定车体系 `base_link`；差速 wheel name 为 left/right，全向为 front_left/front_right/rear_left/rear_right。见 [完整样例](examples/joint-state-message.json) 和 [ADR-0016](adr/0016-wheel-joint-state.md)。不修改旧 encoder@1 的米单位与左右轮含义。
 
-M1 实现严格 JSON、Schema、源/频道 grant、run/序号/时间/帧、PSD 和固定提交门；候选为 `/robot/estimates/odometry/pose`，Selector 生成 `/robot/localization/pose`，Gateway 生成 `/view/snapshot`。只开放单机器人、单周期模块和键盘控制租约。通用协商、任意订阅/服务、event、动态 TF、控制权切换与跨 Transport 等价性尚未实现，不能因 Schema 已存在而宣称可用。M1 Runtime 帧上限取更严格的 64 KiB；源码入口与测试见 [报告](reports/M1_VALIDATION.md)。
+M1 实现严格 JSON、Schema、源/频道 grant、run/序号/时间/帧、PSD 和固定提交门；候选为 `/robot/estimates/odometry/pose`，Selector 生成 `/robot/localization/pose`，Gateway 生成 `/view/snapshot`。当时只开放单机器人、单周期模块和键盘控制租约。通用协商、任意订阅/服务、event、动态 TF 仍不能因 Schema 已存在而宣称可用。早期 M1 Runtime 帧上限为 64 KiB；当前多文件课程的私有 Runtime/管理帧预算为 YAML `runtime.max_message_bytes`，默认 256 KiB，见 [29](29_CHASSIS_PROFILES.md)。消息形状和权限不因容量预算变化而扩宽。M1 源码入口与历史验证见 [报告](reports/M1_VALIDATION.md)。
 
 ## M1b 已实现的武器接口
 
@@ -204,3 +204,7 @@ M1 实现严格 JSON、Schema、源/频道 grant、run/序号/时间/帧、PSD �
 ## M5 当前增量
 
 M5 增加 `target_points@1`（Nx2）、`target_pose_estimate@1`（敌车 x/y/yaw 和可空行优先 3×3 协方差）、`turret_acceleration@1`（`acceleration_radps2`），以及允许目标 yaw 的 `view_snapshot@4`；旧类型不变。多模块请求提供新增可选 `origin_tick`，它是调度元数据，执行器负载仍无起止字段。权限/帧/单位见 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)、[角加速度样例](examples/turret-acceleration-message.json)、[目标位姿样例](examples/target-pose-message.json)。
+
+## 渐进 Weapons 的兼容增量
+
+2026-10-26 增加两个可选类型，不改变 Envelope 或既有负载：`gps_fix@1` 为 map 中带噪车头位置数组（缺测为空）；`target_polar_estimate@1` 为 base_link 中的非负 range_m、归一化 bearing_rad 和可空的 2×2 协方差（线上 row-major 4 元数组）。前者属于传感器输入，后者属于玩家估计输出。具体频道、单位、时间及权限见 [28](28_WEAPONS_PROGRESSIVE_ESTIMATION.md)。旧客户端未声明相应能力时不能订阅/发布新类型，不把原 target_estimate 的 x/y 偷换成 r/theta。

@@ -1,5 +1,8 @@
 //! Trusted patrol controller using the same force servo and contact world as the player.
-use crate::{Chassis, Config, TurretSystem, boolean, cannon::body_shape, normalize_angle, number};
+use crate::{
+    BodyConfig, Chassis, Config, Servo, TurretSystem, boolean, cannon::body_shape, normalize_angle,
+    number,
+};
 use rapier2d_f64::prelude::*;
 use serde::Deserialize;
 
@@ -17,6 +20,7 @@ pub struct PatrolConfig {
     pub max_yaw_rate_radps: f64,
     pub turn_in_place_threshold_rad: f64,
     pub arrival_radius_m: f64,
+    pub spin_rate_radps: Option<f64>,
 }
 
 #[derive(Clone, Deserialize)]
@@ -31,23 +35,24 @@ pub struct HealthConfig {
 pub(crate) fn drive_servo(
     world: &mut PhysicsWorld,
     body: RigidBodyHandle,
-    config: &Config,
+    body_config: &BodyConfig,
+    servo: &Servo,
     chassis: &Chassis,
     goal: [f64; 3],
 ) {
     let b = &mut world.bodies[body];
     let v = b.rotation().inverse() * b.linvel();
     let wz = b.angvel();
-    let s = &config.servo;
-    let fx = (config.body.mass_kg * (goal[0] - v.x) / s.tau_x_s)
+    let s = servo;
+    let fx = (body_config.mass_kg * (goal[0] - v.x) / s.tau_x_s)
         .clamp(-s.max_force_x_n, s.max_force_x_n)
         - chassis.drag_x_n_s_per_m * v.x;
     let fy = (if chassis.lateral_actuation {
-        (config.body.mass_kg * (goal[1] - v.y) / s.tau_y_s).clamp(-s.max_force_y_n, s.max_force_y_n)
+        (body_config.mass_kg * (goal[1] - v.y) / s.tau_y_s).clamp(-s.max_force_y_n, s.max_force_y_n)
     } else {
         0.0
     }) - chassis.drag_y_n_s_per_m * v.y;
-    let mz = (config.body.yaw_inertia_kg_m2 * (goal[2] - wz) / s.tau_yaw_s)
+    let mz = (body_config.yaw_inertia_kg_m2 * (goal[2] - wz) / s.tau_yaw_s)
         .clamp(-s.max_torque_nm, s.max_torque_nm)
         - chassis.drag_yaw_nm_s * wz;
     let force = *b.rotation() * Vector::new(fx, fy);
@@ -59,6 +64,7 @@ pub(crate) fn drive_servo(
 
 pub(crate) struct EnemyTank {
     pub body: RigidBodyHandle,
+    body_config: BodyConfig,
     pub turret: TurretSystem,
     pub chassis: Chassis,
     patrol: PatrolConfig,
@@ -73,7 +79,9 @@ impl EnemyTank {
         config: &Config,
         pose: [f64; 3],
         patrol: PatrolConfig,
+        body_config: BodyConfig,
     ) -> Result<Self, String> {
+        let max_spin_rate = number(&config.motion_limits, "max_wz_radps")?;
         if patrol.control_hz == 0
             || !config.clock.physics_hz.is_multiple_of(patrol.control_hz)
             || patrol.waypoints_m.is_empty()
@@ -91,6 +99,11 @@ impl EnemyTank {
             || patrol.initial_velocity != [0.0; 3]
             || patrol.initial_turret_angle_rad != 0.0
             || patrol.initial_turret_rate_radps != 0.0
+            || patrol.spin_rate_radps.is_some_and(|rate| {
+                !rate.is_finite()
+                    || rate.abs() > max_spin_rate
+                    || patrol.chassis != "omnidirectional"
+            })
         {
             return Err("Invalid confirmed patrol profile".into());
         }
@@ -99,7 +112,7 @@ impl EnemyTank {
             .get(&patrol.chassis)
             .ok_or("Unknown enemy chassis")?
             .clone();
-        let b = &config.body;
+        let b = &body_config;
         let rb = RigidBodyBuilder::dynamic()
             .translation(Vector::new(pose[0], pose[1]))
             .rotation(pose[2])
@@ -127,6 +140,7 @@ impl EnemyTank {
         let turret = TurretSystem::new(world, body, turret_config, &config.rigid_body)?;
         Ok(Self {
             body,
+            body_config,
             turret,
             chassis,
             patrol,
@@ -148,28 +162,55 @@ impl EnemyTank {
                 self.waypoint = (self.waypoint + 1) % self.patrol.waypoints_m.len();
                 point = self.patrol.waypoints_m[self.waypoint];
             }
-            let e =
-                normalize_angle((point[1] - p.y).atan2(point[0] - p.x) - body.rotation().angle());
-            let vx = if e.abs() > self.patrol.turn_in_place_threshold_rad {
-                0.0
-            } else {
-                self.patrol.forward_speed_mps
-            };
-            self.goal = [
-                vx.min(number(&config.motion_limits, "max_vx_mps").expect("Validated limits")),
-                0.0,
-                (self.patrol.heading_gain_per_s * e)
-                    .clamp(
-                        -self.patrol.max_yaw_rate_radps,
-                        self.patrol.max_yaw_rate_radps,
-                    )
-                    .clamp(
-                        -number(&config.motion_limits, "max_wz_radps").expect("Validated limits"),
-                        number(&config.motion_limits, "max_wz_radps").expect("Validated limits"),
+            if let Some(rate) = self.patrol.spin_rate_radps {
+                let direction = Vector::new(point[0], point[1]) - p;
+                let world_velocity = direction.normalize_or_zero() * self.patrol.forward_speed_mps;
+                let local_velocity = body.rotation().inverse() * world_velocity;
+                self.goal = [
+                    local_velocity.x.clamp(
+                        -number(&config.motion_limits, "max_vx_mps").expect("Validated limits"),
+                        number(&config.motion_limits, "max_vx_mps").expect("Validated limits"),
                     ),
-            ];
+                    local_velocity.y.clamp(
+                        -number(&config.motion_limits, "max_vy_mps").expect("Validated limits"),
+                        number(&config.motion_limits, "max_vy_mps").expect("Validated limits"),
+                    ),
+                    rate,
+                ];
+            } else {
+                let e = normalize_angle(
+                    (point[1] - p.y).atan2(point[0] - p.x) - body.rotation().angle(),
+                );
+                let vx = if e.abs() > self.patrol.turn_in_place_threshold_rad {
+                    0.0
+                } else {
+                    self.patrol.forward_speed_mps
+                };
+                self.goal = [
+                    vx.min(number(&config.motion_limits, "max_vx_mps").expect("Validated limits")),
+                    0.0,
+                    (self.patrol.heading_gain_per_s * e)
+                        .clamp(
+                            -self.patrol.max_yaw_rate_radps,
+                            self.patrol.max_yaw_rate_radps,
+                        )
+                        .clamp(
+                            -number(&config.motion_limits, "max_wz_radps")
+                                .expect("Validated limits"),
+                            number(&config.motion_limits, "max_wz_radps")
+                                .expect("Validated limits"),
+                        ),
+                ];
+            }
         }
-        drive_servo(world, self.body, config, &self.chassis, self.goal);
+        drive_servo(
+            world,
+            self.body,
+            &self.body_config,
+            &config.servo,
+            &self.chassis,
+            self.goal,
+        );
         self.turret
             .apply_servo(world, self.body, tick, config.clock.physics_hz);
     }

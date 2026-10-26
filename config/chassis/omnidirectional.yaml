@@ -1,0 +1,72 @@
+schema_version: '1.0'
+chassis_type: omnidirectional
+body:
+  length_m: 0.42
+  width_m: 0.42
+  corner_radius_m: 0.08
+armor:
+  layout: four_side_centers
+  width_m: 0.24
+  mounts_m:
+  - - 0.21
+    - 0.0
+    - 0.0
+  - - -0.21
+    - 0.0
+    - -3.141592653589793
+  - - 0.0
+    - 0.21
+    - 1.5707963267948966
+  - - 0.0
+    - -0.21
+    - -1.5707963267948966
+gps_mount_m:
+- 0.21
+- 0.0
+visual:
+  model_id: radial-omni-x-v1
+  kind: radial_omni
+  hull:
+    length_m: 0.34
+    width_m: 0.34
+    radius_m: 0.045
+  deck:
+    length_m: 0.25
+    width_m: 0.25
+    radius_m: 0.035
+  suspension_width_m: 0.045
+  wheel:
+    width_m: 0.08
+    roller_count: 7
+    roller_width_m: 0.012
+    hub_length_m: 0.035
+    hub_width_m: 0.025
+    hub_radius_m: 0.008
+    corner_radius_m: 0.02
+  armor:
+    front_length_m: 0.06
+    front_width_m: 0.24
+    side_length_m: 0.24
+    side_width_m: 0.06
+    radius_m: 0.015
+  forward_marker_m:
+  - - 0.16
+    - 0
+  - - 0.09
+    - 0.04
+  - - 0.09
+    - -0.04
+  turret_radius_m: 0.1
+  colors:
+    shell: '#65baf0'
+    stale: '#ba9a50'
+    frame: '#426176'
+    deck: '#b7cbd2'
+    rubber: '#14242e'
+    roller: '#8aa3ae'
+    hub: '#d9edf3'
+    edge: '#355568'
+    mark: '#e1f6ff'
+    turret: '#337ba6'
+    barrel: '#d6eeff'
+  suspension_inner_ratio: 0.55

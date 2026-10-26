@@ -45,7 +45,12 @@ try{
     assert.equal((await exchange({op:"step",turret_acceleration_target:tick%6===0?{acceleration_radps2:tick<300?25:-25,source_tick:tick}:null,
       fire_requests:tick%18===0?[{publisher_id:"probe",request_id:`armor-${tick}`,source_tick:tick}]:[]})).ok,true);
   }
+  const spin=structuredClone(config);
+  spin.weapons.targets=[spin.campaign.levels.c5.target];
+  spin.weapons.targets[0].body={...spin.body,...spin.chassis_profiles.omnidirectional.body};
+  assert.equal((await exchange({op:"init",config:spin,chassis:"differential"})).ok,true);
+  for(let tick=0;tick<600;tick++)assert.equal((await exchange({op:"step"})).ok,true);
   assert.equal(JSON.parse(wasm.call({op:"invalid"})).ok,false);
   assert.equal(wasm.exports.tankbot_input(1024*1024+1),0);
-  console.log("PASS: shared JSON ABI, 2 × 600 weapon + 1800 campaign + 600 acceleration/armor native/WASM snapshots, invalid operation and buffer limit");
+  console.log("PASS: shared JSON ABI, 2 × 600 weapon + 1800 campaign + 600 acceleration/armor + 600 spinning-omni native/WASM snapshots, invalid operation and buffer limit");
 }finally{child.stdin.end();}

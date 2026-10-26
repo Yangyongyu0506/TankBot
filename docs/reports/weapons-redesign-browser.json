@@ -1,0 +1,139 @@
+{
+  "url": "http://127.0.0.1:8795/?runtime=browser",
+  "capabilities": {
+    "browserName": "firefox",
+    "browserVersion": "157.0.1",
+    "platformName": "linux"
+  },
+  "levels": [
+    {
+      "level": "c3",
+      "report": {
+        "status": "Ready",
+        "sha256": "9d2c923ce646813d322a958a8969ff0c85be0a36604d8c2d1819f4a0adc697f0",
+        "revision": "745a8145d3995464618f1ebea72e2c6f8f5b1b0123e97f9d9cca56dd34e4512c",
+        "environment": "85013dd7cabba2e2dc2a37020860d35516e09ab753de2b9fcbe362592f4463bd",
+        "unit_tests": 1,
+        "simulation_batches": 6,
+        "max_batch_ms": 2,
+        "checks": [
+          "paths",
+          "syntax",
+          "manifest",
+          "contract",
+          "unit_tests",
+          "authorized_sensor_simulation",
+          "output_permissions",
+          "runtime_budget"
+        ],
+        "modules_executed": [
+          "tracking"
+        ],
+        "modules_waiting": [],
+        "kind": "test",
+        "id": "93895712da7848bbbf4fdbe92ff63f0d"
+      },
+      "active": {
+        "deployment_id": "1b42d0a67a98436da228b980c0da6f5e",
+        "sha256": "9d2c923ce646813d322a958a8969ff0c85be0a36604d8c2d1819f4a0adc697f0",
+        "revision": "745a8145d3995464618f1ebea72e2c6f8f5b1b0123e97f9d9cca56dd34e4512c",
+        "activated_tick": 300
+      },
+      "highlighted_files": [
+        "perception/polar_tracker.py"
+      ],
+      "result": "通关！可选择下一关，已有源码会保留。 本次估计 RMSE：0.260 m（仅结束后公布）。",
+      "screenshots": [
+        ".m1-cache/weapons-redesign/browser-ui-c3-tree.png",
+        ".m1-cache/weapons-redesign/browser-ui-c3-running.png"
+      ]
+    },
+    {
+      "level": "c4",
+      "report": {
+        "status": "Ready",
+        "sha256": "7feb500cf2d3bb2899dccc82e23f0c1675d9894086d084fce913073667217293",
+        "revision": "6277a4a45e64abe72e83c5ab74f72dff533f510212c2c42117f44b3d6eb23986",
+        "environment": "1037a52b84e6261a6105c02c6aa815c237478373ad800f5c15633211498f1685",
+        "unit_tests": 2,
+        "simulation_batches": 6,
+        "max_batch_ms": 3,
+        "checks": [
+          "paths",
+          "syntax",
+          "manifest",
+          "contract",
+          "unit_tests",
+          "authorized_sensor_simulation",
+          "output_permissions",
+          "runtime_budget"
+        ],
+        "modules_executed": [
+          "tracking"
+        ],
+        "modules_waiting": [],
+        "kind": "test",
+        "id": "1327a18a5f434b3dbfe7924180ce30dc"
+      },
+      "active": {
+        "deployment_id": "776aeec415f047b9ba2f90b23025d516",
+        "sha256": "7feb500cf2d3bb2899dccc82e23f0c1675d9894086d084fce913073667217293",
+        "revision": "6277a4a45e64abe72e83c5ab74f72dff533f510212c2c42117f44b3d6eb23986",
+        "activated_tick": 300
+      },
+      "highlighted_files": [
+        "perception/fusion_tracker.py"
+      ],
+      "result": "通关！可选择下一关，已有源码会保留。 本次估计 RMSE：0.234 m（仅结束后公布）。",
+      "screenshots": [
+        ".m1-cache/weapons-redesign/browser-ui-c4-tree.png",
+        ".m1-cache/weapons-redesign/browser-ui-c4-running.png"
+      ]
+    },
+    {
+      "level": "c5",
+      "report": {
+        "status": "Ready",
+        "sha256": "e2092c534b483a7ea80299fb131d5cc4748b2295eb5781bd7442db9594c244b4",
+        "revision": "5d2cde13de3c9ab39675121894caa13b48a68a7eee1dc97fd2d1f677af4f33ad",
+        "environment": "7ab7252beddb36979fe2b0e10bc9c88332dae86d16f761bda9fb43c6963fbcfa",
+        "unit_tests": 3,
+        "simulation_batches": 6,
+        "max_batch_ms": 3,
+        "checks": [
+          "paths",
+          "syntax",
+          "manifest",
+          "contract",
+          "unit_tests",
+          "authorized_sensor_simulation",
+          "output_permissions",
+          "runtime_budget"
+        ],
+        "modules_executed": [
+          "aiming",
+          "tracking"
+        ],
+        "modules_waiting": [],
+        "kind": "test",
+        "id": "8f04a2bcdc764f8ab73d9128ba5d93db"
+      },
+      "active": {
+        "deployment_id": "5b1c657cd687445ca900ed77dfa4b24b",
+        "sha256": "e2092c534b483a7ea80299fb131d5cc4748b2295eb5781bd7442db9594c244b4",
+        "revision": "5d2cde13de3c9ab39675121894caa13b48a68a7eee1dc97fd2d1f677af4f33ad",
+        "activated_tick": 342
+      },
+      "highlighted_files": [
+        "weapons/auto_aim.py",
+        "weapons/target_prediction.py"
+      ],
+      "result": "通关！可选择下一关，已有源码会保留。 本次估计 RMSE：0.159 m（仅结束后公布）。",
+      "screenshots": [
+        ".m1-cache/weapons-redesign/browser-ui-c5-tree.png",
+        ".m1-cache/weapons-redesign/browser-ui-c5-running.png"
+      ]
+    }
+  ],
+  "date": "2026-10-26"
+}

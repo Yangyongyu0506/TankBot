@@ -53,8 +53,12 @@ class LevelPluginTests(unittest.TestCase):
     def test_all_five_match_frozen_pre_refactoring_runtime_baselines(self):
         baseline=json.loads((ROOT/'tests/fixtures/level-behavior-before.json').read_text())
         config=load_config(self.path)
-        self.assertEqual(list(config['campaign']['levels']),list(baseline['levels']))
+        self.assertEqual(list(config['campaign']['levels']),[*baseline['levels'],'c5'])
         for lid,expected in baseline['levels'].items():
+            # User explicitly redesigned C3/C4 and added C5. Freeze the unchanged C0-C2 here;
+            # new sensor/control/goal semantics have dedicated curriculum acceptance tests.
+            if lid not in ('c0','c1','c2'):continue
+            expected=copy.deepcopy(expected)
             # Subsequent user requirement: Weapons projectiles are now visible.
             # Keep the original fixture; only this explicit policy change is exempt.
             if lid in ('c1','c2','c3','c4'):
@@ -64,7 +68,19 @@ class LevelPluginTests(unittest.TestCase):
             if lid=='c2':
                 expected['guide']['steps']=[text.replace('击杀后通关；真值误差仅在尝试结束后给出。','击杀后通关；运行中查看累计位置 RMSE 和趋势，越低表示整体误差越小。') for text in expected['guide']['steps']]
                 expected['guide']['completion']=expected['guide']['completion'].replace('把敌车 HP 减到 0 即通关；误差评分在尝试结束后显示，不作为额外门槛。','把敌车 HP 减到 0 即通关；运行中显示累计位置 RMSE，结束后保留最终诊断，不作为额外门槛。')
-            with self.subTest(level=lid):self.assert_subset(expected,projection(config,lid),lid)
+            with self.subTest(level=lid):
+                actual=projection(config,lid)
+                # SDK reference is additive across every lesson. Existing constructors, field
+                # types and method signatures remain compatible; explanatory text can describe
+                # the new sensors without pretending the old center-only C4 still exists.
+                old_types=expected.pop('types');new_types={item['name']:item for item in actual['types']}
+                for item in old_types:
+                    value=new_types[item['name']]
+                    self.assertEqual(item['constructor'],value['constructor'])
+                    self.assertEqual([(f['name'],f['type']) for f in item['fields']],[(f['name'],f['type']) for f in value['fields']])
+                    signatures={m['signature'] for m in value['methods']}
+                    self.assertTrue({m['signature'] for m in item['methods']}<=signatures)
+                self.assert_subset(expected,actual,lid)
 
     def test_invalid_definitions_report_file_and_precise_field(self):
         cases=[
@@ -126,15 +142,15 @@ class LevelPluginTests(unittest.TestCase):
         self.base['level_plugins']['limits']['max_files']=4;self.write_base()
         with self.assertRaisesRegex(LevelValidationError,'too many level files'):load_config(self.path)
 
-    def test_temporary_sixth_plugin_runs_with_arbitrary_id_and_no_engine_edits(self):
+    def test_temporary_plugin_runs_with_arbitrary_id_and_no_engine_edits(self):
         d=self.definition('c1');lid='robotics.temporary_probe'
-        d['metadata'].update(id=lid,name='Temporary test only',order=5,prerequisites=['c4'])
+        d['metadata'].update(id=lid,name='Temporary test only',order=6,prerequisites=['c5'])
         d['robots'][0]['initial_pose']=[.5,-.5,.2]
         d['objectives']['time_limit_s']=7
         d['objectives']['parameters']['required_hits']=2
         self.write(d,'temporary')
         config=load_config(self.path)
-        self.assertEqual(len(config['campaign']['levels']),6)
+        self.assertEqual(len(config['campaign']['levels']),7)
         resolved=configure(config,lid);files=starter(resolved);files['perception/transforms.py']=TRANSFORMS
         a=Authority(resolved,controlled=True,startup_sources=files);self.addCleanup(a.close)
         for _ in range(30):a.advance()
@@ -146,7 +162,7 @@ class LevelPluginTests(unittest.TestCase):
         state=ApplicationState(config,self.directory/'settings.yaml',self.directory/'progress.json')
         for key in state.levels[:-1]:state.complete(state.register_attempt(key),key)
         self.assertIn(lid,state.progress()['unlocked_levels'])
-        self.assertEqual(len(list((ROOT/'levels').glob('*.yaml'))),5)
+        self.assertEqual(len(list((ROOT/'levels').glob('*.yaml'))),6)
 
     def test_data_permission_is_independent_of_system_pose_visualization(self):
         d=self.definition();d['permissions']['data_access']['inputs']={}
@@ -254,7 +270,7 @@ class CampaignRobot(Module):
         snapshot=server.workspace.store.read()
         server.workspace.store.edit(snapshot['revision'],{'player_tools.py':'# preserve me\n'})
         runs={a.run_id}
-        for lid in ('c1','c2','c3','c4','c4','c0'):
+        for lid in ('c1','c2','c3','c4','c5','c5','c0','c5'):
             old=server.authority
             for _ in range(12):old.advance()
             server.start_level(lid)

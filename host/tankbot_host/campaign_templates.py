@@ -117,8 +117,15 @@ def framework_upgrade(config: dict, files: dict[str, str]) -> dict:
         profile = config["robot_graph"]["profiles"][profile_name]
         try:
             manifest = json.loads(files.get("tankbot.json","{}"))
-            current = len(manifest.get("modules",[])) > 1 and all(item["contract"] in files for item in manifest["modules"])
+            current = bool(manifest.get("modules")) and all(item["contract"] in files for item in manifest["modules"])
+            if current:
+                declared={item["module_id"]:json.loads(files[item["contract"]]) for item in manifest["modules"]}
+                for connection in manifest.get("connections",[]):
+                    if not connection["from"].startswith("/") and connection["to"].startswith("/robot/estimates/"):
+                        mid,port=connection["from"].split(".")
+                        current &= declared[mid]["outputs"][port]["schema"] in profile["grants"]["outputs"]
             if current and manifest.get("project_id") == profile["manifest"]["project_id"]:
+                current &= {m["module_id"] for m in manifest["modules"]} == set(profile["contracts"])
                 # C3 -> C4 changes the tracked value from XY to XY/yaw. Existing
                 # multi-module scaffolding is not necessarily this lesson's scaffold.
                 for item in manifest["modules"]:
@@ -130,7 +137,7 @@ def framework_upgrade(config: dict, files: dict[str, str]) -> dict:
         except (ValueError,KeyError,TypeError):
             current = False
         return {"required":not current,"current_version":None,"target_version":profile["template_version"],
-                "managed_files":profile["managed_files"],"message":"本关使用多模块框架；请预览升级，已有 perception/ 和 weapons/ 算法文件会保留。" if not current else ""}
+                "managed_files":profile["managed_files"],"message":"本关运行配置需要更新；请预览升级，已有 perception/ 和 weapons/ 算法文件会保留。" if not current else ""}
     source: str = files.get("campaign_robot.py", "")
     marker: re.Match | None = re.search(r"^\s*# TankBot managed scaffold ([0-9.]+)(?:\s|$)", source, re.MULTILINE)
     current: bool = marker is not None and marker.group(1) == TEMPLATE_VERSION

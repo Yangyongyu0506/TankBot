@@ -1,4 +1,4 @@
-import {SceneTimeline, FollowCamera, drawChassis, drawTurret} from "/rendering.js";
+import {SceneTimeline, FollowCamera, drawChassis, drawTurret, drawTarget, drawArmor} from "/rendering.js";
 import {mountWorkspace, setupWorkspaceDialog} from "/workspace-ui.js";
 import {connectBrowser} from "/browser-client.js";
 import {mountCampaign, drawRadar} from "/campaign-ui.js";
@@ -238,10 +238,7 @@ function draw(now) {
       } else if (object.kind === "target") {
         if(!visualization?.enabled("truth_targets"))continue;
         ctx.save(); ctx.translate(...point(object.pose.x_m, object.pose.y_m)); ctx.rotate(-object.pose.yaw_rad);
-        const l = profile.body.length_m * scale, w = profile.body.width_m * scale;
-        ctx.fillStyle = "#af6972"; ctx.beginPath(); ctx.roundRect(-l / 2, -w / 2, l, w, profile.body.corner_radius_m * scale); ctx.fill();
-        if(profile.armor_width_m){const half=profile.armor_width_m*scale/2;ctx.strokeStyle="#82e5f3";ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(l/2,-half);ctx.lineTo(l/2,half);ctx.moveTo(-l/2,-half);ctx.lineTo(-l/2,half);ctx.moveTo(-half,w/2);ctx.lineTo(half,w/2);ctx.moveTo(-half,-w/2);ctx.lineTo(half,-w/2);ctx.stroke();}
-        ctx.fillStyle = "#fff0de"; ctx.fillText(String(object.hits), -4, 4); ctx.restore();
+        drawTarget(ctx, object, profile, scale); ctx.restore();
       }
     }
     if (frame.pose&&visualization?.enabled("trail")) {
@@ -268,15 +265,25 @@ function draw(now) {
     if(frame.targetEstimate&&visualization?.enabled("target_estimates")){
       const p=frame.targetEstimate,[x,y]=point(p.x_m,p.y_m);
       ctx.strokeStyle="#f4cf7e";ctx.fillStyle="#f4cf7e";ctx.lineWidth=2;ctx.setLineDash([5,4]);
-      ctx.beginPath();ctx.arc(x,y,profile.body.width_m*scale/2,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+      ctx.beginPath();ctx.arc(x,y,(profile.target_geometry?.body??profile.body).width_m*scale/2,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
       ctx.beginPath();ctx.moveTo(x-7,y);ctx.lineTo(x+7,y);ctx.moveTo(x,y-7);ctx.lineTo(x,y+7);ctx.stroke();
       ctx.font="12px sans-serif";ctx.fillText("目标估计",x+12,y-12);
       if(Number.isFinite(p.yaw_rad)){
         ctx.save();ctx.translate(x,y);ctx.rotate(-p.yaw_rad);
-        ctx.strokeRect(-profile.body.length_m*scale/2,-profile.body.width_m*scale/2,profile.body.length_m*scale,profile.body.width_m*scale);
-        ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(profile.body.length_m*scale*.7,0);ctx.stroke();
-        if(profile.armor_width_m){const half=profile.armor_width_m*scale/2,l=profile.body.length_m*scale/2,w=profile.body.width_m*scale/2;ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(l,-half);ctx.lineTo(l,half);ctx.moveTo(-l,-half);ctx.lineTo(-l,half);ctx.moveTo(-half,w);ctx.lineTo(half,w);ctx.moveTo(-half,-w);ctx.lineTo(half,-w);ctx.stroke();}
+        const geometry=profile.target_geometry??profile,body=geometry.body;
+        ctx.strokeRect(-body.length_m*scale/2,-body.width_m*scale/2,body.length_m*scale,body.width_m*scale);
+        ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(body.length_m*scale*.7,0);ctx.stroke();
+        drawArmor(ctx,geometry,scale);
         ctx.restore();
+      }
+    }
+    if(visualization?.enabled("radar")){
+      for(const observation of snapshot?.payload.local_observations??[]){
+        if(observation.schema!=="gps_fix@1")continue;
+        ctx.fillStyle="#c8a6f4";ctx.font="11px monospace";
+        for(const fix of observation.payload.positions_m){
+          const [x,y]=point(fix[0],fix[1]);ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fill();ctx.fillText("GPS 观测",x+8,y-8);
+        }
       }
     }
     if(visualization)drawVisualization(ctx,point,frame,debugFrame,visualization,profile,scale);
@@ -291,6 +298,11 @@ function draw(now) {
     canvas.dataset.developerMode=Boolean(visualization?.developer);
     canvas.dataset.visibleLayers=JSON.stringify(Object.keys(settings.value.layers).filter(key=>visualization.enabled(key)));
     canvas.dataset.truthObjects=debugFrame?.objects.length??0;
+    const shownTarget=visualization?.enabled("truth_targets")?objects.find(object=>object.kind==="target"):null;
+    canvas.dataset.targetModel=shownTarget?.visual?.chassis_visual.model_id??"";
+    canvas.dataset.targetYaw=shownTarget?.pose.yaw_rad??"";
+    canvas.dataset.targetX=shownTarget?.pose.x_m??"";
+    canvas.dataset.targetY=shownTarget?.pose.y_m??"";
     canvas.dataset.robotScreenX = frame.pose ? point(frame.pose.x_m, frame.pose.y_m)[0] : "";
     canvas.dataset.robotScreenY = frame.pose ? point(frame.pose.x_m, frame.pose.y_m)[1] : "";
     canvas.dataset.robotYaw = frame.pose?.yaw_rad ?? "";

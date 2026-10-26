@@ -61,7 +61,11 @@ export async function mountCampaign(profile,browser,onState,releaseControls){
       const r=await fetch("/api/campaign/start",{method:"POST",headers:{"Content-Type":"application/json","X-TankBot-Control":token},body:JSON.stringify({level_id:$("level-select").value})});
       const result=await r.json();if(!r.ok)throw Error(result.error??"关卡启动失败");
       window.location.reload();
-    }catch(error){$("task-message").textContent=error.message;$("start-level").disabled=false;}
+    }catch(error){
+      const reason=error.message==="WORKSPACE_BYTE_LIMIT"?"保留的源码与本关所需文件超过工作区容量上限，原有代码已保留。":error.message;
+      $("task-message").textContent="关卡切换失败："+reason+" 当前仍为 "+(current?.title??"原场景")+"。";
+      $("task-message").setAttribute("role","alert");$("start-level").disabled=false;
+    }
   };
   const finish=async()=>{
     try{releaseControls();await runtime("/api/campaign/finish");await poll();}

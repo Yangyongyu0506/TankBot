@@ -53,7 +53,7 @@ class WorkspaceTests(WorkspaceFixture, unittest.TestCase):
         self.assertEqual(self.store.read(), new)
 
     def test_paths_links_case_collisions_and_limits(self):
-        for files in ({'../escape.py': ''}, {'/escape.py': ''}, {'a.py': '', 'A.py': ''}, {'CON.py': ''}, {'a.py': '\0'}, {'x.py': 'x'*40000}, {'a.py/x.py':'', 'a.py':''}):
+        for files in ({'../escape.py': ''}, {'/escape.py': ''}, {'a.py': '', 'A.py': ''}, {'CON.py': ''}, {'a.py': '\0'}, {'x.py': 'x'*(self.config['workspace']['max_source_bytes']+1)}, {'a.py/x.py':'', 'a.py':''}):
             with self.subTest(files=list(files)), self.assertRaises(ValueError):
                 validate_files(files, self.config['workspace'])
         source = Path(self.temp.name) / 'seed'; source.mkdir()

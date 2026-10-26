@@ -30,7 +30,7 @@ class LearningTests(unittest.TestCase):
         return configure(load_config(ROOT / "config/game.yaml"), level)
 
     def test_every_level_has_guidance_and_generated_python_has_explicit_types(self):
-        for level in ("c0", "c1", "c2", "c3", "c4"):
+        for level in ("c0", "c1", "c2", "c3", "c4", "c5"):
             config = self.config(level)
             guide = learning_bundle(config)
             self.assertTrue(guide["lesson"]["steps"])

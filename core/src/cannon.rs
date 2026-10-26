@@ -43,6 +43,7 @@ pub struct TargetConfig {
     pub motion: Option<crate::enemy::PatrolConfig>,
     pub health: Option<crate::enemy::HealthConfig>,
     pub armor: Option<ArmorConfig>,
+    pub body: Option<BodyConfig>,
 }
 
 #[derive(Clone, Deserialize)]
@@ -50,6 +51,7 @@ pub struct TargetConfig {
 pub struct ArmorConfig {
     pub layout: String,
     pub width_m: f64,
+    pub mounts_m: Option<[[f64; 3]; 4]>,
 }
 #[derive(Clone, Deserialize, Serialize, Debug)]
 #[serde(deny_unknown_fields)]
@@ -236,6 +238,21 @@ impl CannonSystem {
         let mut target_hits = BTreeMap::new();
         let mut armor = BTreeMap::new();
         for t in &config.targets {
+            let target_body = t.body.as_ref().unwrap_or(body);
+            if [
+                target_body.length_m,
+                target_body.width_m,
+                target_body.corner_radius_m,
+                target_body.mass_kg,
+                target_body.yaw_inertia_kg_m2,
+            ]
+            .iter()
+            .any(|v| !v.is_finite() || *v <= 0.0)
+                || 2.0 * target_body.corner_radius_m
+                    >= target_body.length_m.min(target_body.width_m)
+            {
+                return Err("Invalid target body profile".into());
+            }
             if target_hits.insert(t.target_id.clone(), 0).is_some() {
                 return Err("Duplicate target ID".into());
             }
@@ -244,15 +261,38 @@ impl CannonSystem {
                     || !panel.width_m.is_finite()
                     || panel.width_m <= 0.0
                     || panel.width_m
-                        > (body.length_m.min(body.width_m) - 2.0 * body.corner_radius_m)
+                        > (target_body.length_m.min(target_body.width_m)
+                            - 2.0 * target_body.corner_radius_m)
                 {
                     return Err("Invalid four-side armor profile".into());
                 }
-                armor.insert(t.target_id.clone(), panel.clone());
+                let expected = [
+                    [target_body.length_m / 2.0, 0.0, 0.0],
+                    [-target_body.length_m / 2.0, 0.0, -std::f64::consts::PI],
+                    [0.0, target_body.width_m / 2.0, std::f64::consts::FRAC_PI_2],
+                    [
+                        0.0,
+                        -target_body.width_m / 2.0,
+                        -std::f64::consts::FRAC_PI_2,
+                    ],
+                ];
+                let mounts = panel.mounts_m.unwrap_or(expected);
+                if mounts.iter().flatten().any(|x| !x.is_finite())
+                    || mounts.iter().zip(expected).any(|(got, want)| {
+                        (got[0] - want[0]).abs() > n.spatial_epsilon_m
+                            || (got[1] - want[1]).abs() > n.spatial_epsilon_m
+                            || normalize_angle(got[2] - want[2]).abs() > n.spatial_epsilon_m
+                    })
+                {
+                    return Err("Armor mount must lie on its target body surface".into());
+                }
+                let mut resolved = panel.clone();
+                resolved.mounts_m = Some(mounts);
+                armor.insert(t.target_id.clone(), resolved);
             }
             obstacles.push(Obstacle {
                 pose: Pose::new(Vector::new(t.pose[0], t.pose[1]), t.pose[2]),
-                shape: body_shape(body),
+                shape: body_shape(target_body),
                 target_id: Some(t.target_id.clone()),
             });
         }
@@ -627,13 +667,19 @@ impl CannonSystem {
                                     .pose
                             });
                         let local = pose.inverse() * *point;
-                        let damaging = self.armor.get(id).is_none_or(|panel| {
-                            let epsilon = self.numerics.spatial_epsilon_m;
-                            ((local.x.abs() - body.length_m / 2.0).abs() <= epsilon
-                                && local.y.abs() <= panel.width_m / 2.0 + epsilon)
-                                || ((local.y.abs() - body.width_m / 2.0).abs() <= epsilon
-                                    && local.x.abs() <= panel.width_m / 2.0 + epsilon)
-                        });
+                        let damaging =
+                            self.armor.get(id).is_none_or(|panel| {
+                                let epsilon = self.numerics.spatial_epsilon_m;
+                                panel.mounts_m.expect("Validated armor mounts").iter().any(
+                                    |mount| {
+                                        let offset = local - Vector::new(mount[0], mount[1]);
+                                        let normal = Vector::new(mount[2].cos(), mount[2].sin());
+                                        offset.dot(normal).abs() <= epsilon
+                                            && offset.dot(Vector::new(-normal.y, normal.x)).abs()
+                                                <= panel.width_m / 2.0 + epsilon
+                                    },
+                                )
+                            });
                         if damaging {
                             *self
                                 .damage_hits
@@ -792,6 +838,68 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn compact_omni_armor_uses_its_own_body_and_rejects_detached_mounts() {
+        let raw: Value =
+            serde_json::from_str(include_str!("../tests/fixtures/default-profile.json")).unwrap();
+        for yaw in [0.0, 1.2] {
+            for side in 0..4 {
+                for armored in [true, false] {
+                    let mut config: Config = serde_json::from_value(raw.clone()).unwrap();
+                    config.scene.walls.clear();
+                    let mut target: TargetConfig =
+                        serde_json::from_value(raw["campaign"]["levels"]["c5"]["target"].clone())
+                            .unwrap();
+                    let mut body = config.body.clone();
+                    let geometry = &raw["chassis_profiles"]["omnidirectional"]["body"];
+                    body.length_m = geometry["length_m"].as_f64().unwrap();
+                    body.width_m = geometry["width_m"].as_f64().unwrap();
+                    body.corner_radius_m = geometry["corner_radius_m"].as_f64().unwrap();
+                    target.body = Some(body);
+                    target.pose[2] = yaw;
+                    let id = target.target_id.clone();
+                    config.weapons.targets = vec![target];
+                    let mut c = GameCore::new(config, "differential").unwrap();
+                    let enemy = &c.enemies[&id];
+                    let pose = *c.world.bodies[enemy.body].position();
+                    let shape =
+                        c.world.colliders[c.world.bodies[enemy.body].colliders()[0]].shape();
+                    assert!((shape.compute_local_aabb().half_extents().x - 0.21).abs() < 1e-12);
+                    let angle = side as f64 * std::f64::consts::FRAC_PI_2;
+                    let normal = Vector::new(angle.cos(), angle.sin());
+                    let tangent = Vector::new(-normal.y, normal.x);
+                    let offset = if armored { 0.0 } else { 0.16 };
+                    c.cannon.as_mut().unwrap().shots.push(shot(
+                        0,
+                        pose * (normal * 0.55 + tangent * offset),
+                        pose.rotation * (-normal * 30.0),
+                    ));
+                    c.step().unwrap();
+                    let cannon = c.cannon.as_ref().unwrap();
+                    assert!(cannon.shots.is_empty());
+                    assert_eq!(cannon.target_hits[&id], 1);
+                    assert_eq!(
+                        cannon.damage_hits[&id],
+                        u64::from(armored),
+                        "side={side} yaw={yaw}"
+                    );
+                }
+            }
+        }
+        let mut config: Config = serde_json::from_value(raw.clone()).unwrap();
+        let mut target: TargetConfig =
+            serde_json::from_value(raw["campaign"]["levels"]["c5"]["target"].clone()).unwrap();
+        let mut body = config.body.clone();
+        body.length_m = 0.42;
+        body.width_m = 0.42;
+        target.body = Some(body);
+        target.armor.as_mut().unwrap().mounts_m.as_mut().unwrap()[0][0] = 0.4;
+        config.weapons.targets = vec![target];
+        assert!(
+            matches!(GameCore::new(config,"differential"),Err(error) if error.contains("Armor mount"))
+        );
     }
     fn advance(c: &mut GameCore, dt: f64) {
         let p = *c.world.bodies[c.tank].position();

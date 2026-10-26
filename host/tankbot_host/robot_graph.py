@@ -60,7 +60,7 @@ def inspect_graph(files, manifest, authority):
             raise ValueError("UNKNOWN_OUTPUT_PORT")
         schema = modules[mid]["contract"]["outputs"][port]["schema"]
         internal = channel == f"/robot/modules/{mid}/{port}" and schema in limits["internal_schemas"]
-        candidate = channel == f"/robot/estimates/{mid}/" + {"pose2d@1":"pose","target_estimate@1":"target","target_pose_estimate@1":"target_pose"}.get(schema, "") and schema in allowed_outputs
+        candidate = channel == f"/robot/estimates/{mid}/" + {"pose2d@1":"pose","target_estimate@1":"target","target_pose_estimate@1":"target_pose","target_polar_estimate@1":"target_polar"}.get(schema, "") and schema in allowed_outputs
         actuator = channel in allowed_outputs and schema == allowed_outputs[channel]
         if not (internal or candidate or actuator):
             raise ValueError("UNAUTHORIZED_GRAPH_OUTPUT")

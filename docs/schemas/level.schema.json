@@ -226,20 +226,50 @@
               },
               "armor": {
                 "type": "object",
-                "properties": {
-                  "layout": {
-                    "const": "four_side_centers"
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "source": {
+                        "const": "chassis_profile"
+                      }
+                    },
+                    "required": [
+                      "source"
+                    ],
+                    "additionalProperties": false
                   },
-                  "width_m": {
-                    "type": "number",
-                    "exclusiveMinimum": 0
+                  {
+                    "type": "object",
+                    "properties": {
+                      "layout": {
+                        "const": "four_side_centers"
+                      },
+                      "width_m": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "mounts_m": {
+                        "type": "array",
+                        "minItems": 4,
+                        "maxItems": 4,
+                        "items": {
+                          "type": "array",
+                          "minItems": 3,
+                          "maxItems": 3,
+                          "items": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    },
+                    "required": [
+                      "layout",
+                      "width_m"
+                    ],
+                    "additionalProperties": false
                   }
-                },
-                "required": [
-                  "layout",
-                  "width_m"
-                ],
-                "additionalProperties": false
+                ]
               }
             },
             "required": [],
@@ -853,7 +883,10 @@
                           "projectile_speed_mps",
                           "max_acceleration_radps2",
                           "armor_width_m",
-                          "armor_mounts"
+                          "armor_mounts",
+                          "radar_covariance",
+                          "gps_covariance",
+                          "gps_mount"
                         ]
                       }
                     },
@@ -934,6 +967,14 @@
                 "default_file"
               ],
               "additionalProperties": false
+            },
+            "edit_files": {
+              "type": "array",
+              "maxItems": 64,
+              "uniqueItems": true,
+              "items": {
+                "type": "string"
+              }
             }
           },
           "required": [
@@ -997,7 +1038,16 @@
               "auto_aim",
               "armor_aim",
               "auto_aim_tests",
-              "pose_tracker"
+              "pose_tracker",
+              "polar_tracker",
+              "fusion_tracker",
+              "raw_sensor_adapters",
+              "predictive_aiming_adapter",
+              "polar_auto_aim",
+              "target_prediction",
+              "polar_contract_tests",
+              "fusion_contract_tests",
+              "predictive_contract_tests"
             ]
           }
         },
@@ -1056,7 +1106,8 @@
             "imu",
             "turret_joint",
             "weapon_state",
-            "radar"
+            "radar",
+            "intercepted_gps"
           ]
         },
         "topic": {
@@ -1068,7 +1119,8 @@
         "frame_id": {
           "enum": [
             "base_link",
-            "radar_link"
+            "radar_link",
+            "map"
           ]
         },
         "update_hz": {
@@ -1076,90 +1128,14 @@
           "minimum": 1
         },
         "parameters": {
-          "type": "object",
-          "properties": {
-            "mount_m": {
-              "type": "array",
-              "items": {
-                "type": "number"
-              },
-              "minItems": 2,
-              "maxItems": 2
+          "oneOf": [
+            {
+              "$ref": "#/$defs/radarParameters"
             },
-            "yaw_rad": {
-              "type": "number"
-            },
-            "frame_id": {
-              "const": "radar_link"
-            },
-            "range_m": {
-              "type": "number",
-              "exclusiveMinimum": 0
-            },
-            "field_of_view_rad": {
-              "type": "number",
-              "exclusiveMinimum": 0,
-              "maximum": 6.283185307179586
-            },
-            "update_hz": {
-              "type": "integer",
-              "minimum": 1
-            },
-            "occlusion": {
-              "const": "walls"
-            },
-            "measurement": {
-              "const": "target_center"
-            },
-            "latency_ticks": {
-              "const": 0
-            },
-            "range_bias_m": {
-              "const": 0
-            },
-            "bearing_bias_rad": {
-              "const": 0
-            },
-            "noise": {
-              "type": "object",
-              "properties": {
-                "range_stddev_m": {
-                  "type": "number",
-                  "minimum": 0
-                },
-                "bearing_stddev_rad": {
-                  "type": "number",
-                  "minimum": 0
-                },
-                "drop_probability": {
-                  "type": "number",
-                  "minimum": 0,
-                  "maximum": 1
-                }
-              },
-              "required": [
-                "range_stddev_m",
-                "bearing_stddev_rad",
-                "drop_probability"
-              ],
-              "additionalProperties": false
+            {
+              "$ref": "#/$defs/gpsParameters"
             }
-          },
-          "required": [
-            "mount_m",
-            "yaw_rad",
-            "frame_id",
-            "range_m",
-            "field_of_view_rad",
-            "update_hz",
-            "occlusion",
-            "measurement",
-            "latency_ticks",
-            "range_bias_m",
-            "bearing_bias_rad",
-            "noise"
-          ],
-          "additionalProperties": false
+          ]
         }
       },
       "required": [
@@ -1182,7 +1158,31 @@
           "then": {
             "required": [
               "parameters"
-            ]
+            ],
+            "properties": {
+              "parameters": {
+                "$ref": "#/$defs/radarParameters"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "intercepted_gps"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "parameters"
+            ],
+            "properties": {
+              "parameters": {
+                "$ref": "#/$defs/gpsParameters"
+              }
+            }
           }
         }
       ]
@@ -1404,6 +1404,156 @@
         "inputs",
         "outputs",
         "actuators"
+      ],
+      "additionalProperties": false
+    },
+    "radarParameters": {
+      "type": "object",
+      "properties": {
+        "mount_m": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "yaw_rad": {
+          "type": "number"
+        },
+        "frame_id": {
+          "const": "radar_link"
+        },
+        "range_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "field_of_view_rad": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 6.283185307179586
+        },
+        "update_hz": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "occlusion": {
+          "const": "walls"
+        },
+        "measurement": {
+          "const": "target_center"
+        },
+        "latency_ticks": {
+          "const": 0
+        },
+        "range_bias_m": {
+          "const": 0
+        },
+        "bearing_bias_rad": {
+          "const": 0
+        },
+        "noise": {
+          "type": "object",
+          "properties": {
+            "range_stddev_m": {
+              "type": "number",
+              "minimum": 0
+            },
+            "bearing_stddev_rad": {
+              "type": "number",
+              "minimum": 0
+            },
+            "drop_probability": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "required": [
+            "range_stddev_m",
+            "bearing_stddev_rad",
+            "drop_probability"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "mount_m",
+        "yaw_rad",
+        "frame_id",
+        "range_m",
+        "field_of_view_rad",
+        "update_hz",
+        "occlusion",
+        "measurement",
+        "latency_ticks",
+        "range_bias_m",
+        "bearing_bias_rad",
+        "noise"
+      ],
+      "additionalProperties": false
+    },
+    "gpsParameters": {
+      "type": "object",
+      "properties": {
+        "target_robot": {
+          "type": "string"
+        },
+        "mount": {
+          "const": "front_center"
+        },
+        "range_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "occlusion": {
+          "const": "none"
+        },
+        "latency_ticks": {
+          "const": 0
+        },
+        "bias_m": {
+          "type": "array",
+          "items": {
+            "const": 0
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "random_stream": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "noise": {
+          "type": "object",
+          "properties": {
+            "position_stddev_m": {
+              "type": "number",
+              "minimum": 0
+            },
+            "drop_probability": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "required": [
+            "position_stddev_m",
+            "drop_probability"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "target_robot",
+        "mount",
+        "range_m",
+        "occlusion",
+        "latency_ticks",
+        "bias_m",
+        "random_stream",
+        "noise"
       ],
       "additionalProperties": false
     }

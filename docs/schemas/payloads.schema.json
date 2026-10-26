@@ -241,7 +241,8 @@
                       "encoder@1",
                       "radar@1",
                       "joint_state@1",
-                      "weapon_state@1"
+                      "weapon_state@1",
+                      "gps_fix@1"
                     ]
                   }
                 }
@@ -467,7 +468,9 @@
                       "target_points@1",
                       "turret_acceleration@1",
                       "target_pose_estimate@1",
-                      "turret_velocity@1"
+                      "turret_velocity@1",
+                      "gps_fix@1",
+                      "target_polar_estimate@1"
                     ]
                   }
                 }
@@ -590,7 +593,9 @@
                       "target_estimate@1",
                       "target_points@1",
                       "turret_acceleration@1",
-                      "target_pose_estimate@1"
+                      "target_pose_estimate@1",
+                      "gps_fix@1",
+                      "target_polar_estimate@1"
                     ]
                   }
                 }
@@ -836,7 +841,8 @@
                       "encoder@1",
                       "radar@1",
                       "joint_state@1",
-                      "weapon_state@1"
+                      "weapon_state@1",
+                      "gps_fix@1"
                     ]
                   }
                 }
@@ -1055,7 +1061,8 @@
                       "encoder@1",
                       "radar@1",
                       "joint_state@1",
-                      "weapon_state@1"
+                      "weapon_state@1",
+                      "gps_fix@1"
                     ]
                   }
                 }
@@ -1336,7 +1343,8 @@
                       "encoder@1",
                       "radar@1",
                       "joint_state@1",
-                      "weapon_state@1"
+                      "weapon_state@1",
+                      "gps_fix@1"
                     ]
                   }
                 }
@@ -1466,6 +1474,63 @@
         "objects",
         "effects",
         "target_estimates"
+      ],
+      "additionalProperties": false
+    },
+    "gps_fix": {
+      "type": "object",
+      "properties": {
+        "positions_m": {
+          "type": "array",
+          "maxItems": 1,
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          }
+        }
+      },
+      "required": [
+        "positions_m"
+      ],
+      "additionalProperties": false
+    },
+    "target_polar_estimate": {
+      "type": "object",
+      "properties": {
+        "range_m": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "bearing_rad": {
+          "type": "number",
+          "minimum": -3.141592653589793,
+          "exclusiveMaximum": 3.141592653589793
+        },
+        "covariance": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 4,
+              "maxItems": 4
+            }
+          ]
+        }
+      },
+      "required": [
+        "range_m",
+        "bearing_rad",
+        "covariance"
       ],
       "additionalProperties": false
     }

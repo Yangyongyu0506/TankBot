@@ -13,6 +13,7 @@
 | [view-policy.schema.json](view-policy.schema.json) | 受信策略字段；不是玩家授权申请格式 |
 | [chassis-controller.schema.json](chassis-controller.schema.json) | 受信底盘类型、速度轴限值、cmd_vel_timeout；不是逐条速度消息 |
 | [wheel-calibration.schema.json](wheel-calibration.schema.json) | radial_omni@1 公开轮组标定和可复用几何结构 |
+| [chassis-profile.schema.json](chassis-profile.schema.json) | 通用底盘类型、几何、四面装甲、GPS 安装与外观；表面一致性另作领域校验 |
 | [simulation-profile.schema.json](simulation-profile.schema.json) | 通用配置与生成的内部 DTO；跨字段/数值可行性另由 Host/Core 校验 |
 | [campaign.schema.json](campaign.schema.json) | 生成的 Campaign 兼容 DTO，以及既有 Radar、巡逻与血量组件定义 |
 | [level.schema.json](level.schema.json) | 独立 YAML 关卡 1.0：元数据、世界、机器人、接口、权限、规则、诊断和教材 |
@@ -75,6 +76,8 @@ M4 内部配置为 **1.6**，增加必填 campaign；1.5 沙盒仍可读。新�
 
 ## YAML 关卡插件增量
 
-应用配置 1.9 的 `level_plugins` 声明目录与资源限额；`levels/*.yaml` 经 `level.schema.json` 及交叉引用/组件/权限验证后，编译为上述内部 DTO。安全加载器限制文件大小、节点、嵌套深度与组件数量，拒绝别名、重复键、任意对象标签、无效地图路径及未注册类型。权限不是仅靠 Schema 执行，实际数据仍由 Authority 裁剪。现有五关和生成夹具由同一加载器校验；文档工具也检查该流程和关卡编写指南。格式与精确错误路径见 [27](../27_LEVEL_PLUGIN_ARCHITECTURE.md)。
+应用配置 2.0 的 `level_plugins` 声明目录与资源限额；`levels/*.yaml` 经 `level.schema.json` 及交叉引用/组件/权限验证后，编译为上述内部 DTO。`chassis_profiles` 加载 `config/chassis/*.yaml`，经 `chassis-profile.schema.json` 和表面一致性校验生成车体/外观/安装参数，见 [29](../29_CHASSIS_PROFILES.md)。安全加载器限制文件大小、节点、嵌套深度与组件数量，拒绝别名、重复键、任意对象标签、无效地图路径及未注册类型。权限不是仅靠 Schema 执行，实际数据仍由 Authority 裁剪。关卡和生成夹具由同一加载器校验；文档工具也检查该流程和关卡编写指南。格式与精确错误路径见 [27](../27_LEVEL_PLUGIN_ARCHITECTURE.md)。
 
 可选的 permissions.visualization.allowed_metrics 与 evaluation.live_feedback 显式授权运行中累计位置 RMSE；字段结构/精度/曲线容量由 level.schema.json 约束，指标是否登记并获授权由加载器交叉校验。反馈只走 Campaign 管理状态，不改变 view_snapshot 或机器人协议 Schema。
+
+渐进 Weapons 增量：Envelope/负载新增 gps_fix@1、target_polar_estimate@1；level.sensor 支持 intercepted_gps，patrol 支持全向 spin_rate_radps；教材可声明 edit_files。对应 SDK、帧、噪声/时间、独立可视化与兼容见 [28](../28_WEAPONS_PROGRESSIVE_ESTIMATION.md)。所有旧类型保留原形状，内部生成夹具仍由 export_profile 维护。

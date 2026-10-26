@@ -1,0 +1,61 @@
+schema_version: '1.0'
+chassis_type: differential
+body:
+  length_m: 0.8
+  width_m: 0.6
+  corner_radius_m: 0.08
+armor:
+  layout: four_side_centers
+  width_m: 0.24
+  mounts_m:
+  - - 0.4
+    - 0.0
+    - 0.0
+  - - -0.4
+    - 0.0
+    - -3.141592653589793
+  - - 0.0
+    - 0.3
+    - 1.5707963267948966
+  - - 0.0
+    - -0.3
+    - -1.5707963267948966
+gps_mount_m:
+- 0.4
+- 0.0
+visual:
+  model_id: tracked-differential-v1
+  kind: tracked
+  hull:
+    length_m: 0.72
+    width_m: 0.4
+    radius_m: 0.065
+  track:
+    length_m: 0.8
+    width_m: 0.12
+    center_y_m: 0.24
+    radius_m: 0.045
+    tread_count: 12
+  panel:
+    length_m: 0.5
+    width_m: 0.055
+    center_y_m: 0.14
+    radius_m: 0.015
+  forward_marker_m:
+  - - 0.3
+    - 0
+  - - 0.19
+    - 0.065
+  - - 0.19
+    - -0.065
+  turret_radius_m: 0.105
+  colors:
+    shell: '#8fe3b5'
+    stale: '#ba9a50'
+    panel: '#356856'
+    rubber: '#162724'
+    roller: '#649380'
+    edge: '#527c69'
+    mark: '#d7f7df'
+    turret: '#416b50'
+    barrel: '#f1f7c5'

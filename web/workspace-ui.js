@@ -1,11 +1,12 @@
 // Workspace changes are explicit revisions; renderer and input controls do not own player code.
 import {mountLearning} from "/learning-ui.js";
 import {sourceLocation} from "/runtime-logs.js";
+import {renderFileTree,revealSelectedFile} from "/file-tree.js";
 export {setupWorkspaceDialog} from "/workspace-dialog.js";
 
 export async function mountWorkspace(browser){
   const $=id=>document.getElementById(id),root=$("workspace-panel");
-  let snapshot,files,selected,editor,plan,status,busy=false,token,level,learning,needsUpgrade=false,editorDefaultFile=null,pendingDeploymentId=null;
+  let snapshot,files,selected,editor,plan,status,busy=false,token,level,learning,needsUpgrade=false,editorDefaultFile=null,pendingDeploymentId=null,editFiles=[];
   const message=text=>{$("workspace-message").textContent=text;};
   const showLogs=source=>window.dispatchEvent(new CustomEvent("tankbot-show-runtime-logs",{detail:{source}}));
   const dirty=()=>JSON.stringify(files)!==JSON.stringify(snapshot.files);
@@ -26,10 +27,7 @@ export async function mountWorkspace(browser){
     root.dataset.runtimeBusy=String(Boolean(status?.job));
     root.dataset.revision=snapshot.revision;
     $("workspace-revision").textContent=(dirty()?"未保存 · ":"已保存 · ")+snapshot.revision.slice(0,12);
-    $("file-list").replaceChildren(...Object.keys(files).sort().map(path=>{
-      const button=document.createElement("button");button.type="button";button.textContent=path+(files[path]!==snapshot.files[path]?" *":"");button.title=path;button.classList.toggle("selected",path===selected);
-      button.onclick=()=>open(path);return button;
-    }));
+    renderFileTree($("file-list"),files,{selected,editFiles,dirtyPaths:Object.keys(files).filter(path=>files[path]!==snapshot.files[path]),onOpen:open});
     $("save-workspace").disabled=busy||!dirty();
     $("test-workspace").disabled=ended||busy||Boolean(status?.job);
     const ready=status?.reports.some(r=>r.revision===snapshot.revision&&r.status==="Ready");
@@ -43,7 +41,7 @@ export async function mountWorkspace(browser){
     $("preview-teaching-upgrade").disabled=busy||Boolean(status?.job);
     $("rollback-workspace").disabled=ended||busy||Boolean(status?.job)||!$("deployment-history").value;
   }
-  function open(path){selected=path;$("editor-path").textContent=path;editor.open(path,files[path]);learning?.file(path);refresh();}
+  function open(path){selected=path;$("editor-path").textContent=path;editor.open(path,files[path]);learning?.file(path);refresh();revealSelectedFile($("file-list"));}
   function accept(value){snapshot=value;files={...value.files};const preferred=editorDefaultFile;open(files[selected]!==undefined?selected:(preferred&&preferred in files?preferred:Object.keys(files).find(p=>p.endsWith("odometry.py"))||Object.keys(files)[0]));}
   async function save(){
     const changes={};for(const p of new Set([...Object.keys(files),...Object.keys(snapshot.files)]))if(files[p]!==snapshot.files[p])changes[p]=files[p]??null;
@@ -89,6 +87,8 @@ export async function mountWorkspace(browser){
     status=await runtime("test",{revision:snapshot.revision,snapshot});message("正在独立运行环境中测试此快照…");
   }
   const initial=await (await fetch("/api/workspace")).json();token=initial.control_token;level=initial.level_id;editorDefaultFile=initial.learning.lesson.ui?.default_file;snapshot=initial.snapshot;files={...snapshot.files};
+  $("workspace-dialog").addEventListener("toggle",()=>{if($("workspace-dialog").open)revealSelectedFile($("file-list"));});
+  editFiles=initial.learning.lesson.edit_files??initial.learning.lesson.functions.map(fn=>fn.path);
   $("test-workspace").title=initial.learning.testing.checks.join("\n")+"\n"+initial.learning.testing.meaning;
   const {createEditor}=await import("/editor-bundle.js");
   editor=createEditor($("code-editor"),(path,text)=>{files[path]=text;refresh();},()=>action(save),initial.learning);

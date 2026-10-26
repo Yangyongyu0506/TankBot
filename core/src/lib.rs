@@ -316,12 +316,18 @@ impl GameCore {
                 if let Some(patrol) = &target.motion {
                     enemies.insert(
                         target.target_id.clone(),
-                        EnemyTank::new(&mut world, &config, target.pose, patrol.clone())?,
+                        EnemyTank::new(
+                            &mut world,
+                            &config,
+                            target.pose,
+                            patrol.clone(),
+                            target.body.as_ref().unwrap_or(b).clone(),
+                        )?,
                     );
                     continue;
                 }
                 world.colliders.insert(
-                    ColliderBuilder::new(cannon::body_shape(b))
+                    ColliderBuilder::new(cannon::body_shape(target.body.as_ref().unwrap_or(b)))
                         .translation(Vector::new(target.pose[0], target.pose[1]))
                         .rotation(target.pose[2])
                         .friction(f)
@@ -509,7 +515,8 @@ impl GameCore {
                 drive_servo(
                     &mut self.world,
                     self.tank,
-                    &self.config,
+                    &self.config.body,
+                    &self.config.servo,
                     &self.chassis,
                     goal,
                 );

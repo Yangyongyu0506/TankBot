@@ -90,7 +90,9 @@
         "target_points@1",
         "turret_acceleration@1",
         "target_pose_estimate@1",
-        "view_snapshot@4"
+        "view_snapshot@4",
+        "gps_fix@1",
+        "target_polar_estimate@1"
       ]
     },
     "payload": {
@@ -833,6 +835,38 @@
           },
           "frame_id": {
             "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "gps_fix@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "payloads.schema.json#/$defs/gps_fix"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "target_polar_estimate@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "payloads.schema.json#/$defs/target_polar_estimate"
           }
         }
       }

@@ -37,7 +37,7 @@ class BrowserServer:
         runtime_files["/player-bundle.json"]=assets/"player-bundle.json"
         shared={"/pyodide/"+name:assets/"pyodide"/name for name in meta["files"]}
         runtime_files.update(shared)
-        ui_files={"/"+name:ROOT/"web"/name for name in ("index.html","app.js","style.css","rendering.js","browser-client.js","core-worker.js","wasm-core.js","python-loader.js","python-bootstrap.js","workspace-ui.js","workspace-dialog.js","campaign-ui.js","live-metrics.js","learning-ui.js","gamepad.js","settings-ui.js","keyboard.js","visualization.js","runtime-logs.js","robot-graph.js")}
+        ui_files={"/"+name:ROOT/"web"/name for name in ("index.html","app.js","style.css","rendering.js","browser-client.js","core-worker.js","wasm-core.js","python-loader.js","python-bootstrap.js","workspace-ui.js","file-tree.js","workspace-dialog.js","campaign-ui.js","live-metrics.js","learning-ui.js","gamepad.js","settings-ui.js","keyboard.js","visualization.js","runtime-logs.js","robot-graph.js")}
         ui_files["/THIRD_PARTY_NOTICES.txt"] = ROOT/"build/web/THIRD_PARTY_NOTICES.txt"
         ui_files["/editor-bundle.js"] = ROOT/"build/web/editor-bundle.js"
         ui_files.update(shared)

@@ -14,6 +14,8 @@
 
 关卡存储位置现由 [ADR-0033](0033-declarative-level-plugins.md) 局部修订：关卡专属数据与教材在 `levels/*.yaml`，通用模型、平台与预算仍在 `config/game.yaml`；内部 Campaign DTO 自动生成，不再手工维护。其余参数源和无隐藏默认值约束不变。
 
+[ADR-0036](0036-shared-chassis-geometry.md) 进一步将可复用底盘的几何、装甲/GPS 安装与外观移到 `config/chassis/*.yaml`，由 `game.yaml` 显式引用；通用受力系数和资源预算仍在后者。完整物理和显示 DTO 由加载器生成，不构成另一份可编辑数值。
+
 JSON Schema、协议、存档和上游锁文件是接口/产物格式；不为 YAML 迁移改变其语义。代码保留数学定义和类型标识符；所有可调整数值、模型/控制系数、频率、预算及关卡阈值必须有明确 YAML 配置字段，禁止静默数值 fallback。
 
 ## Alternatives
