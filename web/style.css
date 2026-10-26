@@ -6,6 +6,7 @@ body{height:100dvh;display:grid;grid-template-rows:64px minmax(0,1fr) 36px}
 [hidden]{display:none!important}
 header{height:auto;padding:0 24px;gap:20px;min-width:0}
 .editor-toggle{margin-left:auto;border:1px solid #4d8064;background:#18362a;border-radius:6px;color:#c8f6d8;padding:9px 13px;font:12px inherit;cursor:pointer;white-space:nowrap}
+.editor-toggle:disabled{opacity:.45;cursor:default}
 kbd{font:10px monospace;border:1px solid #4b705b;border-radius:3px;padding:2px 4px;margin-left:8px;color:#9ddab4}
 .pill{margin-left:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 main{min-height:0;padding:18px 24px;gap:20px;grid-template-columns:minmax(0,1fr) 280px;overflow:hidden}

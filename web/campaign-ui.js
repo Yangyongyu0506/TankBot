@@ -85,7 +85,7 @@ export async function mountCampaign(profile,browser,onState,releaseControls){
       $("campaign-summary").hidden=!attempt;
       $("campaign-summary").textContent=attemptSummary(attempt);
       $("campaign-summary").dataset.phase=attempt?.phase??"";
-      $("editor-attempt-status").textContent=attemptSummary(attempt)+(attempt?.status!=="active"?" · 请重试关卡后再测试/部署。":attempt.phase==="preparing"?" · 测试不计时；首次部署后开始，可关闭编辑器驾驶。":" · 正在计时；改代码前可先结束本次尝试。");
+      $("editor-attempt-status").textContent=attemptSummary(attempt)+(attempt?.status!=="active"?" · 请重试关卡后再测试/部署。":attempt.phase==="preparing"?" · 测试不计时；部署成功后返回游戏，本局结束前锁定编辑器。":" · 正在计时；请先结束本次尝试，再编辑代码。");
       if(liveMetric.summary)$("editor-attempt-status").textContent+=" · "+liveMetric.summary;
       if(attempt){
         const p=attempt.progress;
@@ -98,7 +98,7 @@ export async function mountCampaign(profile,browser,onState,releaseControls){
             (r.rmse_m==null?"":" 本次估计 RMSE："+r.rmse_m.toFixed(3)+(current.live_feedback?" m。":" m（仅结束后公布）。"));
           if(save_error||browser?.saveError())$("task-message").textContent=save_error||browser.saveError();
         }else{
-          $("task-message").textContent=attempt.phase==="preparing"?(attempt.timing.start_on==="first_control"?"首次有效驾驶、炮台或开火操作后计时。":"保存 → 测试 → 部署。首次成功部署前不计时；部署后按本关权限运行机器人。"):"倒计时按仿真时间推进，编辑器打开时也继续。发现问题可立即结束尝试，源码会保留。";
+          $("task-message").textContent=attempt.phase==="preparing"?(attempt.timing.start_on==="first_control"?"首次有效驾驶、炮台或开火操作后计时。":"保存 → 测试 → 部署。首次成功部署前不计时；部署后按本关权限运行机器人。"):"本局运行中，代码编辑器已锁定。发现问题请点击“结束本次尝试”，或点击“开始 / 重试”重置关卡；源码会保留。";
         }
       }
     }catch(error){$("task-message").textContent=error.message;}

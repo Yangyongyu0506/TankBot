@@ -36,6 +36,8 @@ def main():
         b.until("return document.getElementById('workspace-panel').dataset.busy==='false'&&!document.getElementById("+json.dumps(identifier)+").disabled;")
         b.script("document.getElementById("+json.dumps(identifier)+").click();return true;")
     def ready():b.until("return document.getElementById('workspace-panel').dataset.ready==='true';",timeout=120)
+    def press(value):
+        b.call('WebDriver:PerformActions',{'actions':[{'type':'key','id':'player-keyboard','actions':[{'type':'keyDown','value':value},{'type':'keyUp','value':value}]}]})
     def state():
         b.script("window.__liveState=null;(async()=>{const qa=window.wrappedJSObject?.tankbotQA??window.tankbotQA;window.__liveState=qa?JSON.parse(await qa.post('/api/campaign',{})).value:await(await fetch('/api/campaign')).json();})();return true;")
         return b.until('return window.__liveState;')
@@ -60,6 +62,14 @@ def main():
         click('deploy-workspace')
         b.until("const s=JSON.parse(document.getElementById('workspace-panel').dataset.deployment||'{}');return !s.job&&s.last?.status==='Active';",timeout=120)
         b.until("return !document.getElementById('workspace-dialog').open;")
+        b.until("return document.getElementById('open-workspace').disabled&&document.activeElement.id==='arena'&&!document.getElementById('fire').disabled;")
+        # Trusted WebDriver keys exercise the browser's native Space/button activation behavior.
+        shots=b.script("return Number(/发射 (\\d+)/.exec(document.getElementById('weapon').textContent)?.[1]??0);")
+        press('\ue00d')
+        b.until("return Number(/发射 (\\d+)/.exec(document.getElementById('weapon').textContent)?.[1]??0)>"+str(shots)+";")
+        press('\ue032');press('\ue031')
+        b.script("document.getElementById('open-workspace').click();window.dispatchEvent(new CustomEvent('tankbot-open-source',{detail:{path:'perception/transforms.py',line:1}}));return true;")
+        assert b.script("return !document.getElementById('workspace-dialog').open&&document.activeElement.id==='arena';")
         b.until("return Number(document.getElementById('live-evaluation').dataset.samples)>=5;",timeout=30)
         assert '累计位置 RMSE' in b.script("return document.getElementById('editor-attempt-status').textContent;")
         running=state();assert running['attempt']['result'] is None
@@ -73,11 +83,17 @@ def main():
         b.call('WebDriver:SetWindowRect',{'width':1440,'height':950})
         click('finish-level');b.until("return document.getElementById('task-status').dataset.status==='ended';")
         finished=state();assert finished['attempt']['result']['rmse_m']==finished['attempt']['live_metrics']['rmse_m']
+        b.until("return !document.getElementById('open-workspace').disabled;")
+        press('\ue032');assert b.script("return document.getElementById('workspace-dialog').open;")
+        press('\ue032')
         reload_level('c2')
         assert b.script("return document.getElementById('live-evaluation').dataset.samples==='0'&&document.getElementById('live-evaluation').dataset.value==='';")
+        click('open-workspace');assert b.script("return document.getElementById('workspace-dialog').open;")
+        click('close-workspace')
         reload_level('c1');assert b.script("return document.getElementById('live-evaluation').hidden;")
         args.output.write_text(json.dumps({'url':args.url,'browser':b.capabilities,'ordinary_player':True,'test':report,'running':running,
-            'finished':finished,'editor_metric':True,'restart_clears_metric':True,'other_level_hidden':True,'layouts':layouts,'screenshot':hud},ensure_ascii=False,indent=2)+'\n')
+            'finished':finished,'editor_metric':True,'space_fires_after_deploy':True,'running_editor_locked':True,'help_and_source_cannot_bypass_lock':True,
+            'finish_unlocks_editor':True,'restart_unlocks_editor':True,'restart_clears_metric':True,'other_level_hidden':True,'layouts':layouts,'screenshot':hud},ensure_ascii=False,indent=2)+'\n')
         print(args.output)
     finally:b.close()
 

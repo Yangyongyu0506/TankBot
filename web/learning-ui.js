@@ -20,6 +20,7 @@ export function mountLearning(reference,openFile,previewTemplate){
     event.preventDefault();event.stopImmediatePropagation();
     const wasOpen=$("workspace-dialog").open;
     if(!wasOpen)$("open-workspace").click();
+    if(!$("workspace-dialog").open)return;
     show(!wasOpen||pane.hidden);if(!pane.hidden)$("learning-title").focus();
   },{capture:true});
   const lesson=$("learning-lesson");lesson.append(element("h3",reference.lesson.title),element("p",reference.lesson.summary));

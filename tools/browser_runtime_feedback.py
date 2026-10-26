@@ -67,16 +67,11 @@ def main():
         result=b.until("const root=document.getElementById('workspace-panel'),s=JSON.parse(root.dataset.deployment||'{}');return !s.job&&s.last?.kind==='test'&&s.last.revision===root.dataset.revision&&s.last.id!=="+json.dumps(previous)+"&&s.last;",timeout=90)
         return result
     def deploy():
-        path=b.script("return document.getElementById('editor-path').textContent;")
         click("deploy-workspace")
         active=b.until("const s=JSON.parse(document.getElementById('workspace-panel').dataset.deployment||'{}');return !s.job&&s.last?.status==='Active'&&s.active;",timeout=90)
         b.until("return !document.getElementById('workspace-dialog').open;")
         b.script("window.dispatchEvent(new KeyboardEvent('keydown',{code:'F2',key:'F2',bubbles:true}));return true;")
-        assert b.script("return document.getElementById('workspace-dialog').open;")
-        assert b.script("return document.getElementById('editor-path').textContent;")==path
-        tick=b.script("return Number(document.getElementById('tick').textContent);")
-        b.until("return Number(document.getElementById('tick').textContent)>"+str(tick+30)+";")
-        assert b.script("return document.getElementById('workspace-dialog').open;"),'Previous Active closed a reopened editor'
+        assert b.script("return !document.getElementById('workspace-dialog').open&&document.getElementById('open-workspace').disabled&&document.activeElement.id==='arena';")
         return active
     def screenshot(suffix):
         path=ROOT/".m1-cache"/(args.output.stem+"-"+suffix+".png")
@@ -117,6 +112,8 @@ class FeedbackTest(unittest.TestCase):
         deployment=deploy()
         b.until("return document.getElementById('editor-runtime-log-view').textContent.includes('runtime log demo');",timeout=15)
         b.until("return document.getElementById('deployment-state').textContent.includes('程序已停止');",timeout=15)
+        click("finish-level");b.until("return !document.getElementById('open-workspace').disabled;")
+        click("open-workspace")
         b.until("return [...document.querySelectorAll('#editor-runtime-log-view .runtime-log-entry button')].some(n=>n.textContent.includes('perception/transforms.py'));")
         b.script("[...document.querySelectorAll('#editor-runtime-log-view .runtime-log-entry button')].filter(n=>n.textContent.includes('perception/transforms.py')).at(-1).click();return true;")
         assert b.script("return document.getElementById('editor-path').textContent;")=="perception/transforms.py"
@@ -128,16 +125,24 @@ class FeedbackTest(unittest.TestCase):
         b.script("const filter=document.querySelector('#editor-runtime-log-view select');filter.value='all';filter.dispatchEvent(new Event('change'));document.querySelector('#editor-runtime-log-view .runtime-log-toolbar button').click();return true;")
         b.until("return document.getElementById('editor-runtime-log-view').dataset.count==='0';")
         edit(algorithm())
+        origin=b.script("return performance.timeOrigin;")
+        click("close-workspace");click("start-level")
+        b.until("return performance.timeOrigin!=="+str(origin)+"&&document.getElementById('workspace-panel').dataset.ready==='true';",timeout=90)
+        click("open-workspace")
         recovered=test();assert recovered["status"]=="Ready",recovered
         recovered_deployment=deploy()
         b.until("return document.getElementById('editor-runtime-log-view').textContent.includes('当前程序');")
-        click("close-workspace");click("tab-logs")
+        click("tab-logs")
         b.until("return document.getElementById('hud-runtime-log-view').textContent.includes('player feedback');")
         # Both backends use the ordinary authorized view; covariance stays flat only on JSON.
         b.script("window.__matrixView=null;(async()=>{const qa=window.wrappedJSObject?.tankbotQA??window.tankbotQA;window.__matrixView=qa?JSON.parse(await qa.view()):await (await fetch('/api/view')).json();})();return true;")
         view=b.until("return window.__matrixView?.payload.target_estimates?.length&&window.__matrixView;")
         assert view["payload"]["target_estimates"][0]["payload"]["covariance"]==[1,0,0,1]
         hud_shot=screenshot("hud")
+        click("finish-level");b.until("return !document.getElementById('open-workspace').disabled;")
+        click("open-workspace")
+        if b.script("return document.getElementById('editor-runtime-logs').hidden;"):click("toggle-editor-logs")
+        click("close-workspace")
         layouts=[]
         for width,height in ((1280,800),(500,740)):
             b.call("WebDriver:SetWindowRect",{"width":width,"height":height});click("open-workspace")
@@ -148,7 +153,7 @@ class FeedbackTest(unittest.TestCase):
                 "static_rejection":True,"test_stdout_visible":True,"runtime_traceback_visible":True,"source_link_locates_line":True,
                 "source_filter":True,"clear_display":True,"recovery":True,"covariance_wire_unchanged":True,
                 "failed_test":failed,"native_unittest_output":True,"automatic_test_log_panel":True,
-                "successful_deploy_closes_editor":True,"f2_reopens_same_file":True,"existing_active_keeps_editor_open":True,"failed_test_keeps_editor_open":True,
+                "successful_deploy_closes_editor":True,"running_editor_locked":True,"finish_unlocks_editor":True,"failed_test_keeps_editor_open":True,
                 "test":passed,"initial_deployment":deployment,"recovered_deployment":recovered_deployment,
                 "layout":layouts,"screenshots":[failed_test_shot,error_shot,hud_shot]}
         paths=[p for directory in ("host/tankbot_host","runtime","sdk/python/tankbot","web") for p in (ROOT/directory).glob('*') if p.suffix in ('.py','.js','.html','.css')]

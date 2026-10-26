@@ -1,41 +1,7 @@
 // Workspace changes are explicit revisions; renderer and input controls do not own player code.
 import {mountLearning} from "/learning-ui.js";
-import {shortcut} from "/keyboard.js";
 import {sourceLocation} from "/runtime-logs.js";
-export function setupWorkspaceDialog(releaseControls){
-  const dialog=document.getElementById("workspace-dialog"),toggle=document.getElementById("open-workspace");
-  let previousFocus,editorFocus;
-  function show(){
-    previousFocus=document.activeElement;
-    releaseControls();
-    dialog.showModal();
-    toggle.setAttribute("aria-expanded","true");
-    const help=dialog.querySelector("#learning-pane:not([hidden]) #learning-title");
-    const focus=innerWidth<1050&&help?help:editorFocus?.isConnected?editorFocus:dialog.querySelector(".cm-content");
-    focus?.focus({preventScroll:true});
-  }
-  function hide(){if(dialog.open)dialog.close();}
-  toggle.addEventListener("click",()=>dialog.open?hide():show());
-  document.getElementById("close-workspace").addEventListener("click",hide);
-  dialog.addEventListener("beforetoggle",event=>{
-    if(event.newState==="closed"&&dialog.contains(document.activeElement))editorFocus=document.activeElement;
-  });
-  dialog.addEventListener("close",()=>{
-    toggle.setAttribute("aria-expanded","false");
-    const focus=previousFocus?.isConnected&&previousFocus!==document.body?previousFocus:document.getElementById("arena");
-    focus.focus({preventScroll:true});
-  });
-  dialog.addEventListener("cancel",event=>{
-    event.preventDefault();
-    // Escape belongs to CodeMirror/Vim while editing; F2 always toggles the dialog.
-    if(!document.activeElement?.closest(".cm-editor"))hide();
-  });
-  window.addEventListener("keydown",event=>{
-    if(document.getElementById("settings-dialog")?.open||!shortcut(event,"editor"))return;
-    event.preventDefault();event.stopImmediatePropagation();
-    if(!event.repeat)(dialog.open?hide():show());
-  },{capture:true});
-}
+export {setupWorkspaceDialog} from "/workspace-dialog.js";
 
 export async function mountWorkspace(browser){
   const $=id=>document.getElementById(id),root=$("workspace-panel");
@@ -130,6 +96,7 @@ export async function mountWorkspace(browser){
     const {path,line,revision}=event.detail;
     if(files[path]===undefined)return;
     if(!$("workspace-dialog").open)$("open-workspace").click();
+    if(!$("workspace-dialog").open)return;
     if(!$("learning-pane").hidden)$("close-learning").click();
     open(path);editor.go(line);
     if(dirty()||(revision&&revision!==snapshot.revision))message("日志来自已部署/测试的快照；当前源码已有变化，行号可能不同，可按历史 revision 预览原代码。");
@@ -203,10 +170,10 @@ export async function mountWorkspace(browser){
         else if(last.status==="Active")showLogs("all");
         if(last.revision)http("archive",{revision:last.revision,record:{run_id:status.run_id,...last}}).catch(error=>message("运行结果已生效，但记录归档失败："+error.message));
       }
-      // Only this editor's requested deployment can close it; an existing Active cannot.
+      // Campaign visibility belongs to its attempt gate; sandbox deployments close on acknowledgement.
       if(pendingDeploymentId&&status.last?.id===pendingDeploymentId){
         pendingDeploymentId=null;
-        if(status.last.status==="Active")$("workspace-dialog").close();
+        if(status.last.status==="Active"&&!status.attempt_status)$("workspace-dialog").close();
       }
       refresh();
     }catch(error){message(error.message);}

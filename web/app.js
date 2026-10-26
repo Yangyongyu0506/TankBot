@@ -58,7 +58,7 @@ function key(code, down) {
   command();
 }
 function releaseControls(){keys.clear();joy?.suspend();joyControls=neutralControls();document.querySelectorAll("button[data-key].active").forEach(e=>e.classList.remove("active"));command();}
-setupWorkspaceDialog(releaseControls);
+const workspaceDialog=setupWorkspaceDialog(releaseControls);
 const editing = target => $("settings-dialog").open||$("workspace-dialog").open||target?.closest?.("input, textarea, select, [contenteditable]");
 const visibleFocused=()=>!document.hidden&&document.hasFocus();
 const canDrive=()=>visibleFocused()&&!campaignEnded&&!campaignWaiting&&!editing(document.activeElement);
@@ -107,13 +107,13 @@ function sampleGamepad(now){
   const status={waiting:"连接手柄后按任意键，再松开摇杆和按键。",disabled:"手柄已停用，可继续用键盘。",
     unsupported:"映射不匹配；请切到标准手柄模式，或在配置中设置自定义轴/按键。",
     neutral:"请松开摇杆、肩键和扳机，回中后接管。",paused:"操控暂停；返回游戏后先松开摇杆与按键。",
-    ready:"手柄就绪 · RT 单发 · Start 打开 / 收起编辑器",unavailable:error}[frame.status];
+    ready:$("open-workspace").disabled?"手柄就绪 · RT 单发 · 本局运行中，结束后可编辑":"手柄就绪 · RT 单发 · Start 打开 / 收起编辑器",unavailable:error}[frame.status];
   const label=(frame.device?frame.device.id+" · ":"")+status;
   if($("gamepad-status").textContent!==label)$("gamepad-status").textContent=label;
   $("gamepad-status").dataset.status=frame.status;
   const indicator=frame.status==="ready"?"手柄：已连接":frame.status==="neutral"?"手柄：请回中":frame.status==="paused"?"手柄：暂停":frame.status==="unsupported"?"手柄：映射待配置":frame.status==="disabled"?"手柄：已停用":"手柄：未连接";
   if($("gamepad-indicator").textContent!==indicator)$("gamepad-indicator").textContent=indicator;
-  if(frame.editor){$("open-workspace").click();joy.suspend();joyControls=neutralControls();command();return;}
+  if(frame.editor&&!$("open-workspace").disabled){$("open-workspace").click();joy.suspend();joyControls=neutralControls();command();return;}
   if(frame.fire)fire();
   if(moving(previous)&&!moving(frame))command();
   const period=moving(frame)?joy.config.refresh_ms:profile.view.keyboard_refresh_ms;
@@ -349,6 +349,7 @@ try {
   }
   if(profile.control_sources.turret!=="keyboard")document.querySelectorAll('[data-key="KeyJ"],[data-key="KeyL"]').forEach(button=>button.disabled=true);
   mountCampaign(profile,browser,state=>{
+    workspaceDialog.updateAttempt(state);
     const ended=Boolean(state&&state.status!=="active");
     campaignWaiting=Boolean(state?.phase==="preparing"&&state?.timing.start_on==="first_deployment");
     if(ended&&!campaignEnded){campaignEnded=true;releaseControls();}

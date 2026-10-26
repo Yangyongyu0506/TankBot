@@ -34,6 +34,7 @@
 | [15 渲染设计](15_RENDERING_DESIGN.md) | 多频率时间插值、固定世界朝向相机、独立底盘外观 |
 | [16 浏览器 Runtime](16_BROWSER_RUNTIME.md) | 共享 Authority、私有 WASM ABI、独立 origin、加载/截止与平台限制 |
 | [17 编辑器与部署](17_EDITOR_AND_DEPLOYMENT.md) | M3 存储、Manifest profile、测试、原子激活、回滚和管理 API |
+| [编辑器阶段锁定验收](reports/EDITOR_ATTEMPT_LOCK_VALIDATION.md) | Space 发射焦点、运行期编辑门与结束/重试恢复 |
 | [18 教学关卡](18_CAMPAIGN_DESIGN.md) | M4 C0–C2、Radar、目标估计、巡逻敌车与血量通关 |
 | [19 学习说明与 SE(3)](19_LEARNING_GUIDES_AND_SE3.md) | 所有关卡的类型/步骤、编辑器帮助、矩阵实验、NumPy 与模板升级 |
 | [20 手柄驱动](20_GAMEPAD_INPUT.md) | 标准/自定义映射、模拟量、人工仲裁、回中、断连与编辑隔离 |
