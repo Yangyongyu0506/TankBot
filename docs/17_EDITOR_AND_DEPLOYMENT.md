@@ -92,13 +92,17 @@ CodeMirror 6 + Python/JSON 扩展 + 可切换 Vim，通过 esbuild 本地打包�
 
 统一入口 `python3 tools/build.py` 构建 Core 与编辑器；发现本平台所需的锁定 npm 包缺失或版本不符时自动执行 `npm ci`，随后执行编辑器打包并检查 bundle 与许可证产物。`--web-only` 可单独修复 UI，`--core-only` 供无头构建，`--offline` 需要本地依赖缓存；`--format-check` 仅检查 Rust。构建机需 Node.js 22+ 与 npm，运行时静态页面不执行 npm。npm 安装固定使用锁文件、包含开发依赖和本平台可选 esbuild 二进制，不修改玩家 Workspace。
 
-主游戏页面固定在视口内，信息栏用驾驶/状态/传感器/武器页签切换，不通过页面滚动访问功能。Workspace 默认为关闭的原生 modal dialog；顶部按钮或 F2 打开，再次 F2 或右上角 × 收起，焦点限制在弹窗内。关闭仅改变可见性，保留未保存草稿、光标、文件选择和运行中的测试/部署。代码与文件列表在面板内部滚动。
+主游戏页面固定在视口内，信息栏用驾驶/状态/传感器/武器页签切换，不通过页面滚动访问功能。Workspace 默认为关闭的原生 modal dialog；顶部按钮或 F2 打开后铺满整个内容视口，再次 F2 或右上角 × 收起，焦点限制在编辑页面内。关闭仅改变可见性，保留未保存草稿、光标、文件选择和运行中的测试/部署。代码与文件列表在面板内部滚动。
+
+点击“部署已测试版本”后，候选仍按上述启动检查与 tick 边界切换。UI 确认本次部署请求为 Active 后自动关闭编辑器，返回游戏画面；启动失败保留编辑器与错误日志。已有 Active、测试完成或回滚结果不会触发自动关闭，再按 F2 可继续查看原来的文件和草稿。编辑页面的开关不暂停、重置世界或重置关卡时限。
 
 弹窗打开时清除游戏按键并发送零目标，整个打开期间屏蔽游戏输入；keydown/keyup 不把 Vim 的 W/J/L/Space 转为执行器指令。F2 在捕获阶段处理，编辑器内 Escape 保留给 CodeMirror/Vim，不用它强制关闭编辑器；其他弹窗控件的 Escape 可关闭。Ctrl/⌘S 和 Vim `:w` 保存，不自动部署。离开有未保存草稿的页面会提示。
 
 验收追踪见 [M3 报告](reports/M3_VALIDATION.md)：多文件/测试真实执行，非覆盖/冲突/磁盘错误、摘要与环境匹配、旧版本保留、部署门/World 连续、回滚新实例、浏览器刷新持久化和焦点隔离。未决项为其他浏览器/OS、独立浏览器存储、完整模块图、长时资源/磁盘回收及强服务端沙箱；不作为本机 M3 已验证能力宣传。
 
 弹窗交互补充验证：`tools/browser_dialog.py` 在真实 Firefox 中检查顶部按钮、F2 切换、× 关闭、草稿/文件选择保留、焦点限制、打开时释放按键及 HUD 页签；实测 1440×814、1280×634、1024×526、500×654 的内容视口无页面滚动。代码、文件列表及工具区仅在各自面板内部滚动。运行 `tools/browser_m3.py` 继续验证弹窗内完整 Edit/Test/Deploy/回滚流程；截图与布局记录保存在 `.m1-cache/`。
+
+2026-10-26 更新验证：上述四种视口下编辑器四边均与视口重合。`tools/browser_runtime_feedback.py` 在原生 CPython 与浏览器 Pyodide 中验证成功部署自动收起、F2 重开原文件、旧 Active 不误关编辑器，以及失败测试保留编辑器和 Python 日志；本次记录为 `.m1-cache/editor-maximized/{native,browser}-ui.json`。`tests/test_workspace.py` 的 8 项检查继续覆盖启动失败保留旧 Runtime、部署/回滚不重置世界和 Workspace 持久化约束。
 
 M4 新增独立的 Campaign 单模块 profile：标准输入是授权系统自身位姿和可选 Radar，输出是目标估计。三关共用一个 Contract，阶段解锁只补缺失文件，并为每个阶段保留独立 ledger；Manifest 的系统位姿来源由 Authority 校验。继续复用本文件定义的 Test/Deploy/回滚边界，具体接口与课堂函数/类见 [18](18_CAMPAIGN_DESIGN.md)。
 

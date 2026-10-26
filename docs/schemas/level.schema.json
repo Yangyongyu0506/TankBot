@@ -431,6 +431,15 @@
                 "type": "string"
               },
               "uniqueItems": true
+            },
+            "allowed_metrics": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "rmse_m"
+                ]
+              },
+              "uniqueItems": true
             }
           },
           "required": [
@@ -667,6 +676,49 @@
             ],
             "additionalProperties": false
           }
+        },
+        "live_feedback": {
+          "type": "object",
+          "properties": {
+            "metric": {
+              "const": "rmse_m"
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1
+            },
+            "label": {
+              "type": "string",
+              "minLength": 1
+            },
+            "unit": {
+              "const": "m"
+            },
+            "precision": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 6
+            },
+            "history_points": {
+              "type": "integer",
+              "minimum": 2,
+              "maximum": 1024
+            },
+            "description": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "metric",
+            "title",
+            "label",
+            "unit",
+            "precision",
+            "history_points",
+            "description"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [

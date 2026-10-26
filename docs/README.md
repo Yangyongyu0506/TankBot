@@ -2,7 +2,7 @@
 
 ## 阅读方式与规范状态
 
-文档基线：`m5-level-plugins-1.0`，更新日期：2026-10-25。已完成 M1/M1b、M2 本机浏览器/Transport、M3 编辑部署和 M4 C0–C2 教学闭环验收：实现与限制见 [运行入口](../README.md)、[M4 验证报告](reports/M4_VALIDATION.md)；模型由用户逐项确认，见 [13](13_PHYSICS_MODEL_DECISIONS.md)、[18](18_CAMPAIGN_DESIGN.md)。M5 已实现多模块图、C3/C4 Weapons、角加速度与装甲，当前边界及验收见 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)、[M5 报告](reports/M5_VALIDATION.md)。现有五关已重构为独立 YAML 插件，见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)。Locomotion、自身定位课程、建图、规划与 Arena 尚未实现。
+文档基线：`m5-live-rmse-1.0`，更新日期：2026-10-26。已完成 M1/M1b、M2 本机浏览器/Transport、M3 编辑部署和 M4 C0–C2 教学闭环验收：实现与限制见 [运行入口](../README.md)、[M4 验证报告](reports/M4_VALIDATION.md)；模型由用户逐项确认，见 [13](13_PHYSICS_MODEL_DECISIONS.md)、[18](18_CAMPAIGN_DESIGN.md)。M5 已实现多模块图、C3/C4 Weapons、角加速度与装甲，当前边界及验收见 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)、[M5 报告](reports/M5_VALIDATION.md)。现有五关已重构为独立 YAML 插件，见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)。Locomotion、自身定位课程、建图、规划与 Arena 尚未实现。
 
 “必须／不得”为设计约束；“建议／拟采用”为待验证方案。Accepted ADR 表示接受设计原则或接口方向，不表示实现或平台验证完成；Proposed 技术不得当作既成依赖。协议 `1.0` 是**未发布草案**，首次发布前由兼容性审查冻结；发布后执行版本规则。
 
@@ -13,6 +13,7 @@
 | 文档 | 负责的设计与接口 |
 | --- | --- |
 | [26 多模块与 Weapons](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md) | M5 图、调度、章节、C3/C4 控制与装甲边界 |
+| [C2 实时 RMSE 验收](reports/LIVE_RMSE_VALIDATION.md) | 授权累计指标、采样时间、生命周期和两种玩家 UI |
 | [27 YAML 关卡插件](27_LEVEL_PLUGIN_ARCHITECTURE.md) | 五关审计、Schema、自动发现/生命周期、组件、权限、规则与迁移 |
 | [关卡编写指南](../levels/README.md) | 配置来源、已有组件、校验、启动与扩展流程 |
 | [关卡插件验收](reports/LEVEL_PLUGINS_VALIDATION.md) | 冻结基线、旧源码/存档、临时插件和两种 Runtime 五关通关 |

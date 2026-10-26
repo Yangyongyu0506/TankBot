@@ -42,6 +42,8 @@ def main():
         assert tested['last']['unit_tests']>=1,tested
         click('deploy-workspace');deployed=wait_last('deploy')
         assert deployed['last']['status']=='Active',deployed
+        b.until("return !document.getElementById('workspace-dialog').open;")
+        click('open-workspace')
         first=deployed['active'];run=deployed['run_id']
         # Add a file and edit it; actual Active digest stays fixed through editing and tests.
         name='helper_m3_'+str(int(time.time()))+'.py'
@@ -57,6 +59,8 @@ def main():
         click('deploy-workspace');second=wait_last('deploy',first['deployment_id'])
         assert second['active']['sha256']==second_test['last']['sha256']
         assert second['active']['sha256']!=first['sha256']
+        b.until("return !document.getElementById('workspace-dialog').open;")
+        click('open-workspace')
         # Vim focus must not drive the chassis, turret or fire a shot.
         choose(name);click('vim-mode')
         before_focus=b.script("return {tick:Number(document.getElementById('tick').textContent),pose:['x','y','yaw'].map(id=>document.getElementById(id).textContent),turret:document.getElementById('turret').textContent,weapon:document.getElementById('weapon').textContent};")

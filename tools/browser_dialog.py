@@ -21,7 +21,7 @@ def main():
         assert value['pageWidth']<=value['width'] and value['pageHeight']<=value['height'],value
         assert value['scrollY']==0 and value['canvasHeight']>0,value
         if value['open']:
-            r=value['dialog'];assert r['left']>=0 and r['top']>=0 and r['right']<=value['width'] and r['bottom']<=value['height'],value
+            r=value['dialog'];assert abs(r['left'])<=1 and abs(r['top'])<=1 and abs(r['right']-value['width'])<=1 and abs(r['bottom']-value['height'])<=1,value
             assert value['editorHeight']>=80,value
     try:
         b.navigate(args.url)
@@ -70,7 +70,7 @@ def main():
         b.script("document.getElementById('close-workspace').click();return true;");assert not opened()
         b.script("document.getElementById('tab-sensors').click();return true;")
         assert b.script("return !document.getElementById('hud-sensors').hidden&&document.getElementById('hud-chassis').hidden;")
-        report={'layouts':layouts,'f2_toggle':True,'button_and_close':True,'unsaved_draft_preserved':True,'modal_focus':True,'escape_keeps_editor':True,'held_key_released':True,'game_keys_blocked':True,'hud_tabs':True}
+        report={'layouts':layouts,'fullscreen_editor':True,'f2_toggle':True,'button_and_close':True,'unsaved_draft_preserved':True,'modal_focus':True,'escape_keeps_editor':True,'held_key_released':True,'game_keys_blocked':True,'hud_tabs':True}
         Path('.m1-cache/dialog-report.json').write_text(json.dumps(report,indent=2)+'\n')
         print('PASS: modal toggle, draft retention, focus/control isolation, HUD tabs; four viewport sizes fit without page scroll.')
     finally:b.close()

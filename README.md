@@ -35,7 +35,7 @@ python3 tools/tankbot.py browser --level c0
 
 在「任务」面板选择 C0/C1/C2，点击「开始 / 重试」。C0 先移动至少 1 m、转动车体至少 0.5 rad，并命中可见靶标。C1 隐藏敌车，F2 打开编辑器，完成自动生成的 `perception/transforms.py`，返回 `NDArray[np.float64]` 形式的 4×4 SE(3) 矩阵，测试并部署，利用目标估计瞄准命中。C2 保留该矩阵函数，追加 `perception/tracker.py`；处理带噪声和 10% 丢失的雷达，跟踪巡逻敌车，保持存活并击中三次使敌车 HP 归零即可通关。
 
-前三关保留系统自定位、公开地图与手动控制。Radar 是车体系局部观测，地图上的目标标记来自玩家 Python；Weapons C1–C4 默认显示炮弹，可在图层设置中开关；真实敌车和命中特效位置仍隐藏，Python 输入权限不变。C2 显示双方 HP。通关或点击「结束本次尝试」后关闭玩家程序，再显示估计误差；物理与已有弹丸继续运行。重试建立新场景，新关只补缺失文件，已有源码保留；保存的草稿须重新 Test/Deploy。玩家按 C0 → C1 → C2 解锁，通关写入存档；开发者模式可自由选关练习。
+前三关保留系统自定位、公开地图与手动控制。Radar 是车体系局部观测，地图上的目标标记来自玩家 Python；Weapons C1–C4 默认显示炮弹，可在图层设置中开关；真实敌车和命中特效位置仍隐藏，Python 输入权限不变。C2 显示双方 HP，以及运行中的累计位置 RMSE、有效样本数和变化曲线；编辑器也显示同一指标。测试不计入、重复部署不清零，重试重新累计。通关或点击「结束本次尝试」后关闭玩家程序并冻结最终误差报告；物理与已有弹丸继续运行。重试建立新场景，新关只补缺失文件，已有源码保留；保存的草稿须重新 Test/Deploy。玩家按 C0 → C1 → C2 解锁，通关写入存档；开发者模式可自由选关练习。
 
 F1 或编辑器中的「关卡说明 / 类型」可随时查看每关步骤、输入输出签名、SDK 字段/单位、Python 速查与交互矩阵实验；悬停及 Ctrl+Space 提供类型提示。新模板显式标注变量和返回类型。旧工作区可预览模板升级并选择系统脚手架，已有算法默认保留。原生 NumPy 随首次启动自动准备；浏览器运行 `prepare_browser.py` 准备锁定的 Pyodide/NumPy 资源。
 
@@ -89,7 +89,7 @@ python3 tools/tankbot.py browser --chassis omnidirectional
 
 ## 多文件编辑与部署（M3）
 
-游戏界面固定在视口内，无需滚动网页。点击顶部「代码编辑器」或按默认 **F2** 弹出 Workspace；再次按对应快捷键 或点击右上角 **×** 收起。草稿、光标与选中文件会保留。Workspace 支持 Python/JSON 编辑、Vim、文件切换、新建文件、Ctrl/⌘S 或 `:w` 保存。依次点击 **测试快照 → 部署已测试版本**；测试或候选启动失败会保留当前机器人。历史部署可显式回滚，产生新 Runtime 并清空算法状态，物理世界继续运行。编辑器焦点不会把 W/J/L/空格传给坦克。
+游戏界面固定在视口内，无需滚动网页。点击顶部「代码编辑器」或按默认 **F2** 打开铺满窗口的 Workspace；再次按对应快捷键或点击右上角 **×** 收起。草稿、光标与选中文件会保留。Workspace 支持 Python/JSON 编辑、Vim、文件切换、新建文件、Ctrl/⌘S 或 `:w` 保存。依次点击 **测试快照 → 部署已测试版本**；部署成功后自动收起编辑器，回到游戏画面运行程序；测试或候选启动失败时保留编辑器、错误日志和当前机器人。历史部署可显式回滚，产生新 Runtime 并清空算法状态，物理世界继续运行。编辑器焦点不会把 W/J/L/空格传给坦克。
 
 默认编辑库保存在 `userdata/workspaces/<项目标识>/`，与 `userdata/settings.yaml` 和 `userdata/progress.json` 一起管理。源码以版本化 JSON 快照保存，模板 ledger、历史版本和测试/部署归档均在项目目录中，跨刷新与重启保留。备份整个 `userdata/` 即可保存个人数据。
 
@@ -124,6 +124,7 @@ node tests/test_sdk_hints.mjs  # 学习类型与成员提示
 node tests/test_gamepad.mjs    # 模拟量、按键、设备切换和恢复边界
 node tests/test_settings.mjs   # 改键语义、图层权限和真值/估计独立
 node tests/test_runtime_logs.mjs # 连续 Python 日志、版本隔离和源码行号
+node tests/test_live_metrics.mjs # 累计指标展示、曲线容量和重试清零
 node tests/test_wasm.mjs       # 先构建原生 debug 与 WASM release
 python3 docs/tools/check_design.py
 python3 tools/build.py --format-check
@@ -154,7 +155,7 @@ M2 浏览器验收需先启动带 `--browser-qa` 的 browser 服务及启用 Mar
 
 M3 UI 验收使用独立临时编辑库启动服务和 Marionette Firefox，再运行 `python3 tools/browser_m3.py`；原生模式使用 `--url http://127.0.0.1:8765 --output docs/reports/m3-native-ui.json`。脚本会修改该测试编辑库，勿指向日常项目。
 
-弹窗/固定视口回归：启动本机服务与 Marionette Firefox 后运行 `python3 tools/browser_dialog.py`，检查 F2/按钮/×、草稿保留、焦点与按键隔离，以及不同窗口尺寸下无页面滚动。截图与测量写入 `.m1-cache/dialog-*.png` 和 `.m1-cache/dialog-report.json`。
+弹窗/固定视口回归：启动本机服务与 Marionette Firefox 后运行 `python3 tools/browser_dialog.py`，检查 F2/按钮/×、草稿保留、焦点与按键隔离，以及不同窗口尺寸下编辑器铺满视口且无页面滚动。截图与测量写入 `.m1-cache/dialog-*.png` 和 `.m1-cache/dialog-report.json`。
 
 ## M5：Weapons 与多模块机器人
 

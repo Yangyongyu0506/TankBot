@@ -61,6 +61,9 @@ class LevelPluginTests(unittest.TestCase):
                 expected=copy.deepcopy(expected)
                 self.assertIs(expected['physics']['view_policy']['world_effects'],False)
                 expected['physics']['view_policy']['world_effects']=True
+            if lid=='c2':
+                expected['guide']['steps']=[text.replace('击杀后通关；真值误差仅在尝试结束后给出。','击杀后通关；运行中查看累计位置 RMSE 和趋势，越低表示整体误差越小。') for text in expected['guide']['steps']]
+                expected['guide']['completion']=expected['guide']['completion'].replace('把敌车 HP 减到 0 即通关；误差评分在尝试结束后显示，不作为额外门槛。','把敌车 HP 减到 0 即通关；运行中显示累计位置 RMSE，结束后保留最终诊断，不作为额外门槛。')
             with self.subTest(level=lid):self.assert_subset(expected,projection(config,lid),lid)
 
     def test_invalid_definitions_report_file_and_precise_field(self):
@@ -100,6 +103,18 @@ class LevelPluginTests(unittest.TestCase):
         path.write_text(original)
         self.base['level_plugins']['limits']['max_file_bytes']=10;self.write_base()
         with self.assertRaisesRegex(LevelValidationError,'max_file_bytes'):load_config(self.path)
+
+    def test_live_metric_needs_explicit_visualization_grant_and_valid_display_parameters(self):
+        original=self.definition('c2')
+        cases=[('grant',lambda d:d['permissions']['visualization'].pop('allowed_metrics'),'evaluation.live_feedback.metric'),
+               ('precision',lambda d:d['evaluation']['live_feedback'].update(precision=-1),'evaluation.live_feedback.precision'),
+               ('history',lambda d:d['evaluation']['live_feedback'].update(history_points=0),'evaluation.live_feedback.history_points'),
+               ('metric',lambda d:d['evaluation']['live_feedback'].update(metric='truth_pose'),'evaluation.live_feedback.metric')]
+        for name,mutate,path in cases:
+            with self.subTest(case=name):
+                d=copy.deepcopy(original);mutate(d);self.write(d,'c2')
+                with self.assertRaises(LevelValidationError) as raised:load_config(self.path)
+                self.assertEqual(raised.exception.path,path)
 
     def test_duplicate_ids_prerequisites_and_discovery_count_are_validated(self):
         original=self.definition('c1')

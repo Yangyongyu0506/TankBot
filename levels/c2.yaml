@@ -8,7 +8,7 @@ metadata:
     title: Weapons
     description: 锁定底盘，依次学习坐标变换、目标跟踪、自瞄和装甲瞄准。
   order: 2
-  version: 1.0.1
+  version: 1.1.0
   learning_objectives:
   - C1 的 SE(3) 矩阵继续使用。你只在 Tracker 中处理已经转换到地图的测量，并保存跨调用的估计。
   recommended_algorithms: []
@@ -227,6 +227,8 @@ permissions:
     - target_estimate@1
     actuators: {}
   visualization:
+    allowed_metrics:
+    - rmse_m
     view_policy:
       policy_id: campaign-c2
       system_pose_allowed: true
@@ -348,6 +350,14 @@ objectives:
 evaluation:
   type: terminal_diagnostics
   publish_on: terminal
+  live_feedback:
+    metric: rmse_m
+    title: 实时去噪效果
+    label: 累计位置 RMSE
+    unit: m
+    precision: 3
+    history_points: 120
+    description: 从首次部署起累计，按估计采样时刻比较目标位置；数值越低，整体误差越小。测试快照不计入，重新部署不清零；重试关卡重新累计。
   metrics:
   - id: rmse_m
     type: position_rmse
@@ -362,7 +372,7 @@ tutorial:
   hints:
   - 完成 perception/tracker.py；C1 的 transforms.py 继续用于矩阵坐标变换。
   - 空测量时也可输出合理预测；不要把每个 observation_id 当作同一实体 ID。
-  - J/L 手动瞄准，给移动目标留出弹丸飞行时间。HP 是授权反馈；误差在结束后显示。
+  - J/L 手动瞄准，给移动目标留出弹丸飞行时间。HP 和运行中的累计位置 RMSE 都是授权教学反馈；观察数值与曲线评估去噪效果。
   - Weapons 章节底盘锁定：本关只练习瞄准，W/A/S/D/Q/E 不控制移动；后坐和受击仍是真实物理。
   lesson:
     title: C2 · 复用变换，在噪声中保留状态
@@ -373,7 +383,7 @@ tutorial:
       的 NumPy 数组。
     - dt 是仿真秒。__init__ 只初始化一次；把状态保存在 self.estimate 或自定义的带类型 NumPy 字段中。
     - 尝试平滑、滑动窗口或预测；没有测量时决定保留或预测状态，尚未初始化时可返回 None。保存历史应使用有长度上限的窗口。
-    - 保存、测试并部署。跟踪巡逻敌车，考虑弹丸飞行时间，击杀后通关；真值误差仅在尝试结束后给出。
+    - 保存、测试并部署。跟踪巡逻敌车，考虑弹丸飞行时间，击杀后通关；运行中查看累计位置 RMSE 和趋势，越低表示整体误差越小。
     - 正式尝试持续计时，打开编辑器不暂停；可在任务页或编辑器点击「结束本次尝试」，修改保存后重试。
     files:
     - path: perception/tracker.py
@@ -394,7 +404,7 @@ tutorial:
       T_map_radar: ndarray
     execution: 框架按 {algorithm_hz} Hz 仿真频率调度，雷达按 {radar_hz} Hz 采样；每个新雷达帧调用一次算法，包括空检测帧。dt 使用仿真秒；部署和重试重新初始化状态。 雷达距离
       σ={range_stddev_m:g} m，方位 σ={bearing_stddev_rad:g} rad，独立丢失 {drop_probability:.0%}。
-    completion: 把敌车 HP 减到 0 即通关；误差评分在尝试结束后显示，不作为额外门槛。 限时 {time_limit_s} 仿真秒。首次成功部署后开始计时，之前的编辑和测试不计时；重复部署不重置。 我方与敌方均为
+    completion: 把敌车 HP 减到 0 即通关；运行中显示累计位置 RMSE，结束后保留最终诊断，不作为额外门槛。 限时 {time_limit_s} 仿真秒。首次成功部署后开始计时，之前的编辑和测试不计时；重复部署不重置。 我方与敌方均为
       {max_hp} HP，每发命中扣 {damage_per_hit} HP；反弹自伤也扣血，碰墙不扣血。我方死亡判失败，同时死亡也失败。
     common_errors:
     - 先检查 measurements 是否为空；没有测量不代表目标坐标为 (0,0)。

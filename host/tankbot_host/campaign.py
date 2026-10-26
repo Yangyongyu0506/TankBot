@@ -78,6 +78,9 @@ def catalog(config):
         item = {"level_id": key, **{name: copy.deepcopy(value[name]) for name in ("title", "problem", "hints", "capabilities", "objective", "time_limit_s", "timer_start")},
                 "chapter_id":value.get("chapter_id"),"control_sources":copy.deepcopy(value.get("control_sources")),"armor_mode":value.get("armor_mode",False),"ui":copy.deepcopy(value["tutorial"]["lesson"]["ui"]),"visualization":copy.deepcopy(value["visualization"]),"allowed_layers":copy.deepcopy(value["permissions"]["visualization"]["allowed_layers"])}
         item["problem"] = item["problem"].format(time_limit_s=value["time_limit_s"], max_hp=value["target"].get("health", {}).get("max_hp"))
+        feedback=value["evaluation"].get("live_feedback")
+        if feedback and feedback["metric"] in value["permissions"]["visualization"].get("allowed_metrics",[]):
+            item["live_feedback"]=copy.deepcopy(feedback)
         result.append(item)
     return result
 
@@ -217,7 +220,7 @@ class CampaignSession:
 
     def public(self):
         health_allowed = "view.enemy.health" in self.definition["capabilities"]
-        return {"level_id": self.level_id, "status": self.status, "enemy_hp": self.hp if health_allowed else None,
+        state = {"level_id": self.level_id, "status": self.status, "enemy_hp": self.hp if health_allowed else None,
                 "phase": "finished" if self.status != "active" else "preparing" if self.started_tick is None else "running",
                 "timing": {"time_limit_s": self.definition["time_limit_s"], "start_on": self.definition["timer_start"],
                            "started_tick": self.started_tick, "elapsed_ticks": self.elapsed_ticks,
@@ -228,3 +231,8 @@ class CampaignSession:
                 "progress": {"moved": self.moved, "turned": self.turned,
                              "has_estimate": self.estimates > 0, "hit": self.hits > 0},
                 "result": copy.deepcopy(self.result)}
+        feedback=self.definition["evaluation"].get("live_feedback")
+        if feedback and feedback["metric"] in self.definition["permissions"]["visualization"].get("allowed_metrics",[]):
+            metric=feedback["metric"]
+            state["live_metrics"]={metric:self.diagnostics.report()[metric],"scored_samples":self.diagnostics.counts[metric]}
+        return state

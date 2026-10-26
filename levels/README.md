@@ -8,6 +8,7 @@
 2. 在同一 YAML 中声明地图/初态/传感器/控制源、通信合同、权限、规则、诊断、教材与模板。地图可 inline，或仅引用 assets/ 内 `{walls: [...]}` 格式的地图文件；禁止 include 其他配置或脚本。
 3. 机器人、传感器、规则、指标、可视化及模板必须使用已登记类型。调节现有参数不需要改引擎；未登记能力明确报错。当前仅一个玩家和一个目标，不提前宣称支持 SLAM、机械臂或多机器人课程。
 4. 先设置程序 inputs/outputs/actuators，再分别设置 View Policy 与 allowed_layers；初始显示和可切换项必须在显示权限内。默认保持旧用户图层偏好；需要按新关卡初始状态显示时可设 preserve_user_settings=false。
+   运行中指标需同时声明 permissions.visualization.allowed_metrics 和 evaluation.live_feedback，且指标必须已在 evaluation.metrics 登记；标题、单位、小数精度和曲线容量全部由 YAML 配置。当前只实现累计位置 rmse_m，未声明时不发布运行中诊断。
 5. objectives.success 用 compare/all/any/not，终局数组顺序就是优先级。沿用声明的 timer_start；诊断仅结束后发布。不要通过改变显示权限改变评分。
 6. 玩家算法文件不得加入 runtime.managed_files。YAML 只能选择引擎模板并提供字符串说明，不能提供执行脚本。默认入口、合同路径、类型、连线、预算和依赖均会校验。
 7. 运行 `python3 docs/tools/check_design.py`、相关自动测试，以及 `python3 tools/export_profile.py --offline` 更新生成夹具；修改宿主代码后另运行 `python3 tools/prepare_browser.py --offline`。

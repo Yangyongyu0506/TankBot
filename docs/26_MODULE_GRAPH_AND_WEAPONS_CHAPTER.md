@@ -20,6 +20,8 @@ C1–C4 保留系统自身位姿和公开地图。底盘锁定为零目标主动
 
 Weapons 全部关卡默认显示炮弹，可在设置中开关 projectiles 图层；显示权限由各关 YAML 声明，沿用现有插值。敌车真实位姿/装甲模型仍不显示，算法不能订阅炮弹真值，开火、动力学和评分规则不变。
 
+C2 另按用户要求授权运行中累计位置 RMSE 的 UI 教学反馈，包含有效样本数及有界走势；C3/C4 的误差仍只在结束后发布。此设置来自 YAML 的 allowed_metrics / live_feedback，不给模块新增真值输入，详见 [18](18_CAMPAIGN_DESIGN.md)。
+
 关卡组合、目标、教学说明、Profile 与模板合同来自 `levels/*.yaml`；通用模型、控制参数、预算和验收参考控制器参数仍在 `config/game.yaml`。加载器及迁移边界见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)；YAML→JSON Core DTO 不增加玩家读取私有场景的权限。
 
 ## 模块职责与数据流

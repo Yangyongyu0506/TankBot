@@ -76,3 +76,5 @@ M4 内部配置为 **1.6**，增加必填 campaign；1.5 沙盒仍可读。新�
 ## YAML 关卡插件增量
 
 应用配置 1.9 的 `level_plugins` 声明目录与资源限额；`levels/*.yaml` 经 `level.schema.json` 及交叉引用/组件/权限验证后，编译为上述内部 DTO。安全加载器限制文件大小、节点、嵌套深度与组件数量，拒绝别名、重复键、任意对象标签、无效地图路径及未注册类型。权限不是仅靠 Schema 执行，实际数据仍由 Authority 裁剪。现有五关和生成夹具由同一加载器校验；文档工具也检查该流程和关卡编写指南。格式与精确错误路径见 [27](../27_LEVEL_PLUGIN_ARCHITECTURE.md)。
+
+可选的 permissions.visualization.allowed_metrics 与 evaluation.live_feedback 显式授权运行中累计位置 RMSE；字段结构/精度/曲线容量由 level.schema.json 约束，指标是否登记并获授权由加载器交叉校验。反馈只走 Campaign 管理状态，不改变 view_snapshot 或机器人协议 Schema。

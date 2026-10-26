@@ -67,8 +67,17 @@ def main():
         result=b.until("const root=document.getElementById('workspace-panel'),s=JSON.parse(root.dataset.deployment||'{}');return !s.job&&s.last?.kind==='test'&&s.last.revision===root.dataset.revision&&s.last.id!=="+json.dumps(previous)+"&&s.last;",timeout=90)
         return result
     def deploy():
+        path=b.script("return document.getElementById('editor-path').textContent;")
         click("deploy-workspace")
-        return b.until("const s=JSON.parse(document.getElementById('workspace-panel').dataset.deployment||'{}');return !s.job&&s.last?.status==='Active'&&s.active;",timeout=90)
+        active=b.until("const s=JSON.parse(document.getElementById('workspace-panel').dataset.deployment||'{}');return !s.job&&s.last?.status==='Active'&&s.active;",timeout=90)
+        b.until("return !document.getElementById('workspace-dialog').open;")
+        b.script("window.dispatchEvent(new KeyboardEvent('keydown',{code:'F2',key:'F2',bubbles:true}));return true;")
+        assert b.script("return document.getElementById('workspace-dialog').open;")
+        assert b.script("return document.getElementById('editor-path').textContent;")==path
+        tick=b.script("return Number(document.getElementById('tick').textContent);")
+        b.until("return Number(document.getElementById('tick').textContent)>"+str(tick+30)+";")
+        assert b.script("return document.getElementById('workspace-dialog').open;"),'Previous Active closed a reopened editor'
+        return active
     def screenshot(suffix):
         path=ROOT/".m1-cache"/(args.output.stem+"-"+suffix+".png")
         path.write_bytes(base64.b64decode(b.call("WebDriver:TakeScreenshot",{})["value"]));return path.relative_to(ROOT).as_posix()
@@ -94,6 +103,7 @@ class FeedbackTest(unittest.TestCase):
 ''',"tests/test_numpy.py")
         if not b.script("return document.getElementById('editor-runtime-logs').hidden;"):click("toggle-editor-logs")
         failed=test();assert failed["status"]=="Failed",failed
+        assert b.script("return document.getElementById('workspace-dialog').open;")
         assert failed["diagnostic"]["path"]=="tests/test_numpy.py",failed
         b.until("return !document.getElementById('editor-runtime-logs').hidden&&document.getElementById('workspace-message').textContent.includes('AssertionError');")
         failed_output=b.until("const text=document.getElementById('editor-runtime-log-view').textContent;return text.includes('Traceback (most recent call last):')&&text.includes('FAILED (failures=1)')&&text;")
@@ -138,6 +148,7 @@ class FeedbackTest(unittest.TestCase):
                 "static_rejection":True,"test_stdout_visible":True,"runtime_traceback_visible":True,"source_link_locates_line":True,
                 "source_filter":True,"clear_display":True,"recovery":True,"covariance_wire_unchanged":True,
                 "failed_test":failed,"native_unittest_output":True,"automatic_test_log_panel":True,
+                "successful_deploy_closes_editor":True,"f2_reopens_same_file":True,"existing_active_keeps_editor_open":True,"failed_test_keeps_editor_open":True,
                 "test":passed,"initial_deployment":deployment,"recovered_deployment":recovered_deployment,
                 "layout":layouts,"screenshots":[failed_test_shot,error_shot,hud_shot]}
         paths=[p for directory in ("host/tankbot_host","runtime","sdk/python/tankbot","web") for p in (ROOT/directory).glob('*') if p.suffix in ('.py','.js','.html','.css')]

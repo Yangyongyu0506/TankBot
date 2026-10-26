@@ -6,6 +6,8 @@
 
 下表记录重构前基线。后续用户要求 Weapons 全章炮弹可见，当前 C1–C4 已通过 YAML 开放此显示权限，见 [ADR-0022 修订](adr/0022-campaign-capabilities-and-evaluation.md)。冻结夹具保留，回归仅明确允许 world_effects 这一项后续变更；其余原有行为继续对照。
 
+2026-10-26 用户另要求 C2 运行中显示累计 RMSE；当前该关通过 allowed_metrics 与 evaluation.live_feedback 授权聚合 UI，原累计公式、终局报告和通关规则保持。冻结基线继续保留，回归明确适配了对应教学说明，详见 [ADR-0034](adr/0034-authorized-live-evaluation.md)。
+
 | ID / 名称 | 目标与输入 | 控制、初态与权限 | 成功、失败与诊断 |
 | --- | --- | --- | --- |
 | c0 / 认识坦克与坐标 | 移动≥1m、转向≥0.5rad、命中一次；无 Radar | 玩家原点、零速度；可选差速/径向全向轮；手动驾驶/炮台速度/单发，系统自身位姿、地图及目标弹道真值 | 首次有效人工操作计时，60秒；无需估计；超时或主动结束 |
@@ -72,7 +74,7 @@ flowchart TD
 | permissions.visualization | Authority View Policy、可显示图层上限；与程序订阅权限分别检查 |
 | visualization | initial_enabled、user_toggleable、source；现有五关 preserve_user_settings=true 保留已有图层偏好，偏好不能越权 |
 | objectives | 参数、可锁存移动/转角进度、组合成功条件、按数组顺序执行的终局条件、时限与起算 |
-| evaluation | terminal_diagnostics 及位置/yaw RMSE 组件；无新增星级、加权分数或通关误差门槛 |
+| evaluation | terminal_diagnostics 及位置/yaw RMSE 组件；可选 live_feedback 只显示显式授权的累计指标，无新增星级、加权分数或通关误差门槛 |
 | randomization | 既有 Python Random 的 seed、新 run 重建策略；不增加地图随机化 |
 | tutorial | 原文任务/提示、完整学习说明、默认文件、UI 说明与公共标定引用；数量/频率/噪声用公开占位符引用权威参数 |
 | scaffolding | 注册的通用模板组件及文档字符串；不允许 YAML 提供可执行脚本或任意导入路径 |
@@ -96,6 +98,8 @@ flowchart TD
 编译器将 allowed_layers 与 View Policy 取交集，Authority/ViewGateway 裁剪对应地图、真实物体、局部观测和估计，消息查看器也不能获得被禁止图层的数据；UI 只列出 allowed_layers，初始显示和用户开关取交集。锁定开关不能由普通操作重新启用。来源是注册组件规定的数据源，不允许把机器人估计图层改接真值。开发者独立 grant 保留全量只读调试，关闭模式撤回；不改变玩家程序权限或通关奖励。
 
 评分读取私有物理历史，独立于是否显示 UI、是否允许玩家读真值。正式提交的估计按采样 tick 评分，测试输出不计分；终局前不公布诊断，不把估计修正回物理状态。浏览器完整场景在客户端运行，权限是教学/接口边界，不能保证恶意客户端无法检查内部真值。
+
+C2 的实时累计 RMSE 是上段终局发布规则的显式教学例外。allowed_metrics 给出可视指标上限，live_feedback 选择其中已登记/已计算的指标；加载器拒绝越权、未知指标或无效精度/历史容量。管理状态只发布获授权的标量与计数，曲线缓存由 YAML 限长；当前不增加窗口误差或原始雷达基线指标。
 
 ## 五关迁移结果与开放项
 

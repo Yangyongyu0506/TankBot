@@ -39,7 +39,7 @@ export function setupWorkspaceDialog(releaseControls){
 
 export async function mountWorkspace(browser){
   const $=id=>document.getElementById(id),root=$("workspace-panel");
-  let snapshot,files,selected,editor,plan,status,busy=false,token,level,learning,needsUpgrade=false,editorDefaultFile=null;
+  let snapshot,files,selected,editor,plan,status,busy=false,token,level,learning,needsUpgrade=false,editorDefaultFile=null,pendingDeploymentId=null;
   const message=text=>{$("workspace-message").textContent=text;};
   const showLogs=source=>window.dispatchEvent(new CustomEvent("tankbot-show-runtime-logs",{detail:{source}}));
   const dirty=()=>JSON.stringify(files)!==JSON.stringify(snapshot.files);
@@ -140,7 +140,11 @@ export async function mountWorkspace(browser){
   $("save-workspace").onclick=()=>action(save);
   $("test-workspace").onclick=()=>action(testSnapshot);
   $("preview-teaching-upgrade").onclick=()=>action(previewUpgrade);
-  $("deploy-workspace").onclick=()=>action(async()=>{status=await runtime("deploy",{revision:snapshot.revision,snapshot});message("正在启动候选版本，成功后切换…");});
+  $("deploy-workspace").onclick=()=>action(async()=>{
+    status=await runtime("deploy",{revision:snapshot.revision,snapshot});
+    pendingDeploymentId=status.job?.id;
+    message("正在启动候选版本，成功后自动返回游戏…");
+  });
   $("rollback-workspace").onclick=()=>action(async()=>{status=await runtime("rollback",{sha256:$("deployment-history").value});message("正在以干净状态重新部署所选版本…");});
   $("new-file").onclick=()=>action(async()=>{
     const path=$("new-file-path").value.trim();if(!path)throw Error("输入相对路径，例如 planning/controller.py");
@@ -198,6 +202,11 @@ export async function mountWorkspace(browser){
         if(last.status==="Failed"){showLogs(last.kind);locate(location||last.error);}
         else if(last.status==="Active")showLogs("all");
         if(last.revision)http("archive",{revision:last.revision,record:{run_id:status.run_id,...last}}).catch(error=>message("运行结果已生效，但记录归档失败："+error.message));
+      }
+      // Only this editor's requested deployment can close it; an existing Active cannot.
+      if(pendingDeploymentId&&status.last?.id===pendingDeploymentId){
+        pendingDeploymentId=null;
+        if(status.last.status==="Active")$("workspace-dialog").close();
       }
       refresh();
     }catch(error){message(error.message);}

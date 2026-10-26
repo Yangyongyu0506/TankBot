@@ -233,6 +233,11 @@ def _validate(value, filename, config, validator):
     if len(metric_ids)!=len(set(metric_ids)):fail("evaluation.metrics","duplicate metric ID")
     expected_metrics={"position_rmse":"rmse_m","yaw_rmse":"yaw_rmse_rad"}
     if any(expected_metrics[m["type"]]!=m["id"] for m in value["evaluation"]["metrics"]):fail("evaluation.metrics","metric ID must match its existing report field")
+    feedback=value["evaluation"].get("live_feedback")
+    if feedback:
+        metric=feedback["metric"]
+        if metric not in metric_ids:fail("evaluation.live_feedback.metric","live metric must be declared in evaluation.metrics")
+        if metric not in value["permissions"]["visualization"].get("allowed_metrics",[]):fail("evaluation.live_feedback.metric","live metric visualization is not authorized")
     reasons=[o["reason"] for o in value["objectives"]["outcomes"]]
     if len(reasons)!=len(set(reasons)):fail("objectives.outcomes","duplicate terminal reason")
 

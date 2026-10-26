@@ -1,0 +1,141 @@
+{
+  "url": "http://127.0.0.1:8795",
+  "browser": {
+    "sessionId": "ebf093c5-ff63-4f86-be95-c3c1b96c78ec",
+    "capabilities": {
+      "acceptInsecureCerts": false,
+      "browserName": "firefox",
+      "browserVersion": "157.0.1",
+      "platformName": "linux",
+      "setWindowRect": true,
+      "unhandledPromptBehavior": "dismiss and notify",
+      "userAgent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:157.0) Gecko/20100101 Firefox/157.0",
+      "moz:buildID": "20261006030843",
+      "moz:headless": true,
+      "moz:platformVersion": "7.0.0-38-generic",
+      "moz:processID": 906307,
+      "moz:profile": "/home/yangy/Academics/TankBot/.m1-cache/live-rmse/firefox",
+      "moz:shutdownTimeout": 60000,
+      "pageLoadStrategy": "normal",
+      "timeouts": {
+        "implicit": 0,
+        "pageLoad": 300000,
+        "script": 30000
+      },
+      "strictFileInteractability": false,
+      "moz:accessibilityChecks": false,
+      "moz:webdriverClick": true,
+      "moz:windowless": false,
+      "proxy": {}
+    }
+  },
+  "ordinary_player": true,
+  "test": {
+    "status": "Ready",
+    "sha256": "a2761e8871ae15355f7fbd9d0ec21aa424953fbb1d0a5f668492072c39f564f6",
+    "revision": "7de163fa80f04004540dbe8e4eda660534d3b5cc729239b728eb7b78cbd9426b",
+    "environment": "097424f2a1728cd7cb018be82e90fde27c68352609cde3282c02332646b5e074",
+    "unit_tests": 2,
+    "simulation_batches": 6,
+    "max_batch_ms": 12.093671000911854,
+    "checks": [
+      "paths",
+      "syntax",
+      "manifest",
+      "contract",
+      "unit_tests",
+      "authorized_sensor_simulation",
+      "output_permissions",
+      "runtime_budget"
+    ],
+    "kind": "test",
+    "id": "54c3508a7598406dae19affa521d7e31"
+  },
+  "running": {
+    "run_id": "11b1859a8eaf460db2e7feb6a84b2f95",
+    "attempt": {
+      "level_id": "c2",
+      "status": "active",
+      "enemy_hp": 3,
+      "phase": "running",
+      "timing": {
+        "time_limit_s": 120,
+        "start_on": "first_deployment",
+        "started_tick": 96,
+        "elapsed_ticks": 37,
+        "remaining_s": 119.38333333333334
+      },
+      "player_hp": 3,
+      "player_max_hp": 3,
+      "enemy_max_hp": 3,
+      "progress": {
+        "moved": true,
+        "turned": true,
+        "has_estimate": true,
+        "hit": false
+      },
+      "result": null,
+      "live_metrics": {
+        "rmse_m": 0.530154892508915,
+        "scored_samples": 6
+      }
+    },
+    "save_error": null
+  },
+  "finished": {
+    "run_id": "11b1859a8eaf460db2e7feb6a84b2f95",
+    "attempt": {
+      "level_id": "c2",
+      "status": "ended",
+      "enemy_hp": 3,
+      "phase": "finished",
+      "timing": {
+        "time_limit_s": 120,
+        "start_on": "first_deployment",
+        "started_tick": 96,
+        "elapsed_ticks": 72,
+        "remaining_s": 118.8
+      },
+      "player_hp": 3,
+      "player_max_hp": 3,
+      "enemy_max_hp": 3,
+      "progress": {
+        "moved": true,
+        "turned": true,
+        "has_estimate": true,
+        "hit": false
+      },
+      "result": {
+        "passed": false,
+        "reason": "aborted",
+        "finished_tick": 168,
+        "estimate_samples": 11,
+        "rmse_m": 0.43849984383506546,
+        "yaw_rmse_rad": null,
+        "scored_samples": 11,
+        "hits": 0
+      },
+      "live_metrics": {
+        "rmse_m": 0.43849984383506546,
+        "scored_samples": 11
+      }
+    },
+    "save_error": null
+  },
+  "editor_metric": true,
+  "restart_clears_metric": true,
+  "other_level_hidden": true,
+  "layouts": [
+    {
+      "width": 1280,
+      "pageScroll": false,
+      "visible": true
+    },
+    {
+      "width": 500,
+      "pageScroll": false,
+      "visible": true
+    }
+  ],
+  "screenshot": ".m1-cache/live-rmse/native-ui-running.png"
+}
