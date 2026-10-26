@@ -1,0 +1,25 @@
+{
+  "protocol_version": "1.0",
+  "message_type": "topic",
+  "channel": "/robot/sensors/armor_detections",
+  "sequence_number": 1,
+  "simulation_tick": 6,
+  "simulation_time_ns": 100000000,
+  "run_id": "armor-example",
+  "publisher_id": "sensor:armor_detector",
+  "request_id": null,
+  "frame_id": "base_link",
+  "schema": "armor_detections@1",
+  "payload": {
+    "measurements_rt": [
+      [
+        4.1,
+        0.2
+      ],
+      [
+        4.25,
+        0.25
+      ]
+    ]
+  }
+}

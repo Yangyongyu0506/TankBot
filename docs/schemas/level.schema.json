@@ -698,13 +698,34 @@
                   "position_rmse",
                   "yaw_rmse"
                 ]
+              },
+              "period_rad": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 6.283185307179586
               }
             },
             "required": [
               "id",
               "type"
             ],
-            "additionalProperties": false
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": {
+                  "required": [
+                    "period_rad"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "type": {
+                      "const": "yaw_rmse"
+                    }
+                  }
+                }
+              }
+            ]
           }
         },
         "live_feedback": {
@@ -886,7 +907,9 @@
                           "armor_mounts",
                           "radar_covariance",
                           "gps_covariance",
-                          "gps_mount"
+                          "gps_mount",
+                          "armor_covariance",
+                          "yaw_period_rad"
                         ]
                       }
                     },
@@ -1047,7 +1070,10 @@
               "target_prediction",
               "polar_contract_tests",
               "fusion_contract_tests",
-              "predictive_contract_tests"
+              "predictive_contract_tests",
+              "armor_tracker",
+              "armor_tracking_adapter",
+              "armor_contract_tests"
             ]
           }
         },
@@ -1107,7 +1133,8 @@
             "turret_joint",
             "weapon_state",
             "radar",
-            "intercepted_gps"
+            "intercepted_gps",
+            "armor_detector"
           ]
         },
         "topic": {
@@ -1134,6 +1161,9 @@
             },
             {
               "$ref": "#/$defs/gpsParameters"
+            },
+            {
+              "$ref": "#/$defs/armorParameters"
             }
           ]
         }
@@ -1181,6 +1211,25 @@
             "properties": {
               "parameters": {
                 "$ref": "#/$defs/gpsParameters"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "armor_detector"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "parameters"
+            ],
+            "properties": {
+              "parameters": {
+                "$ref": "#/$defs/armorParameters"
               }
             }
           }
@@ -1554,6 +1603,112 @@
         "bias_m",
         "random_stream",
         "noise"
+      ],
+      "additionalProperties": false
+    },
+    "armorParameters": {
+      "type": "object",
+      "properties": {
+        "mount_m": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "yaw_rad": {
+          "type": "number"
+        },
+        "range_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "field_of_view_rad": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 6.283185307179586
+        },
+        "occlusion": {
+          "const": "walls"
+        },
+        "measurement": {
+          "const": "armor_centers"
+        },
+        "latency_ticks": {
+          "const": 0
+        },
+        "range_bias_m": {
+          "const": 0
+        },
+        "bearing_bias_rad": {
+          "const": 0
+        },
+        "noise": {
+          "type": "object",
+          "properties": {
+            "range_stddev_m": {
+              "type": "number",
+              "minimum": 0
+            },
+            "bearing_stddev_rad": {
+              "type": "number",
+              "minimum": 0
+            },
+            "drop_probability": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "required": [
+            "range_stddev_m",
+            "bearing_stddev_rad",
+            "drop_probability"
+          ],
+          "additionalProperties": false
+        },
+        "target_robot": {
+          "type": "string"
+        },
+        "max_detections": {
+          "const": 2
+        },
+        "selection": {
+          "const": "nearest_visible"
+        },
+        "visibility": {
+          "const": "front_facing"
+        },
+        "ordering": {
+          "const": "noiseless_range"
+        },
+        "random_stream": {
+          "type": "string",
+          "minLength": 1
+        },
+        "anonymous": {
+          "const": true
+        }
+      },
+      "required": [
+        "mount_m",
+        "yaw_rad",
+        "range_m",
+        "field_of_view_rad",
+        "occlusion",
+        "measurement",
+        "latency_ticks",
+        "range_bias_m",
+        "bearing_bias_rad",
+        "noise",
+        "target_robot",
+        "max_detections",
+        "selection",
+        "visibility",
+        "ordering",
+        "random_stream",
+        "anonymous"
       ],
       "additionalProperties": false
     }

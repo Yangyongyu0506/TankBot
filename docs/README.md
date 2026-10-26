@@ -2,7 +2,7 @@
 
 ## 阅读方式与规范状态
 
-文档基线：`m5-progressive-weapons-1.0`，更新日期：2026-10-26。已完成 M1/M1b、M2 本机浏览器/Transport、M3 编辑部署和 M4 C0–C2 教学闭环验收：实现与限制见 [运行入口](../README.md)、[M4 验证报告](reports/M4_VALIDATION.md)；模型由用户逐项确认，见 [13](13_PHYSICS_MODEL_DECISIONS.md)、[18](18_CAMPAIGN_DESIGN.md)。M5 已实现模块图、角加速度与装甲；现按用户要求调整为 C3 极坐标滤波、C4 GPS 融合、C5 小陀螺自瞄，当前边界及验收见 [28](28_WEAPONS_PROGRESSIVE_ESTIMATION.md)、[新课程报告](reports/WEAPONS_REDESIGN_VALIDATION.md)。关卡使用独立 YAML 插件，现有 C0–C5 六关，见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)。Locomotion、自身定位课程、建图、规划与 Arena 尚未实现。
+文档基线：`m5-progressive-weapons-1.0`，更新日期：2026-10-26。已完成 M1/M1b、M2 本机浏览器/Transport、M3 编辑部署和 M4 C0–C2 教学闭环验收：实现与限制见 [运行入口](../README.md)、[M4 验证报告](reports/M4_VALIDATION.md)；模型由用户逐项确认，见 [13](13_PHYSICS_MODEL_DECISIONS.md)、[18](18_CAMPAIGN_DESIGN.md)。M5 已实现模块图、角加速度与装甲；现按用户要求调整为 C3 极坐标滤波、C4 中心预测与自瞄、C5 小陀螺自瞄，当前边界及验收见 [28](28_WEAPONS_PROGRESSIVE_ESTIMATION.md)、[新课程报告](reports/WEAPONS_REDESIGN_VALIDATION.md)。关卡使用独立 YAML 插件，现有 C0–C5 六关，见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)。Locomotion、自身定位课程、建图、规划与 Arena 尚未实现。
 
 “必须／不得”为设计约束；“建议／拟采用”为待验证方案。Accepted ADR 表示接受设计原则或接口方向，不表示实现或平台验证完成；Proposed 技术不得当作既成依赖。协议 `1.0` 是**未发布草案**，首次发布前由兼容性审查冻结；发布后执行版本规则。
 
@@ -12,9 +12,12 @@
 
 | 文档 | 负责的设计与接口 |
 | --- | --- |
+| [中心自瞄验收](reports/CENTER_AUTO_AIM_VALIDATION.md) | C4/C3 参数一致、程序武器、采样位姿历史与 C5 复用 |
+| [30 匿名装甲观测](30_ARMOR_OBSERVATIONS.md) | 当前 C5 的最近可见装甲、NumPy 接口、模 90° 相位与迁移 |
+| [装甲观测验收](reports/ARMOR_OBSERVATIONS_VALIDATION.md) | 传感器/权限/对称性、旧源码保留与两种 Runtime 的真实部署 |
 | [29 底盘模型](29_CHASSIS_PROFILES.md) | 独立 YAML、车体/装甲/GPS 同源、紧凑全向与切关容量 |
 | [底盘与切关验收](reports/CHASSIS_PROFILES_VALIDATION.md) | 四向命中、统一标定、旧 C0 项目切 C5 与真实画面 |
-| [28 渐进 Weapons](28_WEAPONS_PROGRESSIVE_ESTIMATION.md) | 新 C3–C5、GPS/极坐标接口、小陀螺预测与文件树 |
+| [28 渐进 Weapons](28_WEAPONS_PROGRESSIVE_ESTIMATION.md) | C3 极坐标、C4 中心自瞄、C5 装甲小陀螺、文件树与迁移 |
 | [Weapons 重设计验收](reports/WEAPONS_REDESIGN_VALIDATION.md) | 原三关基线、新三关闭环、权限、工作区和真实网页 |
 | [26 多模块与 Weapons](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md) | M5 图、调度、章节、C3/C4 控制与装甲边界 |
 | [C2 实时 RMSE 验收](reports/LIVE_RMSE_VALIDATION.md) | 授权累计指标、采样时间、生命周期和两种玩家 UI |

@@ -1,10 +1,10 @@
-# 28 Weapons：极坐标滤波、GPS 融合与小陀螺自瞄
+# 28 Weapons：极坐标滤波、中心自瞄与小陀螺装甲
 
 ## 目的、范围与状态
 
-根据 2026-10-26 用户确认，保留 C0–C2 的玩法、观测、控制、目标和参数，重做 C3/C4，新增 C5。取代原 C3 自动瞄准、原 C4 仅凭中心运动推断朝向的课程安排；[26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md) 的调度、隔离与模块契约继续适用。决策见 [ADR-0035](adr/0035-progressive-weapons-estimation.md)，实现与验收见 [报告](reports/WEAPONS_REDESIGN_VALIDATION.md)。
+根据 2026-10-26 用户确认，保留 C0–C2 的玩法、观测、控制、目标和参数，重做 C3/C4，新增 C5。取代原 C3 自动瞄准、原 C4 仅凭中心运动推断朝向的课程安排；[26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md) 的调度、隔离与模块契约继续适用。初版决策见 [ADR-0035](adr/0035-progressive-weapons-estimation.md)；当前 C4 课程以 [ADR-0038](adr/0038-center-target-auto-aim.md) 为准，C5 观测以 [30](30_ARMOR_OBSERVATIONS.md) 为准，当前验收见 [报告](reports/CENTER_AUTO_AIM_VALIDATION.md)。
 
-所有关卡仍由独立 `levels/*.yaml` 声明，不按 ID 在引擎中选择行为。新增的是可复用的传感器、适配器、模板及巡逻控制能力；不引入 ROS2、外部算法库或关卡脚本。GPS 在本游戏中指地图平面米制坐标，不实现经纬度/WGS84。
+所有关卡仍由独立 `levels/*.yaml` 声明，不按 ID 在引擎中选择行为。新增的是可复用的传感器、适配器、模板及巡逻控制能力；不引入 ROS2、外部算法库或关卡脚本。当前正式关卡均不使用车头 GPS，通用组件保留兼容。
 
 ## 课程与控制权
 
@@ -12,8 +12,8 @@
 | --- | --- | --- | --- |
 | C0–C2 | 原接口、源码和行为保持 | 原权限 | 原规则 |
 | C3 | 原始车体系 Radar `(r,theta)` → 车体系 `PolarTargetEstimate` | 人工炮台速度 / 单发 | 无装甲差速敌车，存活击杀；120 s |
-| C4 | 中心 Radar + 地图系车头 GPS → 敌车中心 `TargetPoseEstimate` | 人工炮台速度 / 单发 | 四面中央有效装甲，差速敌车；180 s |
-| C5 | 复用 C4 融合 → 预测装甲 `(r,theta)` → 炮台角加速度 / 单发 | 仅玩家程序 | 全向小陀螺与有效装甲；180 s |
+| C4 | 复用 C3 的 `PolarTargetEstimate` → 中心预测 / 自瞄 | 仅玩家程序 | 同 C3 差速巡逻与整车扣血；120 s |
+| C5 | 匿名可见装甲 `(r,theta)` → 中心/等价相位估计 → 预测 / 自瞄 | 仅玩家程序 | 全向小陀螺与有效装甲；180 s |
 
 C1–C5 我方底盘零目标主动制动，保留后坐、受击及炮台反向力矩。系统自身位姿与地图继续授权。C2–C5 双方 3 HP，每次有效受击扣 1，原死亡/超时/最后 tick 顺序不变。C3–C5 从首次成功部署计时；运行阶段编辑器锁定，先结束或重试再改代码。原 C2 实时 RMSE 保持，C3–C5 的误差只在结束后公布。
 
@@ -40,38 +40,66 @@ def update(measurements_rt: NDArray[np.float64], own_pose: NDArray[np.float64],
 
 投影标记还受 UI 自身位姿/map 显示授权约束；不能因程序能读系统位姿就自动扩大界面权限。隐藏该显示不影响内部终局评分。
 
-## C4：车头 GPS 与底盘中心的联合观测
+## C4：复用 C3 滤波器，接管武器
 
-GPS 安装在敌车底盘前侧中央 `[L/2,0]`，不增加质量或碰撞体。地图系车头点为 `center + R(yaw) @ mount`，因此不等于底盘中心。公开安装偏移、误差模型和装甲几何，不公开敌车 yaw、角速度、巡逻航点或实体 ID。
+本轮用户撤销车头 GPS/中心 Radar 两点融合。C4 与 C3 的地图、初态、差速巡逻动力学、Radar 参数、双方 HP、整车扣血与判定顺序完全相同，时限同为 120 仿真秒，从首次部署计时。没有 GPS 或装甲观测，无需估计敌车 yaw。底盘继续锁定；C4 由程序控制炮台角加速度和单发，不再允许键盘/手柄人工武器输入。
 
-| 参数 | 确认基线 |
-| --- | --- |
-| 更新 | 10 Hz，零偏置 / 延迟 |
-| 误差 | x/y 独立高斯 σ=0.15 m，每帧独立 10% 丢失 |
-| 截获条件 | 我方中心到车头天线距离 ≤12 m，不受墙体遮挡 |
-| 随机流 | run seed + YAML `random_stream`，与原 Radar 独立 |
-| Radar | 原中心观测，σr=0.45 m、σtheta=0.08 rad、10% 丢失 |
+```mermaid
+flowchart LR
+    R[中心 Radar / base_link r,theta] --> T[复用玩家 PolarTracker]
+    T --> E[PolarTargetEstimate / 同采样 tick]
+    E --> A[公开自身位姿投影 / 有界历史]
+    A --> P[玩家 TargetPredictor / 预测中心]
+    P --> C[玩家 AutoAim / 角加速度与开火]
+    C --> U[Authority / 固定 tick 提交]
+```
 
-`gps_fix@1` Topic `/robot/sensors/intercepted_gps`、frame `map` 的 payload 为 `{"positions_m":[[x,y]]}`，无本帧 fix 时 `{"positions_m":[]}`。SDK `GpsFixData.positions_m` 是只读 `(N,2)` NumPy 数组，当前至多一个点。不产生虚假目标；超距/死亡先过滤，再丢失、加噪。重试重建独立随机流，部署不重置世界或噪声序列；跨平台不承诺位级相等。
+tracking 与 aiming 两模块通过原极坐标 Topic 连接；预测/控制在 aiming 内直接调用。通用适配器按目标采样 tick 匹配公开自身位姿，保存期限来自 `runtime.estimate_history_ticks`；找不到匹配位姿则传入无目标，不回退私有真值或最新位姿。`target_age_s` 是采样到控制提交的仿真秒数，包含跨模块与提交延迟。
 
-`FusionTracker.update(measurements_rt, gps_xy, own_pose, dt)` 输出地图系敌车底盘中心与 yaw 的 `TargetPoseEstimate`。构造时由框架提供 `gps_mount`、`radar_covariance`、`gps_covariance`。可复用 C3 类或自行联合估计；无需解析 JSON、安装依赖或配置进程。朝向来自两个不同安装点的观测关系，原地转向也有方向信息；丢失与噪声仍会降低精度。
+C4 高亮三个文件，其中 `perception/polar_tracker.py` 可原样沿用 C3。另两个接口在 C4/C5 共用：
 
-GPS 程序订阅与 UI 显示分别授权。C4/C5 的观察层允许显示紫色 GPS 测量点，沿用 Radar 图层开关；它是带噪测量，不能画成真实装甲或真值轨迹。C3 未授予 GPS 输入。装甲宽度、首次表面接触、吸弹/冲量、非装甲不扣血规则沿用原模型。
+```python
+import numpy as np
+from numpy.typing import NDArray
+from tankbot import AimInput, AimOutput
+
+class TargetPredictor:
+    def __init__(self, projectile_speed_mps: float, armor_mounts: NDArray[np.float64]) -> None:
+        self.projectile_speed_mps: float = projectile_speed_mps
+        self.armor_mounts: NDArray[np.float64] = armor_mounts
+
+    def update(self, observation: AimInput, dt: float) -> NDArray[np.float64] | None:
+        raise NotImplementedError
+
+class AutoAim:
+    def __init__(self, projectile_speed_mps: float, max_acceleration_radps2: float) -> None:
+        self.max_acceleration_radps2: float = max_acceleration_radps2
+
+    def update(self, observation: AimInput, dt: float) -> AimOutput:
+        raise NotImplementedError
+```
+
+预测器收到地图系 `target_xy` 中心、当前公开 `own_pose`、目标年龄和当前车体系 `target_rt`；无估计时目标为空。C4 的 `target_yaw_rad=None`，构造参数 `armor_mounts` 为 shape=(0,3) NumPy 空矩阵。通过有界历史估计中心速度并补偿飞行时间，返回当前车体系 float64 shape=(2,) 的预测 `[r,theta]`，或 None 暂不瞄准/射击。框架不替玩家滤波、估计速度或计算提前量。
+
+控制器的 `observation.target_rt` 已是预测点，结合连续炮台角、角速度、dt 和 weapon_ready 实现加速/制动与开火。返回 `AimOutput(acceleration_radps2: float, fire: bool)`；原 ±25 rad/s²、受限力矩、watchdog、冷却和幂等机制保持。没有预测点时不会发射。
+
+GPS 消息、SDK 与注册组件保留兼容，但当前正式关卡不启用；旧 fusion_tracker.py 不再是本关入口，也不会被删除或覆盖。决策见 [ADR-0038](adr/0038-center-target-auto-aim.md)。
 
 ## C5：预测与炮台控制分文件
 
 敌车复用四轮 90° 对称全向底盘。原矩形航点、0.6 m/s 平移目标、10 Hz 控制和零初态保留，新增 `spin_rate_radps: 3.0`；世界系平移目标每次控制更新转到车体系，交给同一受限力/力矩速度伺服。控制器不直接覆盖真实速度/朝向，实际速度可受阻力、碰撞和耦合影响。全向行进方向不等于车头方向。
 
-后续用户确认的紧凑全向模型由 [29](29_CHASSIS_PROFILES.md) 统一管理：车体 0.42×0.42 m、装甲中心 ±0.21 m、车头 GPS (+0.21,0) m，质量/惯量/伺服不变。C4 差速模型仍用原几何；C5 复用融合器时必须读取本关 `gps_mount/armor_mounts`，不能写死 C4 的 +0.4 m 偏移。
+后续用户确认的紧凑全向模型由 [29](29_CHASSIS_PROFILES.md) 统一管理：车体 0.42×0.42 m、装甲中心 ±0.21 m、车头 GPS (+0.21,0) m，质量/惯量/伺服不变。C4 差速模型仍用原几何并按整车扣血；C5 当前仅启用装甲观测，不使用 GPS；预测读取本关 `armor_mounts`。通用模型中的 GPS 安装点不代表关卡启用了该传感器。
 
 开发者预览时，在「图层」中启用「真实目标」，即可看到敌车自身的四轮全向模型、车头标记和装甲随真实 yaw 连续旋转；玩家自身选择差速底盘不会改变敌车外观。该图层可自由开关，不受课程玩家的显示限制。普通玩家仍只看到本关授权的观测与自身算法估计，不会因开发者显示修复而获得敌车真值。
 
+C5 后续按用户要求改为只观测最近两块可见装甲，不再使用中心 Radar/车头 GPS；完整模型、噪声与对称性规则见 [30](30_ARMOR_OBSERVATIONS.md)。
+
 ```mermaid
 flowchart LR
-    R[原始 Radar] --> F[FusionTrackingModule / 玩家融合]
-    G[车头 GPS] --> F
-    S[公开自身位姿] --> F
-    F --> T[TargetPoseEstimate / map]
+    R[匿名装甲中心 r/theta] --> F[ArmorTrackingModule / 玩家关联与估计]
+    S[公开自身位姿和装甲几何] --> F
+    F --> T[中心 / 等价装甲相位 / map]
     T --> P[玩家 TargetPredictor]
     P --> RT[预测装甲点 / 当前 base_link r,theta]
     RT --> C[玩家 AutoAim / 加速与制动]
@@ -82,7 +110,7 @@ flowchart LR
 
 - `weapons/target_prediction.py`：滤波、平移/旋转预测、装甲选择、飞行时间和发布时延；返回 float64 `(2,)` 当前我方车体系 `[r,theta]`，或 None。
 - `weapons/auto_aim.py`：读取预测后的 `AimInput.target_rt`、炮台连续角/角速度及冷却，输出 `AimOutput`；可用 PD，也可选其他控制器。
-- `perception/fusion_tracker.py`：沿用 C4；可自行改进小陀螺的状态模型，不强制重写。
+- `perception/armor_tracker.py`：新增匿名装甲跟踪，输入当前帧 0/1/2 行观测，估计中心与模 90° 等价朝向；旧融合器保留；C4 中心预测器和控制器可复用。
 
 `PredictiveAimingModule` 在同一次 update 内直接组合预测器与控制器。`AimInput.target_rt` 为新增只读计算属性；`with_target_polar` 用于生成控制输入副本。旧 `target_xy`、`own_pose` 和构造参数保持，已有控制器文件不被自动替换。没有预测点时传入无目标控制输入，框架不会开火。角加速度限幅、watchdog、双刚体耦合和幂等单发继续沿用既有 YAML。
 
@@ -92,10 +120,10 @@ flowchart LR
 
 F2 侧栏按目录显示 `├──` / `└──`，文件名高亮来自 YAML `tutorial.lesson.edit_files`，不是 UI 中的关卡分支。未声明时由 `lesson.functions` 推导，保持已有插件兼容。高亮表示本关主要编辑文件，不是唯一可编辑文件；自建文件、复用算法、未保存星号及当前选择保留。长文件名在侧栏内部横向滚动。
 
-新脚手架版本 `3.0.0`。C3/C4 单个图模块、C5 两个图模块同样遵守 Module Contract；图模式不再假定至少两个模块。切关比较模块与端口类型，需更新时使用既有预览/确认流程。旧 C1/C2、旧 `pose_tracker.py` / `armor_aim.py`、旧 `auto_aim.py` 和历史 revision 均保留；迁移不自动改算法签名/内容。旧关卡 ID 与已完成进度不删除，C5 按 prerequisites 依赖 C4。
+C3 脚手架版本 `3.0.0`，C4/C5 共用预测控制脚手架 `4.1.0`。C3 单个图模块、C4/C5 两个图模块同样遵守 Module Contract；图模式不再假定至少两个模块。切关比较模块与端口类型，需更新时使用既有预览/确认流程。旧 C1/C2、旧 `pose_tracker.py` / `armor_aim.py`、旧 `auto_aim.py` 和历史 revision 均保留；迁移不自动改算法签名/内容。旧关卡 ID 与已完成进度不删除，C5 按 prerequisites 依赖 C4。
 
 ## 取舍、验收与开放项
 
-选择一个物理可解释的车头位置观测，补上原中心 Radar 的方向盲区；拒绝直接提供真实 yaw 或复用路径真值。保留 C3 极坐标输出，使控制接口贴近车体系；地图仅为授权投影。GPS 与 Radar 当前为同期 10 Hz/零延迟，适配器按采样 tick 去重并匹配同帧，dt 按实际处理间隔计算；异步外感知融合属于未来扩展，不冒充已实现。
+采用 C3→C4 复用滤波、接管武器，C4→C5 复用预测/控制、扩展装甲观测与旋转的顺序。撤销 GPS 教学避免同时增加多个主要难点；保留极坐标输出与既有 SDK。原始观测适配器按同期自身位姿/传感器 tick 去重，dt 按实际调用间隔计算；任意异步融合仍为未来扩展。
 
-验收覆盖 C0–C2 冻结基线、GPS 安装/范围/独立随机流、原地旋转可观测性、极坐标帧/协方差/权限、全向平移与自转、三个关卡闭环、源文件/进度保留、真实网页文件树与多文件部署。参考程序可达性不能替代玩家教学测试；多 seed 难度评估、其他 OS/浏览器和实际学习效果仍待后续验证。
+验收覆盖 C0–C3 配置不变、C4 与 C3 参数/噪声/判定一致、程序控制权限、有界同期位姿投影、旧源码/进度保留、C4/C5 自主闭环和原生/浏览器真实 Test/Deploy，见 [当前报告](reports/CENTER_AUTO_AIM_VALIDATION.md)。参考程序可达性不能替代玩家教学测试；多 seed 难度、其他 OS/浏览器和学习效果仍待验证。

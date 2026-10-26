@@ -394,6 +394,8 @@ robot_graph:
   max_modules: 8
   max_connections: 64
   schemas:
+    armor_detections@1:
+    - base_link
     gps_fix@1:
     - map
     target_polar_estimate@1:

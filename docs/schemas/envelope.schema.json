@@ -92,7 +92,8 @@
         "target_pose_estimate@1",
         "view_snapshot@4",
         "gps_fix@1",
-        "target_polar_estimate@1"
+        "target_polar_estimate@1",
+        "armor_detections@1"
       ]
     },
     "payload": {
@@ -867,6 +868,44 @@
         "properties": {
           "payload": {
             "$ref": "payloads.schema.json#/$defs/target_polar_estimate"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "armor_detections@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "payloads.schema.json#/$defs/armor_detections"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "armor_detections@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "frame_id": {
+            "const": "base_link"
+          },
+          "message_type": {
+            "const": "topic"
+          },
+          "channel": {
+            "const": "/robot/sensors/armor_detections"
           }
         }
       }

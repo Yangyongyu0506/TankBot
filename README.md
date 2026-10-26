@@ -2,9 +2,9 @@
 
 TankBot 将二维坦克运动、机器人算法学习与多文件 Python 编程结合。玩家通过传感器和自己的算法重建世界认知。
 
-当前完成 **M1 + M1b 本机闭环原型**：Rust/Rapier2D 权威物理、差速/四轮径向全向轮底盘、理想轮编码器与质心 IMU、外部 Python 里程计、固定 tick 提交、Pose Selector、View Policy 和 Canvas 页面。M1b 增加双刚体炮台、单发/冷却、连续弹道/反弹/弹丸互毁、后坐/受击冲量、靶标与 Python 武器接口；M2 增加真实浏览器 Rust/WASM + Pyodide 双 Worker、独立 Runtime origin 与多 Adapter 验证；M3 增加 CodeMirror/Vim、多文件 Workspace、模板预览、快照测试、部署与回滚。M5 增加模块图，现已调整为 C3 极坐标滤波、C4 GPS 融合与 C5 小陀螺自瞄；Locomotion、规划和 Arena 尚未实现。
+当前完成 **M1 + M1b 本机闭环原型**：Rust/Rapier2D 权威物理、差速/四轮径向全向轮底盘、理想轮编码器与质心 IMU、外部 Python 里程计、固定 tick 提交、Pose Selector、View Policy 和 Canvas 页面。M1b 增加双刚体炮台、单发/冷却、连续弹道/反弹/弹丸互毁、后坐/受击冲量、靶标与 Python 武器接口；M2 增加真实浏览器 Rust/WASM + Pyodide 双 Worker、独立 Runtime origin 与多 Adapter 验证；M3 增加 CodeMirror/Vim、多文件 Workspace、模板预览、快照测试、部署与回滚。M5 增加模块图，现已调整为 C3 极坐标滤波、C4 中心自瞄与 C5 小陀螺装甲；Locomotion、规划和 Arena 尚未实现。
 
-M4 增加 C0–C2 教学关卡：真值驾驶练习、理想雷达 SE(3) 矩阵变换、带噪声/丢失的移动敌车跟踪与击杀。开始方式见下节；M5 当前课程为 C3 直接滤波车体系 (r, theta)、C4 车头 GPS/Radar 位姿融合与人工装甲瞄准、C5 全向小陀螺预测自瞄；自身定位课程、建图、规划与 Arena 仍待实现。
+M4 增加 C0–C2 教学关卡：真值驾驶练习、理想雷达 SE(3) 矩阵变换、带噪声/丢失的移动敌车跟踪与击杀。开始方式见下节；M5 当前课程为 C3 直接滤波车体系 (r, theta)、C4 复用滤波并接管武器自瞄、C5 全向小陀螺装甲预测；自身定位课程、建图、规划与 Arena 仍待实现。
 
 ## 构建与运行
 
@@ -159,11 +159,11 @@ M3 UI 验收使用独立临时编辑库启动服务和 Marionette Firefox，再�
 
 ## M5：Weapons 与多文件机器人
 
-章节按 **Hello Robot（C0）→ Weapons（C1–C5）→ 后续 Locomotion** 排列。C0–C2 玩法不变；C3 直接处理原始车体系距离/方位，输出仍是 `(r, theta)`，可实现 EKF；C4 联合敌车车头 GPS（地图系 x/y）与底盘中心 Radar，估计 x/y/yaw，人工瞄准有效装甲；C5 才接管武器，敌车改为全向小陀螺，玩家分文件实现预测与炮台控制。
+章节按 **Hello Robot（C0）→ Weapons（C1–C5）→ 后续 Locomotion** 排列。C0–C2 玩法不变；C3 直接处理原始车体系距离/方位，输出仍是 `(r, theta)`，可实现 EKF；C4 沿用 C3 的中心 Radar 与差速敌车，玩家分文件实现中心预测与自动武器控制；C5 在此基础上加入匿名装甲观测、有效装甲与全向小陀螺，复用控制器并扩展旋转预测。
 
-C1–C5 底盘锁定并保留真实受力，系统自身位姿仍公开；C1–C4 人工炮台/开火，C5 仅允许程序角加速度/单发。C3/C4/C5 时限为 120/180/180 仿真秒，首次成功部署起算。C2–C5 Radar 误差沿用 σr=0.45 m、σtheta=0.08 rad、10% 丢失；C4/C5 新增 10 Hz 车头 GPS，x/y 各 σ=0.15 m、10% 独立丢失，12 m 内截获且不受墙遮挡。所有参数在对应 YAML。
+C1–C5 底盘锁定并保留真实受力，系统自身位姿仍公开；C1–C3 人工炮台/开火，C4/C5 仅允许程序角加速度/单发。C3/C4/C5 时限为 120/120/180 仿真秒，首次成功部署起算。C2–C4 Radar 误差沿用 σr=0.45 m、σtheta=0.08 rad、10% 丢失；C4 不提供 GPS、不要求装甲命中，双方 HP、整车扣血和终局顺序与 C3 相同。C5 仅提供最近两块可见装甲的匿名车体系 `[r,theta]`，10 Hz、12 m，σr=0.03 m、σtheta=0.005 rad，每块独立丢失 10%，实际返回 0/1/2 行。没有中心 Radar 或 GPS，朝向按模 90° 解释。所有参数在对应 YAML。
 
-F2 的 tree 风格文件树高亮本关主要编辑文件；C5 同时高亮 `weapons/target_prediction.py` 与 `weapons/auto_aim.py`。复用 C4 的融合器，自己选择 KF/EKF、预测及 PD 等控制方法。新脚手架需更新时先预览；已有算法（包括旧 `auto_aim.py`）不会被自动覆盖。旧关卡 ID 和已完成进度保留，C5 依赖 C4。
+F2 的 tree 风格文件树高亮本关主要编辑文件；C4 高亮 `perception/polar_tracker.py`、`weapons/target_prediction.py`、`weapons/auto_aim.py`。C5 高亮 `perception/armor_tracker.py`、`weapons/target_prediction.py` 与 `weapons/auto_aim.py`，分别处理匿名关联/估计、预测和炮台控制。自己选择滤波、预测及 PD 等控制方法；接口与对称性说明见 [匿名装甲设计](docs/30_ARMOR_OBSERVATIONS.md)。新脚手架需更新时先预览；已有算法（包括旧 `auto_aim.py`）不会被自动覆盖。旧关卡 ID 和已完成进度保留，C5 依赖 C4。
 
 开发者可用 `python3 tools/tankbot.py serve --developer --level c5`，或 `browser --developer --level c5` 直达练习；正式玩家按存档解锁。接口、物理与兼容见 [新课程设计](docs/28_WEAPONS_PROGRESSIVE_ESTIMATION.md)，模块调度见 [26](docs/26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)，当前证据见 [验收](docs/reports/WEAPONS_REDESIGN_VALIDATION.md)。
 

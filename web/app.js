@@ -184,6 +184,11 @@ async function poll() {
           drawRadar($("radar-canvas"),m,profile.radar_calibration.range_m);
           $("radar-status").textContent=`tick ${m.simulation_tick} · ${m.payload.detections.length} 回波（车体系）`;
         }
+        if(m.schema==="armor_detections@1"){
+          drawRadar($("radar-canvas"),m,profile.armor_calibration.range_m);
+          $("radar-canvas").setAttribute("aria-label","车体系匿名装甲观测");
+          $("radar-status").textContent=`tick ${m.simulation_tick} · ${m.payload.measurements_rt.length} 块装甲（匿名、车体系）`+m.payload.measurements_rt.map(([r,t],i)=>` · ${i}: r=${r.toFixed(3)} m, θ=${t.toFixed(3)} rad`).join("");
+        }
         if (m.schema === "joint_state@1" && m.channel === "/robot/sensors/joint_states") {
           $("wheels").replaceChildren(...m.payload.name.map((name, i) => {
             const row = document.createElement("div"), label = document.createElement("span"), value = document.createElement("strong");

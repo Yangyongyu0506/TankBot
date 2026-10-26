@@ -1,4 +1,5 @@
 import {SceneTimeline} from "./rendering.js";
+import {polarHits} from "./campaign-ui.js";
 
 export const layerLabels={map:"静态地图",robot:"本关授权车体位姿",trail:"授权位姿轨迹",target_estimates:"玩家目标估计",radar:"Radar 观测",imu:"IMU 数据 / 加速度箭头",encoders:"轮编码器数据",turret:"炮台与武器观测",truth_robot:"真实车体与炮台",truth_targets:"真实目标",projectiles:"真实弹丸",frames:"坐标系",velocities:"真实速度向量",colliders:"碰撞外形"};
 export function allowedLayers(profile,developer){
@@ -8,7 +9,7 @@ export function allowedLayers(profile,developer){
     if(["truth_robot","velocities","colliders"].includes(key))return developer;
     if(key==="truth_targets")return developer||profile.view_mode==="weapons-practice"||caps.includes("view.enemy.truth");
     if(key==="projectiles")return developer||profile.view_mode==="weapons-practice"||caps.includes("view.projectiles.truth");
-    if(key==="radar")return Boolean(profile.radar_calibration);
+    if(key==="radar")return Boolean(profile.radar_calibration||profile.armor_calibration);
     return true;
   });
 }
@@ -36,7 +37,7 @@ export function mountVisualization(profile,settings){
       const candidate={...layers};
       saveQueue=saveQueue.catch(()=>{}).then(()=>settings.saveLayers(candidate)).then(()=>{$("layers-message").textContent="图层设置已保存。";}).catch(error=>{$("layers-message").textContent="保存失败："+error.message;});
     };
-    label.append(input,document.createTextNode(layerLabels[key]));return label;
+    label.append(input,document.createTextNode(key==="radar"&&profile.armor_calibration?"装甲观测":layerLabels[key]));return label;
   }));
   function enabled(key){return allowed.has(key)&&layers[key];}
   function applyPanels(){
@@ -88,10 +89,10 @@ export function drawVisualization(ctx,point,frame,debugFrame,panel,profile,scale
     }
   }
   const imu=panel.message?.payload.local_observations.find(m=>m.schema==="imu@1")?.payload;
-  const radar=panel.message?.payload.local_observations.find(m=>m.schema==="radar@1")?.payload;
+  const radar=panel.message?.payload.local_observations.find(m=>m.schema==="radar@1"||m.schema==="armor_detections@1");
   if(panel.developer&&frame.pose&&panel.enabled("radar")&&radar){
     ctx.save();ctx.fillStyle="#d7a8ff";
-    for(const hit of radar.detections){
+    for(const hit of polarHits(radar)){
       const angle=frame.pose.yaw_rad+hit.bearing_rad;
       ctx.beginPath();ctx.arc(...point(frame.pose.x_m+hit.range_m*Math.cos(angle),frame.pose.y_m+hit.range_m*Math.sin(angle)),3,0,Math.PI*2);ctx.fill();
     }

@@ -5,6 +5,9 @@ from . import weapon_templates as weapons
 from . import weapon_curriculum as curriculum
 
 COMPONENTS = {
+    "armor_tracker":{"perception/__init__.py":"","perception/armor_tracker.py":curriculum.ARMOR_TRACKER},
+    "armor_tracking_adapter":{"robot_modules/__init__.py":"","robot_modules/armor_observations.py":curriculum.ARMOR_ADAPTER},
+    "armor_contract_tests":{"tests/test_armor_contract.py":curriculum.ARMOR_TEST},
     "campaign_adapter":{"campaign_robot.py":basic.WRAPPER},
     "empty_perception_package":{"perception/__init__.py":""},
     "se3_transform":{"perception/__init__.py":"","perception/transforms.py":basic.TRANSFORMS},

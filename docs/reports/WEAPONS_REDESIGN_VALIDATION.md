@@ -1,5 +1,9 @@
 # Weapons 渐进估计与文件树验收
 
+历史范围：本报告记录当时的 C4 GPS/人工武器课程；当前 C4 已改为 C3 同款观测下的程序自瞄，C5 模型不变。当前证据见 [中心自瞄验收](CENTER_AUTO_AIM_VALIDATION.md)。
+
+本报告记录 GPS/中心 Radar 版本的课程及显示修复基线。C5 后续已改为匿名装甲观测，当前接口与证据见 [30](../30_ARMOR_OBSERVATIONS.md) 和 [新验收](ARMOR_OBSERVATIONS_VALIDATION.md)；本报告历史数值不代表当前 C5 输入。
+
 日期：2026-10-26。环境：Linux x86_64、CPython 3.14.4、Firefox 157.0.1、Node 22.22.1、Rust 1.99.1；浏览器使用锁定的 Pyodide 0.29.5。范围与确认模型见 [28](../28_WEAPONS_PROGRESSIVE_ESTIMATION.md)、[ADR-0035](../adr/0035-progressive-weapons-estimation.md)。
 
 ## 已验证行为

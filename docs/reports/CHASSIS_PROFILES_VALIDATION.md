@@ -1,5 +1,9 @@
 # 底盘配置、紧凑装甲与 C0 切 C5 验收
 
+历史范围：本报告记录当时的 C4 GPS/人工武器课程；当前 C4 已改为 C3 同款观测下的程序自瞄，C5 模型不变。当前证据见 [中心自瞄验收](CENTER_AUTO_AIM_VALIDATION.md)。
+
+本报告记录独立底盘与容量修复时的基线。当前 C5 已改为匿名装甲传感器，不启用 GPS；底盘几何、安装定义与容量修复保持，观测变更见 [新验收](ARMOR_OBSERVATIONS_VALIDATION.md)。
+
 日期：2026-10-26。环境：Linux x86_64、CPython 3.14.4、Rust 1.99.1、Node 22.22.1、Firefox 157.0.1、Pyodide 0.29.5。设计与确认参数见 [29](../29_CHASSIS_PROFILES.md)、[ADR-0036](../adr/0036-shared-chassis-geometry.md)。
 
 ## 根因与修复边界

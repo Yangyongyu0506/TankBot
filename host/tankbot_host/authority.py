@@ -132,8 +132,9 @@ class Authority:
         self._target_estimate = None
         self.campaign = CampaignSession(config) if campaign_level(config) else None
         self.radar = RadarSimulator(config) if self.campaign else None
-        from .weapon_sensors import GpsInterceptSimulator
+        from .weapon_sensors import GpsInterceptSimulator,ArmorDetectionSimulator
         self.intercepted_gps = GpsInterceptSimulator(config)
+        self.armor_detector = ArmorDetectionSimulator(config)
         self._public_pose_history = {}
         self._target_history = {}
         self._sequences = {}
@@ -183,9 +184,13 @@ class Authority:
             if self.intercepted_gps.sensor:
                 variance = self.intercepted_gps.sensor["parameters"]["noise"]["position_stddev_m"]**2
                 init["config"]["observations"].update(gps_covariance=[[variance,0],[0,variance]],gps_mount=geometry["gps_mount_m"])
+            if self.armor_detector.sensor:
+                noise=self.armor_detector.sensor["parameters"]["noise"]
+                init["config"]["observations"]={"armor_covariance":[[noise["range_stddev_m"]**2,0],[0,noise["bearing_stddev_rad"]**2]],"armor_mounts":geometry["armor_mounts"]}
             if self.graph_profile():
                 import math
                 init["config"]["lesson"]["tick_duration_s"] = 1/self.hz
+                init["config"]["lesson"]["estimate_history_ticks"] = config["runtime"]["estimate_history_ticks"]
                 armor = self.campaign.definition.get("armor_mode",False)
                 init["config"]["actuators"] = {"projectile_speed_mps":config["weapons"]["projectile"]["relative_speed_mps"],
                     "max_acceleration_radps2":config["weapons"]["turret"]["acceleration_control"]["max_relative_acceleration_radps2"],
@@ -249,6 +254,11 @@ class Authority:
                 msg = self._message("gps_fix@1","/robot/sensors/intercepted_gps",gps,frame="map",publisher="sensor:intercepted_gps")
                 self.validator.validate(msg,now=self.tick,grants={("sensor:intercepted_gps",msg["channel"],msg["schema"],"map")})
                 self._sensors[msg["channel"]] = msg
+            armor=self.armor_detector.sample(self._private,self.tick)
+            if armor is not None:
+                msg=self._message("armor_detections@1","/robot/sensors/armor_detections",armor,frame="base_link",publisher="sensor:armor_detector")
+                self.validator.validate(msg,now=self.tick,grants={("sensor:armor_detector",msg["channel"],msg["schema"],"base_link")})
+                self._sensors[msg["channel"]]=msg
         for key, schema, channel in (("joint_states","joint_state@1","/robot/sensors/joint_states"),
                 ("imu","imu@1","/robot/sensors/imu"),("turret_joint_states","joint_state@1","/robot/turret/joint_states"),
                 ("weapon_state","weapon_state@1","/robot/weapons/cannon/state")):
@@ -697,6 +707,7 @@ class Authority:
                 "radar_calibration": ({key: copy.deepcopy(self.config["campaign"]["radar"][key])
                                        for key in ("range_m", "field_of_view_rad", "update_hz", "mount_m", "yaw_rad", "frame_id")}
                                       if self.campaign is not None and self.campaign.definition["radar_profile"] else None),
+                "armor_calibration":({"range_m":self.armor_detector.sensor["parameters"]["range_m"],"update_hz":self.armor_detector.sensor["update_hz"],"frame_id":"base_link"} if self.armor_detector.sensor else None),
                 "control_sources":copy.deepcopy(self.config["control_sources"]),
                 "turret_muzzle_offset_m":copy.deepcopy(self.config["weapons"]["turret"]["muzzle_offset_m"]),
                 "projectile_radius_m": self.config["weapons"]["projectile"]["radius_m"],

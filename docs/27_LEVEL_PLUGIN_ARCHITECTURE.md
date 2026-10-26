@@ -109,7 +109,7 @@ C2 的实时累计 RMSE 是上段终局发布规则的显式教学例外。allow
 | C1 用 SE(3) 矩阵变换坐标 | ideal Radar profile + 函数模板 + checklist | [c1.yaml](../levels/c1.yaml) | 已迁移，旧玩家矩阵 API 保留 |
 | C2 噪声下跟踪 | noisy profile + Tracker 分支 + 击杀判断 | [c2.yaml](../levels/c2.yaml) | 已迁移，噪声、巡逻、生命和评分不变 |
 | 原 C3 让炮台自己瞄准 | 原 graph + 自动武器 | [c3.yaml](../levels/c3.yaml) | 迁移后又经用户要求重做为极坐标滤波；自动武器移至 C5 |
-| 原 C4 从底盘中心推算装甲瞄准点 | 原中心观测位姿/装甲组件 | [c4.yaml](../levels/c4.yaml) | 迁移后新增车头 GPS 融合，保留装甲物理规则 |
+| 原 C4 从底盘中心推算装甲瞄准点 | 原中心观测位姿/装甲组件 | [c4.yaml](../levels/c4.yaml) | 后续按 ADR-0038 改为 C3 同款中心观测下自瞄；装甲任务在 C5 |
 | C5 预测小陀螺并自动瞄准 | 本轮新增的可复用 GPS、全向巡逻与预测/控制适配器 | [c5.yaml](../levels/c5.yaml) | 新增 YAML 插件；无关卡 ID 初始化分支 |
 
 存档仍为原 v1 结构，五个 ID 保持；顺序来自 metadata.order，解锁来自 prerequisites，不从 ID 数字推断。已有源码和 userdata 目录不自动改写；原先带关卡判断的玩家包装作为用户代码兼容，新的引擎包装只读声明的 processing，不检查 ID。

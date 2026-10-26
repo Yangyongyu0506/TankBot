@@ -132,6 +132,18 @@ class GpsFixData:
 
 
 @dataclass(frozen=True)
+class ArmorDetections:
+    """Current anonymous base_link [range_m, bearing_rad] rows, shape (0..2, 2)."""
+    measurements_rt: NDArray[np.float64]
+
+    def __post_init__(self) -> None:
+        points=TargetPoints(self.measurements_rt).positions_m
+        if len(points)>2 or not np.isfinite(points).all() or np.any(points[:,0]<0) or np.any(points[:,1]<-np.pi) or np.any(points[:,1]>=np.pi):
+            raise ValueError("measurements_rt 必须为至多两行有限 [r>=0, -pi<=theta<pi] 观测")
+        object.__setattr__(self,"measurements_rt",points)
+
+
+@dataclass(frozen=True)
 class PolarTargetEstimate:
     range_m: float
     bearing_rad: float

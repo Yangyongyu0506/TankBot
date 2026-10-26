@@ -14,6 +14,8 @@ from .campaign_templates import template_version, TRANSFORMS, TRACKER, MANAGED_F
 
 
 TYPE_TEXT: dict[str, tuple[str, dict[str, str]]] = {
+    "ArmorDetections": ("本帧最近可见装甲中心的匿名观测；不是敌车中心或历史。", {
+        "measurements_rt":"只读 float64 NumPy 数组，shape=(N,2)，N 为 0/1/2；每行 [range_m,bearing_rad]，参考系为当前我方 base_link，单位 m/rad。按加噪前距离排序，行号不是装甲 ID。"}),
     "PolarTargetEstimate": ("玩家在当前我方车体系估计的敌车中心距离与方位。对外输出极坐标，内部模型由玩家选择。", {
         "range_m":"敌车中心到我方质心的估计距离，m，非负。","bearing_rad":"相对我方车头的估计方位，rad，范围 [-π,π)。",
         "covariance":"None 或只读 (2,2) NumPy 协方差，顺序为距离/方位；不是 x/y 协方差。"}),
@@ -153,6 +155,8 @@ def learning_bundle(config: dict[str, Any]) -> dict[str, Any]:
         health=definition["target"].get("health",{})
         context={**definition["rules"]["parameters"],"time_limit_s":definition["time_limit_s"],"max_hp":health.get("max_hp"),"damage_per_hit":health.get("damage_per_hit"),"algorithm_hz":config["clock"]["algorithm_hz"]}
         if definition["radar"]:context.update(radar_hz=definition["radar"]["update_hz"],**definition["radar"]["noise"])
+        armor_sensor=next((sensor for sensor in definition["sensors"] if sensor["type"]=="armor_detector"),None)
+        if armor_sensor:context.update(observation_hz=armor_sensor["update_hz"],**armor_sensor["parameters"]["noise"])
         lesson["completion"]=lesson["completion"].format(**context)
         lesson["execution"]=lesson["execution"].format(**context)
         if "calibration" in lesson:
@@ -170,6 +174,8 @@ def learning_bundle(config: dict[str, Any]) -> dict[str, Any]:
             gps=next((sensor for sensor in definition["sensors"] if sensor["type"]=="intercepted_gps"),None)
             public.update(gps_mount=geometry["gps_mount_m"],radar_covariance=[[radar_noise["range_stddev_m"]**2,0],[0,radar_noise["bearing_stddev_rad"]**2]] if radar_noise else None,
                           gps_covariance=[[gps["parameters"]["noise"]["position_stddev_m"]**2,0],[0,gps["parameters"]["noise"]["position_stddev_m"]**2]] if gps else None)
+            public["armor_covariance"]=[[armor_sensor["parameters"]["noise"]["range_stddev_m"]**2,0],[0,armor_sensor["parameters"]["noise"]["bearing_stddev_rad"]**2]] if armor_sensor else None
+            public["yaw_period_rad"]=next((metric["period_rad"] for metric in definition["evaluation"]["metrics"] if metric["type"]=="yaw_rmse" and "period_rad" in metric),math.tau)
             lesson["calibration"]={key:public[value["source"]] if "source" in value else value["text"] for key,value in lesson["calibration"].items()}
     else:
         lesson.update(execution="本关无需编程；关闭代码编辑器后使用键盘驾驶。",completion="可查阅类型、修改算法，并保存、测试和部署。",common_errors=["编辑器打开时，驾驶按键用于编辑代码；关闭后才能控制坦克。"])

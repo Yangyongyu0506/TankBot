@@ -42,6 +42,8 @@ ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评
 | [0034](0034-authorized-live-evaluation.md) | 显式授权的运行中累计 RMSE 与教学 UI | Accepted |
 | [0035](0035-progressive-weapons-estimation.md) | C3 极坐标、C4 车头 GPS、C5 小陀螺预测/控制与文件树 | Accepted |
 | [0036](0036-shared-chassis-geometry.md) | 独立底盘配置、目标碰撞外形与统一装甲/GPS 安装 | Accepted |
+| [0037](0037-anonymous-armor-observations.md) | C5 匿名装甲观测、关联/预测与模 90° 朝向 | Accepted |
+| [0038](0038-center-target-auto-aim.md) | C4 复用 C3 中心观测自瞄，C5 扩展装甲/小陀螺 | Accepted |
 
 ## 变更流程与完成条件
 

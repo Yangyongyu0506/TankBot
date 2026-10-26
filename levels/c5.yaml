@@ -2,15 +2,15 @@ schema_version: '1.0'
 metadata:
   id: c5
   name: C5 · 预测小陀螺并自动瞄准
-  description: 保留 GPS/Radar 与有效装甲，敌车使用全向底盘边巡逻边自转。玩家实现目标预测和炮台角加速度控制，自动击杀。
+  description: 只观测最近两块可见装甲中心的我方车体系距离/方位。估计敌车中心与装甲旋转相位，预测小陀螺装甲点并用程序控制炮台与开火。
   chapter:
     chapter_id: weapons
     title: Weapons
     description: 锁定底盘，依次学习坐标变换、目标跟踪、自瞄和装甲瞄准。
   order: 5
-  version: 2.0.0
+  version: 3.0.0
   learning_objectives:
-  - 复用位姿融合，把观测预测与炮台控制分在多个 Python 文件，实现小陀螺装甲提前量和自主开火。
+  - 关联匿名装甲观测，估计中心与模 90° 的朝向；分文件实现装甲跟踪、提前量预测和角加速度控制。
   recommended_algorithms: []
   prerequisites:
   - c4
@@ -98,47 +98,34 @@ robots:
     schema: weapon_state@1
     frame_id: base_link
     update_hz: 30
-  - type: radar
-    topic: /robot/sensors/radar
-    schema: radar@1
-    frame_id: radar_link
+  - type: armor_detector
+    topic: /robot/sensors/armor_detections
+    schema: armor_detections@1
+    frame_id: base_link
     update_hz: 10
     parameters:
       mount_m:
       - 0.0
       - 0.0
       yaw_rad: 0.0
-      frame_id: radar_link
       range_m: 12.0
       field_of_view_rad: 6.283185307179586
-      update_hz: 10
       occlusion: walls
-      measurement: target_center
+      measurement: armor_centers
       latency_ticks: 0
       range_bias_m: 0.0
       bearing_bias_rad: 0.0
       noise:
-        range_stddev_m: 0.45
-        bearing_stddev_rad: 0.08
+        range_stddev_m: 0.03
+        bearing_stddev_rad: 0.005
         drop_probability: 0.1
-  - type: intercepted_gps
-    topic: /robot/sensors/intercepted_gps
-    schema: gps_fix@1
-    frame_id: map
-    update_hz: 10
-    parameters:
       target_robot: patrol_enemy
-      mount: front_center
-      range_m: 12.0
-      occlusion: none
-      latency_ticks: 0
-      bias_m:
-      - 0.0
-      - 0.0
-      random_stream: intercepted_front_gps
-      noise:
-        position_stddev_m: 0.15
-        drop_probability: 0.1
+      max_detections: 2
+      selection: nearest_visible
+      visibility: front_facing
+      ordering: noiseless_range
+      random_stream: nearest_visible_armor
+      anonymous: true
 - id: patrol_enemy
   type: patrol_tank
   role: target
@@ -180,13 +167,13 @@ robots:
       source: chassis_profile
 communication:
   runtime:
-    template_version: 3.0.0
+    template_version: 4.1.0
     manifest:
       manifest_version: '1.0'
       sdk_version: 0.1.0
       protocol_version: '1.0'
       project_id: weapons-robot
-      entry_point: robot_modules.observations:FusionTrackingModule
+      entry_point: robot_modules.armor_observations:ArmorTrackingModule
       modules:
       - module_id: tracking
         contract: contracts/tracking.json
@@ -197,10 +184,8 @@ communication:
       connections:
       - from: /robot/localization/pose
         to: tracking.self_pose
-      - from: /robot/sensors/radar
-        to: tracking.radar
-      - from: /robot/sensors/intercepted_gps
-        to: tracking.gps
+      - from: /robot/sensors/armor_detections
+        to: tracking.armor
       - from: tracking.target
         to: /robot/estimates/tracking/target_pose
       - from: /robot/localization/pose
@@ -224,18 +209,14 @@ communication:
       tracking:
         contract_version: '1.0'
         module_id: tracking
-        entry_point: robot_modules.observations:FusionTrackingModule
+        entry_point: robot_modules.armor_observations:ArmorTrackingModule
         inputs:
           self_pose:
             schema: pose2d@1
             required: true
             max_age_ticks: 24
-          radar:
-            schema: radar@1
-            required: true
-            max_age_ticks: 24
-          gps:
-            schema: gps_fix@1
+          armor:
+            schema: armor_detections@1
             required: true
             max_age_ticks: 24
         outputs:
@@ -247,7 +228,7 @@ communication:
           deadline_ticks: 6
           budget_ms: 6
         dependencies: []
-        state_version: '1'
+        state_version: '2'
       aiming:
         contract_version: '1.0'
         module_id: aiming
@@ -285,13 +266,12 @@ communication:
     target_source: tracking
     managed_files:
     - tankbot.json
-    - robot_modules/observations.py
     - contracts/tracking.json
     - robot_modules/aiming.py
     - contracts/aiming.json
-    - tests/test_polar_contract.py
-    - tests/test_fusion_contract.py
     - tests/test_prediction_contract.py
+    - robot_modules/armor_observations.py
+    - tests/test_armor_contract.py
     mode: graph
     profile_id: weapons_predictive
     logical_module:
@@ -302,10 +282,9 @@ permissions:
   data_access:
     inputs:
       /robot/localization/pose: pose2d@1
-      /robot/sensors/radar: radar@1
       /robot/turret/joint_states: joint_state@1
       /robot/weapons/cannon/state: weapon_state@1
-      /robot/sensors/intercepted_gps: gps_fix@1
+      /robot/sensors/armor_detections: armor_detections@1
     outputs:
     - target_pose_estimate@1
     actuators:
@@ -324,8 +303,7 @@ permissions:
       - /robot/sensors/imu
       - /robot/turret/joint_states
       - /robot/weapons/cannon/state
-      - /robot/sensors/radar
-      - /robot/sensors/intercepted_gps
+      - /robot/sensors/armor_detections
       true_enemy_objects: false
       world_effects: true
       camera_source: selected_pose_or_manual
@@ -439,58 +417,64 @@ evaluation:
     type: position_rmse
   - id: yaw_rmse_rad
     type: yaw_rmse
+    period_rad: 1.5707963267948966
 randomization:
   seed: 0
   reset_on: new_run
   generator: python_random_v1
 tutorial:
-  problem: 保留 GPS/Radar 与有效装甲，敌车使用全向底盘边巡逻边自转。玩家实现目标预测和炮台角加速度控制，自动击杀。
+  problem: 只观测最近两块可见装甲中心的我方车体系距离/方位。估计敌车中心与装甲旋转相位，预测小陀螺装甲点并用程序控制炮台与开火。
   hints:
-  - 复用位姿融合，把观测预测与炮台控制分在多个 Python 文件，实现小陀螺装甲提前量和自主开火。
+  - 关联匿名装甲观测，估计中心与模 90° 的朝向；分文件实现装甲跟踪、提前量预测和角加速度控制。
   - F2 文件树高亮本关主要编辑文件；已有 perception/、weapons/ 源码和历史版本保留。
   - 运行中主界面可看日志，修改前请结束或重置本次尝试。
   lesson:
     title: C5 · 预测小陀螺并自动瞄准
-    summary: 复用位姿融合，把观测预测与炮台控制分在多个 Python 文件，实现小陀螺装甲提前量和自主开火。
+    summary: 关联匿名装甲观测，估计中心与模 90° 的朝向；分文件实现装甲跟踪、提前量预测和角加速度控制。
     steps:
-    - 底盘锁定，自身位姿由系统提供。阅读本关高亮文件的带类型签名、输入参考系、单位及返回约定。
-    - 保留 C4 的 GPS/Radar 融合。敌车改为四轮 90° 对称全向底盘，中心巡逻同时持续自转；不再满足“航向等于行进方向”。
-    - 先完成 target_prediction.py：跟踪平移和角速度，预测弹丸到达时的装甲位置，返回当前车体系 [r,theta]。
-    - 再完成 auto_aim.py：跟踪预测方位，用角加速度实现转向/制动和开火门限。框架连接两个文件，不要求手工组织入口。
-    - 保存、测试、部署后，人工炮台和开火均禁用。检查模块页与主界面日志；结束本局后可继续编辑和重试。
+    - 底盘锁定，自身位姿由系统提供。本关没有敌车中心 Radar 或车头 GPS，唯一敌方输入为匿名装甲观测数组。
+    - 先完成 perception/armor_tracker.py：每行 [r,theta] 是装甲中心，不是车体中心；无观测时 shape=(0,2)，只看到一块时
+      shape=(1,2)，最多两行。
+    - 根据公开 armor_mounts 建立观测模型，处理噪声、缺测及跨帧关联；行号 0/1 随真实距离改变，不是固定装甲身份。不要直接取两个观测点的平均值当车体中心。
+    - 四块装甲完全对称，yaw 与 yaw+k*pi/2 描述相同装甲布局；不要求识别真实车头。连续预测时须处理模 90° 相位绕回，而不是把换板或绕回当成反向旋转。
+    - 再完成 target_prediction.py：估计平移与转速，选取将来朝向我方的装甲，补偿弹丸飞行和控制延迟，返回当前车体系 [r,theta]。
+    - 复用 C4 的 auto_aim.py 控制器；扩展 target_prediction.py 处理旋转装甲和命中提前量。保存、测试、部署后完全由程序操纵武器；日志和模块页可用于排错。
     files:
+    - path: perception/armor_tracker.py
+      role: 本关填写：匿名装甲关联、敌车中心与等价朝向估计。
     - path: weapons/target_prediction.py
-      role: 本关填写：滤波、平移/旋转预测与装甲瞄准点。
+      role: 扩展 C4：加入旋转装甲选择与命中提前量。
     - path: weapons/auto_aim.py
-      role: 本关填写：炮台角加速度闭环控制与开火条件。
-    - path: perception/fusion_tracker.py
-      role: 复用 C4 融合估计；可根据小陀螺运动改进模型。
+      role: 复用 C4：炮台角加速度闭环和开火条件。
     default_type: TargetPoseEstimate
     functions:
+    - path: perception/armor_tracker.py
+      name: update
     - path: weapons/target_prediction.py
       name: update
     - path: weapons/auto_aim.py
       name: update
     aliases:
       measurements_rt: ndarray
-      gps_xy: ndarray
       own_pose: ndarray
     completion: 首次成功部署后计时，限时 {time_limit_s} 仿真秒，双方 {max_hp} HP。存活并击杀敌车通关；玩家死亡或超时失败，主动结束后可编辑。运行中不公开目标真值误差。
     common_errors:
-    - 不要把 range/bearing 当作地图 x/y；角度创新须归一到 [-pi,pi)。
-    - 数组只有当前帧，不是历史；需要保留状态或窗口时必须限制大小。
-    - 运行阶段不能打开编辑器；请先结束本次尝试，修改保存后重试。
-    execution: 框架以 {algorithm_hz} Hz 提供同期 NumPy 观测。Radar 距离 σ={range_stddev_m:g} m、方位 σ={bearing_stddev_rad:g} rad、独立丢失 {drop_probability:.0%}；dt
-      是仿真秒。空数组为当前帧缺测，内部状态跨调用保存，部署或重试重新初始化。
+    - 每行是装甲中心，不能当作敌车中心；所有 r/theta 都在当前我方 base_link，不是 map x/y。
+    - 只能收到当前帧 0/1/2 行，没有装甲 ID；不要按数组行号累计固定装甲轨迹。
+    - 四重对称导致真实车头不可观测；朝向诊断按 pi/2 等价，位置仍按真实中心评分。
+    - 状态/窗口须有界；没有观测时可预测并增大不确定性，不能伪造观测。
+    - 运行期先结束或重试再编辑，旧 GPS 融合器和已有算法文件会保留。
+    execution: 框架以 {algorithm_hz} Hz 调用；装甲观测 {observation_hz} Hz，距离 σ={range_stddev_m:g}
+      m、方位 σ={bearing_stddev_rad:g} rad，每块独立丢失 {drop_probability:.0%}，零偏置/延迟。先做量程/墙体/朝向过滤，再选最近两块，再丢失/加噪；不补齐。dt
+      是仿真秒。
     calibration:
       enemy_drive_model:
         source: target_drive_model
       kinematics:
-        text: 四轮 90° 对称全向底盘允许车体系 vx/vy 与 wz 独立受限伺服；车体朝向不等于世界平移方向。小陀螺同时平移和旋转，不能再用中心速度方向代替 yaw。
+        text: 四轮 90° 对称全向底盘允许车体系 vx/vy 与 wz 独立受限伺服；车体朝向不等于世界平移方向。小陀螺同时平移和旋转，不能再用中心速度方向代替
+          yaw。
       wheel_radius_m:
         source: wheel_radius_m
-      track_m:
-        source: differential_track_m
       body_length_m:
         source: body_length_m
       body_width_m:
@@ -505,22 +489,28 @@ tutorial:
         source: armor_mounts
       armor_columns:
         text: '[底盘系 x_m, 底盘系 y_m, 向外法线 yaw_rad]；依次前、后、左、右；接触点落在中央装甲段才扣血。'
-      gps_mount:
-        source: gps_mount
-      gps_measurement_covariance:
-        source: gps_covariance
-      radar_measurement_covariance:
-        source: radar_covariance
-    type_notes: {}
+      armor_measurement_covariance:
+        source: armor_covariance
+      yaw_period_rad:
+        source: yaw_period_rad
+    type_notes:
+      TargetPoseEstimate:
+        description: 玩家估计的地图系敌车中心与装甲旋转相位，不要求识别真实车头。
+        fields:
+          x_m: 敌车底盘中心在 map 中的估计 x，m，不是装甲点。
+          y_m: 敌车底盘中心在 map 中的估计 y，m，不是装甲点。
+          yaw_rad: 装甲相位，rad；yaw+k*pi/2 等价，仍归一到 [-pi,pi)。可连续跟踪等价分支以便预测转速。
+          covariance: None 或只读 (3,3) NumPy 矩阵，对应中心 x/y 与选定相位分支。
     ui:
       state_heading: 02 / AUTHORIZED SELF POSE
       legend_pose: 系统自定位
-      view_note: 系统提供自身位姿和可见炮弹；敌车位置来自 Python 的估计。雷达图仅显示车体系观测。炮弹图层可在设置中切换。
+      view_note: 系统位姿与可见弹丸已公开。地图目标来自玩家估计；箭头表示模 90° 的装甲相位。局部图只有匿名装甲 (r,θ)。
       mode_label: 教学视图 · 系统自定位 / 玩家目标估计
       freshness_message: 系统提供自身位姿和可见炮弹；敌车只有玩家目标估计
       progress_layout: health
       default_file: weapons/target_prediction.py
     edit_files:
+    - perception/armor_tracker.py
     - weapons/target_prediction.py
     - weapons/auto_aim.py
   testing:
@@ -531,62 +521,58 @@ tutorial:
     meaning: 通过表示此快照可以加载并通过这些样例和短时间试运行，不代表算法效果完美或关卡通关。测试输出不会控制坦克，也不会进入正式画面。
 scaffolding:
   components:
-  - polar_tracker
-  - raw_sensor_adapters
-  - fusion_tracker
+  - armor_tracker
+  - armor_tracking_adapter
   - predictive_aiming_adapter
   - polar_auto_aim
   - target_prediction
-  - polar_contract_tests
-  - fusion_contract_tests
+  - armor_contract_tests
   - predictive_contract_tests
   documentation:
     weapons/target_prediction.py:
     - function: update
-      text: 'observation: AimInput；observation.target_rt 是只读 shape=(2,) 的当前车体系目标中心 [r,theta]，无估计时为 None；target_yaw_rad 是地图系敌车朝向，own_pose
-        是系统自身 [x,y,yaw]，target_age_s 包含等待提交的时延。
+      text: 'observation: AimInput；observation.target_rt 是只读 shape=(2,) 的当前车体系目标中心
+        [r,theta]，无估计时为 None；target_yaw_rad 是地图系敌车朝向，own_pose 是系统自身 [x,y,yaw]，target_age_s
+        包含等待提交的时延。
 
-        返回当前车体系的预测装甲瞄准点 np.ndarray([range_m,bearing_rad],dtype=np.float64)，shape=(2,)，或 None 暂不射击。它应当是弹丸到达时装甲的位置，不是当前车头 GPS
-        点。
+        返回当前车体系的预测装甲瞄准点 np.ndarray([range_m,bearing_rad],dtype=np.float64)，shape=(2,)，或
+        None 暂不射击。它应当是弹丸到达时装甲的位置，不是当前车头 GPS 点。
 
         利用多帧滤波估计目标的中心速度、yaw 和角速度；结合 projectile_speed_mps、公开 armor_mounts 与控制时延迭代预测。小陀螺旋转时必须重新判断所选装甲是否朝向我方；不要用无限增长的历史。
 
-        本文件负责观测预测和装甲选择，weapons/auto_aim.py 负责炮台闭环控制，两者都需要填写；可以使用自己先前的 KF/EKF 代码。'
+        本文件负责观测预测和装甲选择，weapons/auto_aim.py 负责炮台闭环控制，两者都需要填写；可以使用自己先前的 KF/EKF 代码。
+
+
+        本关 target_yaw_rad 是模 pi/2 的等价装甲相位。若采用相位差估计转速，必须按该周期归一创新或展开相位；不能把行号/可见装甲切换当作真实角跳变。'
     weapons/auto_aim.py:
     - function: update
-      text: 'observation.target_rt: None 或只读 shape=(2,) NumPy 数组 [range_m,bearing_rad]，已经由本关 target_prediction.py 转为预测瞄准点，参考系为当前我方
-        base_link。
+      text: 'observation.target_rt: None 或只读 shape=(2,) NumPy 数组 [range_m,bearing_rad]，已经由本关
+        target_prediction.py 转为预测瞄准点，参考系为当前我方 base_link。
 
-        observation.turret_angle_rad / turret_rate_radps: 炮台相对底盘的连续角与角速度，单位 rad、rad/s；dt: float 仿真秒。
+        observation.turret_angle_rad / turret_rate_radps: 炮台相对底盘的连续角与角速度，单位 rad、rad/s；dt:
+        float 仿真秒。
 
-        返回 AimOutput(acceleration_radps2: float,fire: bool)。只能控制相对角加速度，不能直接设置角度或速度。使用 bearing 与炮台角的环绕误差，并结合角速度反馈实现加速/制动；零加速度不等于停转。
+        返回 AimOutput(acceleration_radps2: float,fire: bool)。只能控制相对角加速度，不能直接设置角度或速度。使用
+        bearing 与炮台角的环绕误差，并结合角速度反馈实现加速/制动；零加速度不等于停转。
 
-        开火需要考虑指向误差、跟随误差和 weapon_ready；框架负责限幅、看门狗、冷却与幂等请求。C0-C4 的人工武器控制在本关撤销。
+        开火需要考虑指向误差、跟随误差和 weapon_ready；框架负责限幅、看门狗、冷却与幂等请求。C0-C3 的人工武器控制在本关撤销；C5 继续复用本控制器。
 
         为兼容旧项目，AimInput.target_xy（地图系）和 own_pose 仍可读；新控制器可直接用 target_rt，不必再次处理全局坐标。'
-    perception/fusion_tracker.py:
+    perception/armor_tracker.py:
     - function: update
-      text: 'measurements_rt: shape=(N,2) 的当前车体系底盘中心原始 [r,theta]；gps_xy: shape=(M,2) 的地图系敌车车头 GPS [x,y]，N/M 当前为 0 或 1，空数组表示本帧无观测。
+      text: '输入 measurements_rt: numpy.ndarray，shape=(N,2)，float64，N 为 0/1/2；每行 [range_m,bearing_rad]，单位
+        m/rad，参考系为当前我方 base_link。按加噪前真实距离排序，没有实体或装甲 ID，行号可能换位，空数组只是本帧没有观测。
 
-        own_pose: shape=(3,) 的系统自身 [x,y,yaw]；dt: float 仿真秒。GPS 与 Radar 为独立噪声/丢失，框架按同一采样 tick 传入，不把旧 fix 冒充新数据。
 
-        返回 TargetPoseEstimate(x_m: float,y_m: float,yaw_rad: float,covariance=None) 或 None，描述敌车底盘中心及朝向，参考系 map；covariance
-        可空或 (3,3) NumPy 矩阵。
+        own_pose: float64 shape=(3,) 的公开 map 系自身 [x,y,yaw]；dt: float 为距上次采样的仿真秒。
 
-        GPS 安装偏移 gps_mount=[a,0] 是公开几何。观测模型为 gps_x=center_x+a*cos(yaw)、gps_y=center_y+a*sin(yaw)。因此 GPS 点不是敌车中心；与中心 Radar
-        联合后，原地转向也产生朝向信息。
 
-        可复用 perception/polar_tracker.py 的滤波思想，或自行实现联合估计；单帧两个带噪点直接 atan2 会抖动，应维护跨帧状态。radar_covariance/gps_covariance 由 YAML
-        提供，丢失时保持合理不确定性。'
-    perception/polar_tracker.py:
-    - function: update
-      text: '输入 measurements_rt: numpy.ndarray，shape=(N,2)，每行 [range_m, bearing_rad]，单位 m/rad，均在当前我方 base_link；无检测为 shape=(0,2)，不是历史缓存。
+        构造参数 armor_mounts: shape=(4,3)，每行为敌车局部 [x,y,向外法线yaw]，顺序前后左右，是公开几何；measurement_covariance:
+        shape=(2,2)，顺序距离/方位。
 
-        own_pose: shape=(3,) 的系统公开自身 [x_m,y_m,yaw_rad]；dt: float 为仿真秒。
 
-        返回 PolarTargetEstimate(range_m: float, bearing_rad: float, covariance=None) 或 None。输出仍在当前车体系，bearing 归一到 [-pi,pi)，covariance
-        为 (2,2) NumPy 矩阵，顺序 r/theta。
+        返回 TargetPoseEstimate(x_m,y_m,yaw_rad,covariance=None) 或 None；x/y 是 map 系敌车中心，yaw
+        是装甲相位，yaw+k*pi/2 等价。covariance 可空或 shape=(3,3) NumPy 矩阵。
 
-        内部可以保存笛卡尔状态 [x,y,vx,vy]，观测模型使用距离 hypot 和方位 atan2；只改变输入输出坐标并不会自动构成 EKF。预测、Jacobian、创新和协方差更新由你实现；方位创新必须绕回 [-pi,pi)。不强制唯一算法。
 
-        空测量时可只预测；保存有界状态，避免无限追加历史。measurement_covariance 来自关卡 YAML；框架不先替你把雷达测量变成全局 x/y。'
+        可使用多假设或预测关联，再用滤波器联合估计中心和相位；两块相邻装甲的中点不是车体中心。仅一块可见时信息更少，应结合历史预测；不要等待框架提供真实车头。'

@@ -22,6 +22,8 @@
 
 公共标定用受限 `source` 引用模型尺寸/武器参数，不能引用敌方当前位姿或巡逻路径。教材中的数量/频率/噪声可使用公开占位符，避免修改参数后出现陈旧说明。所有修改都应验证原玩家源码兼容与不覆盖 Workspace。
 
-新增已实现组件：`intercepted_gps` 提供地图系车头 fix；巡逻 `spin_rate_radps` 只允许全向底盘且受角速度上限限制。模板组件包括 polar_tracker、fusion_tracker、raw_sensor_adapters、target_prediction、polar_auto_aim、predictive_aiming_adapter 及对应 contract_tests；每个关卡依自己的 YAML 组合，不依赖关卡 ID 分支。GPS/Radar 当前为同期观测组合，未实现任意异步融合。
+新增已实现组件：`intercepted_gps` 提供地图系车头 fix；巡逻 `spin_rate_radps` 只允许全向底盘且受角速度上限限制。模板组件包括 polar_tracker、fusion_tracker、raw_sensor_adapters、target_prediction、polar_auto_aim、predictive_aiming_adapter 及对应 contract_tests；每个关卡依自己的 YAML 组合，不依赖关卡 ID 分支。当前正式关卡不启用 GPS；该兼容组件按同期采样工作，未实现任意异步融合。
+
+`armor_detector` 提供最近可见装甲的匿名 base_link 极坐标，使用 `armor_detections@1`，最多两行；对应模板为 armor_tracker、armor_tracking_adapter、armor_contract_tests。当前 C5 用这些组件替换 GPS/中心 Radar。C4 则复用 C3 的 polar_tracker/raw_sensor_adapters，并组合 predictive_aiming_adapter、target_prediction 和 polar_auto_aim；无装甲时构造器获得 (0,3) 空矩阵，不要求 yaw。yaw_rmse 可声明 `period_rad`，加载器验证该周期确实保持底盘装甲布局；不允许用错误周期隐藏估计误差。完整接口和教学约束见 [30](../docs/30_ARMOR_OBSERVATIONS.md)。
 
 通用底盘在 `config/chassis/*.yaml` 定义几何、装甲、GPS 安装与外观，由 `config/game.yaml` 统一加载。`motion.chassis` 选择底盘，`armor: {source: chassis_profile}` 启用其装甲；不要在关卡或教材中重复安装数值。共享引擎模型是经 ADR-0036 允许的组件资产，不允许关卡任意 include 其他文件。C5 当前全向车体 0.42×0.42 m、装甲中心 ±0.21 m；完整约束见 [29](../docs/29_CHASSIS_PROFILES.md)。

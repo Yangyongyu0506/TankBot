@@ -36,6 +36,9 @@ class Diagnostics:
         if truth is None:return
         for metric in self.metrics:
             error=METRICS[metric["type"]](point,truth)
+            if error is not None and "period_rad" in metric:
+                period=metric["period_rad"]
+                error=(point["yaw_rad"]-truth[2]+period/2)%period-period/2
             if error is not None:
                 key=metric["id"];self.squared[key]+=error*error;self.counts[key]+=1
 

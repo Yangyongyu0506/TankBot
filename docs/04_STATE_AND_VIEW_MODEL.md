@@ -139,6 +139,6 @@ C2 的 HP/击杀结果属于明确授权的游戏反馈，不含命中坐标、�
 
 默认玩家模式继续使用本关 View Policy；C1/C2 的目标只能来自获授权的玩家估计。开发者模式额外获得 Authority 检查的只读视图 grant，可通过独立 DeveloperSnapshot 和图层开关查看当前已实现的真值、估计与传感器；它不进入 PlayerViewSnapshot 或 Robot Runtime，也不改写 Pose Selector。图层开关是呈现偏好，不能给玩家授予新数据。模式切换重建 Authority/Worker 并清除旧缓存，完整权限、文件与单机信任边界见 [22](22_SETTINGS_MODES_AND_PROGRESS.md) 和 [ADR-0026](adr/0026-settings-modes-and-campaign-progress.md)。
 
-## C3 极坐标输出与截获 GPS
+## Weapons 目标估计与传感器授权
 
-当前渐进 Weapons 见 [28](28_WEAPONS_PROGRESSIVE_ESTIMATION.md)。C3 的地图目标标记由玩家 r/theta 与**同采样 tick 已公开的自身位姿**投影得到，使用有界公开位姿历史；缺少对应样本不回退到私有世界查询。极坐标协方差按 Jacobian 转为 x/y，估计误差照常保留。C4/C5 GPS 是授权的带噪车头点而非真实敌车位姿；程序订阅和 UI 显示分别校验。普通观察层画 GPS 测量，敌车车体/装甲仍来自玩家 TargetPoseEstimate。
+当前渐进 Weapons 见 [28](28_WEAPONS_PROGRESSIVE_ESTIMATION.md)。C3/C4 的地图目标标记由玩家 r/theta 与**同采样 tick 已公开的自身位姿**投影得到，使用有界公开位姿历史；缺少对应样本不回退到私有世界查询。极坐标协方差按 Jacobian 转为 x/y，估计误差照常保留。C4 控制适配器同样只使用公开位姿投影中心估计，玩家负责运动预测。C5 只提供匿名装甲测量，车体/装甲位置来自玩家 TargetPoseEstimate；当前正式关卡不启用车头 GPS。程序订阅和 UI 显示分别校验，测量不能画成真值。

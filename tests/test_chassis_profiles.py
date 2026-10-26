@@ -27,24 +27,26 @@ class ChassisProfileTests(unittest.TestCase):
                 config=configure(self.base,level);a=Authority(config,controlled=True,developer_mode=True)
                 try:
                     geometry=target_geometry(config)
-                    self.assertEqual(geometry['armor_mounts'][0],[half,0.,0.])
+                    self.assertEqual(geometry['gps_mount_m'],[half,0.])
+                    if level=='c5':self.assertEqual(geometry['armor_mounts'][0],[half,0.,0.])
+                    else:self.assertEqual(geometry['armor_mounts'],[])
                     self.assertEqual(a.public_profile()['target_geometry'],geometry)
-                    self.assertEqual(a.worker_init['config']['actuators']['armor_mounts'],geometry['armor_mounts'])
-                    self.assertEqual(a.worker_init['config']['observations']['gps_mount'],[half,0.])
                     calibration=learning_bundle(config)['lesson']['calibration']
-                    self.assertEqual(calibration['armor_mounts'],geometry['armor_mounts'])
-                    self.assertEqual(calibration['gps_mount'],[half,0.])
+                    if level=='c5':
+                        self.assertEqual(a.worker_init['config']['actuators']['armor_mounts'],geometry['armor_mounts'])
+                        self.assertEqual(a.worker_init['config']['observations']['armor_mounts'],geometry['armor_mounts'])
+                        self.assertEqual(calibration['armor_mounts'],geometry['armor_mounts'])
+                    else:
+                        self.assertEqual(a.worker_init['config']['actuators']['armor_mounts'],[])
+                    self.assertNotIn('gps_mount',calibration)
                     target=config['weapons']['targets'][0]
                     self.assertEqual(a.developer_snapshot()['target_visuals'][target['target_id']]['body'],geometry['body'])
                     if level=='c5':
                         self.assertEqual(target['body']['length_m'],.42)
                         self.assertEqual(target['body']['width_m'],.42)
                         self.assertEqual(config['body']['length_m'],.8,'player differential body stays independent')
-                    sensor=GpsInterceptSimulator(config);sensor.sensor['parameters']['noise'].update(position_stddev_m=0,drop_probability=0)
-                    private={'truth_pose':[0.,0.,0.],'targets':[{'target_id':target['target_id'],'alive':True,'pose':[2.,0.,math.pi/2]}]}
-                    sample=sensor.sample(private,0)['positions_m'][0]
-                    self.assertAlmostEqual(sample[0],2.)
-                    self.assertAlmostEqual(sample[1],half)
+                    self.assertIsNone(GpsInterceptSimulator(config).sensor)
+                    self.assertNotIn('/robot/sensors/intercepted_gps',a._sensors)
                 finally:a.close()
 
     def test_invalid_profile_mounts_version_size_and_visual_report_paths(self):

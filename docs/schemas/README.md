@@ -76,6 +76,8 @@ M4 内部配置为 **1.6**，增加必填 campaign；1.5 沙盒仍可读。新�
 
 ## YAML 关卡插件增量
 
+C5 匿名装甲增量为 `armor_detections@1`：Envelope 固定 Topic `/robot/sensors/armor_detections`、frame `base_link`，payload 只有 `measurements_rt` 的 0/1/2 行 `[r,theta]`。SDK 为只读 NumPy `ArmorDetections`，不增加身份/真实朝向字段；`level.schema.json` 声明受限 armor_detector 参数与可选 yaw 评价周期，几何对称性另由领域层验证。参见 [30](../30_ARMOR_OBSERVATIONS.md)。
+
 应用配置 2.0 的 `level_plugins` 声明目录与资源限额；`levels/*.yaml` 经 `level.schema.json` 及交叉引用/组件/权限验证后，编译为上述内部 DTO。`chassis_profiles` 加载 `config/chassis/*.yaml`，经 `chassis-profile.schema.json` 和表面一致性校验生成车体/外观/安装参数，见 [29](../29_CHASSIS_PROFILES.md)。安全加载器限制文件大小、节点、嵌套深度与组件数量，拒绝别名、重复键、任意对象标签、无效地图路径及未注册类型。权限不是仅靠 Schema 执行，实际数据仍由 Authority 裁剪。关卡和生成夹具由同一加载器校验；文档工具也检查该流程和关卡编写指南。格式与精确错误路径见 [27](../27_LEVEL_PLUGIN_ARCHITECTURE.md)。
 
 可选的 permissions.visualization.allowed_metrics 与 evaluation.live_feedback 显式授权运行中累计位置 RMSE；字段结构/精度/曲线容量由 level.schema.json 约束，指标是否登记并获授权由加载器交叉校验。反馈只走 Campaign 管理状态，不改变 view_snapshot 或机器人协议 Schema。

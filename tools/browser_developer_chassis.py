@@ -66,7 +66,9 @@ def main():
             if level=='c5':
                 calibration=workspace()['learning']['lesson']['calibration']
                 assert calibration['body_length_m']==.42 and calibration['body_width_m']==.42
-                assert calibration['armor_mounts'][0]==[.21,0.,0.] and calibration['gps_mount']==[.21,0.]
+                assert calibration['armor_mounts'][0]==[.21,0.,0.]
+                assert calibration['armor_measurement_covariance']==[[.03**2,0],[0,.005**2]]
+                assert 'gps_mount' not in calibration
                 assert turn>math.tau,(turn,samples[-1])
                 assert distance>.5,distance
                 assert len({round(s['yaw'],4) for s in samples})>50,'RAF must interpolate heading'

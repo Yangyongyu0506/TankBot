@@ -1,6 +1,6 @@
 // Teaching UI consumes the same narrow Authority controls in both runtime profiles.
-import {bindingHint} from "/keyboard.js";
-import {mountLiveMetric} from "/live-metrics.js";
+import {bindingHint} from "./keyboard.js";
+import {mountLiveMetric} from "./live-metrics.js";
 export function attemptSummary(attempt){
   if(!attempt)return "";
   const clock=attempt.timing,remaining=Math.ceil(clock.remaining_s),minutes=Math.floor(remaining/60),seconds=String(remaining%60).padStart(2,"0");
@@ -111,13 +111,17 @@ export async function mountCampaign(profile,browser,onState,releaseControls){
   await poll();
 }
 
+export function polarHits(message){
+  return message?.schema==="armor_detections@1"?(message.payload.measurements_rt??[]).map(([range_m,bearing_rad])=>({range_m,bearing_rad})):message?.payload.detections??[];
+}
+
 export function drawRadar(canvas,message,range){
   const ctx=canvas.getContext("2d"),cx=canvas.width/2,cy=canvas.height/2,r=Math.min(cx,cy)-18;
   ctx.clearRect(0,0,canvas.width,canvas.height);ctx.strokeStyle="#355548";ctx.fillStyle="#a9c5b6";
   ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.moveTo(cx-r,cy);ctx.lineTo(cx+r,cy);ctx.moveTo(cx,cy-r);ctx.lineTo(cx,cy+r);ctx.stroke();
   ctx.font="10px monospace";ctx.fillText("+x ↑  +y ←",8,12);ctx.fillText(`${range} m`,cx+r-24,canvas.height-3);
   ctx.fillStyle="#f4cf7e";
-  for(const hit of message?.payload.detections??[]){
+  for(const hit of polarHits(message)){
     const distance=hit.range_m/range*r;
     ctx.beginPath();ctx.arc(cx-Math.sin(hit.bearing_rad)*distance,cy-Math.cos(hit.bearing_rad)*distance,3,0,Math.PI*2);ctx.fill();
   }

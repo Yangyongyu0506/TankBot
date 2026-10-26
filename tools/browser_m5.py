@@ -90,7 +90,10 @@ def main():
         path=args.output.parent/(args.output.stem+'-'+name+'.png');path.parent.mkdir(parents=True,exist_ok=True)
         path.write_bytes(base64.b64decode(b.call('WebDriver:TakeScreenshot',{})['value']));return path.relative_to(ROOT).as_posix()
     try:
-        b.navigate(args.url);b.call('WebDriver:SetWindowRect',{'width':1440,'height':950});ready();switch('c3')
+        b.navigate(args.url);b.call('WebDriver:SetWindowRect',{'width':1440,'height':950});ready()
+        if 'runtime=browser' in args.url:
+            assert b.script('return !!(window.wrappedJSObject?.tankbotQA??window.tankbotQA);'), 'Browser QA requires --browser-qa (authorized Worker adapter)'
+        switch('c3')
         for index,level in enumerate(('c3','c4','c5')):
             ready(level);click('open-workspace')
             definition=config['campaign']['levels'][level];sources=solutions(configure(config,level))
@@ -108,7 +111,7 @@ def main():
             click('deploy-workspace')
             active=b.until("const s=JSON.parse(document.getElementById('workspace-panel').dataset.deployment||'{}');return !s.job&&s.last?.status==='Active'&&s;",timeout=120)
             b.until("return !document.getElementById('workspace-dialog').open&&document.getElementById('open-workspace').disabled;")
-            if level!='c5':
+            if definition['control_sources']['weapon']=='keyboard':
                 reference=config['validation']['reference_aim']
                 params={'armor':definition['armor_mode'],'length':config['body']['length_m'],'width':config['body']['width_m'],
                     'hz':config['clock']['physics_hz'],'window':reference['velocity_window_s'],'maximum':reference['maximum_track_samples'],
@@ -118,11 +121,21 @@ def main():
                 b.script('(async()=>{'+MANUAL.replace('PARAMETERS',json.dumps(params)).replace('return true;','')+'})();return true;')
             click('tab-graph');b.until("return document.getElementById('robot-graph-list').textContent.includes('tracking');")
             b.until("return document.getElementById('arena').dataset.targetEstimateX!=='';",timeout=30)
-            if level!='c3':b.until("return document.getElementById('arena').dataset.targetEstimateYaw!=='';",timeout=30)
+            if definition['armor_mode']:b.until("return document.getElementById('arena').dataset.targetEstimateYaw!=='';",timeout=30)
+            sensor_channels=None
+            if level=='c5':
+                b.script("window.__armorQaView=null;(async()=>{const qa=window.wrappedJSObject?.tankbotQA??window.tankbotQA;window.__armorQaView=qa?JSON.parse(await qa.view()):await(await fetch('/api/view')).json();})();return true;")
+                view=b.until('return window.__armorQaView;')
+                observations=view['payload']['local_observations'];sensor_channels=[m['channel'] for m in observations]
+                assert '/robot/sensors/armor_detections' in sensor_channels
+                assert not set(sensor_channels)&{'/robot/sensors/radar','/robot/sensors/intercepted_gps'}
+                armor=next(m for m in observations if m['schema']=='armor_detections@1')
+                assert armor['frame_id']=='base_link' and len(armor['payload']['measurements_rt'])<=2
+                click('tab-sensors');b.until("return document.getElementById('radar-status').textContent.includes('块装甲');")
             running_shot=screenshot(level+'-running')
             result=b.until("return document.getElementById('task-status').dataset.status==='passed'&&document.getElementById('task-message').textContent;",timeout=180)
             assert b.script('return document.scrollingElement.scrollHeight<=innerHeight&&document.scrollingElement.scrollWidth<=innerWidth;')
-            evidence['levels'].append({'level':level,'report':report['last'],'active':active['active'],'highlighted_files':actual,'result':result,'screenshots':[tree_shot,running_shot]})
+            evidence['levels'].append({'level':level,'report':report['last'],'active':active['active'],'highlighted_files':actual,'sensor_channels':sensor_channels,'result':result,'screenshots':[tree_shot,running_shot]})
             if index<2:switch(('c4','c5')[index])
         args.output.parent.mkdir(parents=True,exist_ok=True);args.output.write_text(json.dumps(evidence,ensure_ascii=False,indent=2)+'\n')
         print('PASS: C3-C5 real editor tree/highlights, Test/Deploy, manual and autonomous kills',flush=True)

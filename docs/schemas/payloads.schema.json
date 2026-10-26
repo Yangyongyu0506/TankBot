@@ -242,7 +242,8 @@
                       "radar@1",
                       "joint_state@1",
                       "weapon_state@1",
-                      "gps_fix@1"
+                      "gps_fix@1",
+                      "armor_detections@1"
                     ]
                   }
                 }
@@ -470,7 +471,8 @@
                       "target_pose_estimate@1",
                       "turret_velocity@1",
                       "gps_fix@1",
-                      "target_polar_estimate@1"
+                      "target_polar_estimate@1",
+                      "armor_detections@1"
                     ]
                   }
                 }
@@ -842,7 +844,8 @@
                       "radar@1",
                       "joint_state@1",
                       "weapon_state@1",
-                      "gps_fix@1"
+                      "gps_fix@1",
+                      "armor_detections@1"
                     ]
                   }
                 }
@@ -1062,7 +1065,8 @@
                       "radar@1",
                       "joint_state@1",
                       "weapon_state@1",
-                      "gps_fix@1"
+                      "gps_fix@1",
+                      "armor_detections@1"
                     ]
                   }
                 }
@@ -1344,7 +1348,8 @@
                       "radar@1",
                       "joint_state@1",
                       "weapon_state@1",
-                      "gps_fix@1"
+                      "gps_fix@1",
+                      "armor_detections@1"
                     ]
                   }
                 }
@@ -1531,6 +1536,35 @@
         "range_m",
         "bearing_rad",
         "covariance"
+      ],
+      "additionalProperties": false
+    },
+    "armor_detections": {
+      "type": "object",
+      "properties": {
+        "measurements_rt": {
+          "type": "array",
+          "maxItems": 2,
+          "items": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "number",
+                "minimum": -3.141592653589793,
+                "exclusiveMaximum": 3.141592653589793
+              }
+            ],
+            "minItems": 2,
+            "maxItems": 2
+          }
+        }
+      },
+      "required": [
+        "measurements_rt"
       ],
       "additionalProperties": false
     }

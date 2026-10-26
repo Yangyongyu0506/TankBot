@@ -10,7 +10,7 @@ import numpy as np
 
 ROOT=Path(__file__).resolve().parents[1]
 sys.path[:0]=[str(ROOT/p) for p in ('host','protocol','sdk/python')]
-from tankbot import AimInput, GpsFixData, PolarTargetEstimate, ModuleContext
+from tankbot import AimInput, AimOutput, GpsFixData, PolarTargetEstimate, ModuleContext, Inputs, Sample, Pose2D, JointState, WeaponState
 from tankbot_host.authority import Authority,load_config
 from tankbot_host.campaign import configure,RadarSimulator,blocked
 from tankbot_host.weapon_sensors import GpsInterceptSimulator
@@ -18,7 +18,6 @@ from tankbot_host.workspace import starter
 from tankbot_host.workspace_api import WorkspaceAPI
 from tankbot_host.robot_graph import inspect_graph
 from tankbot_protocol.validation import Validator,Rejected,envelope
-from weapons_curriculum_support import FUSION
 
 
 class WeaponsCurriculumTests(unittest.TestCase):
@@ -29,48 +28,67 @@ class WeaponsCurriculumTests(unittest.TestCase):
         for level in ('c3','c4','c5'):
             c=self.config(level);d=c['campaign']['levels'][level]
             self.assertEqual(c['control_sources']['chassis'],'disabled')
-            self.assertEqual(c['control_sources']['turret'],'robot' if level=='c5' else 'keyboard')
-            self.assertEqual(c['control_sources']['weapon'],'robot' if level=='c5' else 'keyboard')
-            self.assertEqual('/robot/sensors/intercepted_gps' in d['runtime']['grants']['inputs'],level!='c3')
-            self.assertEqual(d['armor_mode'],level!='c3')
-            self.assertEqual(d['time_limit_s'],120 if level=='c3' else 180)
+            self.assertEqual(c['control_sources']['turret'],'keyboard' if level=='c3' else 'robot')
+            self.assertEqual(c['control_sources']['weapon'],'keyboard' if level=='c3' else 'robot')
+            self.assertNotIn('/robot/sensors/intercepted_gps',d['runtime']['grants']['inputs'])
+            self.assertEqual(d['armor_mode'],level=='c5')
+            self.assertEqual(d['time_limit_s'],180 if level=='c5' else 120)
             if level=='c3':self.assertEqual(d['runtime']['grants']['outputs'],['target_polar_estimate@1'])
             if level=='c5':
                 self.assertEqual(d['target']['motion']['chassis'],'omnidirectional')
                 self.assertEqual(d['target']['motion']['spin_rate_radps'],3.)
-                self.assertEqual(d['tutorial']['lesson']['edit_files'],['weapons/target_prediction.py','weapons/auto_aim.py'])
+                self.assertEqual(d['tutorial']['lesson']['edit_files'],['perception/armor_tracker.py','weapons/target_prediction.py','weapons/auto_aim.py'])
 
-    def test_front_gps_geometry_occlusion_range_and_empty_frames(self):
-        c=self.config();sensor=next(s for s in c['campaign']['levels']['c4']['sensors'] if s['type']=='intercepted_gps')
-        sensor['parameters']['noise'].update(position_stddev_m=0.,drop_probability=0.)
-        target=c['weapons']['targets'][0]['target_id']
-        private={'truth_pose':[0.,0.,0.],'targets':[{'target_id':target,'alive':True,'pose':[2.,0.,math.pi/2]}]}
-        c['scene']['walls']=[{'center':[1.,0.],'size':[.2,4.]}]
-        self.assertTrue(blocked((0,0),(2,0),c['scene']['walls']))
-        sampler=GpsInterceptSimulator(c)
-        value=sampler.sample(private,0)
-        np.testing.assert_allclose(value['positions_m'],[[2.,c['body']['length_m']/2]])
-        self.assertIsNone(sampler.sample(private,0));self.assertIsNone(sampler.sample(private,1))
-        private['targets'][0]['pose'][0]=sensor['parameters']['range_m']+1
-        self.assertEqual(sampler.sample(private,6),{'positions_m':[]})
-        private['targets'][0]['alive']=False
-        self.assertEqual(sampler.sample(private,12),{'positions_m':[]})
-
-    def test_seeded_gps_stream_does_not_change_existing_radar_noise(self):
-        c=self.config();target=c['weapons']['targets'][0]['target_id']
+    def test_c4_reuses_c3_world_enemy_observations_outcomes_and_noise(self):
+        first,second=self.config('c3'),self.config('c4')
+        d3,d4=first['campaign']['levels']['c3'],second['campaign']['levels']['c4']
+        for field in ('target','sensors','scene','rules','time_limit_s','timer_start','evaluation'):
+            self.assertEqual(d3[field],d4[field],field)
+        self.assertEqual(first['weapons']['targets'],second['weapons']['targets'])
+        target=first['weapons']['targets'][0]['target_id']
         private={'truth_pose':[0.,0.,0.],'targets':[{'target_id':target,'alive':True,'pose':[-3.,-2.,0.]}]}
-        first,second=GpsInterceptSimulator(c),GpsInterceptSimulator(c)
-        radar1,radar2=RadarSimulator(c),RadarSimulator(c)
-        fixes=[]
-        for tick in range(0,6000,6):
-            before=radar1.sample(private,tick)
-            value=first.sample(private,tick)
-            self.assertEqual(value,second.sample(private,tick))
-            self.assertEqual(before,radar2.sample(private,tick))
-            fixes.extend(value['positions_m'])
-        self.assertGreater(len(fixes),850);self.assertLess(len(fixes),950)
-        errors=np.asarray(fixes)-np.array([-3+c['body']['length_m']/2,-2])
-        self.assertTrue(np.all(np.abs(errors.std(axis=0)-.15)<.02))
+        radar1,radar2=RadarSimulator(first),RadarSimulator(second)
+        for tick in range(0,600,6):self.assertEqual(radar1.sample(private,tick),radar2.sample(private,tick))
+        a=Authority(second,controlled=True);self.addCleanup(a.close)
+        self.assertIsNone(a.intercepted_gps.sensor)
+        self.assertIsNone(a.armor_detector.sensor)
+        self.assertNotIn('/robot/sensors/intercepted_gps',a.runtime_inputs())
+        self.assertNotIn('/robot/sensors/armor_detections',a.runtime_inputs())
+        self.assertEqual(a.worker_init['config']['actuators']['armor_mounts'],[])
+        for method,value in ((a.turret_keyboard,{'velocity_radps':1.}),(a.fire_keyboard,{'request_id':'manual'})):
+            with self.assertRaises(ValueError):method(value)
+
+    def test_polar_aiming_uses_sampling_pose_and_bounded_authorized_history(self):
+        from tankbot_host.weapon_curriculum import PREDICTIVE_ADAPTER
+        namespace={};exec(PREDICTIVE_ADAPTER,namespace)
+        module=namespace['PredictiveAimingModule']();module.public_poses={}
+        class Predictor:
+            def update(self,observation,dt):
+                self.observation=observation
+                return observation.target_rt
+        class Controller:
+            def update(self,observation,dt):return AimOutput(0.,True)
+        module.predictor=Predictor();module.controller=Controller()
+        c=self.config();horizon=c['runtime']['estimate_history_ticks']
+        def step(tick,pose,target=None):
+            ctx=ModuleContext(tick,.1,tick+6,{'lesson':{'tick_duration_s':1/60,'estimate_history_ticks':horizon}})
+            samples={'self_pose':Sample(Pose2D(*pose),tick,'map',tick),'turret':Sample(JointState(['turret'],[0.],[0.]),tick,'base_link',tick),'weapon':Sample(WeaponState(True,0,0,0,None),tick,'base_link',tick)}
+            if target is not None:samples['target']=target
+            module.update(Inputs(samples),ctx)
+            return ctx
+        step(0,[0.,0.,0.])
+        target=Sample(PolarTargetEstimate(2.,0.),0,'base_link',0)
+        step(6,[9.,9.,math.pi],target)
+        observed=module.predictor.observation
+        np.testing.assert_allclose(observed.target_xy,[2.,0.])
+        np.testing.assert_allclose(observed.own_pose,[9.,9.,math.pi])
+        self.assertIsNone(observed.target_yaw_rad)
+        self.assertAlmostEqual(observed.target_age_s,12/60)
+        for tick in range(12,horizon+12,6):step(tick,[9.,9.,0.])
+        ctx=step(horizon+12,[9.,9.,0.],target)
+        self.assertIsNone(module.predictor.observation.target_xy)
+        self.assertEqual(ctx._commands,[],'an unprojectable target must never trigger fire')
+        self.assertLessEqual(len(module.public_poses),horizon//6+1)
 
     def test_c3_polar_output_is_projected_with_published_pose_and_never_moves_truth(self):
         a=Authority(self.config('c3'),controlled=True);self.addCleanup(a.close)
@@ -110,19 +128,6 @@ class WeaponsCurriculumTests(unittest.TestCase):
         self.assertEqual(ctx._outputs[0][2]['covariance'],[1.,0.,0.,1.])
         with self.assertRaises(ValueError):GpsFixData(np.zeros((1,3)))
 
-    def test_stationary_center_rotation_is_observable_with_front_gps(self):
-        c=self.config();namespace={};exec(FUSION.replace('__PARAMS__',repr(c['validation']['reference_aim'])),namespace)
-        radius=c['body']['length_m']/2
-        tracker=namespace['FusionTracker'](np.array([radius,0.]),np.diag([.45**2,.08**2]),np.eye(2)*.15**2)
-        for index in range(200):
-            yaw=3.*index/10
-            radar=np.array([[4.,0.]])
-            gps=np.array([[4+radius*math.cos(yaw),radius*math.sin(yaw)]])
-            result=tracker.update(radar,gps,np.zeros(3),.1)
-        error=(result.yaw_rad-yaw+math.pi)%math.tau-math.pi
-        self.assertLess(abs(error),.05)
-        self.assertLess(math.hypot(result.x_m-4,result.y_m),.05)
-
     def test_spinning_omni_translates_while_body_heading_rotates(self):
         a=Authority(self.config('c5'),controlled=True);self.addCleanup(a.close)
         poses=[]
@@ -135,7 +140,11 @@ class WeaponsCurriculumTests(unittest.TestCase):
     def test_revised_scaffolds_preserve_existing_algorithms_and_legacy_control(self):
         with tempfile.TemporaryDirectory() as directory:
             api=WorkspaceAPI(self.config('c2'),directory=directory)
-            original=api.store.read();kept={'perception/tracker.py':'# saved KF\n','weapons/auto_aim.py':'# saved legacy controller\n'}
+            original=api.store.read();kept={'perception/tracker.py':'# saved KF\n',
+                'perception/polar_tracker.py':'# saved C3 EKF\n',
+                'perception/fusion_tracker.py':'# retained legacy fusion\n',
+                'weapons/target_prediction.py':'# saved center predictor\n',
+                'weapons/auto_aim.py':'# saved legacy controller\n'}
             api.store.edit(original['revision'],kept)
             for level in ('c3','c4','c5','c2'):
                 value=api.unlock(self.config(level))

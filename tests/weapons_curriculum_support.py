@@ -71,28 +71,31 @@ class TargetPredictor:
         self.speed=projectile_speed_mps;self.mounts=armor_mounts;self.t=0.;self.history=np.empty((0,4))
     def update(self,observation,dt):
         self.t+=dt
-        if observation.target_xy is None or observation.target_yaw_rad is None:return None
+        if observation.target_xy is None or (len(self.mounts) and observation.target_yaw_rad is None):return None
         time=self.t-observation.target_age_s
         if not len(self.history) or time>self.history[-1,0]:
-            self.history=np.concatenate((self.history,np.array([[time,*observation.target_xy,observation.target_yaw_rad]])))
+            self.history=np.concatenate((self.history,np.array([[time,*observation.target_xy,observation.target_yaw_rad if observation.target_yaw_rad is not None else 0.]])))
         self.history=self.history[self.history[:,0]>=time-PARAMS['velocity_window_s']][-int(PARAMS['maximum_track_samples']):]
         if len(self.history)<int(PARAMS['minimum_track_samples']):return None
         times=self.history[:,0];u=times-times.mean();positions=self.history[:,1:3]
         velocity=(u[:,None]*(positions-positions.mean(axis=0))).sum(axis=0)/(u@u) if u@u else np.zeros(2)
         yaw_history=self.history[self.history[:,0]>=time-PARAMS['yaw_window_s']]
-        angles=np.unwrap(yaw_history[:,3]);v=yaw_history[:,0]-yaw_history[:,0].mean()
+        angles=np.unwrap(yaw_history[:,3],period=PARAMS['yaw_period_rad']);v=yaw_history[:,0]-yaw_history[:,0].mean()
         rate=float(v@(angles-angles.mean())/(v@v)) if v@v else 0.
         center=observation.target_xy;own=observation.own_pose;flight=np.linalg.norm(center-own[:2])/self.speed
         point=center;best=None
         for _ in range(int(PARAMS['intercept_iterations'])):
             future_center=center+velocity*(observation.target_age_s+flight)
+            if not len(self.mounts):
+                point=future_center;flight=np.linalg.norm(point-own[:2])/self.speed
+                continue
             yaw=observation.target_yaw_rad+rate*(observation.target_age_s+flight)
             c,s=np.cos(yaw),np.sin(yaw);R=np.array([[c,-s],[s,c]])
             points=future_center+self.mounts[:,:2]@R.T
             normals=np.column_stack((np.cos(yaw+self.mounts[:,2]),np.sin(yaw+self.mounts[:,2])))
             toward=own[:2]-points;score=np.sum(toward*normals,axis=1)/np.maximum(np.linalg.norm(toward,axis=1),np.sqrt(PARAMS['minimum_distance_squared']))
             best=int(np.argmax(score));point=points[best];flight=np.linalg.norm(point-own[:2])/self.speed
-        if score[best]<PARAMS['armor_facing_cosine']:return None
+        if len(self.mounts) and score[best]<PARAMS['armor_facing_cosine']:return None
         delta=point-own[:2];bearing=np.arctan2(delta[1],delta[0])-own[2]
         return np.array([np.linalg.norm(delta),np.arctan2(np.sin(bearing),np.cos(bearing))],dtype=np.float64)
 '''
@@ -120,7 +123,11 @@ def solutions(config, kind="kalman"):
     files = starter(config)
     params = dict(config["validation"]["reference_aim"])
     params["control_delay_s"] = config["runtime"]["commit_delay_ticks"]/config["clock"]["physics_hz"]
-    for path,source in (("perception/polar_tracker.py",POLAR),("perception/fusion_tracker.py",FUSION),
+    import math
+    from armor_tracker_support import ARMOR
+    definition=config["campaign"]["levels"][config["campaign"]["active_level"]]
+    params["yaw_period_rad"]=next((metric["period_rad"] for metric in definition["evaluation"]["metrics"] if "period_rad" in metric),math.tau)
+    for path,source in (("perception/armor_tracker.py",ARMOR),("perception/polar_tracker.py",POLAR),("perception/fusion_tracker.py",FUSION),
                         ("weapons/target_prediction.py",PREDICTION),("weapons/auto_aim.py",CONTROL)):
         files[path] = source.replace("__PARAMS__",repr(params))
     return files

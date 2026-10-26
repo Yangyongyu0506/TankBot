@@ -35,7 +35,7 @@ class WeaponsM5Tests(unittest.TestCase):
                     try:
                         saw_projectile = False
                         for _ in range(round(config["campaign"]["levels"][level]["time_limit_s"] * a.hz)):
-                            if level!="c5" and a.tick%(a.hz//config["clock"]["algorithm_hz"])==0:
+                            if config['control_sources']['weapon']=='keyboard' and a.tick%(a.hz//config["clock"]["algorithm_hz"])==0:
                                 manual.step(a)
                             a.advance()
                             objects = a.view["payload"]["objects"]
@@ -63,7 +63,7 @@ class WeaponsM5Tests(unittest.TestCase):
             a = Authority(self.config(level), controlled=True)
             try:
                 with self.assertRaises(ValueError): a.keyboard(zero)
-                if level == "c5":
+                if level in ("c4", "c5"):
                     with self.assertRaises(ValueError): a.turret_keyboard({"velocity_radps":1.})
                     with self.assertRaises(ValueError): a.fire_keyboard({"request_id":"manual"})
                 else:
@@ -75,7 +75,7 @@ class WeaponsM5Tests(unittest.TestCase):
                 self.assertNotIn("truth_pose", encoded)
                 self.assertEqual(a.view["payload"]["selected_pose"]["source_id"], "system")
                 if level == "c4":
-                    self.assertTrue(a.config["weapons"]["targets"][0]["armor"])
+                    self.assertIsNone(a.config["weapons"]["targets"][0].get("armor"))
                     # Rotating a target around its center must not reveal yaw in the radar.
                     r1, r2 = RadarSimulator(a.config), RadarSimulator(a.config)
                     private = {"truth_pose":[0,0,0],"targets":[{"target_id":"secret","pose":[-4.5,-2,0],"alive":True}]}
@@ -95,7 +95,7 @@ class WeaponsM5Tests(unittest.TestCase):
                 for path, source in changes.items():self.assertEqual(snapshot["files"][path], source)
                 plan = api.post("upgrade", {"revision":snapshot["revision"]})
                 self.assertFalse(any(entry["path"] in changes for entry in plan["entries"]))
-                self.assertEqual(plan["template_version"], "3.0.0")
+                self.assertEqual(plan["template_version"], self.config(level)["campaign"]["levels"][level]["runtime"]["template_version"])
                 managed = set(view["learning"]["managed_files"])
                 current = api.post("apply", {"revision":plan["base_revision"],"plan_id":plan["plan_id"],
                     "resolutions":{e["path"]:"incoming" if e["path"] in managed else "keep" for e in plan["entries"]}})
@@ -127,7 +127,7 @@ class WeaponsM5Tests(unittest.TestCase):
         for case in ("order","armor","grant","profile"):
             c = copy.deepcopy(config)
             if case == "order":c["campaign"]["chapters"][1]["levels"].reverse()
-            if case == "armor":c["campaign"]["levels"]["c4"]["target"].pop("armor")
+            if case == "armor":c["campaign"]["levels"]["c5"]["target"].pop("armor")
             if case == "grant":c["robot_graph"]["profiles"]["weapons_predictive"]["grants"]["actuators"]["/robot/cmd_vel"]="twist@1"
             if case == "profile":c["campaign"]["levels"]["c3"]["robot_profile"]="missing"
             with self.subTest(case=case),self.assertRaises(ValueError):validate_profile(c)

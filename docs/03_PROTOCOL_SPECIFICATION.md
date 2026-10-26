@@ -203,6 +203,8 @@ M1 实现严格 JSON、Schema、源/频道 grant、run/序号/时间/帧、PSD �
 
 ## M5 当前增量
 
+当前 C5 另注册 `armor_detections@1`，Topic `/robot/sensors/armor_detections`、frame `base_link`。payload 为 `{"measurements_rt":[[r,theta],...]}`，当前至多两行，缺测为 []；距离非负，方位在 [-π,π)，无装甲/实体 ID、中心位置或真实 yaw。SDK 转成只读 `(N,2)` NumPy，普通玩家只能订阅本关 grant，不可发布或伪造系统观测。C5 不再授予中心 Radar/GPS 输入；C4 沿用 C3 中心 Radar/极坐标估计，不启用 GPS，既有消息类型保留兼容；语义与版本迁移见 [30](30_ARMOR_OBSERVATIONS.md)。
+
 M5 增加 `target_points@1`（Nx2）、`target_pose_estimate@1`（敌车 x/y/yaw 和可空行优先 3×3 协方差）、`turret_acceleration@1`（`acceleration_radps2`），以及允许目标 yaw 的 `view_snapshot@4`；旧类型不变。多模块请求提供新增可选 `origin_tick`，它是调度元数据，执行器负载仍无起止字段。权限/帧/单位见 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)、[角加速度样例](examples/turret-acceleration-message.json)、[目标位姿样例](examples/target-pose-message.json)。
 
 ## 渐进 Weapons 的兼容增量

@@ -14,6 +14,7 @@ SENSORS = {
     "weapon_state":("/robot/weapons/cannon/state","weapon_state@1","base_link","weapon"),
     "radar":("/robot/sensors/radar","radar@1","radar_link",None),
     "intercepted_gps":("/robot/sensors/intercepted_gps","gps_fix@1","map",None),
+    "armor_detector":("/robot/sensors/armor_detections","armor_detections@1","base_link",None),
 }
 ACTUATORS = {"/robot/cmd_vel":("twist@1","chassis","control.robot.drive"),
               "/robot/turret/cmd_vel":("turret_velocity@1","turret","control.robot.turret_velocity"),
@@ -108,12 +109,17 @@ def _validate(value, filename, config, validator):
         sensor_ids.append(sensor["type"])
         sensor_topics[topic]=schema
         if clock["physics_hz"]%sensor["update_hz"] or clock["sensor_hz"]%sensor["update_hz"]:fail(path+".update_hz","rate must divide physics and sensor rates")
-        if sensor["type"] not in ("radar","intercepted_gps") and sensor["update_hz"]!=clock["sensor_hz"]:fail(path+".update_hz","this component samples at the base sensor rate")
+        if sensor["type"] not in ("radar","intercepted_gps","armor_detector") and sensor["update_hz"]!=clock["sensor_hz"]:fail(path+".update_hz","this component samples at the base sensor rate")
         if sensor["type"]=="radar":
             p = sensor["parameters"]
             if p["update_hz"]!=sensor["update_hz"]:fail(path+".parameters.update_hz","sensor rates disagree")
             if p["mount_m"]!=[0,0] or p["yaw_rad"]!=0:fail(path+".parameters.mount_m","current Radar supports only center-aligned mounting")
         if sensor["type"]=="intercepted_gps" and sensor["parameters"]["target_robot"]!=target["id"]:fail(path+".parameters.target_robot","unknown GPS target robot")
+        if sensor["type"]=="armor_detector":
+            if sensor["parameters"]["target_robot"]!=target["id"] or not target["parameters"].get("armor"):
+                fail(path+".parameters.target_robot","armor sensor needs the declared armored target")
+            if sensor["parameters"]["mount_m"]!=[0,0] or sensor["parameters"]["yaw_rad"]!=0:
+                fail(path+".parameters.mount_m","armor sensor requires center-aligned mounting")
     if len(sensor_ids)!=len(set(sensor_ids)):fail("robots[0].sensors","duplicate sensor/Topic")
     grants = value["permissions"]["data_access"]
     for channel,schema in grants["inputs"].items():
@@ -162,7 +168,7 @@ def _validate(value, filename, config, validator):
         if path not in files or path in runtime["managed_files"]:fail(f"tutorial.lesson.edit_files[{index}]","highlight must reference a player algorithm file")
     from .level_templates import sources
     from string import Formatter
-    fields={"movement_m","turn_rad","required_hits","required_estimates","time_limit_s","max_hp","damage_per_hit","algorithm_hz","radar_hz","range_stddev_m","bearing_stddev_rad","drop_probability"}
+    fields={"movement_m","turn_rad","required_hits","required_estimates","time_limit_s","max_hp","damage_per_hit","algorithm_hz","radar_hz","observation_hz","range_stddev_m","bearing_stddev_rad","drop_probability"}
     for key in ("completion","execution"):
         try:
             if any(field and field not in fields for _,field,_,_ in Formatter().parse(value["tutorial"]["lesson"][key])):raise ValueError("unknown public placeholder")
@@ -175,7 +181,7 @@ def _validate(value, filename, config, validator):
         for path,source in generated.items():
             if path.endswith(".py"):ast.parse(source,filename=path)
     except (ValueError,SyntaxError) as exc:fail("scaffolding",str(exc))
-    player_files={"perception/transforms.py","perception/tracker.py","perception/pose_tracker.py","perception/polar_tracker.py","perception/fusion_tracker.py","weapons/auto_aim.py","weapons/armor_aim.py","weapons/target_prediction.py"}
+    player_files={"perception/transforms.py","perception/tracker.py","perception/pose_tracker.py","perception/polar_tracker.py","perception/fusion_tracker.py","perception/armor_tracker.py","weapons/auto_aim.py","weapons/armor_aim.py","weapons/target_prediction.py"}
     registered={p for component in COMPONENTS.values() for p in component}
     managed={p for p in registered|set(generated) if p not in player_files and not p.endswith("__init__.py")}
     if not set(runtime["managed_files"])<=managed:fail("communication.runtime.managed_files","managed files must exclude player algorithms and custom files")
@@ -242,6 +248,16 @@ def _validate(value, filename, config, validator):
     if len(metric_ids)!=len(set(metric_ids)):fail("evaluation.metrics","duplicate metric ID")
     expected_metrics={"position_rmse":"rmse_m","yaw_rmse":"yaw_rmse_rad"}
     if any(expected_metrics[m["type"]]!=m["id"] for m in value["evaluation"]["metrics"]):fail("evaluation.metrics","metric ID must match its existing report field")
+    for index,metric in enumerate(value["evaluation"]["metrics"]):
+        if "period_rad" in metric:
+            import math
+            name=motion.get("chassis",config["scene"]["default_chassis"])
+            profile=config.get("chassis_profiles",{}).get(name)
+            if not profile:fail(f"evaluation.metrics[{index}].period_rad","symmetry needs an explicit chassis profile")
+            angle=metric["period_rad"];c,s=math.cos(angle),math.sin(angle);tol=config["validation"]["numeric_tolerance"]
+            mounts=profile["armor"]["mounts_m"]
+            if any(not any(math.hypot(c*x-s*y-a,s*x+c*y-b)<=tol and abs((yaw+angle-normal+math.pi)%math.tau-math.pi)<=tol for a,b,normal in mounts) for x,y,yaw in mounts):
+                fail(f"evaluation.metrics[{index}].period_rad","period must preserve the configured armor geometry")
     feedback=value["evaluation"].get("live_feedback")
     if feedback:
         metric=feedback["metric"]
@@ -292,7 +308,7 @@ def _compile(value, walls, config):
     if "map" not in layers:policy["public_map"]=None
     observation_layers={"/robot/sensors/joint_states":"encoders","/robot/sensors/imu":"imu",
                         "/robot/turret/joint_states":"turret","/robot/weapons/cannon/state":"turret",
-                        "/robot/sensors/radar":"radar","/robot/sensors/intercepted_gps":"radar"}
+                        "/robot/sensors/radar":"radar","/robot/sensors/intercepted_gps":"radar","/robot/sensors/armor_detections":"radar"}
     policy["local_observation_channels"]=[channel for channel in policy["local_observation_channels"] if observation_layers.get(channel) in layers]
     runtime["grants"]=copy.deepcopy(grants)
     caps=[]
