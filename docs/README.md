@@ -12,6 +12,8 @@
 
 | 文档 | 负责的设计与接口 |
 | --- | --- |
+| [工作区身份验收](reports/WORKSPACE_IDENTITY_VALIDATION.md) | C1/C2 源码恢复、默认项目跨启动关卡稳定、旧历史无损复制 |
+| [极坐标元组验收](reports/POLAR_TUPLE_VALIDATION.md) | C3/C4 实际类型、空帧、升级保留及字段补全 |
 | [中心自瞄验收](reports/CENTER_AUTO_AIM_VALIDATION.md) | C4/C3 参数一致、程序武器、采样位姿历史与 C5 复用 |
 | [30 匿名装甲观测](30_ARMOR_OBSERVATIONS.md) | 当前 C5 的最近可见装甲、NumPy 接口、模 90° 相位与迁移 |
 | [装甲观测验收](reports/ARMOR_OBSERVATIONS_VALIDATION.md) | 传感器/权限/对称性、旧源码保留与两种 Runtime 的真实部署 |

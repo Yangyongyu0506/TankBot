@@ -44,6 +44,8 @@ ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评
 | [0036](0036-shared-chassis-geometry.md) | 独立底盘配置、目标碰撞外形与统一装甲/GPS 安装 | Accepted |
 | [0037](0037-anonymous-armor-observations.md) | C5 匿名装甲观测、关联/预测与模 90° 朝向 | Accepted |
 | [0038](0038-center-target-auto-aim.md) | C4 复用 C3 中心观测自瞄，C5 扩展装甲/小陀螺 | Accepted |
+| [0039](0039-typed-polar-observation-tuples.md) | C3/C4 类型化极坐标元组与管理适配器 API 升级 | Accepted |
+| [0040](0040-stable-campaign-workspace.md) | Campaign 默认项目跨关卡、控制权和接口版本稳定重开 | Accepted |
 
 ## 变更流程与完成条件
 

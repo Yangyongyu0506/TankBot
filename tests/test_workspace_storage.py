@@ -24,10 +24,11 @@ class WorkspaceStorageTests(unittest.TestCase):
         self.root_patch.start()
         self.addCleanup(self.root_patch.stop)
         self.files = starter(self.config)
-        self.key = digest({"seed":"default", "entry":self.config["module"]["entry_point"],
-                           "sources":self.config["control_sources"]})[:16]
+        self.key = digest({"seed":"default", "scope":"campaign"})[:16]
+        self.legacy_key = digest({"seed":"default", "entry":self.config["module"]["entry_point"],
+                                  "sources":self.config["control_sources"]})[:16]
         self.destination = self.root / self.config["workspace"]["storage"]["directory"] / self.key
-        self.legacy = self.root / self.config["workspace"]["storage"]["legacy_directory"] / self.key
+        self.legacy = self.root / self.config["workspace"]["storage"]["legacy_directory"] / self.legacy_key
 
     def old_store(self):
         store = WorkspaceStore(self.legacy,self.files,self.config["workspace"])
@@ -47,10 +48,11 @@ class WorkspaceStorageTests(unittest.TestCase):
         self.assertEqual(api.store.directory,self.destination)
         current = api.get()["snapshot"]
         api.post("save",{"revision":current["revision"],"changes":{"perception/transforms.py":"# player algorithm\n"}})
-        config = configure(self.config,"c2")
-        reopened = WorkspaceAPI(config)
-        self.assertEqual(reopened.store.directory,self.destination)
-        self.assertEqual(reopened.get()["snapshot"]["files"]["perception/transforms.py"],"# player algorithm\n")
+        for level in ('c0','c2','c3','c4','c5','c1'):
+            config = configure(self.config,level)
+            reopened = WorkspaceAPI(config)
+            self.assertEqual(reopened.store.directory,self.destination,level)
+            self.assertEqual(reopened.get()["snapshot"]["files"]["perception/transforms.py"],"# player algorithm\n",level)
         self.assertFalse(self.legacy.exists())
 
     def test_migration_preserves_every_revision_ledger_and_archive_byte_for_byte(self):
@@ -143,3 +145,58 @@ class WorkspaceStorageTests(unittest.TestCase):
         self.assertEqual([p.name for p in seed.iterdir()],['helper.py'])
         self.assertFalse(self.destination.parent.exists())
         self.assertTrue(self.legacy.exists())
+
+    def old_profile(self, level, authored=False):
+        config=configure(self.config,level)
+        key=digest({'seed':'default','entry':config['module']['entry_point'],'sources':config['control_sources']})[:16]
+        path=self.destination.parent/key
+        api=WorkspaceAPI(config,directory=path)
+        if authored:
+            current=api.store.read()
+            api.store.edit(current['revision'],{'perception/transforms.py':'# preserved C1 transform\n',
+                'perception/tracker.py':'# preserved C2 KF\n'})
+        return api.store
+
+    def test_direct_start_restores_authored_c0_project_over_newer_c3_templates(self):
+        authored=self.old_profile('c0',True)
+        untouched=self.old_profile('c3')
+        self.old_profile('c5')
+        before_authored=self.json_bytes(authored.directory)
+        before_other=self.json_bytes(untouched.directory)
+        selected=open_store(configure(self.config,'c2'))
+        self.assertEqual(selected.directory,self.destination)
+        self.assertEqual(self.json_bytes(selected.directory),before_authored)
+        self.assertEqual(self.json_bytes(authored.directory),before_authored)
+        self.assertEqual(self.json_bytes(untouched.directory),before_other)
+        for level in ('c0','c1','c2','c3','c4','c5'):
+            current=WorkspaceAPI(configure(self.config,level))
+            self.assertEqual(current.store.directory,self.destination)
+            self.assertEqual(current.store.read()['files']['perception/tracker.py'],'# preserved C2 KF\n')
+
+    def test_conflicting_authored_projects_are_kept_and_require_explicit_selection(self):
+        first=self.old_profile('c0',True);second=self.old_profile('c3',True)
+        current=second.read();second.edit(current['revision'],{'perception/tracker.py':'# different newer KF\n'})
+        before_first,before_second=self.json_bytes(first.directory),self.json_bytes(second.directory)
+        with self.assertRaisesRegex(ValueError,'WORKSPACE_SELECTION_REQUIRED'):
+            open_store(self.config)
+        self.assertFalse(self.destination.exists())
+        self.assertEqual(self.json_bytes(first.directory),before_first)
+        self.assertEqual(self.json_bytes(second.directory),before_second)
+        self.assertEqual(open_store(self.config,directory=second.directory).read(),second.read())
+
+    def test_default_campaign_identity_does_not_depend_on_runtime_or_template(self):
+        api=WorkspaceAPI(self.config);current=api.store.read()
+        api.store.edit(current['revision'],{'perception/tracker.py':'# saved KF\n'})
+        changed=configure(self.config,'c4')
+        changed['module']['entry_point']='some_new_runtime:Module'
+        changed['control_sources']={'chassis':'robot','turret':'disabled','weapon':'robot'}
+        changed['campaign']['levels']['c4']['runtime']['template_version']='99.0.0'
+        self.assertEqual(open_store(changed).directory,self.destination)
+        self.assertEqual(open_store(changed).read()['files']['perception/tracker.py'],'# saved KF\n')
+
+    def test_missing_campaign_head_does_not_hide_existing_history(self):
+        api=WorkspaceAPI(self.config);before=self.json_bytes(self.destination)
+        (self.destination/'HEAD.json').unlink()
+        with self.assertRaisesRegex(ValueError,'missing HEAD.json'):
+            open_store(self.config)
+        self.assertEqual(self.json_bytes(self.destination),{p:b for p,b in before.items() if p!='HEAD.json'})

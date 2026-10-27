@@ -165,6 +165,10 @@ C1–C5 底盘锁定并保留真实受力，系统自身位姿仍公开；C1–C
 
 F2 的 tree 风格文件树高亮本关主要编辑文件；C4 高亮 `perception/polar_tracker.py`、`weapons/target_prediction.py`、`weapons/auto_aim.py`。C5 高亮 `perception/armor_tracker.py`、`weapons/target_prediction.py` 与 `weapons/auto_aim.py`，分别处理匿名关联/估计、预测和炮台控制。自己选择滤波、预测及 PD 等控制方法；接口与对称性说明见 [匿名装甲设计](docs/30_ARMOR_OBSERVATIONS.md)。新脚手架需更新时先预览；已有算法（包括旧 `auto_aim.py`）不会被自动覆盖。旧关卡 ID 和已完成进度保留，C5 依赖 C4。
 
+C3/C4 的 `PolarTracker.update` 接收 `measurements: tuple[PolarTargetEstimate, ...]`，用 `.range_m` / `.bearing_rad` 读取，缺测为 `()`；自身位姿与算法内部矩阵仍用 NumPy。两关脚手架现为 5.0.0，旧数组接口的算法文件会保留，需自行按新签名适配后重新测试；完整示例见 [28](docs/28_WEAPONS_PROGRESSIVE_ESTIMATION.md)。
+
+默认教学项目跨 C0–C5 共用稳定工作区，与启动关卡、控制模式和模板版本无关。旧版本分库中的已编辑项目会完整复制到新默认目录，原源码和全部历史保留；多份已编辑库不自动合并，需用 `--workspace-store PATH` 明确选择。升级后重启服务，详见 [工作区存储](docs/17_EDITOR_AND_DEPLOYMENT.md)。
+
 开发者可用 `python3 tools/tankbot.py serve --developer --level c5`，或 `browser --developer --level c5` 直达练习；正式玩家按存档解锁。接口、物理与兼容见 [新课程设计](docs/28_WEAPONS_PROGRESSIVE_ESTIMATION.md)，模块调度见 [26](docs/26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)，当前证据见 [验收](docs/reports/WEAPONS_REDESIGN_VALIDATION.md)。
 
 ## YAML 关卡插件

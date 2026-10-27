@@ -28,7 +28,7 @@ flowchart LR
 
 ## Workspace 与存储
 
-M3 的两种启动方式都由本机 HTTP 启动器提供版本库；默认路径为 `userdata/workspaces/<seed-and-control-profile-hash>/`，可用 `--workspace-store PATH` 指定持久目录。此选择不等于独立静态网站的浏览器存储方案；IndexedDB/OPFS 留待独立 Web 分发验证。
+两种本机启动方式都由 HTTP 启动器提供版本库。Campaign 默认路径为 `userdata/workspaces/<seed-and-campaign-scope-hash>/`，身份不取关卡、控制权、模板或 Module 入口；沙盒沿用原 seed/control profile 身份。可用 `--workspace-store PATH` 明确指定目录。此选择不等于独立静态网站的浏览器存储方案；IndexedDB/OPFS 留待独立 Web 分发验证。
 
 `--workspace PATH` 是只读种子：首次建立编辑库时导入文件，只补不存在的基础模板；原目录和仓库示例均不回写。后续启动继续读取保存的编辑库。启动机器人使用原种子示例；编辑库须经 Test/Deploy 才成为 Active，避免启动时自动执行未测试草稿。
 
@@ -128,4 +128,6 @@ M4 新增独立的 Campaign 单模块 profile：标准输入是授权系统自�
 
 打开默认库前扫描历史根目录的默认项目标识，逐个在原库文件锁下复制完整内容到新根的独立暂存目录；验证 HEAD 和全部历史源码摘要后原子发布。迁移锁串行化并发启动。目标目录存在时保留其内容，不合并旧库；原库保留为备份。缺 HEAD、损坏 revision、不安全链接或复制/发布失败时不生成替代项目，并清理本次暂存目录，可修复后重试。升级前应关闭旧服务，迁移后新目录为主；独立项目不会被合并。
 
-验证：`tests/test_workspace_storage.py` 的 9 项迁移/持久化检查，以及既有 Workspace 保存、CAS、失败部署和回滚回归。无需改变 Game Core、玩家导入权限或 View Policy。
+后续 [ADR-0040](adr/0040-stable-campaign-workspace.md) 修正默认 Campaign 身份：旧实现按启动关卡的 control_sources 选库，导致从 C0 开始游玩和直接启动 C1/C2 打开不同项目。新稳定目录首次打开时检查同 seed 的旧 profile；唯一包含非模板 Python 实现的项目优先，完整复制其历史与归档，原目录不动。多份已编辑项目时明确报 WORKSPACE_SELECTION_REQUIRED 并列出可用路径，不按时间戳猜测或覆盖同名代码。已有稳定项目总是优先；缺 HEAD 不生成新模板掩盖旧历史。升级须重启旧服务。
+
+验证：`tests/test_workspace_storage.py` 的 13 项迁移/持久化检查，以及既有 Workspace 保存、CAS、失败部署和回滚回归；当前结果见 [验收](reports/WORKSPACE_IDENTITY_VALIDATION.md)。无需改变 Game Core、玩家导入权限或 View Policy。

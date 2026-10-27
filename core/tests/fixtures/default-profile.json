@@ -657,7 +657,7 @@
     ],
     "profiles": {
       "weapons_polar": {
-        "template_version": "3.0.0",
+        "template_version": "5.0.0",
         "manifest": {
           "manifest_version": "1.0",
           "sdk_version": "0.1.0",
@@ -745,7 +745,7 @@
         ]
       },
       "weapons_polar_aiming": {
-        "template_version": "4.1.0",
+        "template_version": "5.0.0",
         "manifest": {
           "manifest_version": "1.0",
           "sdk_version": "0.1.0",
@@ -3750,7 +3750,7 @@
           }
         },
         "runtime": {
-          "template_version": "3.0.0",
+          "template_version": "5.0.0",
           "manifest": {
             "manifest_version": "1.0",
             "sdk_version": "0.1.0",
@@ -4096,7 +4096,7 @@
             "summary": "从线性位置观测进阶到距离/方位观测；内部模型可使用 EKF，对外仍返回 (r,theta)。",
             "steps": [
               "底盘锁定，自身位姿由系统提供。阅读本关高亮文件的带类型签名、输入参考系、单位及返回约定。",
-              "直接读取原始 (r,theta)，框架不会先调用 C1 的坐标变换。内部可用笛卡尔运动状态和非线性观测模型构建 EKF，输出仍是车体系极坐标。",
+              "从 measurements 元组逐项读取 .range_m/.bearing_rad，框架不会先调用 C1 的坐标变换。内部可用笛卡尔运动状态和非线性观测模型构建 EKF，输出仍是车体系极坐标。",
               "推导观测 Jacobian，并对 theta 创新做角度环绕。比较预测、测量和滤波结果；丢失时只做预测。",
               "保存、测试、部署，按 J/L 与空格人工控制炮台和开火，存活击杀。"
             ],
@@ -4114,23 +4114,32 @@
               }
             ],
             "aliases": {
-              "measurements_rt": "ndarray",
-              "gps_xy": "ndarray",
-              "own_pose": "ndarray"
+              "own_pose": "ndarray",
+              "measurements": "tuple[PolarTargetEstimate, ...]"
             },
             "completion": "首次成功部署后计时，限时 {time_limit_s} 仿真秒，双方 {max_hp} HP。存活并击杀敌车通关；玩家死亡或超时失败，主动结束后可编辑。运行中不公开目标真值误差。",
             "common_errors": [
               "不要把 range/bearing 当作地图 x/y；角度创新须归一到 [-pi,pi)。",
-              "数组只有当前帧，不是历史；需要保留状态或窗口时必须限制大小。",
-              "运行阶段不能打开编辑器；请先结束本次尝试，修改保存后重试。"
+              "观测元组只有当前帧，不是历史；需要保留状态或窗口时必须限制大小。",
+              "运行阶段不能打开编辑器；请先结束本次尝试，修改保存后重试。",
+              "输入是 tuple[PolarTargetEstimate, ...]：用 .range_m/.bearing_rad 取值，空帧为 ()；不要使用旧 measurements_rt 的二维下标。"
             ],
-            "execution": "框架以 {algorithm_hz} Hz 提供同期 NumPy 观测。Radar 距离 σ={range_stddev_m:g} m、方位 σ={bearing_stddev_rad:g} rad、独立丢失 {drop_probability:.0%}；dt 是仿真秒。空数组为当前帧缺测，内部状态跨调用保存，部署或重试重新初始化。",
+            "execution": "框架以 {algorithm_hz} Hz 提供同期 tuple[PolarTargetEstimate, ...] 观测。Radar 距离 σ={range_stddev_m:g} m、方位 σ={bearing_stddev_rad:g} rad、独立丢失 {drop_probability:.0%}；dt 是仿真秒。空元组 () 为当前帧缺测，内部状态跨调用保存，部署或重试重新初始化。",
             "calibration": {
               "radar_measurement_covariance": {
                 "source": "radar_covariance"
               }
             },
-            "type_notes": {},
+            "type_notes": {
+              "PolarTargetEstimate": {
+                "description": "C3/C4 复用的车体系距离/方位值类型：输入 tuple 中是当前原始带噪测量，函数返回值是玩家滤波/预测后的估计。",
+                "fields": {
+                  "range_m": "距离，float，m，非负；输入为测量，输出为估计。",
+                  "bearing_rad": "相对当前我方车头的方位，float，rad，范围 [-pi,pi)。",
+                  "covariance": "输入为 None；输出为 None 或只读 (2,2) NumPy 协方差，顺序 r/theta。"
+                }
+              }
+            },
             "ui": {
               "state_heading": "02 / AUTHORIZED SELF POSE",
               "legend_pose": "系统自定位",
@@ -4163,7 +4172,7 @@
             "perception/polar_tracker.py": [
               {
                 "function": "update",
-                "text": "输入 measurements_rt: numpy.ndarray，shape=(N,2)，每行 [range_m, bearing_rad]，单位 m/rad，均在当前我方 base_link；无检测为 shape=(0,2)，不是历史缓存。\nown_pose: shape=(3,) 的系统公开自身 [x_m,y_m,yaw_rad]；dt: float 为仿真秒。\n返回 PolarTargetEstimate(range_m: float, bearing_rad: float, covariance=None) 或 None。输出仍在当前车体系，bearing 归一到 [-pi,pi)，covariance 为 (2,2) NumPy 矩阵，顺序 r/theta。\n内部可以保存笛卡尔状态 [x,y,vx,vy]，观测模型使用距离 hypot 和方位 atan2；只改变输入输出坐标并不会自动构成 EKF。预测、Jacobian、创新和协方差更新由你实现；方位创新必须绕回 [-pi,pi)。不强制唯一算法。\n空测量时可只预测；保存有界状态，避免无限追加历史。measurement_covariance 来自关卡 YAML；框架不先替你把雷达测量变成全局 x/y。"
+                "text": "输入 measurements: tuple[PolarTargetEstimate, ...]，当前帧敌车中心的原始极坐标观测集合，当前长度为 0 或 1；缺测为 ()，不是 NumPy 数组，也不是历史缓存。与 C2 的 tuple[TargetEstimate, ...] 结构相同，字段改为距离和方位。\n每个 measurement 的 range_m: float 为距离（m），bearing_rad: float 为相对我方车头的方位（rad），均在当前我方 base_link；输入 covariance 为 None，measurement_covariance 构造参数仍提供 YAML 中的 (2,2) 测量噪声矩阵。输入对象复用 PolarTargetEstimate 类型，但仍是未滤波的雷达观测，不是系统替你计算的估计。\nown_pose: shape=(3,) 的公开自身 [x_m,y_m,yaw_rad] NumPy 数组；dt: float 为仿真秒。\n返回 PolarTargetEstimate(range_m: float,bearing_rad: float,covariance=None) 或 None。输出仍在当前车体系，bearing 归一到 [-pi,pi)，covariance 为 None 或 (2,2) NumPy 矩阵，顺序 r/theta。\n读取示例：measurement: PolarTargetEstimate = measurements[0]；r: float = measurement.range_m；theta: float = measurement.bearing_rad。读取前先判断 if measurements，缺测时可以只预测。\n内部可以保存 NumPy 状态 [x,y,vx,vy]，观测模型使用 hypot/atan2，推导 Jacobian、环绕角度创新并更新协方差；框架不先转换为地图 x/y，不强制唯一算法。\n从旧数组接口迁移：将原来的 measurements_rt[0,0] / measurements_rt[0,1] 改为 measurements[0].range_m / measurements[0].bearing_rad。如需矩阵，可自行使用 np.array([[m.range_m,m.bearing_rad] for m in measurements],dtype=np.float64).reshape((-1,2))。升级只更新管理脚手架，已有算法文件不覆盖；请按新签名自行适配后重新测试。"
               }
             ]
           }
@@ -4178,7 +4187,7 @@
             "description": "锁定底盘，依次学习坐标变换、目标跟踪、自瞄和装甲瞄准。"
           },
           "order": 3,
-          "version": "2.0.0",
+          "version": "3.0.0",
           "learning_objectives": [
             "从线性位置观测进阶到距离/方位观测；内部模型可使用 EKF，对外仍返回 (r,theta)。"
           ],
@@ -4375,7 +4384,7 @@
           }
         },
         "runtime": {
-          "template_version": "4.1.0",
+          "template_version": "5.0.0",
           "manifest": {
             "manifest_version": "1.0",
             "sdk_version": "0.1.0",
@@ -4804,7 +4813,7 @@
             "summary": "复用 C3 极坐标滤波，分文件实现中心运动预测、炮台角加速度闭环与自动开火。",
             "steps": [
               "沿用 C3：自身位姿由系统提供、底盘锁定，敌车为相同差速巡逻模型；只观测底盘中心 Radar，没有 GPS 或装甲观测。",
-              "直接复用 perception/polar_tracker.py；输入、输出与 C3 完全相同，返回当前采样时刻的车体系 PolarTargetEstimate。",
+              "直接复用 perception/polar_tracker.py；输入为 tuple[PolarTargetEstimate, ...]，输入输出与 C3 完全相同，返回当前采样时刻的车体系 PolarTargetEstimate。",
               "实现 weapons/target_prediction.py：从滤波结果估计中心速度，补偿 target_age_s 和弹丸飞行时间，返回当前我方车体系的预测中心 [r,theta]。",
               "实现 weapons/auto_aim.py：使用环绕角误差和角速度反馈控制炮台加速、制动，并根据跟随误差与 weapon_ready 决定开火。只能控制相对角加速度，不能直接设置角度/速度。",
               "保存、测试、部署后，炮台和开火全部由程序控制，人工 J/L/空格与手柄武器输入禁用；无需估计敌车 yaw，也不要求命中装甲。",
@@ -4840,20 +4849,20 @@
               }
             ],
             "aliases": {
-              "measurements_rt": "ndarray",
-              "gps_xy": "ndarray",
-              "own_pose": "ndarray"
+              "own_pose": "ndarray",
+              "measurements": "tuple[PolarTargetEstimate, ...]"
             },
             "completion": "首次成功部署后计时，限时 {time_limit_s} 仿真秒，双方 {max_hp} HP。存活并击杀敌车通关；玩家死亡或超时失败，主动结束后可编辑。运行中不公开目标真值误差。",
             "common_errors": [
               "不要把 range/bearing 当作地图 x/y；角度创新须归一到 [-pi,pi)。",
-              "数组只有当前帧，不是历史；需要保留状态或窗口时必须限制大小。",
+              "观测元组只有当前帧，不是历史；需要保留状态或窗口时必须限制大小。",
               "运行阶段不能打开编辑器；请先结束本次尝试，修改保存后重试。",
               "target_yaw_rad 为 None：本关只需预测中心；armor_mounts 是 shape=(0,3) 的空数组。",
               "零角加速度并非停转；无目标时返回 None，并在控制器中主动制动、禁止盲目开火。",
-              "target_age_s 已含等待提交时延；有界记录跨帧状态，不要无限追加历史。"
+              "target_age_s 已含等待提交时延；有界记录跨帧状态，不要无限追加历史。",
+              "输入是 tuple[PolarTargetEstimate, ...]：用 .range_m/.bearing_rad 取值，空帧为 ()；不要使用旧 measurements_rt 的二维下标。"
             ],
-            "execution": "框架以 {algorithm_hz} Hz 提供同期 NumPy 观测。Radar 距离 σ={range_stddev_m:g} m、方位 σ={bearing_stddev_rad:g} rad、独立丢失 {drop_probability:.0%}；dt 是仿真秒。空数组为当前帧缺测，内部状态跨调用保存，部署或重试重新初始化。",
+            "execution": "框架以 {algorithm_hz} Hz 提供同期 tuple[PolarTargetEstimate, ...] 观测。Radar 距离 σ={range_stddev_m:g} m、方位 σ={bearing_stddev_rad:g} rad、独立丢失 {drop_probability:.0%}；dt 是仿真秒。空元组 () 为当前帧缺测，内部状态跨调用保存，部署或重试重新初始化。",
             "calibration": {
               "radar_measurement_covariance": {
                 "source": "radar_covariance"
@@ -4868,7 +4877,16 @@
                 "source": "target_drive_model"
               }
             },
-            "type_notes": {},
+            "type_notes": {
+              "PolarTargetEstimate": {
+                "description": "C3/C4 复用的车体系距离/方位值类型：输入 tuple 中是当前原始带噪测量，函数返回值是玩家滤波/预测后的估计。",
+                "fields": {
+                  "range_m": "距离，float，m，非负；输入为测量，输出为估计。",
+                  "bearing_rad": "相对当前我方车头的方位，float，rad，范围 [-pi,pi)。",
+                  "covariance": "输入为 None；输出为 None 或只读 (2,2) NumPy 协方差，顺序 r/theta。"
+                }
+              }
+            },
             "ui": {
               "state_heading": "02 / AUTHORIZED SELF POSE",
               "legend_pose": "系统自定位",
@@ -4907,7 +4925,7 @@
             "perception/polar_tracker.py": [
               {
                 "function": "update",
-                "text": "输入 measurements_rt: numpy.ndarray，shape=(N,2)，每行 [range_m, bearing_rad]，单位 m/rad，均在当前我方 base_link；无检测为 shape=(0,2)，不是历史缓存。\nown_pose: shape=(3,) 的系统公开自身 [x_m,y_m,yaw_rad]；dt: float 为仿真秒。\n返回 PolarTargetEstimate(range_m: float, bearing_rad: float, covariance=None) 或 None。输出仍在当前车体系，bearing 归一到 [-pi,pi)，covariance 为 (2,2) NumPy 矩阵，顺序 r/theta。\n内部可以保存笛卡尔状态 [x,y,vx,vy]，观测模型使用距离 hypot 和方位 atan2；只改变输入输出坐标并不会自动构成 EKF。预测、Jacobian、创新和协方差更新由你实现；方位创新必须绕回 [-pi,pi)。不强制唯一算法。\n空测量时可只预测；保存有界状态，避免无限追加历史。measurement_covariance 来自关卡 YAML；框架不先替你把雷达测量变成全局 x/y。"
+                "text": "输入 measurements: tuple[PolarTargetEstimate, ...]，当前帧敌车中心的原始极坐标观测集合，当前长度为 0 或 1；缺测为 ()，不是 NumPy 数组，也不是历史缓存。与 C2 的 tuple[TargetEstimate, ...] 结构相同，字段改为距离和方位。\n每个 measurement 的 range_m: float 为距离（m），bearing_rad: float 为相对我方车头的方位（rad），均在当前我方 base_link；输入 covariance 为 None，measurement_covariance 构造参数仍提供 YAML 中的 (2,2) 测量噪声矩阵。输入对象复用 PolarTargetEstimate 类型，但仍是未滤波的雷达观测，不是系统替你计算的估计。\nown_pose: shape=(3,) 的公开自身 [x_m,y_m,yaw_rad] NumPy 数组；dt: float 为仿真秒。\n返回 PolarTargetEstimate(range_m: float,bearing_rad: float,covariance=None) 或 None。输出仍在当前车体系，bearing 归一到 [-pi,pi)，covariance 为 None 或 (2,2) NumPy 矩阵，顺序 r/theta。\n读取示例：measurement: PolarTargetEstimate = measurements[0]；r: float = measurement.range_m；theta: float = measurement.bearing_rad。读取前先判断 if measurements，缺测时可以只预测。\n内部可以保存 NumPy 状态 [x,y,vx,vy]，观测模型使用 hypot/atan2，推导 Jacobian、环绕角度创新并更新协方差；框架不先转换为地图 x/y，不强制唯一算法。\n从旧数组接口迁移：将原来的 measurements_rt[0,0] / measurements_rt[0,1] 改为 measurements[0].range_m / measurements[0].bearing_rad。如需矩阵，可自行使用 np.array([[m.range_m,m.bearing_rad] for m in measurements],dtype=np.float64).reshape((-1,2))。升级只更新管理脚手架，已有算法文件不覆盖；请按新签名自行适配后重新测试。"
               }
             ],
             "weapons/target_prediction.py": [
@@ -4934,7 +4952,7 @@
             "description": "锁定底盘，依次学习坐标变换、目标跟踪、自瞄和装甲瞄准。"
           },
           "order": 4,
-          "version": "3.0.0",
+          "version": "4.0.0",
           "learning_objectives": [
             "复用 C3 极坐标滤波，分文件实现中心运动预测、炮台角加速度闭环与自动开火。"
           ],
@@ -6406,7 +6424,7 @@
         "summary": "从线性位置观测进阶到距离/方位观测；内部模型可使用 EKF，对外仍返回 (r,theta)。",
         "steps": [
           "底盘锁定，自身位姿由系统提供。阅读本关高亮文件的带类型签名、输入参考系、单位及返回约定。",
-          "直接读取原始 (r,theta)，框架不会先调用 C1 的坐标变换。内部可用笛卡尔运动状态和非线性观测模型构建 EKF，输出仍是车体系极坐标。",
+          "从 measurements 元组逐项读取 .range_m/.bearing_rad，框架不会先调用 C1 的坐标变换。内部可用笛卡尔运动状态和非线性观测模型构建 EKF，输出仍是车体系极坐标。",
           "推导观测 Jacobian，并对 theta 创新做角度环绕。比较预测、测量和滤波结果；丢失时只做预测。",
           "保存、测试、部署，按 J/L 与空格人工控制炮台和开火，存活击杀。"
         ],
@@ -6424,23 +6442,32 @@
           }
         ],
         "aliases": {
-          "measurements_rt": "ndarray",
-          "gps_xy": "ndarray",
-          "own_pose": "ndarray"
+          "own_pose": "ndarray",
+          "measurements": "tuple[PolarTargetEstimate, ...]"
         },
         "completion": "首次成功部署后计时，限时 {time_limit_s} 仿真秒，双方 {max_hp} HP。存活并击杀敌车通关；玩家死亡或超时失败，主动结束后可编辑。运行中不公开目标真值误差。",
         "common_errors": [
           "不要把 range/bearing 当作地图 x/y；角度创新须归一到 [-pi,pi)。",
-          "数组只有当前帧，不是历史；需要保留状态或窗口时必须限制大小。",
-          "运行阶段不能打开编辑器；请先结束本次尝试，修改保存后重试。"
+          "观测元组只有当前帧，不是历史；需要保留状态或窗口时必须限制大小。",
+          "运行阶段不能打开编辑器；请先结束本次尝试，修改保存后重试。",
+          "输入是 tuple[PolarTargetEstimate, ...]：用 .range_m/.bearing_rad 取值，空帧为 ()；不要使用旧 measurements_rt 的二维下标。"
         ],
-        "execution": "框架以 {algorithm_hz} Hz 提供同期 NumPy 观测。Radar 距离 σ={range_stddev_m:g} m、方位 σ={bearing_stddev_rad:g} rad、独立丢失 {drop_probability:.0%}；dt 是仿真秒。空数组为当前帧缺测，内部状态跨调用保存，部署或重试重新初始化。",
+        "execution": "框架以 {algorithm_hz} Hz 提供同期 tuple[PolarTargetEstimate, ...] 观测。Radar 距离 σ={range_stddev_m:g} m、方位 σ={bearing_stddev_rad:g} rad、独立丢失 {drop_probability:.0%}；dt 是仿真秒。空元组 () 为当前帧缺测，内部状态跨调用保存，部署或重试重新初始化。",
         "calibration": {
           "radar_measurement_covariance": {
             "source": "radar_covariance"
           }
         },
-        "type_notes": {},
+        "type_notes": {
+          "PolarTargetEstimate": {
+            "description": "C3/C4 复用的车体系距离/方位值类型：输入 tuple 中是当前原始带噪测量，函数返回值是玩家滤波/预测后的估计。",
+            "fields": {
+              "range_m": "距离，float，m，非负；输入为测量，输出为估计。",
+              "bearing_rad": "相对当前我方车头的方位，float，rad，范围 [-pi,pi)。",
+              "covariance": "输入为 None；输出为 None 或只读 (2,2) NumPy 协方差，顺序 r/theta。"
+            }
+          }
+        },
         "ui": {
           "state_heading": "02 / AUTHORIZED SELF POSE",
           "legend_pose": "系统自定位",
@@ -6459,7 +6486,7 @@
         "summary": "复用 C3 极坐标滤波，分文件实现中心运动预测、炮台角加速度闭环与自动开火。",
         "steps": [
           "沿用 C3：自身位姿由系统提供、底盘锁定，敌车为相同差速巡逻模型；只观测底盘中心 Radar，没有 GPS 或装甲观测。",
-          "直接复用 perception/polar_tracker.py；输入、输出与 C3 完全相同，返回当前采样时刻的车体系 PolarTargetEstimate。",
+          "直接复用 perception/polar_tracker.py；输入为 tuple[PolarTargetEstimate, ...]，输入输出与 C3 完全相同，返回当前采样时刻的车体系 PolarTargetEstimate。",
           "实现 weapons/target_prediction.py：从滤波结果估计中心速度，补偿 target_age_s 和弹丸飞行时间，返回当前我方车体系的预测中心 [r,theta]。",
           "实现 weapons/auto_aim.py：使用环绕角误差和角速度反馈控制炮台加速、制动，并根据跟随误差与 weapon_ready 决定开火。只能控制相对角加速度，不能直接设置角度/速度。",
           "保存、测试、部署后，炮台和开火全部由程序控制，人工 J/L/空格与手柄武器输入禁用；无需估计敌车 yaw，也不要求命中装甲。",
@@ -6495,20 +6522,20 @@
           }
         ],
         "aliases": {
-          "measurements_rt": "ndarray",
-          "gps_xy": "ndarray",
-          "own_pose": "ndarray"
+          "own_pose": "ndarray",
+          "measurements": "tuple[PolarTargetEstimate, ...]"
         },
         "completion": "首次成功部署后计时，限时 {time_limit_s} 仿真秒，双方 {max_hp} HP。存活并击杀敌车通关；玩家死亡或超时失败，主动结束后可编辑。运行中不公开目标真值误差。",
         "common_errors": [
           "不要把 range/bearing 当作地图 x/y；角度创新须归一到 [-pi,pi)。",
-          "数组只有当前帧，不是历史；需要保留状态或窗口时必须限制大小。",
+          "观测元组只有当前帧，不是历史；需要保留状态或窗口时必须限制大小。",
           "运行阶段不能打开编辑器；请先结束本次尝试，修改保存后重试。",
           "target_yaw_rad 为 None：本关只需预测中心；armor_mounts 是 shape=(0,3) 的空数组。",
           "零角加速度并非停转；无目标时返回 None，并在控制器中主动制动、禁止盲目开火。",
-          "target_age_s 已含等待提交时延；有界记录跨帧状态，不要无限追加历史。"
+          "target_age_s 已含等待提交时延；有界记录跨帧状态，不要无限追加历史。",
+          "输入是 tuple[PolarTargetEstimate, ...]：用 .range_m/.bearing_rad 取值，空帧为 ()；不要使用旧 measurements_rt 的二维下标。"
         ],
-        "execution": "框架以 {algorithm_hz} Hz 提供同期 NumPy 观测。Radar 距离 σ={range_stddev_m:g} m、方位 σ={bearing_stddev_rad:g} rad、独立丢失 {drop_probability:.0%}；dt 是仿真秒。空数组为当前帧缺测，内部状态跨调用保存，部署或重试重新初始化。",
+        "execution": "框架以 {algorithm_hz} Hz 提供同期 tuple[PolarTargetEstimate, ...] 观测。Radar 距离 σ={range_stddev_m:g} m、方位 σ={bearing_stddev_rad:g} rad、独立丢失 {drop_probability:.0%}；dt 是仿真秒。空元组 () 为当前帧缺测，内部状态跨调用保存，部署或重试重新初始化。",
         "calibration": {
           "radar_measurement_covariance": {
             "source": "radar_covariance"
@@ -6523,7 +6550,16 @@
             "source": "target_drive_model"
           }
         },
-        "type_notes": {},
+        "type_notes": {
+          "PolarTargetEstimate": {
+            "description": "C3/C4 复用的车体系距离/方位值类型：输入 tuple 中是当前原始带噪测量，函数返回值是玩家滤波/预测后的估计。",
+            "fields": {
+              "range_m": "距离，float，m，非负；输入为测量，输出为估计。",
+              "bearing_rad": "相对当前我方车头的方位，float，rad，范围 [-pi,pi)。",
+              "covariance": "输入为 None；输出为 None 或只读 (2,2) NumPy 协方差，顺序 r/theta。"
+            }
+          }
+        },
         "ui": {
           "state_heading": "02 / AUTHORIZED SELF POSE",
           "legend_pose": "系统自定位",

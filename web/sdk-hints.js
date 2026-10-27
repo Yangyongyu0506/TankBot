@@ -4,6 +4,13 @@ const fields=type=>[...(type?.fields??[]),...(type?.properties??[])];
 export function referenceType(reference,expression,source){
   const direct=reference.types?.find(type=>type.name===expression);
   if(direct)return direct;
+  const indexed=expression.match(/^([A-Za-z_]\w*)\[\d+\]$/);
+  if(indexed){
+    const declarations=[...source.matchAll(new RegExp("\\b"+escaped(indexed[1])+"\\s*:\\s*((?:tuple|typing\\.Tuple)\\s*\\[\\s*[A-Za-z_][\\w.]*\\s*,\\s*\\.\\.\\.\\s*\\])","g"))];
+    const annotation=declarations.at(-1)?.[1]??reference.lesson?.aliases?.[indexed[1]]??"";
+    const item=annotation.match(/^(?:tuple|typing\.Tuple)\s*\[\s*([A-Za-z_][\w.]*)\s*,\s*\.\.\.\s*\]$/)?.[1];
+    return reference.types?.find(type=>type.name===item)??null;
+  }
   const declarations=[...source.matchAll(new RegExp("\\b"+escaped(expression)+"\\s*:\\s*([A-Za-z_][A-Za-z0-9_.]*)","g"))];
   let name=declarations.at(-1)?.[1]??reference.lesson?.aliases?.[expression];
   if(name==="NDArray"||name==="np.ndarray")name="ndarray";
@@ -23,7 +30,7 @@ export function symbolHelp(reference,expression,source){
 }
 
 export function sdkCompletions(reference,source,position,explicit=false){
-  const before=source.slice(0,position),member=before.match(/([A-Za-z_][\w.]*)\.([A-Za-z_0-9]*)$/);
+  const before=source.slice(0,position),member=before.match(/([A-Za-z_]\w*(?:\[\d+\])?(?:\.[A-Za-z_]\w*)*)\.([A-Za-z_0-9]*)$/);
   if(member){
     const type=referenceType(reference,member[1],source);
     if(!type)return null;

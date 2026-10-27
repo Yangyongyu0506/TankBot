@@ -72,7 +72,7 @@ class PolarTracker:
         self.measurement_covariance: NDArray[np.float64] = measurement_covariance
         self.estimate: PolarTargetEstimate | None = None
 
-    def update(self, measurements_rt: NDArray[np.float64], own_pose: NDArray[np.float64],
+    def update(self, measurements: tuple[PolarTargetEstimate, ...], own_pose: NDArray[np.float64],
                dt: float) -> PolarTargetEstimate | None:
         """Algorithm input/output contract; see level guidance."""
         # TODO: 用非线性距离/方位观测更新内部状态，对外返回车体系 (r, theta)。
@@ -151,6 +151,8 @@ def radar_matrix(sample: Sample[RadarData] | None) -> NDArray[np.float64]:
 
 
 class PolarTrackingModule(Module):
+    scaffold_api: str = "polar_tuple@1"
+
     def setup(self, ctx: ModuleContext) -> None:
         from perception.polar_tracker import PolarTracker
         self.tracker: PolarTracker = PolarTracker(np.array(ctx.config["observations"]["radar_covariance"],dtype=np.float64))
@@ -164,7 +166,8 @@ class PolarTrackingModule(Module):
         dt: float = (radar.simulation_tick-self.last_tick)*ctx.config["lesson"]["tick_duration_s"] if self.last_tick is not None else ctx.dt_seconds
         self.last_tick = radar.simulation_tick
         own: NDArray[np.float64] = np.array([pose.data.x_m,pose.data.y_m,pose.data.yaw_rad],dtype=np.float64)
-        estimate: PolarTargetEstimate | None = self.tracker.update(radar_matrix(radar),own,dt)
+        measurements: tuple[PolarTargetEstimate, ...] = tuple(PolarTargetEstimate(detection.range_m,detection.bearing_rad) for detection in radar.data.detections)
+        estimate: PolarTargetEstimate | None = self.tracker.update(measurements,own,dt)
         if estimate is not None:
             ctx.publish("target",estimate,frame_id="base_link",simulation_tick=radar.simulation_tick)
 
@@ -253,7 +256,7 @@ from perception.polar_tracker import PolarTracker
 class PolarContractTest(unittest.TestCase):
     def test_empty_measurements_contract(self) -> None:
         tracker: PolarTracker = PolarTracker(np.eye(2,dtype=np.float64))
-        result: PolarTargetEstimate | None = tracker.update(np.empty((0,2),dtype=np.float64),np.zeros(3,dtype=np.float64),dt=1.0)
+        result: PolarTargetEstimate | None = tracker.update((),np.zeros(3,dtype=np.float64),dt=1.0)
         if result is not None:
             self.assertIsInstance(result,PolarTargetEstimate)
             self.assertGreaterEqual(result.range_m,0.0)

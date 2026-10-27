@@ -19,18 +19,31 @@ C1–C5 我方底盘零目标主动制动，保留后坐、受击及炮台反向
 
 ## C3：输出极坐标，保留非线性问题
 
-`PolarTracker.update(measurements_rt, own_pose, dt)` 接收 NumPy `(N,2)` 原始测量，每行 `[range_m,bearing_rad]`；当前 N 为 0 或 1，缺测是 `(0,2)`。`own_pose` 为公开的地图系 `[x,y,yaw]`，shape `(3,)`；dt 为仿真秒。框架不先把测量转成全局 x/y，不要求玩家输出地图坐标。
+`PolarTracker.update(measurements, own_pose, dt)` 接收 `tuple[PolarTargetEstimate, ...]` 原始测量，与 C2 的类型化对象集合一致；当前长度为 0/1，缺测是 `()`。每个对象用 `.range_m`/`.bearing_rad` 读取 m/rad，均在当前我方 base_link，输入 covariance 为 None。复用值类型不代表系统已经滤波；测量噪声矩阵继续通过构造参数提供。`own_pose` 为公开的地图系 `[x,y,yaw]` NumPy 数组，shape `(3,)`；dt 为仿真秒。框架不先转换为全局 x/y。决策见 [ADR-0039](adr/0039-typed-polar-observation-tuples.md)。
 
 ```python
 import numpy as np
 from numpy.typing import NDArray
 from tankbot import PolarTargetEstimate
 
-def update(measurements_rt: NDArray[np.float64], own_pose: NDArray[np.float64],
+def update(measurements: tuple[PolarTargetEstimate, ...], own_pose: NDArray[np.float64],
            dt: float) -> PolarTargetEstimate | None:
     # 返回当前我方车体系距离、方位；内部状态模型由玩家选择。
     raise NotImplementedError
 ```
+
+读取前先检查 `if measurements`，再取 `measurement: PolarTargetEstimate = measurements[0]`。旧数组写法 `measurements_rt[0,0]`、`measurements_rt[0,1]` 改为 `measurements[0].range_m`、`measurements[0].bearing_rad`。如果内部算法需要测量矩阵，可自行转换：
+
+```python
+import numpy as np
+from numpy.typing import NDArray
+from tankbot import PolarTargetEstimate
+
+def measurement_matrix(measurements: tuple[PolarTargetEstimate, ...]) -> NDArray[np.float64]:
+    return np.array([[m.range_m, m.bearing_rad] for m in measurements], dtype=np.float64).reshape((-1, 2))
+```
+
+tuple 仅承载当前帧的观测对象；状态、矩阵和协方差仍使用 NumPy，不会随调用次数无限增长。需要保留历史时由玩家维护有界窗口。
 
 推荐用笛卡尔运动状态、非线性观测模型 `h(x)=[hypot(dx,dy), atan2(dy,dx)-own_yaw]` 理解 EKF、Jacobian 与角度创新。**极坐标输入输出本身不会强制产生 EKF**；直接对 r/theta 建线性模型仍是另一种近似，教学不能把格式当算法证明。方位创新及输出归一到 `[-pi,pi)`。
 
@@ -120,7 +133,7 @@ flowchart LR
 
 F2 侧栏按目录显示 `├──` / `└──`，文件名高亮来自 YAML `tutorial.lesson.edit_files`，不是 UI 中的关卡分支。未声明时由 `lesson.functions` 推导，保持已有插件兼容。高亮表示本关主要编辑文件，不是唯一可编辑文件；自建文件、复用算法、未保存星号及当前选择保留。长文件名在侧栏内部横向滚动。
 
-C3 脚手架版本 `3.0.0`，C4/C5 共用预测控制脚手架 `4.1.0`。C3 单个图模块、C4/C5 两个图模块同样遵守 Module Contract；图模式不再假定至少两个模块。切关比较模块与端口类型，需更新时使用既有预览/确认流程。旧 C1/C2、旧 `pose_tracker.py` / `armor_aim.py`、旧 `auto_aim.py` 和历史 revision 均保留；迁移不自动改算法签名/内容。旧关卡 ID 与已完成进度不删除，C5 按 prerequisites 依赖 C4。
+C3/C4 类型化极坐标脚手架为 `5.0.0`，C5 装甲脚手架保持 `4.1.0`；版本分别属于各关模板。C3 单个图模块、C4/C5 两个图模块同样遵守 Module Contract。切关检查模块/端口类型；引用原管理入口时还检查静态 `scaffold_api`，避免线上类型相同而旧 Python 包装仍传数组。升级经预览确认，语法错误仍由正常测试日志报告，自定义入口不强制变成管理类。旧算法和历史 revision 均保留；升级不自动改函数签名/内容，已有数组算法需按上文手动迁移。旧 ID、进度及协议不变，C5 仍依赖 C4。
 
 ## 取舍、验收与开放项
 

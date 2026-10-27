@@ -109,6 +109,18 @@ def template_version(config: dict) -> str:
     return config["campaign"]["levels"][level]["runtime"]["template_version"] if level else TEMPLATE_VERSION
 
 
+def scaffold_api(source: str, class_name: str) -> str | None:
+    """Read a managed adapter's API declaration without importing player code."""
+    for node in ast.parse(source).body:
+        if isinstance(node, ast.ClassDef) and node.name == class_name:
+            for item in node.body:
+                if (isinstance(item, ast.AnnAssign) and isinstance(item.target, ast.Name)
+                        and item.target.id == "scaffold_api" and isinstance(item.value, ast.Constant)
+                        and isinstance(item.value.value, str)):
+                    return item.value.value
+    return None
+
+
 def framework_upgrade(config: dict, files: dict[str, str]) -> dict:
     """One compatibility check for the editor and Test; comments are not an API."""
     level = config.get("campaign",{}).get("active_level")
@@ -126,14 +138,24 @@ def framework_upgrade(config: dict, files: dict[str, str]) -> dict:
                         current &= declared[mid]["outputs"][port]["schema"] in profile["grants"]["outputs"]
             if current and manifest.get("project_id") == profile["manifest"]["project_id"]:
                 current &= {m["module_id"] for m in manifest["modules"]} == set(profile["contracts"])
-                # C3 -> C4 changes the tracked value from XY to XY/yaw. Existing
-                # multi-module scaffolding is not necessarily this lesson's scaffold.
+                # Port types and managed Python adapter APIs can evolve independently.
+                from .level_templates import sources
+                expected_files = sources(config["campaign"]["levels"][level])
                 for item in manifest["modules"]:
                     expected = profile["contracts"].get(item["module_id"])
                     if expected and item["contract"] == f"contracts/{item['module_id']}.json":
                         contract = json.loads(files[item["contract"]])
                         current &= all({p:v["schema"] for p,v in contract[field].items()} ==
                                        {p:v["schema"] for p,v in expected[field].items()} for field in ("inputs","outputs"))
+                        if contract["entry_point"] == expected["entry_point"]:
+                            module_path, class_name = expected["entry_point"].split(":")
+                            path = module_path.replace(".", "/") + ".py"
+                            api = scaffold_api(expected_files.get(path, ""), class_name)
+                            if api is not None:
+                                try:
+                                    current &= scaffold_api(files.get(path, ""), class_name) == api
+                                except SyntaxError:
+                                    pass  # Test must report source syntax errors normally.
         except (ValueError,KeyError,TypeError):
             current = False
         return {"required":not current,"current_version":None,"target_version":profile["template_version"],

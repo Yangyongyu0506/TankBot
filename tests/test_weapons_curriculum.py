@@ -10,7 +10,7 @@ import numpy as np
 
 ROOT=Path(__file__).resolve().parents[1]
 sys.path[:0]=[str(ROOT/p) for p in ('host','protocol','sdk/python')]
-from tankbot import AimInput, AimOutput, GpsFixData, PolarTargetEstimate, ModuleContext, Inputs, Sample, Pose2D, JointState, WeaponState
+from tankbot import AimInput, AimOutput, GpsFixData, PolarTargetEstimate, ModuleContext, Inputs, Sample, Pose2D, JointState, WeaponState, RadarData, RadarDetection
 from tankbot_host.authority import Authority,load_config
 from tankbot_host.campaign import configure,RadarSimulator,blocked
 from tankbot_host.weapon_sensors import GpsInterceptSimulator
@@ -23,6 +23,68 @@ from tankbot_protocol.validation import Validator,Rejected,envelope
 class WeaponsCurriculumTests(unittest.TestCase):
     def config(self,level='c4'):
         return configure(load_config(ROOT/'config/game.yaml'),level)
+
+    def test_polar_adapter_passes_typed_current_frame_tuple_without_filtering(self):
+        from dataclasses import FrozenInstanceError
+        from tankbot_host.weapon_curriculum import RAW_ADAPTERS
+        namespace={};exec(RAW_ADAPTERS,namespace)
+        module=namespace['PolarTrackingModule']();module.last_tick=None
+        class Tracker:
+            def __init__(self):self.calls=[]
+            def update(self,measurements,own_pose,dt):
+                self.calls.append((measurements,own_pose,dt))
+                return measurements[0] if measurements else None
+        module.tracker=Tracker()
+        def step(tick,detections,pose_tick=None):
+            ctx=ModuleContext(tick,.1,tick+6,{'lesson':{'tick_duration_s':1/60}})
+            pose=Sample(Pose2D(2.,3.,.4),tick if pose_tick is None else pose_tick,'map',tick)
+            radar=Sample(RadarData(detections),tick,'radar_link',tick)
+            module.update(Inputs({'self_pose':pose,'radar':radar}),ctx)
+            return ctx
+        detection=RadarDetection('anonymous-frame',4.2,-.3)
+        ctx=step(0,(detection,));measurements,own,dt=module.tracker.calls[-1]
+        self.assertIsInstance(measurements,tuple)
+        self.assertIsInstance(measurements[0],PolarTargetEstimate)
+        self.assertEqual((measurements[0].range_m,measurements[0].bearing_rad),(4.2,-.3))
+        self.assertIsNone(measurements[0].covariance)
+        with self.assertRaises(FrozenInstanceError):measurements[0].range_m=99.
+        np.testing.assert_allclose(own,[2.,3.,.4]);self.assertAlmostEqual(dt,.1)
+        self.assertEqual(ctx._outputs[0][3:],('base_link',0))
+        step(0,(detection,));self.assertEqual(len(module.tracker.calls),1)
+        step(6,(detection,),pose_tick=0);self.assertEqual(len(module.tracker.calls),1)
+        ctx=step(12,());self.assertEqual(module.tracker.calls[-1][0],())
+        self.assertAlmostEqual(module.tracker.calls[-1][2],.2)
+        self.assertEqual(ctx._outputs,[])
+        self.assertEqual(len(measurements),1,'later empty frames must not mutate or accumulate earlier inputs')
+
+    def test_tuple_api_upgrade_preserves_algorithms_and_checks_adapter_not_protocol(self):
+        from tankbot_host.campaign_templates import framework_upgrade
+        from tankbot_host.learning import learning_bundle
+        for level in ('c3','c4'):
+            with self.subTest(level=level),tempfile.TemporaryDirectory() as directory:
+                c=self.config(level);files=starter(c)
+                old=files['robot_modules/observations.py'].replace('    scaffold_api: str = "polar_tuple@1"\n','')
+                files['robot_modules/observations.py']=old
+                files['perception/polar_tracker.py']='# player legacy matrix algorithm\n'
+                api=WorkspaceAPI(c,directory=directory);before=api.store.read()
+                saved=api.store.edit(before['revision'],files)
+                view=api.get();self.assertTrue(view['learning']['upgrade_required'])
+                plan=api.post('upgrade',{'revision':view['snapshot']['revision']})
+                self.assertNotIn('perception/polar_tracker.py',[e['path'] for e in plan['entries']])
+                api.post('apply',{'revision':plan['base_revision'],'plan_id':plan['plan_id'],
+                    'resolutions':{e['path']:'incoming' for e in plan['entries']}})
+                self.assertFalse(api.get()['learning']['upgrade_required'])
+                self.assertEqual(api.store.read()['files']['perception/polar_tracker.py'],files['perception/polar_tracker.py'])
+                self.assertEqual(api.store.read(saved['revision'])['files'],saved['files'])
+                current=starter(c)
+                current['robot_modules/observations.py']='# formatting comment\n'+current['robot_modules/observations.py']
+                self.assertFalse(framework_upgrade(c,current)['required'])
+                current['robot_modules/observations.py']='def broken(:\n'
+                self.assertFalse(framework_upgrade(c,current)['required'],'ordinary syntax errors must reach Python diagnostics')
+                guide=learning_bundle(c)['lesson']
+                signature=next(f['signature'] for f in guide['functions'] if f['path']=='perception/polar_tracker.py')
+                self.assertIn('measurements: tuple[PolarTargetEstimate, ...]',signature)
+                self.assertIn('输入 covariance 为 None',next(x['description'] for x in guide['functions'] if x['path']=='perception/polar_tracker.py'))
 
     def test_declared_controls_sensor_grants_and_multi_file_tasks(self):
         for level in ('c3','c4','c5'):

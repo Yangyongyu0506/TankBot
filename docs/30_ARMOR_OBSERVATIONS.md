@@ -72,7 +72,7 @@ def update(measurements_rt: NDArray[np.float64], own_pose: NDArray[np.float64],
 
 ## 模板升级与兼容
 
-当前 C4/C5 共用预测/控制脚手架 4.1.0，C3 保持 3.0.0。新管理适配器为 `robot_modules/armor_observations.py`，Module Contract 将 tracking 输入由 radar/gps 改为 armor。F2 高亮 armor_tracker.py、target_prediction.py、auto_aim.py 三个文件，并提供完整签名、矩阵形状、帧、空值与相位说明。
+当前 C3/C4 的极坐标观测元组脚手架为 5.0.0，C5 保持装甲脚手架 4.1.0；预测/控制接口仍共用。C5 管理适配器为 `robot_modules/armor_observations.py`，Module Contract 将 tracking 输入由 radar/gps 改为 armor。F2 高亮 armor_tracker.py、target_prediction.py、auto_aim.py 三个文件，并提供完整签名、矩阵形状、帧、空值与相位说明。
 
 解锁只补缺失文件；C4 的 polar_tracker.py、控制器、预测器及旧 fusion_tracker.py 和全部历史 revision 保留。采用管理脚手架仍需预览确认，不替换玩家算法。中心预测器需要扩展旋转装甲选择，控制器可直接复用；预测器必须处理本关模 90° 相位。改版后需重新 Test/Deploy，旧测试报告不适用于新 Contract/传感器环境。
 

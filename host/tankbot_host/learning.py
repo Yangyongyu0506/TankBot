@@ -16,9 +16,9 @@ from .campaign_templates import template_version, TRANSFORMS, TRACKER, MANAGED_F
 TYPE_TEXT: dict[str, tuple[str, dict[str, str]]] = {
     "ArmorDetections": ("本帧最近可见装甲中心的匿名观测；不是敌车中心或历史。", {
         "measurements_rt":"只读 float64 NumPy 数组，shape=(N,2)，N 为 0/1/2；每行 [range_m,bearing_rad]，参考系为当前我方 base_link，单位 m/rad。按加噪前距离排序，行号不是装甲 ID。"}),
-    "PolarTargetEstimate": ("玩家在当前我方车体系估计的敌车中心距离与方位。对外输出极坐标，内部模型由玩家选择。", {
-        "range_m":"敌车中心到我方质心的估计距离，m，非负。","bearing_rad":"相对我方车头的估计方位，rad，范围 [-π,π)。",
-        "covariance":"None 或只读 (2,2) NumPy 协方差，顺序为距离/方位；不是 x/y 协方差。"}),
+    "PolarTargetEstimate": ("当前我方车体系的敌车中心距离与方位值。C3/C4 输入元组中是原始观测，函数返回值是玩家估计；类型相同不代表输入已滤波。", {
+        "range_m":"敌车中心到我方质心的距离，float，m，非负；输入为测量，输出为估计。","bearing_rad":"相对我方车头的方位，float，rad，范围 [-π,π)。",
+        "covariance":"输入观测为 None；输出为 None 或只读 (2,2) NumPy 协方差，顺序为距离/方位，不是 x/y。"}),
     "GpsFixData": ("截获的敌车车头 GPS 位置；是带噪观测，不是敌车中心或真实位姿。", {
         "positions_m":"只读 float64 NumPy 数组，shape=(N,2)，每行地图系 x/y，m；无本帧 fix 时 shape=(0,2)。"}),
     "TargetPoints": ("当前帧地图坐标测量矩阵，不包含历史。", {"positions_m":"只读 float64 NumPy 数组，shape=(N,2)，列为 x/y，单位 m；无检测时 shape=(0,2)。"}),

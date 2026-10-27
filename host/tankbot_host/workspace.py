@@ -152,13 +152,54 @@ def starter(config):
     return files
 
 
+def _campaign_source(config, parent, seed_key, current_key, files):
+    """Find the old campaign project; never merge different player implementations."""
+    from .level_templates import sources
+    known = {}
+    candidates = []
+    keys = []
+    for definition in config["campaign"]["levels"].values():
+        for path, text in sources(definition).items():
+            known.setdefault(path, set()).add(text)
+        key = digest({"seed": seed_key, "entry": definition["runtime"]["logical_module"]["entry_point"],
+                      "sources": definition["control_sources"]})[:16]
+        if key not in keys:
+            keys.append(key)
+    for key in keys:
+        directory = parent / key
+        if not directory.exists() and not directory.is_symlink():
+            continue
+        if directory.is_symlink() or not directory.is_dir() or not (directory / "HEAD.json").is_file():
+            raise ValueError("INVALID_LEGACY_WORKSPACE: " + str(directory))
+        snapshot = WorkspaceStore(directory, files, config["workspace"]).read()
+        generated = {path: set(variants) for path, variants in known.items()}
+        for template_id, record in snapshot["ledger"].items():
+            if template_id.startswith("campaign-"):
+                for path, text in record.get("files", {}).items():
+                    generated.setdefault(path, set()).add(text)
+        edited = any(path.endswith(".py") and text.strip() and text not in generated.get(path, set())
+                     for path, text in snapshot["files"].items())
+        candidates.append((directory, edited))
+    authored = [directory for directory, edited in candidates if edited]
+    if len(authored) > 1:
+        raise ValueError("WORKSPACE_SELECTION_REQUIRED: 找到多份已编辑的旧项目，未合并或覆盖；请用 --workspace-store 明确选择："
+                         + ", ".join(str(path) for path in authored))
+    if authored:
+        return authored[0]
+    return next((directory for directory, _ in candidates if directory.name == current_key),
+                candidates[0][0] if candidates else None)
+
+
 def open_store(config, seed=None, directory=None):
     template = starter(config)
     files = read_sources(seed, config["workspace"]) if seed else template
     # Seed user files always win; missing scaffolding is the only automatic addition.
     files = {**template, **files}
-    key = digest({"seed": str(Path(seed).resolve()) if seed else "default", "entry": config["module"]["entry_point"],
-                  "sources": config["control_sources"]})[:16]
+    seed_key = str(Path(seed).resolve()) if seed else "default"
+    legacy_key = digest({"seed": seed_key, "entry": config["module"]["entry_point"],
+                         "sources": config["control_sources"]})[:16]
+    campaign = bool(config.get("campaign", {}).get("active_level"))
+    key = digest({"seed": seed_key, "scope": "campaign"})[:16] if campaign else legacy_key
     if directory is not None:
         return WorkspaceStore(directory, files, config["workspace"])
     storage = config["workspace"].get("storage")
@@ -180,6 +221,14 @@ def open_store(config, seed=None, directory=None):
                 target = parent / source.name
                 if re.fullmatch("[a-f0-9]{16}",source.name) and not target.exists() and not target.is_symlink():
                     _migrate_store(source, target, files, config["workspace"])
+        if campaign and not destination.exists() and not destination.is_symlink():
+            source = _campaign_source(config, parent, seed_key, legacy_key, files)
+            if source is not None:
+                _migrate_store(source, destination, files, config["workspace"])
+        if destination.is_symlink():
+            raise ValueError("UNSAFE_WORKSPACE_ROOT")
+        if campaign and destination.exists() and not (destination / "HEAD.json").is_file() and any(destination.iterdir()):
+            raise ValueError("INVALID_LEGACY_WORKSPACE: missing HEAD.json; existing project was not reset")
         return WorkspaceStore(destination, files, config["workspace"])
 
 

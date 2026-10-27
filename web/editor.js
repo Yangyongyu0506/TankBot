@@ -34,7 +34,7 @@ export function createEditor(parent, changed, save, reference={}){
     hoverTooltip((editor,pos)=>{
       if(!current.endsWith(".py"))return null;
       const line=editor.state.doc.lineAt(pos),offset=pos-line.from;
-      const left=line.text.slice(0,offset).match(/[A-Za-z_][\w.]*$/)?.[0]??"",right=line.text.slice(offset).match(/^[\w]*/)?.[0]??"";
+      const left=line.text.slice(0,offset).match(/[A-Za-z_]\w*(?:\[\d+\])?(?:\.[A-Za-z_]\w*)*\.?$/)?.[0]??"",right=line.text.slice(offset).match(/^[\w]*/)?.[0]??"";
       const help=symbolHelp(reference,left+right,editor.state.doc.toString());if(!help)return null;
       return {pos:pos-left.length,end:pos+right.length,above:true,create(){
         const dom=document.createElement("div");dom.className="sdk-tooltip";

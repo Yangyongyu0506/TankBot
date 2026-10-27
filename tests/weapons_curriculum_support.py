@@ -8,8 +8,8 @@ PARAMS=__PARAMS__
 class PolarTracker:
     def __init__(self,measurement_covariance):
         self.R=measurement_covariance;self.x=None;self.P=np.eye(4)*PARAMS['initial_variance']
-    def update(self,measurements_rt,own_pose,dt):
-        z=measurements_rt[0] if len(measurements_rt) else None
+    def update(self,measurements,own_pose,dt):
+        z=np.array([measurements[0].range_m,measurements[0].bearing_rad],dtype=np.float64) if measurements else None
         if self.x is None:
             if z is None:return None
             angle=own_pose[2]+z[1]

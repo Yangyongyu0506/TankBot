@@ -37,7 +37,7 @@ flowchart LR
     TP --> V
 ```
 
-`robot_modules/observations.py` 做 C3/C4 原始类型、采样时间、NumPy shape 和 Topic 适配；C5 使用独立 `robot_modules/armor_observations.py`；`robot_modules/aiming.py` 组合玩家预测器与控制器。C3 的图只有 tracking，C4/C5 为 tracking 与 aiming；**模块数不等于 Python 文件数**。同模块内直接函数/类调用，模块间经声明 Topic 传递；不让玩家管理 JSON、Worker 或进程。
+`robot_modules/observations.py` 做 C3/C4 类型化元组、采样时间和 Topic 适配，传入 tuple[PolarTargetEstimate, ...]，不先滤波或转地图坐标；C5 使用独立 `robot_modules/armor_observations.py` 与原 NumPy 装甲矩阵；`robot_modules/aiming.py` 组合玩家预测器与控制器。C3 的图只有 tracking，C4/C5 为 tracking 与 aiming；**模块数不等于 Python 文件数**。同模块内直接函数/类调用，模块间经声明 Topic 传递；不让玩家管理 JSON、Worker 或进程。
 
 连接形式为 `module.port → /topic` 与 `/topic → module.port`。内部频道限定 `/robot/modules/<module_id>/<port>`，位姿候选为 `/robot/estimates/<module_id>/pose`；目标候选按类型使用 `target`、`target_pose`、`target_polar`。每个 Topic 一个发布者，每个端口一个连线，所有端口须绑定；离散 fire 只能输出，通过 weapon_state 读取反馈。
 
