@@ -19,7 +19,7 @@ M5 提供同步多模块机器人项目、Contract/Topic 图调度与渐进武�
 
 C1–C5 保留系统自身位姿和公开地图。底盘零目标主动制动，仍受后坐、受击和炮台反向力矩影响；Router 与 Authority 拒绝驾驶。C4/C5 不授权人工炮台/开火或程序旧速度接口。C2–C5 双方 3 HP，死亡、超时、末 tick 判定及运行期编辑锁沿用 [25](25_ATTEMPT_RULES_AND_CONFIGURATION.md)。
 
-Weapons 均通过 YAML 授权炮弹可视化，显示继续插值；真实敌车/命中特效位置仍隐藏。C4 仅使用 C3 同款中心 Radar；C5 只有匿名装甲极坐标，不再生成 GPS 或中心 Radar，详见 [30](30_ARMOR_OBSERVATIONS.md)。估计车体/装甲只来自玩家输出，不借用开发者真值层。C2 保留显式授权的运行中累计 RMSE；其他关卡终局才发布误差。配置/权限源见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)。
+Weapons 均通过 YAML 授权炮弹可视化，显示继续插值；真实敌车/命中特效位置仍隐藏。C4 仅使用 C3 同款中心 Radar；C5 只有匿名装甲极坐标，不再生成 GPS 或中心 Radar，详见 [30](30_ARMOR_OBSERVATIONS.md)。估计车体/装甲只来自玩家输出，不借用开发者真值层。C2/C3 显式授权运行中累计位置 RMSE、样本数与曲线；其他关卡终局才发布误差。配置/权限源见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)。
 
 ## 模块职责与数据流
 

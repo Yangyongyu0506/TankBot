@@ -12,6 +12,10 @@
 
 | 文档 | 负责的设计与接口 |
 | --- | --- |
+| [仿真器重构验收](reports/SIMULATOR_REFACTOR_VALIDATION.md) | 轨迹基线、模型独立、实例生命周期、201 项回归及原生/WASM 实际部署 |
+| [32 场景与组件](32_RESOLVED_SCENE_AND_COMPONENTS.md) | 完整底盘、传感器实例/生命周期、不可变场景与重试缓存 |
+| [31 地图覆盖与预览](31_MAP_OVERRIDE_AND_PREVIEW.md) | --map、练习成绩隔离、权限、全景预览和生命周期 |
+| [地图资产](../assets/maps/README.md) | 共享空旷教学场地、不同尺寸导航布局、格式/引用与验证 |
 | [工作区身份验收](reports/WORKSPACE_IDENTITY_VALIDATION.md) | C1/C2 源码恢复、默认项目跨启动关卡稳定、旧历史无损复制 |
 | [极坐标元组验收](reports/POLAR_TUPLE_VALIDATION.md) | C3/C4 实际类型、空帧、升级保留及字段补全 |
 | [中心自瞄验收](reports/CENTER_AUTO_AIM_VALIDATION.md) | C4/C3 参数一致、程序武器、采样位姿历史与 C5 复用 |
@@ -22,7 +26,7 @@
 | [28 渐进 Weapons](28_WEAPONS_PROGRESSIVE_ESTIMATION.md) | C3 极坐标、C4 中心自瞄、C5 装甲小陀螺、文件树与迁移 |
 | [Weapons 重设计验收](reports/WEAPONS_REDESIGN_VALIDATION.md) | 原三关基线、新三关闭环、权限、工作区和真实网页 |
 | [26 多模块与 Weapons](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md) | M5 图、调度、章节、C3/C4 控制与装甲边界 |
-| [C2 实时 RMSE 验收](reports/LIVE_RMSE_VALIDATION.md) | 授权累计指标、采样时间、生命周期和两种玩家 UI |
+| [C2/C3 实时 RMSE 验收](reports/LIVE_RMSE_VALIDATION.md) | 授权累计指标、采样时间、生命周期和两种玩家 UI |
 | [27 YAML 关卡插件](27_LEVEL_PLUGIN_ARCHITECTURE.md) | 五关审计、Schema、自动发现/生命周期、组件、权限、规则与迁移 |
 | [关卡编写指南](../levels/README.md) | 配置来源、已有组件、校验、启动与扩展流程 |
 | [关卡插件验收](reports/LEVEL_PLUGINS_VALIDATION.md) | 冻结基线、旧源码/存档、临时插件和两种 Runtime 五关通关 |

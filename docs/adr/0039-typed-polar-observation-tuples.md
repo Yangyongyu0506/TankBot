@@ -12,7 +12,7 @@ C2 的 Tracker 输入为 tuple[TargetEstimate, ...]，C3 曾改用 NumPy (N,2) �
 
 PolarTracker.update 接收 measurements: tuple[PolarTargetEstimate, ...]、own_pose: NDArray[np.float64]、dt: float，返回 PolarTargetEstimate | None。每个输入对象直接保存该帧 Radar 的 range_m/bearing_rad，covariance 为 None；已确认的测量噪声矩阵仍由构造参数提供。当前长度为 0/1，空帧为 ()，不累计历史，不提供实体 ID，不预先滤波或变换坐标。
 
-观测对象集合使用 tuple；内部状态、Jacobian、协方差等数值矩阵仍用 NumPy。C5 匿名装甲数组和其他 SDK/线上消息形状不改。C3/C4 的 Python 脚手架升至 5.0.0，保留所有玩家算法文件及历史，玩家按文档自行适配旧二维下标。
+观测对象集合使用 tuple；内部状态、Jacobian、协方差等数值矩阵仍用 NumPy。C5 匿名装甲数组和其他 SDK/线上消息形状不改。C3/C4 的 Python 脚手架升至 5.0.0，保留玩家已写算法和历史，玩家按文档自行适配旧二维下标。未修改生成空模板的识别与显式预览按 [ADR-0044](0044-preview-untouched-algorithm-upgrades.md) 补充执行。
 
 管理适配器声明静态 scaffold_api，框架升级通过 AST 检查版本，不执行源码，也不以注释或协议端口类型代替 Python 接口检查。仅检查本关仍引用同一管理入口的适配器，不限制高级自定义入口。缺少声明的旧适配器需预览升级；语法错误仍交给正常 Python 测试日志。
 

@@ -17,6 +17,9 @@ class ArmorDetectionSimulator:
         if not self.sensor or self.last_tick==tick or tick%(self.config["clock"]["physics_hz"]//self.sensor["update_hz"]):
             return None
         self.last_tick=tick
+        return self.measure(private,tick)
+
+    def measure(self,private,tick):
         from .campaign import blocked
         from .chassis_profiles import target_geometry
         params=self.sensor["parameters"]
@@ -64,6 +67,9 @@ class GpsInterceptSimulator:
         if not self.sensor or self.last_tick == tick or tick % (self.config["clock"]["physics_hz"] // self.sensor["update_hz"]):
             return None
         self.last_tick = tick
+        return self.measure(private,tick)
+
+    def measure(self,private,tick):
         params = self.sensor["parameters"]
         points = []
         own_x, own_y, _ = private["truth_pose"]

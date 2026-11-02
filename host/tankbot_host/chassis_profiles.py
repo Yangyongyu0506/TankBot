@@ -17,6 +17,10 @@ def load_profiles(config):
     specs=config.get("chassis_profiles")
     if specs is None:
         return
+    if "wheels" in config:
+        from .wheel_geometry import validate_wheels
+        try:validate_wheels(config["wheels"])
+        except (KeyError,TypeError) as error:raise ValueError("Incomplete wheel calibration") from error
     if not isinstance(specs,dict) or not specs:
         raise LevelValidationError("chassis_profiles","chassis_profiles","expected a nonempty model mapping")
     root=(ROOT/"config/chassis").resolve()
@@ -36,9 +40,13 @@ def load_profiles(config):
         errors=list(validator.iter_errors(value))
         if errors:
             error=errors[0];raise LevelValidationError(path,error_path(error.absolute_path),error.message)
-        if value["chassis_type"]!=name or name not in config["chassis"]:
+        if value["chassis_type"]!=name or name not in ("differential","omnidirectional"):
             raise LevelValidationError(path,"chassis_type","profile must match a registered chassis type")
         body,armor=value["body"],value["armor"]
+        if value["schema_version"]=="2.0":
+            lateral=name=="omnidirectional"
+            if value["drive"]["lateral_actuation"]!=lateral or ("track_m" in value["wheels"])==lateral:
+                raise LevelValidationError(path,"wheels","wheel layout and lateral actuation must match chassis_type")
         tolerance=config["validation"]["numeric_tolerance"]
         if 2*body["corner_radius_m"]>=min(body["length_m"],body["width_m"]):
             raise LevelValidationError(path,"body.corner_radius_m","rounding must fit the body")
@@ -65,11 +73,15 @@ def load_profiles(config):
             shell["front_center_x_m"]=body["length_m"]/2-shell["front_length_m"]/2
             shell["side_center_y_m"]=body["width_m"]/2-shell["side_width_m"]/2
         models[name]=value
-    if set(models)!=set(config["chassis"]):
+    if set(models)!={"differential","omnidirectional"}:
         raise LevelValidationError("chassis_profiles","chassis_profiles","every registered chassis needs a profile")
     config["chassis_profiles"]=models
+    if all(m["schema_version"]=="2.0" for m in models.values()):
+        config["chassis"]={name:copy.deepcopy(m["drive"]) for name,m in models.items()}
+    elif any(m["schema_version"]=="2.0" for m in models.values()):
+        raise LevelValidationError("chassis_profiles","schema_version","cannot mix complete and legacy geometry models")
     config["rendering"]["chassis_models"]={name:copy.deepcopy(value["visual"]) for name,value in models.items()}
-    apply_profiles(config)
+    apply_profiles(config,dynamics=True)
 
 
 def body_for(config,chassis):
@@ -77,6 +89,14 @@ def body_for(config,chassis):
     if config.get("chassis_profiles"):
         body.update(config["chassis_profiles"][chassis]["body"])
     return body
+
+
+def wheel_calibration_for(config,chassis):
+    from .wheel_geometry import public_calibration
+    model=config.get("chassis_profiles",{}).get(chassis,{})
+    if model.get("schema_version")=="2.0" and chassis=="omnidirectional":
+        return copy.deepcopy(model["wheels"])
+    return public_calibration(config["wheels"])
 
 
 def target_geometry(config,target=None):
@@ -91,11 +111,23 @@ def target_geometry(config,target=None):
             "gps_mount_m":copy.deepcopy(profile["gps_mount_m"]) if profile else [body["length_m"]/2,0.]}
 
 
-def apply_profiles(config):
+def apply_profiles(config, *, dynamics=False):
     """Resolve the selected player model and per-target geometry into the private Core DTO."""
     if not config.get("chassis_profiles"):
         return config
-    config["body"]=body_for(config,config["scene"]["default_chassis"])
+    name=config["scene"]["default_chassis"]
+    model=config["chassis_profiles"][name]
+    dynamics=dynamics or config.get("selected_chassis_model")!=name
+    if dynamics and model["schema_version"]=="2.0":
+        config["selected_chassis_model"]=name
+        config["body"]=copy.deepcopy(model["body"])
+        for key in ("servo","motion_limits","controller"):
+            config[key]=copy.deepcopy(model[key])
+        diff=config["chassis_profiles"]["differential"]["wheels"]
+        omni=copy.deepcopy(config["chassis_profiles"]["omnidirectional"]["wheels"])
+        omni.pop("radius_m")
+        config["wheels"]={"radius_m":model["wheels"]["radius_m"],"differential_track_m":diff["track_m"],"omnidirectional":omni}
+    config["body"]=body_for(config,name)
     for target in config["weapons"]["targets"]:
         chassis=target.get("motion",{}).get("chassis",config["scene"]["default_chassis"])
         body=body_for(config,chassis)
@@ -103,4 +135,9 @@ def apply_profiles(config):
             target["body"]=body
         else:
             target.pop("body",None)
+        enemy=config["chassis_profiles"][chassis]
+        if enemy["schema_version"]=="2.0":
+            for key in ("servo","motion_limits"):
+                if enemy[key]!=config[key]:target[key]=copy.deepcopy(enemy[key])
+                else:target.pop(key,None)
     return config

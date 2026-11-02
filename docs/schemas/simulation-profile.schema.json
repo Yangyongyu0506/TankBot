@@ -11,7 +11,8 @@
         "1.7",
         "1.8",
         "1.9",
-        "2.0"
+        "2.0",
+        "2.1"
       ]
     },
     "confirmation_status": {
@@ -1315,6 +1316,72 @@
               },
               "body": {
                 "$ref": "#/properties/body"
+              },
+              "servo": {
+                "type": "object",
+                "properties": {
+                  "tau_x_s": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "tau_y_s": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "tau_yaw_s": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "max_force_x_n": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "max_force_y_n": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "max_torque_nm": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "zero_target_behavior": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "tau_x_s",
+                  "tau_y_s",
+                  "tau_yaw_s",
+                  "max_force_x_n",
+                  "max_force_y_n",
+                  "max_torque_nm",
+                  "zero_target_behavior"
+                ],
+                "additionalProperties": false
+              },
+              "motion_limits": {
+                "type": "object",
+                "properties": {
+                  "max_vx_mps": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "max_vy_mps": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "max_wz_radps": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  }
+                },
+                "required": [
+                  "max_vx_mps",
+                  "max_vy_mps",
+                  "max_wz_radps"
+                ],
+                "additionalProperties": false
               }
             },
             "required": [
@@ -2202,6 +2269,35 @@
       "additionalProperties": {
         "$ref": "chassis-profile.schema.json"
       }
+    },
+    "map_override": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "walls": {
+          "$ref": "#/properties/scene/properties/walls"
+        }
+      },
+      "required": [
+        "path",
+        "walls"
+      ],
+      "additionalProperties": false
+    },
+    "sensor_instances": {
+      "type": "array",
+      "items": {
+        "$ref": "level.schema.json#/$defs/sensor"
+      }
+    },
+    "selected_chassis_model": {
+      "enum": [
+        "differential",
+        "omnidirectional"
+      ]
     }
   },
   "required": [

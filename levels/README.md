@@ -5,7 +5,7 @@
 ## 编写与验证流程
 
 1. 选择使用相同现有组件的配置作为起点，完整保留所需字段。metadata.id 使用新的稳定 ID，order 唯一，prerequisites 只引用已发现且排在前面的关卡；不要修改现有 c0–c5 ID。
-2. 在同一 YAML 中声明地图/初态/传感器/控制源、通信合同、权限、规则、诊断、教材与模板。地图可 inline，或仅引用 assets/ 内 `{walls: [...]}` 格式的地图文件；禁止 include 其他配置或脚本。
+2. 在同一 YAML 中声明地图/初态/传感器/控制源、通信合同、权限、规则、诊断、教材与模板。当前六关共同引用 [空旷教学场地](../assets/maps/README.md)，地图可 inline，或仅引用 assets/ 内 `{walls: [...]}` 格式的地图文件；禁止 include 其他配置或脚本。
 3. 机器人、传感器、规则、指标、可视化及模板必须使用已登记类型。调节现有参数不需要改引擎；未登记能力明确报错。当前仅一个玩家和一个目标，不提前宣称支持 SLAM、机械臂或多机器人课程。
 4. 先设置程序 inputs/outputs/actuators，再分别设置 View Policy 与 allowed_layers；初始显示和可切换项必须在显示权限内。默认保持旧用户图层偏好；需要按新关卡初始状态显示时可设 preserve_user_settings=false。
    运行中指标需同时声明 permissions.visualization.allowed_metrics 和 evaluation.live_feedback，且指标必须已在 evaluation.metrics 登记；标题、单位、小数精度和曲线容量全部由 YAML 配置。当前只实现累计位置 rmse_m，未声明时不发布运行中诊断。
@@ -27,3 +27,5 @@
 `armor_detector` 提供最近可见装甲的匿名 base_link 极坐标，使用 `armor_detections@1`，最多两行；对应模板为 armor_tracker、armor_tracking_adapter、armor_contract_tests。当前 C5 用这些组件替换 GPS/中心 Radar。C4 则复用 C3 的 polar_tracker/raw_sensor_adapters，并组合 predictive_aiming_adapter、target_prediction 和 polar_auto_aim；无装甲时构造器获得 (0,3) 空矩阵，不要求 yaw。yaw_rmse 可声明 `period_rad`，加载器验证该周期确实保持底盘装甲布局；不允许用错误周期隐藏估计误差。完整接口和教学约束见 [30](../docs/30_ARMOR_OBSERVATIONS.md)。
 
 通用底盘在 `config/chassis/*.yaml` 定义几何、装甲、GPS 安装与外观，由 `config/game.yaml` 统一加载。`motion.chassis` 选择底盘，`armor: {source: chassis_profile}` 启用其装甲；不要在关卡或教材中重复安装数值。共享引擎模型是经 ADR-0036 允许的组件资产，不允许关卡任意 include 其他文件。C5 当前全向车体 0.42×0.42 m、装甲中心 ±0.21 m；完整约束见 [29](../docs/29_CHASSIS_PROFILES.md)。
+
+传感器正式源现显式声明 id、robot_id、mount、period_ticks、random_stream 与 topic/schema/frame_id。旧 update_hz 和内部适配字段在加载时生成并校验；不要复制两组矛盾参数。底盘 profile 2.0 为完整模型，世界配置不再手填重复的质量/伺服/轮组数值。关卡首次解析后缓存 ResolvedScene，重试共享定义而重新创建运行状态，详见 [32](../docs/32_RESOLVED_SCENE_AND_COMPONENTS.md)。

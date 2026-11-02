@@ -22,38 +22,8 @@ world:
     sensor_hz: 30
     algorithm_hz: 10
   map:
-    source: inline
-    walls:
-    - center:
-      - 6.1
-      - 0.0
-      size:
-      - 0.2
-      - 8.4
-    - center:
-      - -6.1
-      - 0.0
-      size:
-      - 0.2
-      - 8.4
-    - center:
-      - 0.0
-      - 4.1
-      size:
-      - 12.0
-      - 0.2
-    - center:
-      - 0.0
-      - -4.1
-      size:
-      - 12.0
-      - 0.2
-    - center:
-      - 2.0
-      - 0.0
-      size:
-      - 0.2
-      - 3.0
+    source: asset
+    path: maps/open_training.yaml
 robots:
 - id: player
   type: tank
@@ -77,22 +47,58 @@ robots:
     topic: /robot/sensors/joint_states
     schema: joint_state@1
     frame_id: base_link
-    update_hz: 30
+    id: wheel_encoder
+    robot_id: player
+    period_ticks: 2
+    mount:
+      parent_frame: base_link
+      translation_m:
+      - 0.0
+      - 0.0
+      yaw_rad: 0.0
+    random_stream: null
   - type: imu
     topic: /robot/sensors/imu
     schema: imu@1
     frame_id: base_link
-    update_hz: 30
+    id: imu
+    robot_id: player
+    period_ticks: 2
+    mount:
+      parent_frame: base_link
+      translation_m:
+      - 0.0
+      - 0.0
+      yaw_rad: 0.0
+    random_stream: null
   - type: turret_joint
     topic: /robot/turret/joint_states
     schema: joint_state@1
     frame_id: base_link
-    update_hz: 30
+    id: turret_joint
+    robot_id: player
+    period_ticks: 2
+    mount:
+      parent_frame: base_link
+      translation_m:
+      - 0.0
+      - 0.0
+      yaw_rad: 0.0
+    random_stream: null
   - type: weapon_state
     topic: /robot/weapons/cannon/state
     schema: weapon_state@1
     frame_id: base_link
-    update_hz: 30
+    id: weapon_state
+    robot_id: player
+    period_ticks: 2
+    mount:
+      parent_frame: base_link
+      translation_m:
+      - 0.0
+      - 0.0
+      yaw_rad: 0.0
+    random_stream: null
 - id: training_target
   type: static_tank_target
   role: target
@@ -332,7 +338,8 @@ tutorial:
     functions: []
     aliases: {}
     execution: 本关无需编程；关闭代码编辑器后使用键盘驾驶。
-    completion: 相对起点移动至少 {movement_m:g} m、车体转向至少 {turn_rad:g} rad，并命中靶标 {required_hits} 次。 限时 {time_limit_s} 仿真秒。首次有效人工操作开始计时。
+    completion: 相对起点移动至少 {movement_m:g} m、车体转向至少 {turn_rad:g} rad，并命中靶标 {required_hits}
+      次。 限时 {time_limit_s} 仿真秒。首次有效人工操作开始计时。
     common_errors:
     - 编辑器打开时，驾驶按键用于编辑代码；关闭后才能控制坦克。
     type_notes:

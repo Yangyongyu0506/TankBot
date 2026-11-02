@@ -41,6 +41,7 @@ export async function mountSettings(releaseControls,beforeReload){
   dialog.addEventListener("cancel",e=>{e.preventDefault();if(recording){recording=null;render();}else close();});
   dialog.addEventListener("close",()=>{recording=null;(previousFocus?.isConnected?previousFocus:$("arena")).focus({preventScroll:true});});
   window.addEventListener("keydown",event=>{
+    if(document.getElementById("map-dialog")?.open)return;
     if(dialog.open&&recording){
       event.preventDefault();event.stopImmediatePropagation();
       if(event.code==="Escape"){recording=null;render();return;}

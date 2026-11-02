@@ -322,6 +322,12 @@ impl GameCore {
                             target.pose,
                             patrol.clone(),
                             target.body.as_ref().unwrap_or(b).clone(),
+                            target.servo.as_ref().unwrap_or(&config.servo).clone(),
+                            target
+                                .motion_limits
+                                .as_ref()
+                                .unwrap_or(&config.motion_limits)
+                                .clone(),
                         )?,
                     );
                     continue;

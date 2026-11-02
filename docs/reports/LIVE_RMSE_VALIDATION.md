@@ -47,3 +47,14 @@ python3 docs/tools/check_design.py
 UI 脚本为 tools/browser_live_metrics.py。--prepare-store 在新目录创建算法示例及临时已解锁进度；再启动独立 --player --level c2 服务、Firefox Marionette 并指定 --url/--port/--output。浏览器模式另需 --browser-qa 及本地资源缓存。
 
 当前展示本次尝试累计误差，包含同一次尝试内多次部署；比较不同算法版本时应重试，并保持相同配置/输入条件。走势只保留 YAML 指定数量的 UI 更新点，不能作为逐样本导出或独立算法排行榜。其他 OS/浏览器仍待验证，Arena 不继承此教学反馈授权。
+
+
+## 2026-10-29 C3 实时曲线扩展
+
+C3 通过 YAML 显式授权 rmse_m，复用 C2 的 live_feedback 与曲线组件。极坐标输出按同采样时刻公开自身位姿投影为地图位置后计分，数值为累计位置 RMSE（m）。
+
+本次验证：C2/C3 生命周期、采样时刻和 Runtime 隔离共 8 项 Python 测试通过；关卡插件 14 项测试通过；曲线组件 3 项 Node 测试通过。文档/Schema/生成夹具检查通过。
+
+Firefox 原生 serve 实际 UI 验证通过：测试阶段无样本、部署后曲线持续更新、编辑器状态同值、终局冻结、重试清零、切到 C1 隐藏，以及 1280/500 宽度布局。证据为 `.m1-cache/c3-live-rmse/native-ui.json`，截图为 `.m1-cache/c3-live-rmse/native-ui-running.png`。脚本新增 `--level c3`，使用独立测试工作区及存档。
+
+本次未重跑 C3 WASM/Pyodide 网页验收；两种模式共享此关卡声明与曲线组件，既有 C2 双 Runtime 证据见上文。

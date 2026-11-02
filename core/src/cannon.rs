@@ -44,6 +44,8 @@ pub struct TargetConfig {
     pub health: Option<crate::enemy::HealthConfig>,
     pub armor: Option<ArmorConfig>,
     pub body: Option<BodyConfig>,
+    pub servo: Option<crate::Servo>,
+    pub motion_limits: Option<Value>,
 }
 
 #[derive(Clone, Deserialize)]
@@ -807,6 +809,14 @@ mod tests {
                     let mut target: TargetConfig =
                         serde_json::from_value(raw["campaign"]["levels"]["c4"]["target"].clone())
                             .unwrap();
+                    // Test the armor component independently of the current
+                    // curriculum: C4 now deliberately uses whole-body damage.
+                    target.armor = Some(
+                        serde_json::from_value(
+                            raw["chassis_profiles"]["differential"]["armor"].clone(),
+                        )
+                        .unwrap(),
+                    );
                     target.pose[2] = yaw;
                     let id = target.target_id.clone();
                     config.weapons.targets = vec![target];

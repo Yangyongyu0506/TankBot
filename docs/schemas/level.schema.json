@@ -1166,14 +1166,77 @@
               "$ref": "#/$defs/armorParameters"
             }
           ]
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+        },
+        "robot_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "period_ticks": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "mount": {
+          "type": "object",
+          "properties": {
+            "parent_frame": {
+              "const": "base_link"
+            },
+            "translation_m": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "yaw_rad": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "parent_frame",
+            "translation_m",
+            "yaw_rad"
+          ],
+          "additionalProperties": false
+        },
+        "random_stream": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "seed_mode": {
+                  "enum": [
+                    "legacy_seed",
+                    "named"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "seed_mode"
+              ],
+              "additionalProperties": false
+            }
+          ]
         }
       },
       "required": [
         "type",
         "topic",
         "schema",
-        "frame_id",
-        "update_hz"
+        "frame_id"
       ],
       "additionalProperties": false,
       "allOf": [
@@ -1233,6 +1296,18 @@
               }
             }
           }
+        }
+      ],
+      "anyOf": [
+        {
+          "required": [
+            "update_hz"
+          ]
+        },
+        {
+          "required": [
+            "period_ticks"
+          ]
         }
       ]
     },
@@ -1527,12 +1602,9 @@
         }
       },
       "required": [
-        "mount_m",
-        "yaw_rad",
         "frame_id",
         "range_m",
         "field_of_view_rad",
-        "update_hz",
         "occlusion",
         "measurement",
         "latency_ticks",
@@ -1601,7 +1673,6 @@
         "occlusion",
         "latency_ticks",
         "bias_m",
-        "random_stream",
         "noise"
       ],
       "additionalProperties": false
@@ -1692,8 +1763,6 @@
         }
       },
       "required": [
-        "mount_m",
-        "yaw_rad",
         "range_m",
         "field_of_view_rad",
         "occlusion",
@@ -1707,7 +1776,6 @@
         "selection",
         "visibility",
         "ordering",
-        "random_stream",
         "anonymous"
       ],
       "additionalProperties": false

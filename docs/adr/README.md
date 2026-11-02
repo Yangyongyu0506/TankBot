@@ -46,6 +46,10 @@ ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评
 | [0038](0038-center-target-auto-aim.md) | C4 复用 C3 中心观测自瞄，C5 扩展装甲/小陀螺 | Accepted |
 | [0039](0039-typed-polar-observation-tuples.md) | C3/C4 类型化极坐标元组与管理适配器 API 升级 | Accepted |
 | [0040](0040-stable-campaign-workspace.md) | Campaign 默认项目跨关卡、控制权和接口版本稳定重开 | Accepted |
+| [0041](0041-shared-map-assets.md) | 共享地图资产、空旷教学场地与预留导航布局 | Accepted |
+| [0042](0042-map-override-and-preview.md) | 启动地图覆盖、练习进度与授权预览 | Accepted |
+| [0043](0043-resolved-simulator-components.md) | 完整底盘、统一传感器实例与不可变场景定义 | Accepted |
+| [0044](0044-preview-untouched-algorithm-upgrades.md) | 来源可证的旧算法空模板纳入显式升级预览 | Accepted |
 
 ## 变更流程与完成条件
 

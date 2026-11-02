@@ -11,6 +11,10 @@ from .authority import ROOT
 
 class BrowserServer:
     def __init__(self, config, workspace=None, workspace_store=None, *, application=None):
+        from .scene_definition import SceneResolver,resolve_scene
+        self.scene=resolve_scene(config)
+        self.scenes=SceneResolver(self.scene)
+        config=self.scene.to_config()
         self.config = config
         self.application = application
         from .workspace_api import WorkspaceAPI
@@ -37,7 +41,7 @@ class BrowserServer:
         runtime_files["/player-bundle.json"]=assets/"player-bundle.json"
         shared={"/pyodide/"+name:assets/"pyodide"/name for name in meta["files"]}
         runtime_files.update(shared)
-        ui_files={"/"+name:ROOT/"web"/name for name in ("index.html","app.js","style.css","rendering.js","browser-client.js","core-worker.js","wasm-core.js","python-loader.js","python-bootstrap.js","workspace-ui.js","file-tree.js","workspace-dialog.js","campaign-ui.js","live-metrics.js","learning-ui.js","gamepad.js","settings-ui.js","keyboard.js","visualization.js","runtime-logs.js","robot-graph.js")}
+        ui_files={"/"+name:ROOT/"web"/name for name in ("index.html","app.js","style.css","rendering.js","browser-client.js","core-worker.js","wasm-core.js","python-loader.js","python-bootstrap.js","workspace-ui.js","file-tree.js","workspace-dialog.js","campaign-ui.js","live-metrics.js","learning-ui.js","gamepad.js","settings-ui.js","keyboard.js","visualization.js","runtime-logs.js","robot-graph.js","map-preview.js")}
         ui_files["/THIRD_PARTY_NOTICES.txt"] = ROOT/"build/web/THIRD_PARTY_NOTICES.txt"
         ui_files["/editor-bundle.js"] = ROOT/"build/web/editor-bundle.js"
         ui_files.update(shared)
@@ -75,7 +79,7 @@ class BrowserServer:
                                 raise ValueError("INVALID_SESSION_REQUEST")
                             with owner.campaign_lock:
                                 level = owner.config.get("campaign", {}).get("active_level")
-                                ticket = owner.application.register_attempt(level) if level else None
+                                ticket = owner.application.register_attempt(level, practice=bool(owner.config.get("map_override"))) if level else None
                                 result = {"ticket": ticket, "level_id": level, "developer_mode": owner.application.developer}
                         elif self.path == "/api/progress/complete":
                             if not isinstance(value, dict) or set(value) != {"ticket", "level_id"}:
@@ -101,7 +105,16 @@ class BrowserServer:
                     if self.headers.get("Host")!=f"127.0.0.1:{port}":
                         self.send_error(403);return
                     path=urlsplit(self.path).path
-                    if not runtime and path in ("/api/settings", "/api/progress") and owner.application:
+                    status=200
+                    if not runtime and path == "/api/maps":
+                        from .maps import preview_catalog
+                        try:
+                            with owner.campaign_lock:
+                                value=preview_catalog(owner.config,bool(owner.application and owner.application.developer))
+                            raw=json.dumps(value,allow_nan=False).encode();kind="application/json"
+                        except (ValueError,OSError) as error:
+                            raw=json.dumps({"error":str(error)}).encode();kind="application/json";status=400
+                    elif not runtime and path in ("/api/settings", "/api/progress") and owner.application:
                         value = owner.application.public_settings() if path.endswith("settings") else owner.application.progress()
                         if path.endswith("settings"):
                             value["control_token"] = owner.token
@@ -120,7 +133,7 @@ class BrowserServer:
                         kind={".html":"text/html; charset=utf-8",".js":"text/javascript",".mjs":"text/javascript",".css":"text/css",".wasm":"application/wasm",".json":"application/json"}.get(file.suffix,"application/octet-stream")
                     else:
                         self.send_error(404);return
-                    self.send_response(200)
+                    self.send_response(status)
                     self.send_header("Content-Type",kind);self.send_header("Content-Length",str(len(raw)))
                     self.send_header("Cache-Control","no-store");self.send_header("X-Content-Type-Options","nosniff")
                     self.send_header("Cross-Origin-Resource-Policy","same-origin")
@@ -139,16 +152,18 @@ class BrowserServer:
             self.ui.server_close();raise
 
     def start_level(self, level_id):
-        from .campaign import configure, active
+        from .campaign import active
         from .workspace_api import WorkspaceAPI
         from .workspace import starter
         if self.application:
             self.application.require_level(level_id)
-        config = configure(self.config, level_id)
+        scene = self.scenes.get(level_id)
+        config = scene.to_config()
         if active(self.config):
             self.workspace.unlock(config)
         else:
             self.workspace = WorkspaceAPI(config, directory=self.campaign_directory)
+        self.scene = scene
         self.config = config
         self.ui_json["/authority-config.json"] = config
         self.ui_json["/deployment.json"] = starter(config)

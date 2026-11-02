@@ -65,6 +65,8 @@ pub(crate) fn drive_servo(
 pub(crate) struct EnemyTank {
     pub body: RigidBodyHandle,
     body_config: BodyConfig,
+    servo: Servo,
+    motion_limits: serde_json::Value,
     pub turret: TurretSystem,
     pub chassis: Chassis,
     patrol: PatrolConfig,
@@ -80,8 +82,29 @@ impl EnemyTank {
         pose: [f64; 3],
         patrol: PatrolConfig,
         body_config: BodyConfig,
+        servo: Servo,
+        motion_limits: serde_json::Value,
     ) -> Result<Self, String> {
-        let max_spin_rate = number(&config.motion_limits, "max_wz_radps")?;
+        let max_spin_rate = number(&motion_limits, "max_wz_radps")?;
+        if [
+            body_config.mass_kg,
+            body_config.yaw_inertia_kg_m2,
+            servo.tau_x_s,
+            servo.tau_y_s,
+            servo.tau_yaw_s,
+            servo.max_force_x_n,
+            servo.max_force_y_n,
+            servo.max_torque_nm,
+            number(&motion_limits, "max_vx_mps")?,
+            number(&motion_limits, "max_vy_mps")?,
+            max_spin_rate,
+        ]
+        .iter()
+        .any(|v| !v.is_finite() || *v <= 0.0)
+            || servo.zero_target_behavior != "active_brake"
+        {
+            return Err("Invalid enemy model parameters".into());
+        }
         if patrol.control_hz == 0
             || !config.clock.physics_hz.is_multiple_of(patrol.control_hz)
             || patrol.waypoints_m.is_empty()
@@ -141,6 +164,8 @@ impl EnemyTank {
         Ok(Self {
             body,
             body_config,
+            servo,
+            motion_limits,
             turret,
             chassis,
             patrol,
@@ -168,12 +193,12 @@ impl EnemyTank {
                 let local_velocity = body.rotation().inverse() * world_velocity;
                 self.goal = [
                     local_velocity.x.clamp(
-                        -number(&config.motion_limits, "max_vx_mps").expect("Validated limits"),
-                        number(&config.motion_limits, "max_vx_mps").expect("Validated limits"),
+                        -number(&self.motion_limits, "max_vx_mps").expect("Validated limits"),
+                        number(&self.motion_limits, "max_vx_mps").expect("Validated limits"),
                     ),
                     local_velocity.y.clamp(
-                        -number(&config.motion_limits, "max_vy_mps").expect("Validated limits"),
-                        number(&config.motion_limits, "max_vy_mps").expect("Validated limits"),
+                        -number(&self.motion_limits, "max_vy_mps").expect("Validated limits"),
+                        number(&self.motion_limits, "max_vy_mps").expect("Validated limits"),
                     ),
                     rate,
                 ];
@@ -187,7 +212,7 @@ impl EnemyTank {
                     self.patrol.forward_speed_mps
                 };
                 self.goal = [
-                    vx.min(number(&config.motion_limits, "max_vx_mps").expect("Validated limits")),
+                    vx.min(number(&self.motion_limits, "max_vx_mps").expect("Validated limits")),
                     0.0,
                     (self.patrol.heading_gain_per_s * e)
                         .clamp(
@@ -195,10 +220,8 @@ impl EnemyTank {
                             self.patrol.max_yaw_rate_radps,
                         )
                         .clamp(
-                            -number(&config.motion_limits, "max_wz_radps")
-                                .expect("Validated limits"),
-                            number(&config.motion_limits, "max_wz_radps")
-                                .expect("Validated limits"),
+                            -number(&self.motion_limits, "max_wz_radps").expect("Validated limits"),
+                            number(&self.motion_limits, "max_wz_radps").expect("Validated limits"),
                         ),
                 ];
             }
@@ -207,7 +230,7 @@ impl EnemyTank {
             world,
             self.body,
             &self.body_config,
-            &config.servo,
+            &self.servo,
             &self.chassis,
             self.goal,
         );

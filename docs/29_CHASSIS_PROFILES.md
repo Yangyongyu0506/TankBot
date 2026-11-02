@@ -6,7 +6,7 @@
 
 ## 配置源与加载
 
-应用配置版本为 `2.0`。`config/game.yaml` 的 `chassis_profiles` 显式引用 `config/chassis/differential.yaml`、`omnidirectional.yaml`。每个文件声明 `schema_version`、`chassis_type`、`body`、`armor`、`gps_mount_m`、`visual`。文件不能引用代码或其他配置；模型文件只允许在 `config/chassis/` 内，沿用有界安全 YAML 读取器，使用 [chassis-profile.schema.json](schemas/chassis-profile.schema.json) 验证。
+当前完整模型重构见 [32](32_RESOLVED_SCENE_AND_COMPONENTS.md)。应用配置版本为 `2.1`，底盘 profile 为 `2.0`。`config/game.yaml` 的 `chassis_profiles` 显式引用 `config/chassis/differential.yaml`、`omnidirectional.yaml`。每个文件声明 `schema_version`、`chassis_type`、`body`、`armor`、`gps_mount_m`、`visual`。文件不能引用代码或其他配置；模型文件只允许在 `config/chassis/` 内，沿用有界安全 YAML 读取器，使用 [chassis-profile.schema.json](schemas/chassis-profile.schema.json) 验证。
 
 | 配置 | 差速 | 四轮径向全向 |
 | --- | --- | --- |
@@ -23,7 +23,7 @@ GPS 行描述通用安装几何；当前正式关卡不启用 GPS；C4 用中心
 
 全向外观的装甲壳中心由真实安装面减去壳厚一半生成；源文件只保存壳尺寸，不再另存一组安装坐标。高亮有效装甲段使用 `armor.mounts_m`；因此变更模型时不会让装甲显示仍停留在旧车体外缘。
 
-质量 20 kg、惯量 2 kg·m² 及通用伺服/轮组标定仍在 `game.yaml`。几何不再重复编辑在该文件或 UI 中；`rendering.chassis_models`、完整 `body` 和测试 JSON 是编译产物。旧无模型目录的 1.x 私有配置仍可使用原内联结构。
+质量 20 kg、惯量 2 kg·m² 及伺服、轮组、阻力、限制现已集中到各底盘文件；`game.yaml` 只保留仿真/应用参数与模型引用。几何不再重复编辑在该文件或 UI 中；`rendering.chassis_models`、完整 `body` 和测试 JSON 是编译产物。旧无模型目录的 1.x 私有配置仍可使用原内联结构。
 
 ## 数据流与接口
 

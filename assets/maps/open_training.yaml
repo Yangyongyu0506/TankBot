@@ -1,0 +1,26 @@
+# 12×8 m 净场地；Hello Robot / Weapons 共用，仅有边界墙。
+walls:
+- center:
+  - 6.1
+  - 0.0
+  size:
+  - 0.2
+  - 8.4
+- center:
+  - -6.1
+  - 0.0
+  size:
+  - 0.2
+  - 8.4
+- center:
+  - 0.0
+  - 4.1
+  size:
+  - 12.0
+  - 0.2
+- center:
+  - 0.0
+  - -4.1
+  size:
+  - 12.0
+  - 0.2

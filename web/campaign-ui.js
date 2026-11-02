@@ -12,6 +12,7 @@ export function attemptSummary(attempt){
 export async function mountCampaign(profile,browser,onState,releaseControls){
   const $=id=>document.getElementById(id),levels=profile.campaign?.levels??[],chapters=profile.campaign?.chapters??[];
   if(!levels.length){$("tab-task").hidden=true;return;}
+  const practice=Boolean(profile.custom_map_practice);
   const current=levels.find(level=>level.level_id===profile.campaign.active_level);
   const liveMetric=mountLiveMetric($("live-evaluation"),current?.live_feedback);
   const options=levels.map(level=>{
@@ -98,7 +99,7 @@ export async function mountCampaign(profile,browser,onState,releaseControls){
           `目标估计 ${p.has_estimate?"✓":"○"}　命中 ${p.hit?"✓":"○"}`;
         if(attempt.result){
           const r=attempt.result;
-          $("task-message").textContent=(r.passed?"通关！可选择下一关，已有源码会保留。":attemptSummary(attempt)+"。可修改代码，再点击开始 / 重试。")+
+          $("task-message").textContent=(r.passed?(practice?"练习完成！自定义地图不计正式通关，不解锁后续关卡。":"通关！可选择下一关，已有源码会保留。"):attemptSummary(attempt)+"。可修改代码，再点击开始 / 重试。")+
             (r.rmse_m==null?"":" 本次估计 RMSE："+r.rmse_m.toFixed(3)+(current.live_feedback?" m。":" m（仅结束后公布）。"));
           if(save_error||browser?.saveError())$("task-message").textContent=save_error||browser.saveError();
         }else{

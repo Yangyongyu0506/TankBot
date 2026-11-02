@@ -23,38 +23,8 @@ world:
     sensor_hz: 30
     algorithm_hz: 10
   map:
-    source: inline
-    walls:
-    - center:
-      - 6.1
-      - 0.0
-      size:
-      - 0.2
-      - 8.4
-    - center:
-      - -6.1
-      - 0.0
-      size:
-      - 0.2
-      - 8.4
-    - center:
-      - 0.0
-      - 4.1
-      size:
-      - 12.0
-      - 0.2
-    - center:
-      - 0.0
-      - -4.1
-      size:
-      - 12.0
-      - 0.2
-    - center:
-      - 2.0
-      - 0.0
-      size:
-      - 0.2
-      - 3.0
+    source: asset
+    path: maps/open_training.yaml
 robots:
 - id: player
   type: tank
@@ -78,36 +48,66 @@ robots:
     topic: /robot/sensors/joint_states
     schema: joint_state@1
     frame_id: base_link
-    update_hz: 30
+    id: wheel_encoder
+    robot_id: player
+    period_ticks: 2
+    mount:
+      parent_frame: base_link
+      translation_m:
+      - 0.0
+      - 0.0
+      yaw_rad: 0.0
+    random_stream: null
   - type: imu
     topic: /robot/sensors/imu
     schema: imu@1
     frame_id: base_link
-    update_hz: 30
+    id: imu
+    robot_id: player
+    period_ticks: 2
+    mount:
+      parent_frame: base_link
+      translation_m:
+      - 0.0
+      - 0.0
+      yaw_rad: 0.0
+    random_stream: null
   - type: turret_joint
     topic: /robot/turret/joint_states
     schema: joint_state@1
     frame_id: base_link
-    update_hz: 30
+    id: turret_joint
+    robot_id: player
+    period_ticks: 2
+    mount:
+      parent_frame: base_link
+      translation_m:
+      - 0.0
+      - 0.0
+      yaw_rad: 0.0
+    random_stream: null
   - type: weapon_state
     topic: /robot/weapons/cannon/state
     schema: weapon_state@1
     frame_id: base_link
-    update_hz: 30
+    id: weapon_state
+    robot_id: player
+    period_ticks: 2
+    mount:
+      parent_frame: base_link
+      translation_m:
+      - 0.0
+      - 0.0
+      yaw_rad: 0.0
+    random_stream: null
   - type: radar
     topic: /robot/sensors/radar
     schema: radar@1
     frame_id: radar_link
-    update_hz: 10
     parameters:
-      mount_m:
-      - 0.0
-      - 0.0
-      yaw_rad: 0.0
       frame_id: radar_link
       range_m: 12.0
       field_of_view_rad: 6.283185307179586
-      update_hz: 10
       occlusion: walls
       measurement: target_center
       latency_ticks: 0
@@ -117,6 +117,18 @@ robots:
         range_stddev_m: 0.0
         bearing_stddev_rad: 0.0
         drop_probability: 0.0
+    id: radar
+    robot_id: player
+    period_ticks: 6
+    mount:
+      parent_frame: base_link
+      translation_m:
+      - 0.0
+      - 0.0
+      yaw_rad: 0.0
+    random_stream:
+      id: radar
+      seed_mode: legacy_seed
 - id: radar_target
   type: static_tank_target
   role: target
@@ -367,8 +379,9 @@ tutorial:
       own_pose: Pose2D
       detection: RadarDetection
       T_map_radar: ndarray
-    execution: 框架按 {algorithm_hz} Hz 仿真频率调度，雷达按 {radar_hz} Hz 采样；每个新雷达帧调用一次算法，包括空检测帧。dt 使用仿真秒；部署和重试重新初始化状态。 雷达距离
-      σ={range_stddev_m:g} m，方位 σ={bearing_stddev_rad:g} rad，独立丢失 {drop_probability:.0%}。
+    execution: 框架按 {algorithm_hz} Hz 仿真频率调度，雷达按 {radar_hz} Hz 采样；每个新雷达帧调用一次算法，包括空检测帧。dt
+      使用仿真秒；部署和重试重新初始化状态。 雷达距离 σ={range_stddev_m:g} m，方位 σ={bearing_stddev_rad:g}
+      rad，独立丢失 {drop_probability:.0%}。
     completion: 发布合法的地图目标估计，并命中靶标 {required_hits} 次。 限时 {time_limit_s} 仿真秒。首次成功部署后开始计时，之前的编辑和测试不计时；重复部署不重置。
     common_errors:
     - 返回 np.ndarray，形状必须是 (4,4)；不能返回 list 或 TargetEstimate。
@@ -527,8 +540,9 @@ scaffolding:
   documentation:
     perception/transforms.py:
     - function: radar_to_map
-      text: "返回 T_map_radar：把雷达坐标变为地图坐标的 SE(3) 元素。\n\n输入（使用 own_pose.字段名 读取）：\n  own_pose.x_m / y_m: float，自身在地图中的位置，单位\
-        \ m。\n  own_pose.yaw_rad: float，车头相对地图 +x 的逆时针角，单位 rad。\n\n返回：numpy.ndarray，shape=(4,4)，dtype=float64。\n\
-        左上 3x3 放旋转 R，右上 3x1 放雷达原点在 map 中的位置 t。\n最后一行固定为 [0,0,0,1]；本关 z=0，只需考虑绕 z 轴旋转。\n三个旋转列是雷达基向量在地图中的方向，平移列是雷达原点。\n\
-        游戏会实际执行 point_map = T_map_radar @ point_radar。\npoint_radar 是 [x,y,0,1]，你不需要处理检测列表或消息发布。\n\n自测：自身 (1,3,pi/2)，雷达点\
-        \ [2,0,0,1] 应变为 [1,5,0,1]。\nF1 /「关卡说明 / 类型」中的矩阵实验可调整位姿并查看每一行乘法。"
+      text: "返回 T_map_radar：把雷达坐标变为地图坐标的 SE(3) 元素。\n\n输入（使用 own_pose.字段名 读取）：\n  own_pose.x_m\
+        \ / y_m: float，自身在地图中的位置，单位 m。\n  own_pose.yaw_rad: float，车头相对地图 +x 的逆时针角，单位\
+        \ rad。\n\n返回：numpy.ndarray，shape=(4,4)，dtype=float64。\n左上 3x3 放旋转 R，右上 3x1\
+        \ 放雷达原点在 map 中的位置 t。\n最后一行固定为 [0,0,0,1]；本关 z=0，只需考虑绕 z 轴旋转。\n三个旋转列是雷达基向量在地图中的方向，平移列是雷达原点。\n\
+        游戏会实际执行 point_map = T_map_radar @ point_radar。\npoint_radar 是 [x,y,0,1]，你不需要处理检测列表或消息发布。\n\
+        \n自测：自身 (1,3,pi/2)，雷达点 [2,0,0,1] 应变为 [1,5,0,1]。\nF1 /「关卡说明 / 类型」中的矩阵实验可调整位姿并查看每一行乘法。"

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""C2 live RMSE through the real player UI, using disposable files and saved progress."""
+"""C2/C3 live RMSE through the real player UI, using disposable files and saved progress."""
 import argparse
 import base64
 import json
@@ -14,11 +14,13 @@ from tankbot_host.campaign import configure
 from tankbot_host.workspace import WorkspaceStore
 from tankbot_host.application import ApplicationState
 from campaign_support import solutions
+from weapons_curriculum_support import solutions as polar_solutions
 
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--prepare-store',type=Path)
+    parser.add_argument('--level',choices=('c2','c3'),default='c2')
     parser.add_argument('--url',default='http://127.0.0.1:8795')
     parser.add_argument('--port',type=int,default=2832)
     parser.add_argument('--output',type=Path,default=ROOT/'.m1-cache/live-rmse/ui.json')
@@ -27,9 +29,9 @@ def main():
     if args.prepare_store:
         if (args.prepare_store/'HEAD.json').exists():raise SystemExit('Use a fresh disposable store')
         config=load_config(ROOT/'config/game.yaml')
-        WorkspaceStore(args.prepare_store,solutions(configure(config,'c2')),config['workspace'])
+        WorkspaceStore(args.prepare_store,(polar_solutions if args.level=='c3' else solutions)(configure(config,args.level)),config['workspace'])
         state=ApplicationState(config,args.prepare_store.parent/'settings.yaml',args.prepare_store.parent/'progress.json')
-        for level in ('c0','c1'):state.complete(state.register_attempt(level),level)
+        for level in (('c0','c1','c2') if args.level=='c3' else ('c0','c1')):state.complete(state.register_attempt(level),level)
         return
     b=Browser(args.port)
     def click(identifier):
@@ -53,7 +55,7 @@ def main():
     try:
         b.navigate(args.url);b.call('WebDriver:SetWindowRect',{'width':1440,'height':950});ready()
         assert b.script("return document.getElementById('application-mode').textContent;")=='玩家模式'
-        if state()['attempt']['phase']!='preparing':reload_level('c2')
+        if state()['attempt']['phase']!='preparing':reload_level(args.level)
         assert b.script("return !document.getElementById('live-evaluation').hidden&&document.getElementById('live-evaluation').dataset.samples==='0';")
         click('open-workspace');click('test-workspace')
         report=b.until("const s=JSON.parse(document.getElementById('workspace-panel').dataset.deployment||'{}');return !s.job&&s.last?.kind==='test'&&s.last;",timeout=120)
@@ -86,7 +88,7 @@ def main():
         b.until("return !document.getElementById('open-workspace').disabled;")
         press('\ue032');assert b.script("return document.getElementById('workspace-dialog').open;")
         press('\ue032')
-        reload_level('c2')
+        reload_level(args.level)
         assert b.script("return document.getElementById('live-evaluation').dataset.samples==='0'&&document.getElementById('live-evaluation').dataset.value==='';")
         click('open-workspace');assert b.script("return document.getElementById('workspace-dialog').open;")
         click('close-workspace')

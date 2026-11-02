@@ -1,9 +1,11 @@
-schema_version: '1.0'
+schema_version: '2.0'
 chassis_type: differential
 body:
   length_m: 0.8
   width_m: 0.6
   corner_radius_m: 0.08
+  mass_kg: 20.0
+  yaw_inertia_kg_m2: 2.0
 armor:
   layout: four_side_centers
   width_m: 0.24
@@ -59,3 +61,27 @@ visual:
     mark: '#d7f7df'
     turret: '#416b50'
     barrel: '#f1f7c5'
+servo:
+  tau_x_s: 0.2
+  tau_y_s: 0.2
+  tau_yaw_s: 0.15
+  max_force_x_n: 100.0
+  max_force_y_n: 100.0
+  max_torque_nm: 20.0
+  zero_target_behavior: active_brake
+motion_limits:
+  max_vx_mps: 3.0
+  max_vy_mps: 3.0
+  max_wz_radps: 6.0
+controller:
+  cmd_vel_timeout_s: 0.5
+  overspeed_target: clamp_each_axis
+  unsupported_lateral: reject
+drive:
+  lateral_actuation: false
+  drag_x_n_s_per_m: 4.0
+  drag_y_n_s_per_m: 200.0
+  drag_yaw_nm_s: 0.8
+wheels:
+  radius_m: 0.1
+  track_m: 0.5

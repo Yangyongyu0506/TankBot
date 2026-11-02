@@ -8,10 +8,10 @@ from .configuration import load_yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 SENSORS = {
-    "wheel_encoder":("/robot/sensors/joint_states","joint_state@1","base_link","joint_state"),
+    "wheel_encoder":("/robot/sensors/joint_states","joint_state@1","base_link","joint_states"),
     "imu":("/robot/sensors/imu","imu@1","base_link","imu"),
-    "turret_joint":("/robot/turret/joint_states","joint_state@1","base_link","turret"),
-    "weapon_state":("/robot/weapons/cannon/state","weapon_state@1","base_link","weapon"),
+    "turret_joint":("/robot/turret/joint_states","joint_state@1","base_link","turret_joint_states"),
+    "weapon_state":("/robot/weapons/cannon/state","weapon_state@1","base_link","weapon_state"),
     "radar":("/robot/sensors/radar","radar@1","radar_link",None),
     "intercepted_gps":("/robot/sensors/intercepted_gps","gps_fix@1","map",None),
     "armor_detector":("/robot/sensors/armor_detections","armor_detections@1","base_link",None),
@@ -69,6 +69,7 @@ def runtime_profile(config):
 
 
 def _validate(value, filename, config, validator):
+    from .sensor_instances import normalize_sensors
     errors = list(validator.schemas["level.schema.json"].iter_errors(value))
     if errors:
         # Composite-rule failures contain branch diagnostics; prefer the actual field.
@@ -77,6 +78,7 @@ def _validate(value, filename, config, validator):
         detailed = [leaf for error in errors for leaf in leaves(error)]
         error = max(detailed,key=lambda e:(len(e.absolute_path),e.validator not in ("const","enum")))
         raise LevelValidationError(filename,error_path(error.absolute_path),error.message)
+    normalize_sensors(value,filename)
     def fail(path,reason):raise LevelValidationError(filename,path,reason)
     limits = config["level_plugins"]["limits"]
     robots = value["robots"]
@@ -93,7 +95,8 @@ def _validate(value, filename, config, validator):
     motion=target["parameters"].get("motion",{})
     if target["parameters"].get("armor",{}).get("source")=="chassis_profile" and motion.get("chassis",config["scene"]["default_chassis"]) not in config.get("chassis_profiles",{}):
         fail(f"robots[{robots.index(target)}].parameters.armor.source","chassis profile is not registered")
-    if motion.get("spin_rate_radps") is not None and (motion["chassis"]!="omnidirectional" or abs(motion["spin_rate_radps"])>config["motion_limits"]["max_wz_radps"]):
+    motion_limits=config.get("chassis_profiles",{}).get(motion.get("chassis"),{}).get("motion_limits",config["motion_limits"])
+    if motion.get("spin_rate_radps") is not None and (motion["chassis"]!="omnidirectional" or abs(motion["spin_rate_radps"])>motion_limits["max_wz_radps"]):
         fail(f"robots[{robots.index(target)}].parameters.motion.spin_rate_radps","spin requires an omnidirectional chassis and a rate within motion limits")
     clock = value["world"]["simulation"]
     if clock["physics_hz"]%clock["sensor_hz"] or clock["physics_hz"]%clock["algorithm_hz"]:fail("world.simulation","rates must divide physics_hz")
@@ -101,11 +104,18 @@ def _validate(value, filename, config, validator):
     if clock["physics_hz"]//clock["algorithm_hz"]<config["runtime"]["commit_delay_ticks"]:fail("world.simulation.algorithm_hz","algorithm interval is shorter than the commit delay")
     sensor_topics = {"/robot/localization/pose":"pose2d@1"}
     sensor_ids = []
+    instance_ids=set();streams=set()
     if len(player["sensors"])>limits["max_sensors"]:fail("robots[0].sensors","component count exceeds max_sensors")
     for index,sensor in enumerate(player["sensors"]):
         path = f"robots[{robots.index(player)}].sensors[{index}]"
         topic,schema,frame,_ = SENSORS[sensor["type"]]
         if (sensor["topic"],sensor["schema"],sensor["frame_id"])!=(topic,schema,frame):fail(path,"component uses a different canonical Topic/schema/frame")
+        if sensor["id"] in instance_ids:fail(path+".id","duplicate sensor instance ID")
+        instance_ids.add(sensor["id"])
+        stream=sensor["random_stream"]
+        if stream:
+            if stream["id"] in streams:fail(path+".random_stream.id","duplicate random stream")
+            streams.add(stream["id"])
         sensor_ids.append(sensor["type"])
         sensor_topics[topic]=schema
         if clock["physics_hz"]%sensor["update_hz"] or clock["sensor_hz"]%sensor["update_hz"]:fail(path+".update_hz","rate must divide physics and sensor rates")
@@ -268,16 +278,25 @@ def _validate(value, filename, config, validator):
 
 
 def _map(definition, source, config):
-    spec=definition["world"]["map"]
+    return resolve_map(definition["world"]["map"], source, config)
+
+
+def resolve_map(spec, source, config, field="world.map"):
+    """Resolve both campaign and standalone scenes to the same private wall DTO."""
+    if not isinstance(spec,dict) or spec.get("source") not in ("inline","asset"):
+        raise LevelValidationError(source,field,"expected inline or asset map")
     if spec["source"]=="inline":
-        if "walls" not in spec or "path" in spec:raise LevelValidationError(source,"world.map","inline map needs walls only")
-        return copy.deepcopy(spec["walls"])
-    if "path" not in spec or "walls" in spec:raise LevelValidationError(source,"world.map","asset map needs path only")
-    assets=(ROOT/"assets").resolve()
-    path=(assets/spec["path"]).resolve()
-    if not path.is_relative_to(assets) or not path.is_file():raise LevelValidationError(source,"world.map.path","map must be an existing asset inside assets/")
-    result=read_definition(path,config["level_plugins"]["limits"])
-    if not isinstance(result,dict) or set(result)!={"walls"}:raise LevelValidationError(source,"world.map.path","map asset uses the existing {walls: [...]} format")
+        if set(spec)!={"source","walls"}:raise LevelValidationError(source,field,"inline map needs walls only")
+        result={"walls":copy.deepcopy(spec["walls"])}
+        geometry_field=field+".walls"
+    else:
+        if set(spec)!={"source","path"} or not isinstance(spec["path"],str):raise LevelValidationError(source,field,"asset map needs a string path only")
+        assets=(ROOT/"assets").resolve()
+        path=(assets/spec["path"]).resolve()
+        if not path.is_relative_to(assets) or not path.is_file():raise LevelValidationError(source,field+".path","map must be an existing asset inside assets/")
+        result=read_definition(path,config["level_plugins"]["limits"])
+        if not isinstance(result,dict) or set(result)!={"walls"}:raise LevelValidationError(path,"$","map asset uses the existing {walls: [...]} format")
+        source,geometry_field=path,"walls"
     # Validate wall geometry with the existing simulation-profile definition.
     v=Validator(config,"map").schemas["simulation-profile.schema.json"]
     from jsonschema import Draft202012Validator
@@ -285,7 +304,10 @@ def _map(definition, source, config):
     registry=Registry().with_resource(v.schema["$id"],Resource.from_contents(v.schema))
     schema={"type":"array","items":{"$ref":v.schema["$id"]+"#/properties/scene/properties/walls/items"}}
     errors=list(Draft202012Validator(schema,registry=registry).iter_errors(result["walls"]))
-    if errors:raise LevelValidationError(source,"world.map.path",errors[0].message)
+    if errors:raise LevelValidationError(source,geometry_field+error_path(errors[0].absolute_path),errors[0].message)
+    for index,wall in enumerate(result["walls"]):
+        if any(size<=0 for size in wall["size"]):
+            raise LevelValidationError(source,f"{geometry_field}[{index}].size","wall dimensions must be positive")
     return result["walls"]
 
 

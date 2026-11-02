@@ -1,41 +1,6 @@
 {
-  "config_version": "2.0",
+  "config_version": "2.1",
   "confirmation_status": "confirmed",
-  "body": {
-    "mass_kg": 20.0,
-    "yaw_inertia_kg_m2": 2.0,
-    "length_m": 0.8,
-    "width_m": 0.6,
-    "corner_radius_m": 0.08
-  },
-  "servo": {
-    "tau_x_s": 0.2,
-    "tau_y_s": 0.2,
-    "tau_yaw_s": 0.15,
-    "max_force_x_n": 100.0,
-    "max_force_y_n": 100.0,
-    "max_torque_nm": 20.0,
-    "zero_target_behavior": "active_brake"
-  },
-  "motion_limits": {
-    "max_vx_mps": 3.0,
-    "max_vy_mps": 3.0,
-    "max_wz_radps": 6.0
-  },
-  "chassis": {
-    "differential": {
-      "lateral_actuation": false,
-      "drag_x_n_s_per_m": 4.0,
-      "drag_y_n_s_per_m": 200.0,
-      "drag_yaw_nm_s": 0.8
-    },
-    "omnidirectional": {
-      "lateral_actuation": true,
-      "drag_x_n_s_per_m": 4.0,
-      "drag_y_n_s_per_m": 4.0,
-      "drag_yaw_nm_s": 0.8
-    }
-  },
   "clock": {
     "physics_hz": 60,
     "substeps": 4,
@@ -45,32 +10,6 @@
   "contact": {
     "restitution": 0.0,
     "friction": 0.4
-  },
-  "wheels": {
-    "radius_m": 0.1,
-    "differential_track_m": 0.5,
-    "omnidirectional": {
-      "geometry_version": "radial_omni@1",
-      "center_radius_m": 0.25,
-      "wheels": [
-        {
-          "name": "front_left",
-          "azimuth_deg": 45.0
-        },
-        {
-          "name": "front_right",
-          "azimuth_deg": 315.0
-        },
-        {
-          "name": "rear_left",
-          "azimuth_deg": 135.0
-        },
-        {
-          "name": "rear_right",
-          "azimuth_deg": 225.0
-        }
-      ]
-    }
   },
   "sensors": {
     "imu_mount": "center_of_mass",
@@ -82,11 +21,6 @@
     "latency_ticks": 0,
     "drop_probability": 0.0,
     "encoder_model": "ideal_rolling"
-  },
-  "controller": {
-    "cmd_vel_timeout_s": 0.5,
-    "overspeed_target": "clamp_each_axis",
-    "unsupported_lateral": "reject"
   },
   "scene": {
     "default_chassis": "differential",
@@ -102,6 +36,7 @@
     ],
     "public_initial_pose": true,
     "public_map": true,
+    "player_health": null,
     "walls": [
       {
         "center": [
@@ -153,8 +88,7 @@
           3.0
         ]
       }
-    ],
-    "player_health": null
+    ]
   },
   "runtime": {
     "commit_delay_ticks": 6,
@@ -1105,12 +1039,14 @@
   },
   "chassis_profiles": {
     "differential": {
-      "schema_version": "1.0",
+      "schema_version": "2.0",
       "chassis_type": "differential",
       "body": {
         "length_m": 0.8,
         "width_m": 0.6,
-        "corner_radius_m": 0.08
+        "corner_radius_m": 0.08,
+        "mass_kg": 20.0,
+        "yaw_inertia_kg_m2": 2.0
       },
       "armor": {
         "layout": "four_side_centers",
@@ -1189,15 +1125,46 @@
           "turret": "#416b50",
           "barrel": "#f1f7c5"
         }
+      },
+      "servo": {
+        "tau_x_s": 0.2,
+        "tau_y_s": 0.2,
+        "tau_yaw_s": 0.15,
+        "max_force_x_n": 100.0,
+        "max_force_y_n": 100.0,
+        "max_torque_nm": 20.0,
+        "zero_target_behavior": "active_brake"
+      },
+      "motion_limits": {
+        "max_vx_mps": 3.0,
+        "max_vy_mps": 3.0,
+        "max_wz_radps": 6.0
+      },
+      "controller": {
+        "cmd_vel_timeout_s": 0.5,
+        "overspeed_target": "clamp_each_axis",
+        "unsupported_lateral": "reject"
+      },
+      "drive": {
+        "lateral_actuation": false,
+        "drag_x_n_s_per_m": 4.0,
+        "drag_y_n_s_per_m": 200.0,
+        "drag_yaw_nm_s": 0.8
+      },
+      "wheels": {
+        "radius_m": 0.1,
+        "track_m": 0.5
       }
     },
     "omnidirectional": {
-      "schema_version": "1.0",
+      "schema_version": "2.0",
       "chassis_type": "omnidirectional",
       "body": {
         "length_m": 0.42,
         "width_m": 0.42,
-        "corner_radius_m": 0.08
+        "corner_radius_m": 0.08,
+        "mass_kg": 20.0,
+        "yaw_inertia_kg_m2": 2.0
       },
       "armor": {
         "layout": "four_side_centers",
@@ -1290,7 +1257,196 @@
           "barrel": "#d6eeff"
         },
         "suspension_inner_ratio": 0.55
+      },
+      "servo": {
+        "tau_x_s": 0.2,
+        "tau_y_s": 0.2,
+        "tau_yaw_s": 0.15,
+        "max_force_x_n": 100.0,
+        "max_force_y_n": 100.0,
+        "max_torque_nm": 20.0,
+        "zero_target_behavior": "active_brake"
+      },
+      "motion_limits": {
+        "max_vx_mps": 3.0,
+        "max_vy_mps": 3.0,
+        "max_wz_radps": 6.0
+      },
+      "controller": {
+        "cmd_vel_timeout_s": 0.5,
+        "overspeed_target": "clamp_each_axis",
+        "unsupported_lateral": "reject"
+      },
+      "drive": {
+        "lateral_actuation": true,
+        "drag_x_n_s_per_m": 4.0,
+        "drag_y_n_s_per_m": 4.0,
+        "drag_yaw_nm_s": 0.8
+      },
+      "wheels": {
+        "radius_m": 0.1,
+        "geometry_version": "radial_omni@1",
+        "center_radius_m": 0.25,
+        "wheels": [
+          {
+            "name": "front_left",
+            "azimuth_deg": 45.0
+          },
+          {
+            "name": "front_right",
+            "azimuth_deg": 315.0
+          },
+          {
+            "name": "rear_left",
+            "azimuth_deg": 135.0
+          },
+          {
+            "name": "rear_right",
+            "azimuth_deg": 225.0
+          }
+        ]
       }
+    }
+  },
+  "sensor_instances": [
+    {
+      "type": "wheel_encoder",
+      "topic": "/robot/sensors/joint_states",
+      "schema": "joint_state@1",
+      "frame_id": "base_link",
+      "id": "wheel_encoder",
+      "robot_id": "player",
+      "period_ticks": 2,
+      "mount": {
+        "parent_frame": "base_link",
+        "translation_m": [
+          0.0,
+          0.0
+        ],
+        "yaw_rad": 0.0
+      },
+      "random_stream": null
+    },
+    {
+      "type": "imu",
+      "topic": "/robot/sensors/imu",
+      "schema": "imu@1",
+      "frame_id": "base_link",
+      "id": "imu",
+      "robot_id": "player",
+      "period_ticks": 2,
+      "mount": {
+        "parent_frame": "base_link",
+        "translation_m": [
+          0.0,
+          0.0
+        ],
+        "yaw_rad": 0.0
+      },
+      "random_stream": null
+    },
+    {
+      "type": "turret_joint",
+      "topic": "/robot/turret/joint_states",
+      "schema": "joint_state@1",
+      "frame_id": "base_link",
+      "id": "turret_joint",
+      "robot_id": "player",
+      "period_ticks": 2,
+      "mount": {
+        "parent_frame": "base_link",
+        "translation_m": [
+          0.0,
+          0.0
+        ],
+        "yaw_rad": 0.0
+      },
+      "random_stream": null
+    },
+    {
+      "type": "weapon_state",
+      "topic": "/robot/weapons/cannon/state",
+      "schema": "weapon_state@1",
+      "frame_id": "base_link",
+      "id": "weapon_state",
+      "robot_id": "player",
+      "period_ticks": 2,
+      "mount": {
+        "parent_frame": "base_link",
+        "translation_m": [
+          0.0,
+          0.0
+        ],
+        "yaw_rad": 0.0
+      },
+      "random_stream": null
+    }
+  ],
+  "chassis": {
+    "differential": {
+      "lateral_actuation": false,
+      "drag_x_n_s_per_m": 4.0,
+      "drag_y_n_s_per_m": 200.0,
+      "drag_yaw_nm_s": 0.8
+    },
+    "omnidirectional": {
+      "lateral_actuation": true,
+      "drag_x_n_s_per_m": 4.0,
+      "drag_y_n_s_per_m": 4.0,
+      "drag_yaw_nm_s": 0.8
+    }
+  },
+  "selected_chassis_model": "differential",
+  "body": {
+    "length_m": 0.8,
+    "width_m": 0.6,
+    "corner_radius_m": 0.08,
+    "mass_kg": 20.0,
+    "yaw_inertia_kg_m2": 2.0
+  },
+  "servo": {
+    "tau_x_s": 0.2,
+    "tau_y_s": 0.2,
+    "tau_yaw_s": 0.15,
+    "max_force_x_n": 100.0,
+    "max_force_y_n": 100.0,
+    "max_torque_nm": 20.0,
+    "zero_target_behavior": "active_brake"
+  },
+  "motion_limits": {
+    "max_vx_mps": 3.0,
+    "max_vy_mps": 3.0,
+    "max_wz_radps": 6.0
+  },
+  "controller": {
+    "cmd_vel_timeout_s": 0.5,
+    "overspeed_target": "clamp_each_axis",
+    "unsupported_lateral": "reject"
+  },
+  "wheels": {
+    "radius_m": 0.1,
+    "differential_track_m": 0.5,
+    "omnidirectional": {
+      "geometry_version": "radial_omni@1",
+      "center_radius_m": 0.25,
+      "wheels": [
+        {
+          "name": "front_left",
+          "azimuth_deg": 45.0
+        },
+        {
+          "name": "front_right",
+          "azimuth_deg": 315.0
+        },
+        {
+          "name": "rear_left",
+          "azimuth_deg": 135.0
+        },
+        {
+          "name": "rear_right",
+          "azimuth_deg": 225.0
+        }
+      ]
     }
   },
   "campaign": {
@@ -1390,16 +1546,6 @@
               "size": [
                 12.0,
                 0.2
-              ]
-            },
-            {
-              "center": [
-                2.0,
-                0.0
-              ],
-              "size": [
-                0.2,
-                3.0
               ]
             }
           ],
@@ -1511,6 +1657,18 @@
             "topic": "/robot/sensors/joint_states",
             "schema": "joint_state@1",
             "frame_id": "base_link",
+            "id": "wheel_encoder",
+            "robot_id": "player",
+            "period_ticks": 2,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": null,
             "update_hz": 30
           },
           {
@@ -1518,6 +1676,18 @@
             "topic": "/robot/sensors/imu",
             "schema": "imu@1",
             "frame_id": "base_link",
+            "id": "imu",
+            "robot_id": "player",
+            "period_ticks": 2,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": null,
             "update_hz": 30
           },
           {
@@ -1525,6 +1695,18 @@
             "topic": "/robot/turret/joint_states",
             "schema": "joint_state@1",
             "frame_id": "base_link",
+            "id": "turret_joint",
+            "robot_id": "player",
+            "period_ticks": 2,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": null,
             "update_hz": 30
           },
           {
@@ -1532,6 +1714,18 @@
             "topic": "/robot/weapons/cannon/state",
             "schema": "weapon_state@1",
             "frame_id": "base_link",
+            "id": "weapon_state",
+            "robot_id": "player",
+            "period_ticks": 2,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": null,
             "update_hz": 30
           }
         ],
@@ -2076,16 +2270,6 @@
                 12.0,
                 0.2
               ]
-            },
-            {
-              "center": [
-                2.0,
-                0.0
-              ],
-              "size": [
-                0.2,
-                3.0
-              ]
             }
           ],
           "public_initial_pose": true,
@@ -2098,15 +2282,9 @@
           "algorithm_hz": 10
         },
         "radar": {
-          "mount_m": [
-            0.0,
-            0.0
-          ],
-          "yaw_rad": 0.0,
           "frame_id": "radar_link",
           "range_m": 12.0,
           "field_of_view_rad": 6.283185307179586,
-          "update_hz": 10,
           "occlusion": "walls",
           "measurement": "target_center",
           "latency_ticks": 0,
@@ -2116,7 +2294,13 @@
             "range_stddev_m": 0.0,
             "bearing_stddev_rad": 0.0,
             "drop_probability": 0.0
-          }
+          },
+          "mount_m": [
+            0.0,
+            0.0
+          ],
+          "yaw_rad": 0.0,
+          "update_hz": 10
         },
         "runtime": {
           "template_version": "1.2.0",
@@ -2217,6 +2401,18 @@
             "topic": "/robot/sensors/joint_states",
             "schema": "joint_state@1",
             "frame_id": "base_link",
+            "id": "wheel_encoder",
+            "robot_id": "player",
+            "period_ticks": 2,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": null,
             "update_hz": 30
           },
           {
@@ -2224,6 +2420,18 @@
             "topic": "/robot/sensors/imu",
             "schema": "imu@1",
             "frame_id": "base_link",
+            "id": "imu",
+            "robot_id": "player",
+            "period_ticks": 2,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": null,
             "update_hz": 30
           },
           {
@@ -2231,6 +2439,18 @@
             "topic": "/robot/turret/joint_states",
             "schema": "joint_state@1",
             "frame_id": "base_link",
+            "id": "turret_joint",
+            "robot_id": "player",
+            "period_ticks": 2,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": null,
             "update_hz": 30
           },
           {
@@ -2238,6 +2458,18 @@
             "topic": "/robot/weapons/cannon/state",
             "schema": "weapon_state@1",
             "frame_id": "base_link",
+            "id": "weapon_state",
+            "robot_id": "player",
+            "period_ticks": 2,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": null,
             "update_hz": 30
           },
           {
@@ -2245,17 +2477,10 @@
             "topic": "/robot/sensors/radar",
             "schema": "radar@1",
             "frame_id": "radar_link",
-            "update_hz": 10,
             "parameters": {
-              "mount_m": [
-                0.0,
-                0.0
-              ],
-              "yaw_rad": 0.0,
               "frame_id": "radar_link",
               "range_m": 12.0,
               "field_of_view_rad": 6.283185307179586,
-              "update_hz": 10,
               "occlusion": "walls",
               "measurement": "target_center",
               "latency_ticks": 0,
@@ -2265,8 +2490,30 @@
                 "range_stddev_m": 0.0,
                 "bearing_stddev_rad": 0.0,
                 "drop_probability": 0.0
-              }
-            }
+              },
+              "mount_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0,
+              "update_hz": 10
+            },
+            "id": "radar",
+            "robot_id": "player",
+            "period_ticks": 6,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": {
+              "id": "radar",
+              "seed_mode": "legacy_seed"
+            },
+            "update_hz": 10
           }
         ],
         "rules": {
@@ -2888,16 +3135,6 @@
                 12.0,
                 0.2
               ]
-            },
-            {
-              "center": [
-                2.0,
-                0.0
-              ],
-              "size": [
-                0.2,
-                3.0
-              ]
             }
           ],
           "public_initial_pose": true,
@@ -2910,15 +3147,9 @@
           "algorithm_hz": 10
         },
         "radar": {
-          "mount_m": [
-            0.0,
-            0.0
-          ],
-          "yaw_rad": 0.0,
           "frame_id": "radar_link",
           "range_m": 12.0,
           "field_of_view_rad": 6.283185307179586,
-          "update_hz": 10,
           "occlusion": "walls",
           "measurement": "target_center",
           "latency_ticks": 0,
@@ -2928,7 +3159,13 @@
             "range_stddev_m": 0.45,
             "bearing_stddev_rad": 0.08,
             "drop_probability": 0.1
-          }
+          },
+          "mount_m": [
+            0.0,
+            0.0
+          ],
+          "yaw_rad": 0.0,
+          "update_hz": 10
         },
         "runtime": {
           "template_version": "1.2.0",
@@ -3029,6 +3266,18 @@
             "topic": "/robot/sensors/joint_states",
             "schema": "joint_state@1",
             "frame_id": "base_link",
+            "id": "wheel_encoder",
+            "robot_id": "player",
+            "period_ticks": 2,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": null,
             "update_hz": 30
           },
           {
@@ -3036,6 +3285,18 @@
             "topic": "/robot/sensors/imu",
             "schema": "imu@1",
             "frame_id": "base_link",
+            "id": "imu",
+            "robot_id": "player",
+            "period_ticks": 2,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": null,
             "update_hz": 30
           },
           {
@@ -3043,6 +3304,18 @@
             "topic": "/robot/turret/joint_states",
             "schema": "joint_state@1",
             "frame_id": "base_link",
+            "id": "turret_joint",
+            "robot_id": "player",
+            "period_ticks": 2,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": null,
             "update_hz": 30
           },
           {
@@ -3050,6 +3323,18 @@
             "topic": "/robot/weapons/cannon/state",
             "schema": "weapon_state@1",
             "frame_id": "base_link",
+            "id": "weapon_state",
+            "robot_id": "player",
+            "period_ticks": 2,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": null,
             "update_hz": 30
           },
           {
@@ -3057,17 +3342,10 @@
             "topic": "/robot/sensors/radar",
             "schema": "radar@1",
             "frame_id": "radar_link",
-            "update_hz": 10,
             "parameters": {
-              "mount_m": [
-                0.0,
-                0.0
-              ],
-              "yaw_rad": 0.0,
               "frame_id": "radar_link",
               "range_m": 12.0,
               "field_of_view_rad": 6.283185307179586,
-              "update_hz": 10,
               "occlusion": "walls",
               "measurement": "target_center",
               "latency_ticks": 0,
@@ -3077,8 +3355,30 @@
                 "range_stddev_m": 0.45,
                 "bearing_stddev_rad": 0.08,
                 "drop_probability": 0.1
-              }
-            }
+              },
+              "mount_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0,
+              "update_hz": 10
+            },
+            "id": "radar",
+            "robot_id": "player",
+            "period_ticks": 6,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": {
+              "id": "radar",
+              "seed_mode": "legacy_seed"
+            },
+            "update_hz": 10
           }
         ],
         "rules": {
@@ -3707,16 +4007,6 @@
                 12.0,
                 0.2
               ]
-            },
-            {
-              "center": [
-                2.0,
-                0.0
-              ],
-              "size": [
-                0.2,
-                3.0
-              ]
             }
           ],
           "public_initial_pose": true,
@@ -3729,15 +4019,9 @@
           "algorithm_hz": 10
         },
         "radar": {
-          "mount_m": [
-            0.0,
-            0.0
-          ],
-          "yaw_rad": 0.0,
           "frame_id": "radar_link",
           "range_m": 12.0,
           "field_of_view_rad": 6.283185307179586,
-          "update_hz": 10,
           "occlusion": "walls",
           "measurement": "target_center",
           "latency_ticks": 0,
@@ -3747,7 +4031,13 @@
             "range_stddev_m": 0.45,
             "bearing_stddev_rad": 0.08,
             "drop_probability": 0.1
-          }
+          },
+          "mount_m": [
+            0.0,
+            0.0
+          ],
+          "yaw_rad": 0.0,
+          "update_hz": 10
         },
         "runtime": {
           "template_version": "5.0.0",
@@ -3850,6 +4140,18 @@
             "topic": "/robot/sensors/joint_states",
             "schema": "joint_state@1",
             "frame_id": "base_link",
+            "id": "wheel_encoder",
+            "robot_id": "player",
+            "period_ticks": 2,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": null,
             "update_hz": 30
           },
           {
@@ -3857,6 +4159,18 @@
             "topic": "/robot/sensors/imu",
             "schema": "imu@1",
             "frame_id": "base_link",
+            "id": "imu",
+            "robot_id": "player",
+            "period_ticks": 2,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": null,
             "update_hz": 30
           },
           {
@@ -3864,6 +4178,18 @@
             "topic": "/robot/turret/joint_states",
             "schema": "joint_state@1",
             "frame_id": "base_link",
+            "id": "turret_joint",
+            "robot_id": "player",
+            "period_ticks": 2,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": null,
             "update_hz": 30
           },
           {
@@ -3871,6 +4197,18 @@
             "topic": "/robot/weapons/cannon/state",
             "schema": "weapon_state@1",
             "frame_id": "base_link",
+            "id": "weapon_state",
+            "robot_id": "player",
+            "period_ticks": 2,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": null,
             "update_hz": 30
           },
           {
@@ -3878,17 +4216,10 @@
             "topic": "/robot/sensors/radar",
             "schema": "radar@1",
             "frame_id": "radar_link",
-            "update_hz": 10,
             "parameters": {
-              "mount_m": [
-                0.0,
-                0.0
-              ],
-              "yaw_rad": 0.0,
               "frame_id": "radar_link",
               "range_m": 12.0,
               "field_of_view_rad": 6.283185307179586,
-              "update_hz": 10,
               "occlusion": "walls",
               "measurement": "target_center",
               "latency_ticks": 0,
@@ -3898,8 +4229,30 @@
                 "range_stddev_m": 0.45,
                 "bearing_stddev_rad": 0.08,
                 "drop_probability": 0.1
-              }
-            }
+              },
+              "mount_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0,
+              "update_hz": 10
+            },
+            "id": "radar",
+            "robot_id": "player",
+            "period_ticks": 6,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": {
+              "id": "radar",
+              "seed_mode": "legacy_seed"
+            },
+            "update_hz": 10
           }
         ],
         "rules": {
@@ -3977,6 +4330,15 @@
         "evaluation": {
           "type": "terminal_diagnostics",
           "publish_on": "terminal",
+          "live_feedback": {
+            "metric": "rmse_m",
+            "title": "实时去噪效果",
+            "label": "累计位置 RMSE",
+            "unit": "m",
+            "precision": 3,
+            "history_points": 120,
+            "description": "从首次部署起累计，按估计采样时刻比较目标位置；数值越低，整体误差越小。测试快照不计入，重新部署不清零；重试关卡重新累计。"
+          },
           "metrics": [
             {
               "id": "rmse_m",
@@ -4007,6 +4369,9 @@
             "actuators": {}
           },
           "visualization": {
+            "allowed_metrics": [
+              "rmse_m"
+            ],
             "view_policy": {
               "policy_id": "campaign-c3",
               "system_pose_allowed": true,
@@ -4117,7 +4482,7 @@
               "own_pose": "ndarray",
               "measurements": "tuple[PolarTargetEstimate, ...]"
             },
-            "completion": "首次成功部署后计时，限时 {time_limit_s} 仿真秒，双方 {max_hp} HP。存活并击杀敌车通关；玩家死亡或超时失败，主动结束后可编辑。运行中不公开目标真值误差。",
+            "completion": "首次成功部署后计时，限时 {time_limit_s} 仿真秒，双方 {max_hp} HP。存活并击杀敌车通关；玩家死亡或超时失败，主动结束后可编辑。运行中显示累计位置 RMSE、有效样本数与曲线；极坐标估计按同采样时刻自身位姿转换到地图系计分，单位 m。测试不计入，重试清零，结束后冻结。",
             "common_errors": [
               "不要把 range/bearing 当作地图 x/y；角度创新须归一到 [-pi,pi)。",
               "观测元组只有当前帧，不是历史；需要保留状态或窗口时必须限制大小。",
@@ -4172,7 +4537,7 @@
             "perception/polar_tracker.py": [
               {
                 "function": "update",
-                "text": "输入 measurements: tuple[PolarTargetEstimate, ...]，当前帧敌车中心的原始极坐标观测集合，当前长度为 0 或 1；缺测为 ()，不是 NumPy 数组，也不是历史缓存。与 C2 的 tuple[TargetEstimate, ...] 结构相同，字段改为距离和方位。\n每个 measurement 的 range_m: float 为距离（m），bearing_rad: float 为相对我方车头的方位（rad），均在当前我方 base_link；输入 covariance 为 None，measurement_covariance 构造参数仍提供 YAML 中的 (2,2) 测量噪声矩阵。输入对象复用 PolarTargetEstimate 类型，但仍是未滤波的雷达观测，不是系统替你计算的估计。\nown_pose: shape=(3,) 的公开自身 [x_m,y_m,yaw_rad] NumPy 数组；dt: float 为仿真秒。\n返回 PolarTargetEstimate(range_m: float,bearing_rad: float,covariance=None) 或 None。输出仍在当前车体系，bearing 归一到 [-pi,pi)，covariance 为 None 或 (2,2) NumPy 矩阵，顺序 r/theta。\n读取示例：measurement: PolarTargetEstimate = measurements[0]；r: float = measurement.range_m；theta: float = measurement.bearing_rad。读取前先判断 if measurements，缺测时可以只预测。\n内部可以保存 NumPy 状态 [x,y,vx,vy]，观测模型使用 hypot/atan2，推导 Jacobian、环绕角度创新并更新协方差；框架不先转换为地图 x/y，不强制唯一算法。\n从旧数组接口迁移：将原来的 measurements_rt[0,0] / measurements_rt[0,1] 改为 measurements[0].range_m / measurements[0].bearing_rad。如需矩阵，可自行使用 np.array([[m.range_m,m.bearing_rad] for m in measurements],dtype=np.float64).reshape((-1,2))。升级只更新管理脚手架，已有算法文件不覆盖；请按新签名自行适配后重新测试。"
+                "text": "输入 measurements: tuple[PolarTargetEstimate, ...]，当前帧敌车中心的原始极坐标观测集合，当前长度为 0 或 1；缺测为 ()，不是 NumPy 数组，也不是历史缓存。与 C2 的 tuple[TargetEstimate, ...] 结构相同，字段改为距离和方位。\n每个 measurement 的 range_m: float 为距离（m），bearing_rad: float 为相对我方车头的方位（rad），均在当前我方 base_link；输入 covariance 为 None，measurement_covariance 构造参数仍提供 YAML 中的 (2,2) 测量噪声矩阵。输入对象复用 PolarTargetEstimate 类型，但仍是未滤波的雷达观测，不是系统替你计算的估计。\nown_pose: shape=(3,) 的公开自身 [x_m,y_m,yaw_rad] NumPy 数组；dt: float 为仿真秒。\n返回 PolarTargetEstimate(range_m: float,bearing_rad: float,covariance=None) 或 None。输出仍在当前车体系，bearing 归一到 [-pi,pi)，covariance 为 None 或 (2,2) NumPy 矩阵，顺序 r/theta。\n读取示例：measurement: PolarTargetEstimate = measurements[0]；r: float = measurement.range_m；theta: float = measurement.bearing_rad。读取前先判断 if measurements，缺测时可以只预测。\n内部可以保存 NumPy 状态 [x,y,vx,vy]，观测模型使用 hypot/atan2，推导 Jacobian、环绕角度创新并更新协方差；框架不先转换为地图 x/y，不强制唯一算法。\n从旧数组接口迁移：将原来的 measurements_rt[0,0] / measurements_rt[0,1] 改为 measurements[0].range_m / measurements[0].bearing_rad。如需矩阵，可自行使用 np.array([[m.range_m,m.bearing_rad] for m in measurements],dtype=np.float64).reshape((-1,2))。升级会预览更新管理脚手架和仍未修改的旧算法空模板；已写算法保留，请按新签名自行适配后重新测试。"
               }
             ]
           }
@@ -4341,16 +4706,6 @@
                 12.0,
                 0.2
               ]
-            },
-            {
-              "center": [
-                2.0,
-                0.0
-              ],
-              "size": [
-                0.2,
-                3.0
-              ]
             }
           ],
           "public_initial_pose": true,
@@ -4363,15 +4718,9 @@
           "algorithm_hz": 10
         },
         "radar": {
-          "mount_m": [
-            0.0,
-            0.0
-          ],
-          "yaw_rad": 0.0,
           "frame_id": "radar_link",
           "range_m": 12.0,
           "field_of_view_rad": 6.283185307179586,
-          "update_hz": 10,
           "occlusion": "walls",
           "measurement": "target_center",
           "latency_ticks": 0,
@@ -4381,7 +4730,13 @@
             "range_stddev_m": 0.45,
             "bearing_stddev_rad": 0.08,
             "drop_probability": 0.1
-          }
+          },
+          "mount_m": [
+            0.0,
+            0.0
+          ],
+          "yaw_rad": 0.0,
+          "update_hz": 10
         },
         "runtime": {
           "template_version": "5.0.0",
@@ -4564,6 +4919,18 @@
             "topic": "/robot/sensors/joint_states",
             "schema": "joint_state@1",
             "frame_id": "base_link",
+            "id": "wheel_encoder",
+            "robot_id": "player",
+            "period_ticks": 2,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": null,
             "update_hz": 30
           },
           {
@@ -4571,6 +4938,18 @@
             "topic": "/robot/sensors/imu",
             "schema": "imu@1",
             "frame_id": "base_link",
+            "id": "imu",
+            "robot_id": "player",
+            "period_ticks": 2,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": null,
             "update_hz": 30
           },
           {
@@ -4578,6 +4957,18 @@
             "topic": "/robot/turret/joint_states",
             "schema": "joint_state@1",
             "frame_id": "base_link",
+            "id": "turret_joint",
+            "robot_id": "player",
+            "period_ticks": 2,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": null,
             "update_hz": 30
           },
           {
@@ -4585,6 +4976,18 @@
             "topic": "/robot/weapons/cannon/state",
             "schema": "weapon_state@1",
             "frame_id": "base_link",
+            "id": "weapon_state",
+            "robot_id": "player",
+            "period_ticks": 2,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": null,
             "update_hz": 30
           },
           {
@@ -4592,17 +4995,10 @@
             "topic": "/robot/sensors/radar",
             "schema": "radar@1",
             "frame_id": "radar_link",
-            "update_hz": 10,
             "parameters": {
-              "mount_m": [
-                0.0,
-                0.0
-              ],
-              "yaw_rad": 0.0,
               "frame_id": "radar_link",
               "range_m": 12.0,
               "field_of_view_rad": 6.283185307179586,
-              "update_hz": 10,
               "occlusion": "walls",
               "measurement": "target_center",
               "latency_ticks": 0,
@@ -4612,8 +5008,30 @@
                 "range_stddev_m": 0.45,
                 "bearing_stddev_rad": 0.08,
                 "drop_probability": 0.1
-              }
-            }
+              },
+              "mount_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0,
+              "update_hz": 10
+            },
+            "id": "radar",
+            "robot_id": "player",
+            "period_ticks": 6,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": {
+              "id": "radar",
+              "seed_mode": "legacy_seed"
+            },
+            "update_hz": 10
           }
         ],
         "rules": {
@@ -4925,7 +5343,7 @@
             "perception/polar_tracker.py": [
               {
                 "function": "update",
-                "text": "输入 measurements: tuple[PolarTargetEstimate, ...]，当前帧敌车中心的原始极坐标观测集合，当前长度为 0 或 1；缺测为 ()，不是 NumPy 数组，也不是历史缓存。与 C2 的 tuple[TargetEstimate, ...] 结构相同，字段改为距离和方位。\n每个 measurement 的 range_m: float 为距离（m），bearing_rad: float 为相对我方车头的方位（rad），均在当前我方 base_link；输入 covariance 为 None，measurement_covariance 构造参数仍提供 YAML 中的 (2,2) 测量噪声矩阵。输入对象复用 PolarTargetEstimate 类型，但仍是未滤波的雷达观测，不是系统替你计算的估计。\nown_pose: shape=(3,) 的公开自身 [x_m,y_m,yaw_rad] NumPy 数组；dt: float 为仿真秒。\n返回 PolarTargetEstimate(range_m: float,bearing_rad: float,covariance=None) 或 None。输出仍在当前车体系，bearing 归一到 [-pi,pi)，covariance 为 None 或 (2,2) NumPy 矩阵，顺序 r/theta。\n读取示例：measurement: PolarTargetEstimate = measurements[0]；r: float = measurement.range_m；theta: float = measurement.bearing_rad。读取前先判断 if measurements，缺测时可以只预测。\n内部可以保存 NumPy 状态 [x,y,vx,vy]，观测模型使用 hypot/atan2，推导 Jacobian、环绕角度创新并更新协方差；框架不先转换为地图 x/y，不强制唯一算法。\n从旧数组接口迁移：将原来的 measurements_rt[0,0] / measurements_rt[0,1] 改为 measurements[0].range_m / measurements[0].bearing_rad。如需矩阵，可自行使用 np.array([[m.range_m,m.bearing_rad] for m in measurements],dtype=np.float64).reshape((-1,2))。升级只更新管理脚手架，已有算法文件不覆盖；请按新签名自行适配后重新测试。"
+                "text": "输入 measurements: tuple[PolarTargetEstimate, ...]，当前帧敌车中心的原始极坐标观测集合，当前长度为 0 或 1；缺测为 ()，不是 NumPy 数组，也不是历史缓存。与 C2 的 tuple[TargetEstimate, ...] 结构相同，字段改为距离和方位。\n每个 measurement 的 range_m: float 为距离（m），bearing_rad: float 为相对我方车头的方位（rad），均在当前我方 base_link；输入 covariance 为 None，measurement_covariance 构造参数仍提供 YAML 中的 (2,2) 测量噪声矩阵。输入对象复用 PolarTargetEstimate 类型，但仍是未滤波的雷达观测，不是系统替你计算的估计。\nown_pose: shape=(3,) 的公开自身 [x_m,y_m,yaw_rad] NumPy 数组；dt: float 为仿真秒。\n返回 PolarTargetEstimate(range_m: float,bearing_rad: float,covariance=None) 或 None。输出仍在当前车体系，bearing 归一到 [-pi,pi)，covariance 为 None 或 (2,2) NumPy 矩阵，顺序 r/theta。\n读取示例：measurement: PolarTargetEstimate = measurements[0]；r: float = measurement.range_m；theta: float = measurement.bearing_rad。读取前先判断 if measurements，缺测时可以只预测。\n内部可以保存 NumPy 状态 [x,y,vx,vy]，观测模型使用 hypot/atan2，推导 Jacobian、环绕角度创新并更新协方差；框架不先转换为地图 x/y，不强制唯一算法。\n从旧数组接口迁移：将原来的 measurements_rt[0,0] / measurements_rt[0,1] 改为 measurements[0].range_m / measurements[0].bearing_rad。如需矩阵，可自行使用 np.array([[m.range_m,m.bearing_rad] for m in measurements],dtype=np.float64).reshape((-1,2))。升级会预览更新管理脚手架和仍未修改的旧算法空模板；已写算法保留，请按新签名自行适配后重新测试。"
               }
             ],
             "weapons/target_prediction.py": [
@@ -5133,16 +5551,6 @@
                 12.0,
                 0.2
               ]
-            },
-            {
-              "center": [
-                2.0,
-                0.0
-              ],
-              "size": [
-                0.2,
-                3.0
-              ]
             }
           ],
           "public_initial_pose": true,
@@ -5336,6 +5744,18 @@
             "topic": "/robot/sensors/joint_states",
             "schema": "joint_state@1",
             "frame_id": "base_link",
+            "id": "wheel_encoder",
+            "robot_id": "player",
+            "period_ticks": 2,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": null,
             "update_hz": 30
           },
           {
@@ -5343,6 +5763,18 @@
             "topic": "/robot/sensors/imu",
             "schema": "imu@1",
             "frame_id": "base_link",
+            "id": "imu",
+            "robot_id": "player",
+            "period_ticks": 2,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": null,
             "update_hz": 30
           },
           {
@@ -5350,6 +5782,18 @@
             "topic": "/robot/turret/joint_states",
             "schema": "joint_state@1",
             "frame_id": "base_link",
+            "id": "turret_joint",
+            "robot_id": "player",
+            "period_ticks": 2,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": null,
             "update_hz": 30
           },
           {
@@ -5357,6 +5801,18 @@
             "topic": "/robot/weapons/cannon/state",
             "schema": "weapon_state@1",
             "frame_id": "base_link",
+            "id": "weapon_state",
+            "robot_id": "player",
+            "period_ticks": 2,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": null,
             "update_hz": 30
           },
           {
@@ -5364,13 +5820,7 @@
             "topic": "/robot/sensors/armor_detections",
             "schema": "armor_detections@1",
             "frame_id": "base_link",
-            "update_hz": 10,
             "parameters": {
-              "mount_m": [
-                0.0,
-                0.0
-              ],
-              "yaw_rad": 0.0,
               "range_m": 12.0,
               "field_of_view_rad": 6.283185307179586,
               "occlusion": "walls",
@@ -5388,9 +5838,30 @@
               "selection": "nearest_visible",
               "visibility": "front_facing",
               "ordering": "noiseless_range",
-              "random_stream": "nearest_visible_armor",
-              "anonymous": true
-            }
+              "anonymous": true,
+              "mount_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0,
+              "random_stream": "nearest_visible_armor"
+            },
+            "id": "armor_detector",
+            "robot_id": "player",
+            "period_ticks": 6,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": {
+              "id": "nearest_visible_armor",
+              "seed_mode": "named"
+            },
+            "update_hz": 10
           }
         ],
         "rules": {
@@ -6445,7 +6916,7 @@
           "own_pose": "ndarray",
           "measurements": "tuple[PolarTargetEstimate, ...]"
         },
-        "completion": "首次成功部署后计时，限时 {time_limit_s} 仿真秒，双方 {max_hp} HP。存活并击杀敌车通关；玩家死亡或超时失败，主动结束后可编辑。运行中不公开目标真值误差。",
+        "completion": "首次成功部署后计时，限时 {time_limit_s} 仿真秒，双方 {max_hp} HP。存活并击杀敌车通关；玩家死亡或超时失败，主动结束后可编辑。运行中显示累计位置 RMSE、有效样本数与曲线；极坐标估计按同采样时刻自身位姿转换到地图系计分，单位 m。测试不计入，重试清零，结束后冻结。",
         "common_errors": [
           "不要把 range/bearing 当作地图 x/y；角度创新须归一到 [-pi,pi)。",
           "观测元组只有当前帧，不是历史；需要保留状态或窗口时必须限制大小。",

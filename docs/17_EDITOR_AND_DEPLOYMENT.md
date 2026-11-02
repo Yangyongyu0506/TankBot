@@ -75,7 +75,7 @@ UI 看到的测试/部署结果连同对应源码快照保存在 `archive-<sha25
 | `GET /api/workspace` | 当前 snapshot、limits、CSRF token |
 | `POST /api/workspace/save` | `{revision, changes}`；路径映射到新文本，null 为显式删除；CAS 保存 |
 | `POST /api/workspace/template` | `{revision}`；基础模板预览，现有文件默认 keep |
-| `POST /api/workspace/upgrade` | `{revision}`；教学运行框架专用预览，排除已有算法和非系统测试文件；不自动应用 |
+| `POST /api/workspace/upgrade` | `{revision}`；教学升级预览，排除已写算法和非系统测试文件；可列入 ledger 证明未修改的旧算法空模板，不自动应用 |
 | `POST /api/workspace/import` | `{revision, files}`；只导入文本，生成冲突 plan |
 | `POST /api/workspace/apply` | `{revision, plan_id, resolutions}`；每路径 keep/incoming |
 | `POST /api/workspace/revision` | `{revision}`；读取本库历史源码 |

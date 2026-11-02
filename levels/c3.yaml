@@ -23,38 +23,8 @@ world:
     sensor_hz: 30
     algorithm_hz: 10
   map:
-    source: inline
-    walls:
-    - center:
-      - 6.1
-      - 0.0
-      size:
-      - 0.2
-      - 8.4
-    - center:
-      - -6.1
-      - 0.0
-      size:
-      - 0.2
-      - 8.4
-    - center:
-      - 0.0
-      - 4.1
-      size:
-      - 12.0
-      - 0.2
-    - center:
-      - 0.0
-      - -4.1
-      size:
-      - 12.0
-      - 0.2
-    - center:
-      - 2.0
-      - 0.0
-      size:
-      - 0.2
-      - 3.0
+    source: asset
+    path: maps/open_training.yaml
 robots:
 - id: player
   type: tank
@@ -82,36 +52,66 @@ robots:
     topic: /robot/sensors/joint_states
     schema: joint_state@1
     frame_id: base_link
-    update_hz: 30
+    id: wheel_encoder
+    robot_id: player
+    period_ticks: 2
+    mount:
+      parent_frame: base_link
+      translation_m:
+      - 0.0
+      - 0.0
+      yaw_rad: 0.0
+    random_stream: null
   - type: imu
     topic: /robot/sensors/imu
     schema: imu@1
     frame_id: base_link
-    update_hz: 30
+    id: imu
+    robot_id: player
+    period_ticks: 2
+    mount:
+      parent_frame: base_link
+      translation_m:
+      - 0.0
+      - 0.0
+      yaw_rad: 0.0
+    random_stream: null
   - type: turret_joint
     topic: /robot/turret/joint_states
     schema: joint_state@1
     frame_id: base_link
-    update_hz: 30
+    id: turret_joint
+    robot_id: player
+    period_ticks: 2
+    mount:
+      parent_frame: base_link
+      translation_m:
+      - 0.0
+      - 0.0
+      yaw_rad: 0.0
+    random_stream: null
   - type: weapon_state
     topic: /robot/weapons/cannon/state
     schema: weapon_state@1
     frame_id: base_link
-    update_hz: 30
+    id: weapon_state
+    robot_id: player
+    period_ticks: 2
+    mount:
+      parent_frame: base_link
+      translation_m:
+      - 0.0
+      - 0.0
+      yaw_rad: 0.0
+    random_stream: null
   - type: radar
     topic: /robot/sensors/radar
     schema: radar@1
     frame_id: radar_link
-    update_hz: 10
     parameters:
-      mount_m:
-      - 0.0
-      - 0.0
-      yaw_rad: 0.0
       frame_id: radar_link
       range_m: 12.0
       field_of_view_rad: 6.283185307179586
-      update_hz: 10
       occlusion: walls
       measurement: target_center
       latency_ticks: 0
@@ -121,6 +121,18 @@ robots:
         range_stddev_m: 0.45
         bearing_stddev_rad: 0.08
         drop_probability: 0.1
+    id: radar
+    robot_id: player
+    period_ticks: 6
+    mount:
+      parent_frame: base_link
+      translation_m:
+      - 0.0
+      - 0.0
+      yaw_rad: 0.0
+    random_stream:
+      id: radar
+      seed_mode: legacy_seed
 - id: patrol_enemy
   type: patrol_tank
   role: target
@@ -229,6 +241,8 @@ permissions:
     - target_polar_estimate@1
     actuators: {}
   visualization:
+    allowed_metrics:
+    - rmse_m
     view_policy:
       policy_id: campaign-c3
       system_pose_allowed: true
@@ -350,6 +364,14 @@ objectives:
 evaluation:
   type: terminal_diagnostics
   publish_on: terminal
+  live_feedback:
+    metric: rmse_m
+    title: 实时去噪效果
+    label: 累计位置 RMSE
+    unit: m
+    precision: 3
+    history_points: 120
+    description: 从首次部署起累计，按估计采样时刻比较目标位置；数值越低，整体误差越小。测试快照不计入，重新部署不清零；重试关卡重新累计。
   metrics:
   - id: rmse_m
     type: position_rmse
@@ -384,7 +406,7 @@ tutorial:
     aliases:
       own_pose: ndarray
       measurements: tuple[PolarTargetEstimate, ...]
-    completion: 首次成功部署后计时，限时 {time_limit_s} 仿真秒，双方 {max_hp} HP。存活并击杀敌车通关；玩家死亡或超时失败，主动结束后可编辑。运行中不公开目标真值误差。
+    completion: 首次成功部署后计时，限时 {time_limit_s} 仿真秒，双方 {max_hp} HP。存活并击杀敌车通关；玩家死亡或超时失败，主动结束后可编辑。运行中显示累计位置 RMSE、有效样本数与曲线；极坐标估计按同采样时刻自身位姿转换到地图系计分，单位 m。测试不计入，重试清零，结束后冻结。
     common_errors:
     - 不要把 range/bearing 当作地图 x/y；角度创新须归一到 [-pi,pi)。
     - 观测元组只有当前帧，不是历史；需要保留状态或窗口时必须限制大小。
@@ -449,4 +471,4 @@ scaffolding:
 
         从旧数组接口迁移：将原来的 measurements_rt[0,0] / measurements_rt[0,1] 改为 measurements[0].range_m
         / measurements[0].bearing_rad。如需矩阵，可自行使用 np.array([[m.range_m,m.bearing_rad]
-        for m in measurements],dtype=np.float64).reshape((-1,2))。升级只更新管理脚手架，已有算法文件不覆盖；请按新签名自行适配后重新测试。'
+        for m in measurements],dtype=np.float64).reshape((-1,2))。升级会预览更新管理脚手架和仍未修改的旧算法空模板；已写算法保留，请按新签名自行适配后重新测试。'

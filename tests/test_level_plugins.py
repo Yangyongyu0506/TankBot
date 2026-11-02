@@ -59,6 +59,11 @@ class LevelPluginTests(unittest.TestCase):
             # new sensor/control/goal semantics have dedicated curriculum acceptance tests.
             if lid not in ('c0','c1','c2'):continue
             expected=copy.deepcopy(expected)
+            # Explicit map change: the teaching chapters now have only the original
+            # boundary walls. Preserve the historical fixture and all other behavior.
+            for walls in (expected['physics']['scene']['walls'],expected['profile']['walls']):
+                self.assertEqual(walls[-1],{'center':[2.0,0.0],'size':[0.2,3.0]})
+                walls.pop()
             # Subsequent user requirement: Weapons projectiles are now visible.
             # Keep the original fixture; only this explicit policy change is exempt.
             if lid in ('c1','c2','c3','c4'):

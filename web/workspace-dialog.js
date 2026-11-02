@@ -35,7 +35,7 @@ export function setupWorkspaceDialog(releaseControls){
     if(!document.activeElement?.closest(".cm-editor"))hide();
   });
   window.addEventListener("keydown",event=>{
-    if(document.getElementById("settings-dialog")?.open||!shortcut(event,"editor"))return;
+    if(document.getElementById("map-dialog")?.open||document.getElementById("settings-dialog")?.open||!shortcut(event,"editor"))return;
     event.preventDefault();event.stopImmediatePropagation();
     if(!event.repeat)(dialog.open?hide():show());
   },{capture:true});

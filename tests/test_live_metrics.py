@@ -12,11 +12,13 @@ from tankbot_host.campaign import CampaignSession,configure
 from tankbot_host.deployment import DeploymentManager
 from tankbot_host.workspace import digest
 from campaign_support import solutions
+from weapons_curriculum_support import solutions as polar_solutions
 
 
 class LiveMetricTests(unittest.TestCase):
     def setUp(self):self.base=load_config(ROOT/'config/game.yaml')
     def config(self,level='c2'):return configure(self.base,level)
+    def sources(self,config):return solutions(config)
 
     def test_cumulative_rmse_counts_only_new_scored_outputs_and_freezes_at_finish(self):
         session=CampaignSession(self.config())
@@ -40,7 +42,7 @@ class LiveMetricTests(unittest.TestCase):
         self.assertEqual(session.public(),final)
 
     def test_other_levels_do_not_publish_live_metrics_and_permission_is_checked_at_projection(self):
-        for level in ('c0','c1','c3','c4'):
+        for level in ('c0','c1','c4','c5'):
             session=CampaignSession(self.config(level));session.start(0)
             session.estimate({'simulation_tick':6,'payload':{'x_m':3,'y_m':4}},[0,0,0])
             self.assertNotIn('live_metrics',session.public())
@@ -49,7 +51,7 @@ class LiveMetricTests(unittest.TestCase):
         self.assertNotIn('live_metrics',session.public())
 
     def test_active_feedback_uses_sample_time_truth_and_stays_out_of_robot_topics(self):
-        config=self.config();a=Authority(config,controlled=True,startup_sources=solutions(config));self.addCleanup(a.close)
+        config=self.config();a=Authority(config,controlled=True,startup_sources=self.sources(config));self.addCleanup(a.close)
         truth_by_tick={};samples=[]
         observe=a.campaign.estimate
         def capture(message,truth):
@@ -77,7 +79,7 @@ class LiveMetricTests(unittest.TestCase):
     def test_test_snapshots_do_not_count_redeploy_keeps_counts_and_restart_resets(self):
         config=self.config();a=Authority(config,controlled=True);self.addCleanup(a.close)
         a.deployment=DeploymentManager(a)
-        snapshot={'files':solutions(config),'ledger':{}};snapshot['revision']=digest(snapshot)
+        snapshot={'files':self.sources(config),'ledger':{}};snapshot['revision']=digest(snapshot)
         a.deployment.start('test',snapshot);self.finish(a)
         self.assertEqual(a.deployment.last['status'],'Ready',a.deployment.last)
         self.assertEqual(a.campaign.public()['live_metrics']['scored_samples'],0)
@@ -97,3 +99,8 @@ class LiveMetricTests(unittest.TestCase):
             a.advance()
             if a.deployment.job and not a.deployment.job['worker'].ready:time.sleep(.002)
         self.assertIsNone(a.deployment.job)
+
+
+class C3LiveMetricTests(LiveMetricTests):
+    def config(self,level="c3"):return configure(self.base,level)
+    def sources(self,config):return polar_solutions(config)

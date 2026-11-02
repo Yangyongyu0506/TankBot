@@ -1,0 +1,50 @@
+{
+  "c0:differential": {
+    "physics": "c239fd8e9f0d9fefac6968be9aedf781e914ec0ee617400091f268cb44d8e6c4",
+    "sensors": "a3724837226b359cc188f3d0c265ce121d1a7a699b38482c8aa2cddaeebef995"
+  },
+  "c0:omnidirectional": {
+    "physics": "b5ee701cedbbe360ef16502351983ce762a14effaf4bd312cae1f604aedc2192",
+    "sensors": "a3724837226b359cc188f3d0c265ce121d1a7a699b38482c8aa2cddaeebef995"
+  },
+  "c1:differential": {
+    "physics": "1343d0ede2ab7b1e93f04ca5e9ed6418101994dedd0f0e19016f09d3e6f30e2b",
+    "sensors": "25c7a8b88414cc2b4f2f57eb055a371560e293706b6ce6e911c26e90c6e4e140"
+  },
+  "c1:omnidirectional": {
+    "physics": "5276415760a579288d759fa8e008b799d082aeb5b46a3dbe01726d37aadbce01",
+    "sensors": "60a3f202662342783f508f27dc897d7a1eee6458940cd7dab576cab5d3c71625"
+  },
+  "c2:differential": {
+    "physics": "52624f4c92a324a100144abaf0983561ec1c443cfb02b3f277091dc5b47ceea1",
+    "sensors": "d3d0e08c7c4982a6598dee2453e089ed952cf467f5f358f39371c11c9620abb3"
+  },
+  "c2:omnidirectional": {
+    "physics": "0c8d1ff24a8f33edad9f38d37438d83e552d9e563e4d1526dc6674dcc9a23989",
+    "sensors": "857b711e2f3bcd1113b34f58903069f78490c0948ed61784bf7316be1c41520f"
+  },
+  "c3:differential": {
+    "physics": "52624f4c92a324a100144abaf0983561ec1c443cfb02b3f277091dc5b47ceea1",
+    "sensors": "d3d0e08c7c4982a6598dee2453e089ed952cf467f5f358f39371c11c9620abb3"
+  },
+  "c3:omnidirectional": {
+    "physics": "0c8d1ff24a8f33edad9f38d37438d83e552d9e563e4d1526dc6674dcc9a23989",
+    "sensors": "857b711e2f3bcd1113b34f58903069f78490c0948ed61784bf7316be1c41520f"
+  },
+  "c4:differential": {
+    "physics": "52624f4c92a324a100144abaf0983561ec1c443cfb02b3f277091dc5b47ceea1",
+    "sensors": "d3d0e08c7c4982a6598dee2453e089ed952cf467f5f358f39371c11c9620abb3"
+  },
+  "c4:omnidirectional": {
+    "physics": "0c8d1ff24a8f33edad9f38d37438d83e552d9e563e4d1526dc6674dcc9a23989",
+    "sensors": "857b711e2f3bcd1113b34f58903069f78490c0948ed61784bf7316be1c41520f"
+  },
+  "c5:differential": {
+    "physics": "1563a4d79a48445a787f47e9c010016a96dc5ed253c075bd256d6d0d1ce2f1a4",
+    "sensors": "4b9b96598eb7f8a29d1aa4efbfeb8b2dd33a29798c10d940259ac63262908e53"
+  },
+  "c5:omnidirectional": {
+    "physics": "b3e7799dfbb089d4d291108c6c2eb52604861372ca28092903706051db9127d6",
+    "sensors": "cb33c90f567cd0f52b18ba9bbf1205d74bda2171ac8941e85f197fd90f42a13f"
+  }
+}

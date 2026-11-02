@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://tankbot.example/schemas/v1/chassis-profile.schema.json",
-  "title": "Reusable chassis geometry and mounts",
+  "title": "Complete reusable chassis model",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -14,7 +14,10 @@
   ],
   "properties": {
     "schema_version": {
-      "const": "1.0"
+      "enum": [
+        "1.0",
+        "2.0"
+      ]
     },
     "chassis_type": {
       "enum": [
@@ -40,6 +43,14 @@
           "exclusiveMinimum": 0
         },
         "corner_radius_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "mass_kg": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "yaw_inertia_kg_m2": {
           "type": "number",
           "exclusiveMinimum": 0
         }
@@ -86,6 +97,217 @@
     },
     "visual": {
       "type": "object"
+    },
+    "servo": {
+      "type": "object",
+      "properties": {
+        "tau_x_s": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "tau_y_s": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "tau_yaw_s": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "max_force_x_n": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "max_force_y_n": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "max_torque_nm": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "zero_target_behavior": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "tau_x_s",
+        "tau_y_s",
+        "tau_yaw_s",
+        "max_force_x_n",
+        "max_force_y_n",
+        "max_torque_nm",
+        "zero_target_behavior"
+      ],
+      "additionalProperties": false
+    },
+    "controller": {
+      "type": "object",
+      "properties": {
+        "cmd_vel_timeout_s": {
+          "type": "number"
+        },
+        "overspeed_target": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unsupported_lateral": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "cmd_vel_timeout_s",
+        "overspeed_target",
+        "unsupported_lateral"
+      ],
+      "additionalProperties": false
+    },
+    "motion_limits": {
+      "type": "object",
+      "properties": {
+        "max_vx_mps": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "max_vy_mps": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "max_wz_radps": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "max_vx_mps",
+        "max_vy_mps",
+        "max_wz_radps"
+      ],
+      "additionalProperties": false
+    },
+    "drive": {
+      "type": "object",
+      "properties": {
+        "lateral_actuation": {
+          "type": "boolean"
+        },
+        "drag_x_n_s_per_m": {
+          "type": "number",
+          "minimum": 0
+        },
+        "drag_y_n_s_per_m": {
+          "type": "number",
+          "minimum": 0
+        },
+        "drag_yaw_nm_s": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "lateral_actuation",
+        "drag_x_n_s_per_m",
+        "drag_y_n_s_per_m",
+        "drag_yaw_nm_s"
+      ],
+      "additionalProperties": false
+    },
+    "wheels": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "radius_m": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "track_m": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          },
+          "required": [
+            "radius_m",
+            "track_m"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "geometry_version": {
+              "const": "radial_omni@1"
+            },
+            "center_radius_m": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "wheels": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_]{0,47}$"
+                  },
+                  "azimuth_deg": {
+                    "type": "number",
+                    "minimum": 0,
+                    "exclusiveMaximum": 360
+                  }
+                },
+                "required": [
+                  "name",
+                  "azimuth_deg"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 4,
+              "maxItems": 4
+            },
+            "radius_m": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          },
+          "required": [
+            "geometry_version",
+            "center_radius_m",
+            "wheels",
+            "radius_m"
+          ]
+        }
+      ]
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "schema_version": {
+            "const": "2.0"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "servo",
+          "controller",
+          "motion_limits",
+          "drive",
+          "wheels"
+        ],
+        "properties": {
+          "body": {
+            "required": [
+              "mass_kg",
+              "yaw_inertia_kg_m2"
+            ]
+          }
+        }
+      }
+    }
+  ]
 }

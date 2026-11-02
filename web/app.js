@@ -7,6 +7,7 @@ import {mountSettings} from "/settings-ui.js";
 import {binding,controlKey,keyLabel} from "/keyboard.js";
 import {mountVisualization,drawVisualization} from "/visualization.js";
 import {mountRuntimeLogs} from "/runtime-logs.js";
+import {mountMapPreview} from "/map-preview.js";
 import {mountRobotGraph} from "/robot-graph.js";
 
 const $ = id => document.getElementById(id);
@@ -59,7 +60,7 @@ function key(code, down) {
 }
 function releaseControls(){keys.clear();joy?.suspend();joyControls=neutralControls();document.querySelectorAll("button[data-key].active").forEach(e=>e.classList.remove("active"));command();}
 const workspaceDialog=setupWorkspaceDialog(releaseControls);
-const editing = target => $("settings-dialog").open||$("workspace-dialog").open||target?.closest?.("input, textarea, select, [contenteditable]");
+const editing = target => $("map-dialog").open||$("settings-dialog").open||$("workspace-dialog").open||target?.closest?.("input, textarea, select, [contenteditable]");
 const visibleFocused=()=>!document.hidden&&document.hasFocus();
 const canDrive=()=>visibleFocused()&&!campaignEnded&&!campaignWaiting&&!editing(document.activeElement);
 function updateControlLabels(){
@@ -86,7 +87,7 @@ function sampleGamepad(now){
   let frame,error="";
   try{
     if(joy.enabled&&typeof navigator.getGamepads!=="function")throw Error("浏览器不支持手柄 API");
-    frame=joy.sample(joy.enabled?navigator.getGamepads():[],{motionAllowed:canDrive(),uiAllowed:visibleFocused()&&!$("settings-dialog").open});
+    frame=joy.sample(joy.enabled?navigator.getGamepads():[],{motionAllowed:canDrive(),uiAllowed:visibleFocused()&&!$("map-dialog").open&&!$("settings-dialog").open});
   }catch{
     joy.suspend(true);frame={...neutralControls(),devices:[],device:null,status:"unavailable"};
     error=isSecureContext?"浏览器未开放手柄访问；请检查浏览器设置。":"手柄需要 HTTPS 或 localhost；请使用安全地址。";
@@ -359,6 +360,7 @@ try {
   $("mode-label").textContent = profile.view_mode === "weapons-practice" ? "真值练习视图 / Ground Truth · 跟随平移，世界方向固定" : "估计视图 / Estimated State · 相机跟随授权估计";
   $("fire").disabled = profile.control_sources.weapon !== "keyboard";
   mountRobotGraph(profile,browser);
+  mountMapPreview(releaseControls);
   mountWorkspace(browser).catch(error=>$("workspace-message").textContent="编辑器加载失败："+error.message+"。请运行 python3 tools/build.py 后刷新页面。");
   if(profile.control_sources.chassis!=="keyboard"){
     $("controls").textContent="Weapons 章节：底盘锁定，零目标主动制动；后坐与受击继续按真实物理计算。";

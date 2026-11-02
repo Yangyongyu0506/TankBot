@@ -24,3 +24,13 @@ C3/C4 的模板为 5.0.0，F2 类型参考、参数签名、空帧及迁移示�
 原生与浏览器 WASM/Pyodide 两种真实网页均通过：分别经 CodeMirror 编辑、保存、测试 Ready、部署 Active，依次完成 C3→C4→C5。C3 保留人工武器；C4/C5 由程序自主击杀。
 
 证据为 `.m1-cache/polar-tuples/native-ui.json`、`browser-ui.json` 与对应 tree/running 截图。两种 Runtime 共享新管理适配器，C3/C4 算法通过字段读取实际观测对象；C5 仍读取装甲矩阵。全部复验使用独立源码库、设置与存档，不修改用户日常项目。普通 Python 仍受现有本机运行限制，本次不增加安全隔离能力；其他平台、教学效果与多目标未在本轮验证。
+
+## 已有项目仍显示旧 NumPy 签名的补充修复（2026-10-29）
+
+实际默认项目的 perception/polar_tracker.py 仍等于 3.0.0 生成 ledger 的原文，尚无算法实现；robot_modules/observations.py 已是 polar_tuple@1。旧升级规则只更新管理文件，导致未修改算法空模板也一直保留。新源模板和实际 Runtime tuple 输入均没有回退。
+
+现由 [ADR-0044](../adr/0044-preview-untouched-algorithm-upgrades.md) 增加来源可证的旧空模板检测。F2 会提示具体路径，预览包含旧文件与新 tuple 签名，点击「保留已写算法，更新模板并继续测试」后创建新 revision。未确认前源码保持。已填写算法不替换；C1/C2 文件不进入本次清单。若旧算法确实已写，应自行把 measurements_rt 的数组下标改成 measurements[0].range_m / .bearing_rad 等字段读取。
+
+本次对真实 userdata 仅做只读诊断与内存预览，核对 HEAD 未变；旧源码和历史没有被直接改写。网页与自动迁移验收使用独立临时项目。
+
+补充验收结果：204 项 Python 回归通过（156.349 秒），包含旧空模板升级、已编辑/无来源文件保留、仅文案差异不强制更新和跨关升级。原生与浏览器实际 F2 均完成预览→确认→新 tuple 签名→Test Ready，C1/C2 内容一致；本机记录为 `.m1-cache/polar-stub-upgrade/native-ui.json`、`browser-ui.json` 及 PNG。浏览器报告检查当前 revision 的 Ready 测试记录，避免后台旧程序故障状态遮住候选测试结果。

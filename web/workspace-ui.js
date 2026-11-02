@@ -38,6 +38,7 @@ export async function mountWorkspace(browser){
       status?.last?.status==="Failed"&&status.last.revision===snapshot.revision?"当前快照测试失败；请查看下方错误，修改后重新测试。":"当前快照尚未测试通过；通过后部署按钮会亮起。";
     $("deploy-help").textContent=deployHelp;$("deploy-workspace").title=deployHelp;
     $("workspace-upgrade").hidden=!needsUpgrade;
+    if(needsUpgrade&&initial.learning.upgrade?.message)$("workspace-upgrade").querySelector("span").textContent=initial.learning.upgrade.message;
     $("preview-teaching-upgrade").disabled=busy||Boolean(status?.job);
     $("rollback-workspace").disabled=ended||busy||Boolean(status?.job)||!$("deployment-history").value;
   }
@@ -56,11 +57,12 @@ export async function mountWorkspace(browser){
   function locate(text){const location=sourceLocation(text);if(location&&files[location.path]!==undefined){open(location.path);editor.go(location.line);}}
   function showPlan(value){
     plan=value;$("migration-panel").hidden=false;$("migration-list").replaceChildren();
-    const guided=plan.purpose==="teaching-framework-upgrade";
-    $("migration-explanation").textContent=guided?(plan.message?plan.message+" ":"")+"本次只替换下列课程运行文件，并补齐缺失文件。perception/ 等已有算法文件不参与替换；运行文件中自己的修改可从旧版本恢复。确认预览后，可更新框架并继续测试。":"已有文件默认保留；请逐项检查后应用。";
+    const guided=plan.purpose==="teaching-framework-upgrade",untouched=new Set(plan.generated_algorithm_files??[]);
+    $("migration-explanation").textContent=guided?(plan.message?plan.message+" ":"")+(untouched.size?"本次更新运行文件与以下未修改的旧算法空模板；已编写的算法文件不参与替换。旧文件保留在历史 revision。请检查当前内容和新建议，再确认更新。":"本次只替换下列课程运行文件，并补齐缺失文件。perception/ 等已有算法文件不参与替换；运行文件中自己的修改可从旧版本恢复。确认预览后，可更新框架并继续测试。"):"已有文件默认保留；请逐项检查后应用。";
+    $("upgrade-and-test").textContent=untouched.size?"保留已写算法，更新模板并继续测试":"保留算法，更新框架并继续测试";
     $("upgrade-and-test").hidden=!guided;$("apply-migration").hidden=guided;$("select-framework-upgrade").hidden=guided;
     for(const entry of plan.entries){
-      const detail=document.createElement("details"),summary=document.createElement("summary");summary.textContent=entry.path+" · "+(entry.action==="create"?"新增":guided?"运行文件：确认后更新":"已有文件：默认保留");detail.append(summary);
+      const detail=document.createElement("details"),summary=document.createElement("summary");summary.textContent=entry.path+" · "+(entry.action==="create"?"新增":guided?(untouched.has(entry.path)?"未修改的旧算法空模板：确认后更新接口":"运行文件：确认后更新"):"已有文件：默认保留");detail.append(summary);
       const row=document.createElement("div");row.className="migration-columns";
       for(const [label,text] of [["旧模板",entry.base],["当前内容",entry.current],["新建议",entry.incoming]]){
         const column=document.createElement("div"),heading=document.createElement("strong"),pre=document.createElement("pre");heading.textContent=label;pre.textContent=text??"（无）";column.append(heading,pre);row.append(column);
@@ -77,7 +79,7 @@ export async function mountWorkspace(browser){
   async function refreshUpgrade(){
     const current=await (await fetch("/api/workspace")).json();
     if(current.snapshot.revision!==snapshot.revision)throw Error("其他窗口更新了工作区；请先导出当前草稿，再刷新以读取新版本。");
-    needsUpgrade=current.learning.upgrade_required;learning.updateUpgrade(needsUpgrade);refresh();return needsUpgrade;
+    initial.learning.upgrade=current.learning.upgrade;needsUpgrade=current.learning.upgrade_required;learning.updateUpgrade(needsUpgrade);refresh();return needsUpgrade;
   }
   async function previewUpgrade(){await save();showPlan(await http("upgrade",{revision:snapshot.revision}));}
   async function testSnapshot(){

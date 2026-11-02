@@ -121,7 +121,36 @@ def scaffold_api(source: str, class_name: str) -> str | None:
     return None
 
 
-def framework_upgrade(config: dict, files: dict[str, str]) -> dict:
+def generated_algorithm_updates(config: dict, files: dict[str, str], ledger: dict) -> list[str]:
+    """Only offer old, untouched generated stubs; never infer ownership from a TODO."""
+    level = config.get("campaign", {}).get("active_level")
+    if not level:
+        return []
+    from .level_templates import sources
+    definition = config["campaign"]["levels"][level]
+    incoming = sources(definition)
+    managed = set(definition["runtime"].get("managed_files", []))
+    lesson = definition["tutorial"]["lesson"]
+    editable = set(lesson.get("edit_files", [item["path"] for item in lesson["functions"]]))
+    generated = [entry.get("files", {}) for key,entry in ledger.items()
+                 if key.startswith("campaign-")]
+    def implementation(source):
+        try:
+            tree=ast.parse(source)
+        except SyntaxError:
+            return None
+        for node in ast.walk(tree):
+            if isinstance(node,(ast.Module,ast.ClassDef,ast.FunctionDef,ast.AsyncFunctionDef)) and ast.get_docstring(node) is not None:
+                node.body=node.body[1:]
+        return ast.dump(tree)
+    return sorted(path for path in editable if path not in managed and path in files
+                  and path in incoming and files[path] != incoming[path]
+                  and implementation(files[path]) is not None
+                  and implementation(files[path]) != implementation(incoming[path])
+                  and any(old.get(path) == files[path] for old in generated))
+
+
+def framework_upgrade(config: dict, files: dict[str, str], ledger: dict | None = None) -> dict:
     """One compatibility check for the editor and Test; comments are not an API."""
     level = config.get("campaign",{}).get("active_level")
     profile_name = config["campaign"]["levels"][level].get("robot_profile") if level else None
@@ -158,8 +187,11 @@ def framework_upgrade(config: dict, files: dict[str, str]) -> dict:
                                     pass  # Test must report source syntax errors normally.
         except (ValueError,KeyError,TypeError):
             current = False
-        return {"required":not current,"current_version":None,"target_version":profile["template_version"],
-                "managed_files":profile["managed_files"],"message":"本关运行配置需要更新；请预览升级，已有 perception/ 和 weapons/ 算法文件会保留。" if not current else ""}
+        generated = generated_algorithm_updates(config,files,ledger or {})
+        message = ("发现仍未修改的旧算法模板："+"、".join(generated)+"。请预览更新输入接口；已编写的算法文件保留。"
+                   if generated else "本关运行配置需要更新；请预览升级，已有 perception/ 和 weapons/ 算法文件会保留。" if not current else "")
+        return {"required":not current or bool(generated),"current_version":None,"target_version":profile["template_version"],
+                "managed_files":profile["managed_files"],"generated_algorithm_files":generated,"message":message}
     source: str = files.get("campaign_robot.py", "")
     marker: re.Match | None = re.search(r"^\s*# TankBot managed scaffold ([0-9.]+)(?:\s|$)", source, re.MULTILINE)
     current: bool = marker is not None and marker.group(1) == TEMPLATE_VERSION

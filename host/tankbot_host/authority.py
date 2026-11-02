@@ -13,7 +13,7 @@ from tankbot_protocol.wire import send, receive, strict_loads
 from .supervisor import Supervisor
 from .view import PoseSelector, ViewGateway, SystemPoseProvider
 from .wheel_geometry import validate_wheels, public_calibration
-from .campaign import active as campaign_level, validate_profile, CampaignSession, RadarSimulator, catalog
+from .campaign import active as campaign_level, validate_profile, CampaignSession, catalog
 from .logs import RuntimeLogs
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -21,12 +21,17 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def core_configuration(config):
     # Level discovery/tutorials belong to Host. Preserve the existing private physics DTO.
-    return {key:value for key,value in config.items() if key not in ("campaign","level_plugins","robot_graph")}
+    return {key:value for key,value in config.items() if key not in ("campaign","level_plugins","robot_graph","map_override")}
 
 
 def load_config(path):
     from .configuration import load_yaml
     config = load_yaml(path) if Path(path).suffix in (".yaml", ".yml") else strict_loads(Path(path).read_bytes())
+    if "map" in config.get("scene",{}):
+        from .level_plugins import resolve_map, LevelValidationError
+        if "walls" in config["scene"]:
+            raise LevelValidationError(path,"scene","map and walls cannot both be configured")
+        config["scene"]["walls"] = resolve_map(config["scene"].pop("map"),path,config,"scene.map")
     from .chassis_profiles import load_profiles
     load_profiles(config)
     if config.get("level_plugins") and "campaign" not in config:
@@ -101,8 +106,9 @@ class Authority:
     def __init__(self, config, *, workspace=None, binary=None, controlled=False,
                  core_factory=CoreAdapter, worker_factory=Supervisor, startup_sources=None, developer_mode=False,
                  startup_is_deployment=None):
-        from .chassis_profiles import apply_profiles
-        config = apply_profiles(copy.deepcopy(config))
+        from .scene_definition import resolve_scene
+        self.scene=resolve_scene(config)
+        config=self.scene.to_config()
         self.developer_mode = developer_mode
         if config["view_mode"]=="estimated" and (config["view_policy"]["system_pose_allowed"] or config["view_policy"]["world_effects"]):
             raise ValueError("Estimated view cannot grant truth")
@@ -131,10 +137,11 @@ class Authority:
         self._candidates = {}
         self._target_estimate = None
         self.campaign = CampaignSession(config) if campaign_level(config) else None
-        self.radar = RadarSimulator(config) if self.campaign else None
-        from .weapon_sensors import GpsInterceptSimulator,ArmorDetectionSimulator
-        self.intercepted_gps = GpsInterceptSimulator(config)
-        self.armor_detector = ArmorDetectionSimulator(config)
+        from .sensor_instances import SensorScheduler
+        self.sensor_scheduler=SensorScheduler(self.scene.sensors,config)
+        self.radar=self.sensor_scheduler.backend("radar")
+        self.intercepted_gps=self.sensor_scheduler.backend("intercepted_gps")
+        self.armor_detector=self.sensor_scheduler.backend("armor_detector")
         self._public_pose_history = {}
         self._target_history = {}
         self._sequences = {}
@@ -244,31 +251,10 @@ class Authority:
                 self._public_pose_history[self.tick] = copy.deepcopy(pose)
                 cutoff = self.tick-self.config["runtime"]["estimate_history_ticks"]
                 self._public_pose_history = {tick:value for tick,value in self._public_pose_history.items() if tick>=cutoff}
-            radar = self.radar.sample(self._private, self.tick)
-            if radar is not None:
-                msg = self._message("radar@1", "/robot/sensors/radar", radar, frame="radar_link", publisher="sensor:radar")
-                self.validator.validate(msg, now=self.tick, grants={("sensor:radar", msg["channel"], msg["schema"], "radar_link")})
-                self._sensors[msg["channel"]] = msg
-            gps = self.intercepted_gps.sample(self._private,self.tick)
-            if gps is not None:
-                msg = self._message("gps_fix@1","/robot/sensors/intercepted_gps",gps,frame="map",publisher="sensor:intercepted_gps")
-                self.validator.validate(msg,now=self.tick,grants={("sensor:intercepted_gps",msg["channel"],msg["schema"],"map")})
-                self._sensors[msg["channel"]] = msg
-            armor=self.armor_detector.sample(self._private,self.tick)
-            if armor is not None:
-                msg=self._message("armor_detections@1","/robot/sensors/armor_detections",armor,frame="base_link",publisher="sensor:armor_detector")
-                self.validator.validate(msg,now=self.tick,grants={("sensor:armor_detector",msg["channel"],msg["schema"],"base_link")})
-                self._sensors[msg["channel"]]=msg
-        for key, schema, channel in (("joint_states","joint_state@1","/robot/sensors/joint_states"),
-                ("imu","imu@1","/robot/sensors/imu"),("turret_joint_states","joint_state@1","/robot/turret/joint_states"),
-                ("weapon_state","weapon_state@1","/robot/weapons/cannon/state")):
-            if self.campaign and channel not in {sensor["topic"] for sensor in self.campaign.definition["sensors"]}:
-                continue
-            if key not in values:
-                continue
-            msg = self._message(schema, channel, values[key], frame="base_link")
-            self.validator.validate(msg, now=self.tick, grants={("authority", channel, schema, "base_link")})
-            self._sensors[channel] = msg
+        for instance,payload in self.sensor_scheduler.sample(self._private,self.tick):
+            msg=self._message(instance.schema,instance.topic,payload,frame=instance.frame_id,publisher=instance.publisher_id)
+            self.validator.validate(msg,now=self.tick,grants={(instance.publisher_id,instance.topic,instance.schema,instance.frame_id)})
+            self._sensors[instance.topic]=msg
 
     def _rate_limit(self):
         now = time.monotonic()
@@ -667,7 +653,7 @@ class Authority:
         if not self.developer_mode:
             raise Rejected("UNAUTHORIZED")
         target_visuals = {}
-        from .chassis_profiles import target_geometry
+        from .chassis_profiles import target_geometry,wheel_calibration_for
         for target in self.config["weapons"]["targets"]:
             motion = target.get("motion")
             if motion is None:
@@ -676,7 +662,7 @@ class Authority:
             target_visuals[target["target_id"]] = {
                 **target_geometry(self.config,target),
                 "chassis_visual": copy.deepcopy(self.config["rendering"]["chassis_models"][chassis]),
-                "wheel_calibration": public_calibration(self.config["wheels"]) if chassis == "omnidirectional" else None,
+                "wheel_calibration": wheel_calibration_for(self.config,chassis) if chassis == "omnidirectional" else None,
             }
         return {"version": 1, "run_id": self.run_id, "simulation_tick": self.tick,
                 "truth": copy.deepcopy(self._private), "sensors": copy.deepcopy(self._sensors),
@@ -702,6 +688,7 @@ class Authority:
         if calibration is not None:
             self.validator.structure(calibration,"wheel-calibration.schema.json")
         return {"run_id": self.run_id, "physics_hz": self.hz, "chassis": self.config["scene"]["default_chassis"],
+                "custom_map_practice":bool(self.config.get("map_override")),
                 "controller_profile":controller,"view_mode":self.config["view_mode"],
                 "campaign": {"active_level": campaign_level(self.config), "levels": catalog(self.config),"chapters":copy.deepcopy(self.config.get("campaign",{}).get("chapters",[]))},
                 "radar_calibration": ({key: copy.deepcopy(self.config["campaign"]["radar"][key])
@@ -725,6 +712,7 @@ class Authority:
         return hashlib.sha256(json.dumps(list(self.replay), sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
     def close(self):
+        self.sensor_scheduler.close()
         if self.deployment is not None:
             self.deployment.close()
         self.worker.close()

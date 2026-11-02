@@ -23,38 +23,8 @@ world:
     sensor_hz: 30
     algorithm_hz: 10
   map:
-    source: inline
-    walls:
-    - center:
-      - 6.1
-      - 0.0
-      size:
-      - 0.2
-      - 8.4
-    - center:
-      - -6.1
-      - 0.0
-      size:
-      - 0.2
-      - 8.4
-    - center:
-      - 0.0
-      - 4.1
-      size:
-      - 12.0
-      - 0.2
-    - center:
-      - 0.0
-      - -4.1
-      size:
-      - 12.0
-      - 0.2
-    - center:
-      - 2.0
-      - 0.0
-      size:
-      - 0.2
-      - 3.0
+    source: asset
+    path: maps/open_training.yaml
 robots:
 - id: player
   type: tank
@@ -82,36 +52,66 @@ robots:
     topic: /robot/sensors/joint_states
     schema: joint_state@1
     frame_id: base_link
-    update_hz: 30
+    id: wheel_encoder
+    robot_id: player
+    period_ticks: 2
+    mount:
+      parent_frame: base_link
+      translation_m:
+      - 0.0
+      - 0.0
+      yaw_rad: 0.0
+    random_stream: null
   - type: imu
     topic: /robot/sensors/imu
     schema: imu@1
     frame_id: base_link
-    update_hz: 30
+    id: imu
+    robot_id: player
+    period_ticks: 2
+    mount:
+      parent_frame: base_link
+      translation_m:
+      - 0.0
+      - 0.0
+      yaw_rad: 0.0
+    random_stream: null
   - type: turret_joint
     topic: /robot/turret/joint_states
     schema: joint_state@1
     frame_id: base_link
-    update_hz: 30
+    id: turret_joint
+    robot_id: player
+    period_ticks: 2
+    mount:
+      parent_frame: base_link
+      translation_m:
+      - 0.0
+      - 0.0
+      yaw_rad: 0.0
+    random_stream: null
   - type: weapon_state
     topic: /robot/weapons/cannon/state
     schema: weapon_state@1
     frame_id: base_link
-    update_hz: 30
+    id: weapon_state
+    robot_id: player
+    period_ticks: 2
+    mount:
+      parent_frame: base_link
+      translation_m:
+      - 0.0
+      - 0.0
+      yaw_rad: 0.0
+    random_stream: null
   - type: radar
     topic: /robot/sensors/radar
     schema: radar@1
     frame_id: radar_link
-    update_hz: 10
     parameters:
-      mount_m:
-      - 0.0
-      - 0.0
-      yaw_rad: 0.0
       frame_id: radar_link
       range_m: 12.0
       field_of_view_rad: 6.283185307179586
-      update_hz: 10
       occlusion: walls
       measurement: target_center
       latency_ticks: 0
@@ -121,6 +121,18 @@ robots:
         range_stddev_m: 0.45
         bearing_stddev_rad: 0.08
         drop_probability: 0.1
+    id: radar
+    robot_id: player
+    period_ticks: 6
+    mount:
+      parent_frame: base_link
+      translation_m:
+      - 0.0
+      - 0.0
+      yaw_rad: 0.0
+    random_stream:
+      id: radar
+      seed_mode: legacy_seed
 - id: patrol_enemy
   type: patrol_tank
   role: target
@@ -529,7 +541,7 @@ scaffolding:
 
         从旧数组接口迁移：将原来的 measurements_rt[0,0] / measurements_rt[0,1] 改为 measurements[0].range_m
         / measurements[0].bearing_rad。如需矩阵，可自行使用 np.array([[m.range_m,m.bearing_rad]
-        for m in measurements],dtype=np.float64).reshape((-1,2))。升级只更新管理脚手架，已有算法文件不覆盖；请按新签名自行适配后重新测试。'
+        for m in measurements],dtype=np.float64).reshape((-1,2))。升级会预览更新管理脚手架和仍未修改的旧算法空模板；已写算法保留，请按新签名自行适配后重新测试。'
     weapons/target_prediction.py:
     - function: update
       text: 'observation: AimInput；target_rt 是只读 shape=(2,) NumPy 数组 [range_m,bearing_rad]，单位

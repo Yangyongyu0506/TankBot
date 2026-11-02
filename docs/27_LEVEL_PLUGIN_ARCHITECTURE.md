@@ -20,6 +20,8 @@
 
 原有诊断为有效估计采样数、位置 RMSE、可用时的 yaw RMSE、物理命中数；仅结束后发布，无加权分数、星级或额外误差通关门槛。重复/倒退采样不计分。计时、手动结束、热部署不重置倒计时、末 tick 和同时死亡优先级必须保持。
 
+当前地图更新（2026-10-28）：C0–C5 已改为引用 `assets/maps/open_training.yaml`，仅保留原四面边界墙；旧地图保存为自由试验场资产。另有不同尺寸的导航布局资产，尚未绑定课程。上述迁移前表格保留历史事实，当前配置与预览见 [地图资产](../assets/maps/README.md)、[ADR-0041](adr/0041-shared-map-assets.md)。
+
 ## 原实现职责与问题
 
 `campaign.configure` 已统一启动，但 `game.yaml` 同时混有关卡、Radar profile、lesson 和 graph profile；仅改文件仍无法新增可运行关卡。`campaign_templates` 生成/执行按 c0/c1/c2 分支；learning 另有按 ID 的文案和行为；前端按 ID 选文件、展示真值说明/进度。CLI choices、Schema 枚举及存档数字排序也固定了关卡集合。权限校验对 c0 特许，成功规则直接耦合 CampaignSession。

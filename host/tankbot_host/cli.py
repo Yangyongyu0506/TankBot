@@ -6,9 +6,11 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def make_parser():
     parser = argparse.ArgumentParser(description="TankBot trusted-local simulation and teaching levels")
-    parser.add_argument("mode", choices=("serve", "browser", "headless", "probe"))
+    parser.add_argument("mode", nargs="?", choices=("serve", "browser", "headless", "probe"))
     parser.add_argument("--config", type=Path, default=ROOT / "config/game.yaml")
     parser.add_argument("--level", help="Start a teaching level with its authorized capabilities")
+    parser.add_argument("--map", help="Override the scene map with an assets/maps name or relative path")
+    parser.add_argument("--list-maps", action="store_true", help="List available map assets and exit")
     parser.add_argument("--chassis", choices=("differential", "omnidirectional"))
     parser.add_argument("--core-binary", type=Path)
     parser.add_argument("--workspace", type=Path)
@@ -30,6 +32,8 @@ def make_parser():
 def parse_args(argv=None):
     parser = make_parser()
     args = parser.parse_args(argv)
+    if args.mode is None and not args.list_maps:
+        parser.error("需要运行模式 serve/browser/headless/probe，或使用 --list-maps")
     if args.level and (args.view or args.robot_demo):
         parser.error("--level 不可与 --view 或 --robot-demo 合用")
     return parser, args
@@ -39,6 +43,11 @@ def main():
     parser, args = parse_args()
     from .authority import Authority, load_config
     config = load_config(args.config)
+    if args.list_maps:
+        from .maps import discover_maps
+        for item in discover_maps(config):
+            print(f"{item['path']}  ({len(item['walls'])} walls)")
+        return
     application = None
     if args.mode in ("serve", "browser"):
         from .application import ApplicationState
@@ -63,6 +72,14 @@ def main():
         config = configure(config, args.level)
     if args.chassis:
         config["scene"]["default_chassis"] = args.chassis
+        from .chassis_profiles import apply_profiles
+        apply_profiles(config,dynamics=True)
+    if args.map:
+        from .maps import set_override
+        try:
+            config = set_override(config,args.map)
+        except (ValueError,OSError) as error:
+            parser.error(str(error))
     if args.view:
         config["view_mode"] = args.view
         if args.view == "weapons-practice":
@@ -84,6 +101,8 @@ def main():
         return
     if args.mode == "probe":
         from .authority import CoreAdapter
+        from .scene_definition import resolve_scene
+        config=resolve_scene(config).to_config()
         core = CoreAdapter(config, config["scene"]["default_chassis"], args.core_binary)
         try:
             print(core.call({"op": "probe", "config": config}))

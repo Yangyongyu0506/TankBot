@@ -16,7 +16,7 @@ export function mountLearning(reference,openFile,previewTemplate){
   $("toggle-learning").onclick=()=>show(pane.hidden);
   $("close-learning").onclick=()=>show(false);
   window.addEventListener("keydown",event=>{
-    if(document.getElementById("settings-dialog")?.open||!shortcut(event,"help"))return;
+    if(document.getElementById("map-dialog")?.open||document.getElementById("settings-dialog")?.open||!shortcut(event,"help"))return;
     event.preventDefault();event.stopImmediatePropagation();
     const wasOpen=$("workspace-dialog").open;
     if(!wasOpen)$("open-workspace").click();
@@ -47,7 +47,7 @@ export function mountLearning(reference,openFile,previewTemplate){
   function updateUpgrade(required){
     upgradeNotice?.remove();upgradeNotice=null;
     if(!required)return;
-    upgradeNotice=element("section",undefined,"learning-upgrade");upgradeNotice.append(element("strong","需要更新课程运行框架"),element("p","这是项目兼容性检查，尚未测试你的算法。预览后可保留 perception/ 等算法文件，更新运行框架并继续测试。"));
+    upgradeNotice=element("section",undefined,"learning-upgrade");upgradeNotice.append(element("strong","需要更新课程运行框架"),element("p",reference.upgrade?.message||"这是项目兼容性检查，尚未测试你的算法。预览后可保留 perception/ 等算法文件，更新运行框架并继续测试。"));
     const button=element("button","预览更新（保留算法）");button.onclick=()=>{show(false);previewTemplate();};upgradeNotice.append(button);lesson.prepend(upgradeNotice);
   }
   updateUpgrade(reference.upgrade_required);

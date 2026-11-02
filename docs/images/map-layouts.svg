@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 720" role="img" aria-labelledby="title desc">
+<title id="title">TankBot map layouts</title>
+<desc id="desc">Five maps drawn at the same scale, twelve pixels per metre. Training maps contain boundary walls only; navigation maps contain staggered walls or shelves.</desc>
+<rect width="1000" height="720" fill="#f5f7fa"/>
+<text x="165" y="35" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#193147">Open training · 12 × 8 m</text>
+<rect x="237.00" y="134.60" width="2.40" height="100.80" fill="#3a5268"/>
+<rect x="90.60" y="134.60" width="2.40" height="100.80" fill="#3a5268"/>
+<rect x="93.00" y="134.60" width="144.00" height="2.40" fill="#3a5268"/>
+<rect x="93.00" y="233.00" width="144.00" height="2.40" fill="#3a5268"/>
+<circle cx="165" cy="185" r="2" fill="#c25342"/>
+<text x="495" y="35" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#193147">Open large · 20 × 14 m</text>
+<rect x="615.00" y="98.60" width="2.40" height="172.80" fill="#3a5268"/>
+<rect x="372.60" y="98.60" width="2.40" height="172.80" fill="#3a5268"/>
+<rect x="375.00" y="98.60" width="240.00" height="2.40" fill="#3a5268"/>
+<rect x="375.00" y="269.00" width="240.00" height="2.40" fill="#3a5268"/>
+<circle cx="495" cy="185" r="2" fill="#c25342"/>
+<text x="825" y="35" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#193147">Slalom · 16 × 12 m</text>
+<rect x="921.00" y="110.60" width="2.40" height="148.80" fill="#3a5268"/>
+<rect x="726.60" y="110.60" width="2.40" height="148.80" fill="#3a5268"/>
+<rect x="729.00" y="110.60" width="192.00" height="2.40" fill="#3a5268"/>
+<rect x="729.00" y="257.00" width="192.00" height="2.40" fill="#3a5268"/>
+<rect x="775.20" y="161.00" width="3.60" height="96.00" fill="#3a5268"/>
+<rect x="823.20" y="113.00" width="3.60" height="96.00" fill="#3a5268"/>
+<rect x="871.20" y="161.00" width="3.60" height="96.00" fill="#3a5268"/>
+<circle cx="825" cy="185" r="2" fill="#c25342"/>
+<text x="165" y="385" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#193147">Warehouse · 24 × 18 m</text>
+<rect x="309.00" y="424.60" width="2.40" height="220.80" fill="#3a5268"/>
+<rect x="18.60" y="424.60" width="2.40" height="220.80" fill="#3a5268"/>
+<rect x="21.00" y="424.60" width="288.00" height="2.40" fill="#3a5268"/>
+<rect x="21.00" y="643.00" width="288.00" height="2.40" fill="#3a5268"/>
+<rect x="69.00" y="559.00" width="24.00" height="48.00" fill="#3a5268"/>
+<rect x="69.00" y="463.00" width="24.00" height="48.00" fill="#3a5268"/>
+<rect x="153.00" y="559.00" width="24.00" height="48.00" fill="#3a5268"/>
+<rect x="153.00" y="463.00" width="24.00" height="48.00" fill="#3a5268"/>
+<rect x="237.00" y="559.00" width="24.00" height="48.00" fill="#3a5268"/>
+<rect x="237.00" y="463.00" width="24.00" height="48.00" fill="#3a5268"/>
+<circle cx="165" cy="535" r="2" fill="#c25342"/>
+<text x="495" y="385" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#193147">Legacy test · 12 × 8 m</text>
+<rect x="567.00" y="484.60" width="2.40" height="100.80" fill="#3a5268"/>
+<rect x="420.60" y="484.60" width="2.40" height="100.80" fill="#3a5268"/>
+<rect x="423.00" y="484.60" width="144.00" height="2.40" fill="#3a5268"/>
+<rect x="423.00" y="583.00" width="144.00" height="2.40" fill="#3a5268"/>
+<rect x="517.80" y="517.00" width="2.40" height="36.00" fill="#3a5268"/>
+<circle cx="495" cy="535" r="2" fill="#c25342"/>
+<text x="670" y="690" font-family="sans-serif" font-size="14" fill="#193147">Same scale · dot = map origin</text></svg>

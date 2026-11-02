@@ -104,8 +104,13 @@ class WeaponsCurriculumTests(unittest.TestCase):
     def test_c4_reuses_c3_world_enemy_observations_outcomes_and_noise(self):
         first,second=self.config('c3'),self.config('c4')
         d3,d4=first['campaign']['levels']['c3'],second['campaign']['levels']['c4']
-        for field in ('target','sensors','scene','rules','time_limit_s','timer_start','evaluation'):
+        for field in ('target','sensors','scene','rules','time_limit_s','timer_start'):
             self.assertEqual(d3[field],d4[field],field)
+        self.assertEqual({k:v for k,v in d3['evaluation'].items() if k!='live_feedback'},d4['evaluation'])
+        self.assertEqual(d3['evaluation']['live_feedback']['metric'],'rmse_m')
+        self.assertIn('rmse_m',d3['permissions']['visualization']['allowed_metrics'])
+        self.assertNotIn('live_feedback',d4['evaluation'])
+        self.assertNotIn('rmse_m',d4['permissions']['visualization'].get('allowed_metrics',[]))
         self.assertEqual(first['weapons']['targets'],second['weapons']['targets'])
         target=first['weapons']['targets'][0]['target_id']
         private={'truth_pose':[0.,0.,0.],'targets':[{'target_id':target,'alive':True,'pose':[-3.,-2.,0.]}]}

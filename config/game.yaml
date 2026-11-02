@@ -1,31 +1,5 @@
-config_version: '2.0'
+config_version: '2.1'
 confirmation_status: confirmed
-body:
-  mass_kg: 20.0
-  yaw_inertia_kg_m2: 2.0
-servo:
-  tau_x_s: 0.2
-  tau_y_s: 0.2
-  tau_yaw_s: 0.15
-  max_force_x_n: 100.0
-  max_force_y_n: 100.0
-  max_torque_nm: 20.0
-  zero_target_behavior: active_brake
-motion_limits:
-  max_vx_mps: 3.0
-  max_vy_mps: 3.0
-  max_wz_radps: 6.0
-chassis:
-  differential:
-    lateral_actuation: false
-    drag_x_n_s_per_m: 4.0
-    drag_y_n_s_per_m: 200.0
-    drag_yaw_nm_s: 0.8
-  omnidirectional:
-    lateral_actuation: true
-    drag_x_n_s_per_m: 4.0
-    drag_y_n_s_per_m: 4.0
-    drag_yaw_nm_s: 0.8
 clock:
   physics_hz: 60
   substeps: 4
@@ -34,21 +8,6 @@ clock:
 contact:
   restitution: 0.0
   friction: 0.4
-wheels:
-  radius_m: 0.1
-  differential_track_m: 0.5
-  omnidirectional:
-    geometry_version: radial_omni@1
-    center_radius_m: 0.25
-    wheels:
-    - name: front_left
-      azimuth_deg: 45.0
-    - name: front_right
-      azimuth_deg: 315.0
-    - name: rear_left
-      azimuth_deg: 135.0
-    - name: rear_right
-      azimuth_deg: 225.0
 sensors:
   imu_mount: center_of_mass
   imu_axes: base_link
@@ -59,10 +18,6 @@ sensors:
   latency_ticks: 0
   drop_probability: 0.0
   encoder_model: ideal_rolling
-controller:
-  cmd_vel_timeout_s: 0.5
-  overspeed_target: clamp_each_axis
-  unsupported_lateral: reject
 scene:
   default_chassis: differential
   initial_pose:
@@ -75,37 +30,9 @@ scene:
   - 0.0
   public_initial_pose: true
   public_map: true
-  walls:
-  - center:
-    - 6.1
-    - 0.0
-    size:
-    - 0.2
-    - 8.4
-  - center:
-    - -6.1
-    - 0.0
-    size:
-    - 0.2
-    - 8.4
-  - center:
-    - 0.0
-    - 4.1
-    size:
-    - 12.0
-    - 0.2
-  - center:
-    - 0.0
-    - -4.1
-    size:
-    - 12.0
-    - 0.2
-  - center:
-    - 2.0
-    - 0.0
-    size:
-    - 0.2
-    - 3.0
+  map:
+    source: asset
+    path: maps/training_legacy.yaml
   player_health: null
 runtime:
   commit_delay_ticks: 6
@@ -451,3 +378,60 @@ level_plugins:
 chassis_profiles:
   differential: config/chassis/differential.yaml
   omnidirectional: config/chassis/omnidirectional.yaml
+sensor_instances:
+- type: wheel_encoder
+  topic: /robot/sensors/joint_states
+  schema: joint_state@1
+  frame_id: base_link
+  id: wheel_encoder
+  robot_id: player
+  period_ticks: 2
+  mount:
+    parent_frame: base_link
+    translation_m:
+    - 0.0
+    - 0.0
+    yaw_rad: 0.0
+  random_stream: null
+- type: imu
+  topic: /robot/sensors/imu
+  schema: imu@1
+  frame_id: base_link
+  id: imu
+  robot_id: player
+  period_ticks: 2
+  mount:
+    parent_frame: base_link
+    translation_m:
+    - 0.0
+    - 0.0
+    yaw_rad: 0.0
+  random_stream: null
+- type: turret_joint
+  topic: /robot/turret/joint_states
+  schema: joint_state@1
+  frame_id: base_link
+  id: turret_joint
+  robot_id: player
+  period_ticks: 2
+  mount:
+    parent_frame: base_link
+    translation_m:
+    - 0.0
+    - 0.0
+    yaw_rad: 0.0
+  random_stream: null
+- type: weapon_state
+  topic: /robot/weapons/cannon/state
+  schema: weapon_state@1
+  frame_id: base_link
+  id: weapon_state
+  robot_id: player
+  period_ticks: 2
+  mount:
+    parent_frame: base_link
+    translation_m:
+    - 0.0
+    - 0.0
+    yaw_rad: 0.0
+  random_stream: null

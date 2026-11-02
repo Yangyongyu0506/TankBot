@@ -69,7 +69,9 @@ def configure(config, level_id):
     else:
         campaign["radar"]={}
     from .chassis_profiles import apply_profiles
-    apply_profiles(c)
+    apply_profiles(c,dynamics=True)
+    from .maps import apply_override
+    apply_override(c)
     validate_profile(c)
     return c
 
@@ -120,6 +122,9 @@ class RadarSimulator:
         if self.noise is None or self.last_tick == tick or tick % (self.config["clock"]["physics_hz"]//self.settings["update_hz"]):
             return None
         self.last_tick = tick
+        return self.measure(private,tick)
+
+    def measure(self,private,tick):
         x, y, yaw = private["truth_pose"]
         detections = []
         for target in sorted(private["targets"], key=lambda item: item["target_id"]):

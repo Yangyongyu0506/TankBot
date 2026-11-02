@@ -49,6 +49,9 @@ class CampaignTests(unittest.TestCase):
         private["targets"][0]["alive"] = False
         self.assertEqual(radar.sample(private, 6000)["detections"], [])
         config = self.config("c1")
+        # Occlusion fixture uses the preserved obstacle map; teaching levels
+        # now deliberately use open_training without the internal wall.
+        config["scene"]["walls"] = load_config(ROOT/"config/game.yaml")["scene"]["walls"]
         radar = RadarSimulator(config)
         private["targets"][0].update(pose=[3, 0, 0], alive=True)
         self.assertEqual(radar.sample(private, 0)["detections"], [])  # center wall occludes

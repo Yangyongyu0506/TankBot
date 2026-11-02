@@ -190,22 +190,22 @@ class ApplicationState:
                 value = self.read_progress(); value["current_level"] = level_id
                 self.write(self.progress_path, value)
 
-    def register_attempt(self, level_id, run_id=None):
+    def register_attempt(self, level_id, run_id=None, *, practice=False):
         self.require_level(level_id)
         with self.lock:
             ticket = run_id or secrets.token_urlsafe()
             # Bound memory for reloads; old browser tabs must restart after revocation.
             if len(self.tickets) >= 128:
                 self.tickets.pop(next(iter(self.tickets)))
-            self.tickets[ticket] = (level_id, self.developer)
+            self.tickets[ticket] = (level_id, self.developer, bool(practice))
             return ticket
 
     def complete(self, ticket, level_id):
         with self.lock:
             attempt = self.tickets.get(ticket)
-            if attempt != (level_id, self.developer):
+            if attempt is None or attempt[:2] != (level_id, self.developer):
                 raise ValueError("ATTEMPT_REVOKED: 请重新开始关卡。")
-            if not self.developer:
+            if not self.developer and not attempt[2]:
                 with self.transaction(self.progress_path):
                     value = self.read_progress()
                     if level_id not in value["completed_levels"]:

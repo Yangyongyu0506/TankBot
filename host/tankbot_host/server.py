@@ -16,11 +16,13 @@ ROOT = Path(__file__).resolve().parents[2]
 class LocalServer:
     def __init__(self, authority, workspace=None, workspace_store=None, *, application=None):
         self.authority = authority
+        from .scene_definition import SceneResolver
+        self.scenes=SceneResolver(authority.scene)
         self.application = application
         self.saved_runs = set()
         self.save_error = None
         if application and authority.campaign:
-            application.register_attempt(authority.campaign.level_id, authority.run_id)
+            application.register_attempt(authority.campaign.level_id, authority.run_id, practice=bool(authority.config.get("map_override")))
         self.lock = threading.Lock()
         self.stopped = threading.Event()
         self.token = secrets.token_urlsafe()
@@ -60,7 +62,15 @@ class LocalServer:
                     self.reply(403, b'{}')
                     return
                 path = urlsplit(self.path).path
-                if path in ("/api/settings", "/api/progress") and owner.application:
+                if path == "/api/maps":
+                    from .maps import preview_catalog
+                    try:
+                        with owner.lock:
+                            value=preview_catalog(owner.authority.config,bool(owner.application and owner.application.developer))
+                        self.reply(200,json.dumps(value,allow_nan=False).encode())
+                    except (ValueError,OSError) as error:
+                        self.reply(400,json.dumps({"error":str(error)}).encode())
+                elif path in ("/api/settings", "/api/progress") and owner.application:
                     value = owner.application.public_settings() if path.endswith("settings") else owner.application.progress()
                     if path.endswith("settings"):
                         value["control_token"] = owner.token
@@ -96,7 +106,7 @@ class LocalServer:
                         else:
                             value = copy.deepcopy(owner.authority.view)
                     self.reply(200, json.dumps(value, allow_nan=False).encode())
-                elif path in ("/", "/index.html", "/app.js", "/rendering.js", "/browser-client.js", "/style.css", "/workspace-ui.js", "/file-tree.js", "/workspace-dialog.js", "/campaign-ui.js", "/live-metrics.js", "/learning-ui.js", "/gamepad.js", "/settings-ui.js", "/keyboard.js", "/visualization.js", "/runtime-logs.js", "/robot-graph.js"):
+                elif path in ("/", "/index.html", "/app.js", "/rendering.js", "/browser-client.js", "/style.css", "/workspace-ui.js", "/file-tree.js", "/workspace-dialog.js", "/campaign-ui.js", "/live-metrics.js", "/learning-ui.js", "/gamepad.js", "/settings-ui.js", "/keyboard.js", "/visualization.js", "/runtime-logs.js", "/robot-graph.js", "/map-preview.js"):
                     file = ROOT / "web" / ("index.html" if path == "/" else path[1:])
                     kind = {".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css"}[file.suffix]
                     self.reply(200, file.read_bytes(), kind)
@@ -168,15 +178,16 @@ class LocalServer:
 
     def start_level(self, level_id):
         from .authority import Authority
-        from .campaign import configure, active, ensure_native_numpy
+        from .campaign import active, ensure_native_numpy
         from .workspace_api import WorkspaceAPI
         from .deployment import DeploymentManager
         old = self.authority
         if self.application:
             self.application.require_level(level_id)
         ensure_native_numpy()
-        config = configure(old.config, level_id)
-        candidate = Authority(config, binary=getattr(old.core, "binary", None),
+        scene = self.scenes.get(level_id)
+        config = scene.to_config()
+        candidate = Authority(scene, binary=getattr(old.core, "binary", None),
                               developer_mode=bool(self.application and self.application.developer))
         try:
             if active(old.config):
@@ -186,7 +197,7 @@ class LocalServer:
             candidate.deployment = DeploymentManager(candidate)
             if self.application:
                 self.application.select_level(level_id)
-                self.application.register_attempt(level_id, candidate.run_id)
+                self.application.register_attempt(level_id, candidate.run_id, practice=bool(config.get("map_override")))
         except BaseException:
             candidate.close()
             raise
