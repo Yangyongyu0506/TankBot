@@ -152,6 +152,17 @@ def starter(config):
     return files
 
 
+def workspace_scope(config):
+    """Stable project identity declared by a lesson, independent of its runtime."""
+    level = config.get("campaign", {}).get("active_level")
+    if not level:
+        return None
+    scope = config["campaign"]["levels"][level].get("scaffolding", {}).get("workspace_scope", "campaign")
+    if not isinstance(scope, str) or not re.fullmatch(r"[a-z][a-z0-9_-]{0,47}", scope):
+        raise ValueError("INVALID_WORKSPACE_SCOPE")
+    return scope
+
+
 def _campaign_source(config, parent, seed_key, current_key, files):
     """Find the old campaign project; never merge different player implementations."""
     from .level_templates import sources
@@ -159,6 +170,8 @@ def _campaign_source(config, parent, seed_key, current_key, files):
     candidates = []
     keys = []
     for definition in config["campaign"]["levels"].values():
+        if definition.get("scaffolding", {}).get("workspace_scope", "campaign") != workspace_scope(config):
+            continue
         for path, text in sources(definition).items():
             known.setdefault(path, set()).add(text)
         key = digest({"seed": seed_key, "entry": definition["runtime"]["logical_module"]["entry_point"],
@@ -198,8 +211,9 @@ def open_store(config, seed=None, directory=None):
     seed_key = str(Path(seed).resolve()) if seed else "default"
     legacy_key = digest({"seed": seed_key, "entry": config["module"]["entry_point"],
                          "sources": config["control_sources"]})[:16]
-    campaign = bool(config.get("campaign", {}).get("active_level"))
-    key = digest({"seed": seed_key, "scope": "campaign"})[:16] if campaign else legacy_key
+    scope = workspace_scope(config)
+    campaign = scope is not None
+    key = digest({"seed": seed_key, "scope": scope})[:16] if campaign else legacy_key
     if directory is not None:
         return WorkspaceStore(directory, files, config["workspace"])
     storage = config["workspace"].get("storage")
@@ -214,14 +228,16 @@ def open_store(config, seed=None, directory=None):
         raise ValueError("WORKSPACE_STORAGE_PATH_CONFLICT")
     parent.mkdir(parents=True, exist_ok=True)
     with _file_lock(parent / "MIGRATION.lock"):
-        if legacy.exists():
+        if legacy.exists() and scope in (None,"campaign"):
             # Preserve inactive profiles too: persistent player code must no longer
             # depend on retaining a build cache. Existing userdata stores always win.
             for source in sorted(legacy.iterdir()):
                 target = parent / source.name
                 if re.fullmatch("[a-f0-9]{16}",source.name) and not target.exists() and not target.is_symlink():
                     _migrate_store(source, target, files, config["workspace"])
-        if campaign and not destination.exists() and not destination.is_symlink():
+        # Only the original Campaign project has legacy profile-dependent stores.
+        # A new course scope starts clean; it must not import another chapter's code.
+        if scope == "campaign" and not destination.exists() and not destination.is_symlink():
             source = _campaign_source(config, parent, seed_key, legacy_key, files)
             if source is not None:
                 _migrate_store(source, destination, files, config["workspace"])

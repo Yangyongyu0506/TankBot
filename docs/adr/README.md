@@ -50,6 +50,8 @@ ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评
 | [0042](0042-map-override-and-preview.md) | 启动地图覆盖、练习进度与授权预览 | Accepted |
 | [0043](0043-resolved-simulator-components.md) | 完整底盘、统一传感器实例与不可变场景定义 | Accepted |
 | [0044](0044-preview-untouched-algorithm-upgrades.md) | 来源可证的旧算法空模板纳入显式升级预览 | Accepted |
+| [0045](0045-independent-course-workspaces.md) | Navigation 独立课程工作区与旧 Campaign 身份兼容 | Accepted |
+| [0046](0046-confirmed-wheel-voltage-control.md) | 用户确认的双轮电压、电机耦合与固定指令评价 | Accepted |
 
 ## 变更流程与完成条件
 

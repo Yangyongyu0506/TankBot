@@ -6,7 +6,7 @@ C5 不再使用敌车中心 Radar 与车头 GPS。根据用户逐项确认，只
 
 ## 传感器、可见性与随机流
 
-关卡通过通用 `armor_detector` 组件声明传感器，不按关卡 ID 选择行为。唯一可编辑源为 `levels/c5.yaml`：
+关卡通过通用 `armor_detector` 组件声明传感器，不按关卡 ID 选择行为。唯一可编辑源为 `levels/weapons.C5.yaml`：
 
 | 参数 | 确认基线 |
 | --- | --- |

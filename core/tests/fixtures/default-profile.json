@@ -206,6 +206,9 @@
       "yaw_window_s": 0.5,
       "manual_aim_gain_per_s": 4.0,
       "manual_aim_rate_radps": 2.0
+    },
+    "reference_drive": {
+      "voltage_kp": 2.0
     }
   },
   "solver": {
@@ -579,6 +582,9 @@
       ],
       "target_pose_estimate@1": [
         "map"
+      ],
+      "wheel_voltage@1": [
+        "base_link"
       ]
     },
     "internal_schemas": [
@@ -1013,6 +1019,91 @@
           "robot_modules/armor_observations.py",
           "tests/test_armor_contract.py"
         ]
+      },
+      "differential-wheel-control-v1": {
+        "template_version": "1.0.0",
+        "manifest": {
+          "manifest_version": "1.0",
+          "sdk_version": "0.1.0",
+          "protocol_version": "1.0",
+          "project_id": "navigation-drive",
+          "entry_point": "navigation_robot:WheelControlModule",
+          "modules": [
+            {
+              "module_id": "wheel_control",
+              "contract": "contracts/wheel_control.json",
+              "config": {}
+            }
+          ],
+          "connections": [
+            {
+              "from": "/robot/cmd_vel",
+              "to": "wheel_control.command"
+            },
+            {
+              "from": "/robot/sensors/joint_states",
+              "to": "wheel_control.wheels"
+            },
+            {
+              "from": "wheel_control.voltage",
+              "to": "/robot/wheels/cmd_voltage"
+            }
+          ],
+          "dependencies": [],
+          "pose_source": {
+            "mode": "system",
+            "module_id": null,
+            "fallback": "none"
+          }
+        },
+        "contracts": {
+          "wheel_control": {
+            "contract_version": "1.0",
+            "module_id": "wheel_control",
+            "entry_point": "navigation_robot:WheelControlModule",
+            "inputs": {
+              "command": {
+                "schema": "twist@1",
+                "required": true,
+                "max_age_ticks": 12
+              },
+              "wheels": {
+                "schema": "joint_state@1",
+                "required": true,
+                "max_age_ticks": 12
+              }
+            },
+            "outputs": {
+              "voltage": {
+                "schema": "wheel_voltage@1"
+              }
+            },
+            "execution": {
+              "mode": "periodic",
+              "period_ticks": 6,
+              "deadline_ticks": 6,
+              "budget_ms": 20
+            },
+            "dependencies": [],
+            "state_version": "1"
+          }
+        },
+        "grants": {
+          "inputs": {
+            "/robot/cmd_vel": "twist@1",
+            "/robot/sensors/joint_states": "joint_state@1"
+          },
+          "outputs": [],
+          "actuators": {
+            "/robot/wheels/cmd_voltage": "wheel_voltage@1"
+          }
+        },
+        "target_source": "wheel_control",
+        "managed_files": [
+          "navigation_robot.py",
+          "tankbot.json",
+          "contracts/wheel_control.json"
+        ]
       }
     },
     "max_batch_outputs": 128,
@@ -1028,14 +1119,7 @@
       "max_robots": 16,
       "max_sensors": 16
     },
-    "planned_chapters": [
-      {
-        "chapter_id": "locomotion",
-        "title": "Locomotion",
-        "description": "后续章节：底盘驱动、运动控制、自身状态估计，再逐步引入定位与建图。",
-        "levels": []
-      }
-    ]
+    "planned_chapters": []
   },
   "chassis_profiles": {
     "differential": {
@@ -1154,6 +1238,15 @@
       "wheels": {
         "radius_m": 0.1,
         "track_m": 0.5
+      },
+      "motor": {
+        "model": "dc_wheel_voltage@1",
+        "resistance_ohm": 2.0,
+        "torque_constant_nm_per_a": 0.5,
+        "back_emf_v_s_per_rad": 0.5,
+        "wheel_inertia_kg_m2": 0.01,
+        "max_voltage_v": 12.0,
+        "command_timeout_s": 0.5
       }
     },
     "omnidirectional": {
@@ -1494,6 +1587,8 @@
         },
         "robot_profile": null,
         "armor_mode": false,
+        "weapons_enabled": true,
+        "drive": "velocity_servo",
         "radar_profile": null,
         "scene": {
           "initial_pose": [
@@ -2217,6 +2312,8 @@
         },
         "robot_profile": null,
         "armor_mode": false,
+        "weapons_enabled": true,
+        "drive": "velocity_servo",
         "radar_profile": "ideal",
         "scene": {
           "initial_pose": [
@@ -3077,6 +3174,8 @@
         },
         "robot_profile": null,
         "armor_mode": false,
+        "weapons_enabled": true,
+        "drive": "velocity_servo",
         "radar_profile": "noisy",
         "scene": {
           "initial_pose": [
@@ -3949,6 +4048,8 @@
         },
         "robot_profile": "weapons_polar",
         "armor_mode": false,
+        "weapons_enabled": true,
+        "drive": "velocity_servo",
         "radar_profile": "noisy",
         "scene": {
           "initial_pose": [
@@ -4648,6 +4749,8 @@
         },
         "robot_profile": "weapons_polar_aiming",
         "armor_mode": false,
+        "weapons_enabled": true,
+        "drive": "velocity_servo",
         "radar_profile": "noisy",
         "scene": {
           "initial_pose": [
@@ -5493,6 +5596,8 @@
         },
         "robot_profile": "weapons_predictive",
         "armor_mode": true,
+        "weapons_enabled": true,
+        "drive": "velocity_servo",
         "radar_profile": null,
         "scene": {
           "initial_pose": [
@@ -6231,6 +6336,556 @@
           "recommended_algorithms": [],
           "prerequisites": [
             "c4"
+          ]
+        }
+      },
+      "navigation.c0": {
+        "title": "Navigation C0 · 让双轮执行速度指令",
+        "problem": "系统会发送四组“直行 4 秒、原地左转 2 秒”的速度指令。实现轮控制器，让真实底盘尽可能走完方形并回到起点。不能手动驾驶，也没有武器。",
+        "hints": [
+          "在 F2 中只需编辑高亮的 control/wheel_controller.py；Navigation 使用独立项目，Weapons 代码与历史保留在原工程。",
+          "轮速顺序永远是 [left,right]，单位 rad/s；正角速度表示逆时针左转，左轮应比右轮慢。",
+          "先做 FK 检查当前运动，再做 IK 得到目标轮速，结合电机反电动势、负载与速度误差计算两轮电压。",
+          "部署前的编辑与测试不计时。发现问题可主动结束，再修改代码；重试会从零初态重新执行整条序列。"
+        ],
+        "chapter_id": "navigation",
+        "capabilities": [
+          "control.robot.wheel_voltage",
+          "module.graph.manage"
+        ],
+        "target": null,
+        "objective": {
+          "movement_m": 0.0,
+          "turn_rad": 0.0,
+          "required_hits": 0,
+          "required_estimates": 0,
+          "max_origin_distance_m": 0.3,
+          "min_path_length_m": 7.2,
+          "kind": "command_sequence"
+        },
+        "time_limit_s": 24,
+        "timer_start": "first_control_commit",
+        "player_health": null,
+        "control_sources": {
+          "chassis": "robot",
+          "turret": "disabled",
+          "weapon": "disabled"
+        },
+        "robot_profile": "differential-wheel-control-v1",
+        "armor_mode": false,
+        "weapons_enabled": false,
+        "drive": "wheel_voltage",
+        "radar_profile": null,
+        "scene": {
+          "default_chassis": "differential",
+          "initial_pose": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "initial_velocity": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "player_health": null,
+          "walls": [
+            {
+              "center": [
+                6.1,
+                0.0
+              ],
+              "size": [
+                0.2,
+                8.4
+              ]
+            },
+            {
+              "center": [
+                -6.1,
+                0.0
+              ],
+              "size": [
+                0.2,
+                8.4
+              ]
+            },
+            {
+              "center": [
+                0.0,
+                4.1
+              ],
+              "size": [
+                12.0,
+                0.2
+              ]
+            },
+            {
+              "center": [
+                0.0,
+                -4.1
+              ],
+              "size": [
+                12.0,
+                0.2
+              ]
+            }
+          ],
+          "public_initial_pose": true,
+          "public_map": true
+        },
+        "world_simulation": {
+          "physics_hz": 60,
+          "substeps": 4,
+          "sensor_hz": 30,
+          "algorithm_hz": 10
+        },
+        "radar": null,
+        "runtime": {
+          "template_version": "1.0.0",
+          "mode": "graph",
+          "profile_id": "differential-wheel-control-v1",
+          "processing": "modules",
+          "logical_module": {
+            "module_id": "wheel_control",
+            "entry_point": "navigation_robot:WheelControlModule"
+          },
+          "target_source": "wheel_control",
+          "managed_files": [
+            "navigation_robot.py",
+            "tankbot.json",
+            "contracts/wheel_control.json"
+          ],
+          "manifest": {
+            "manifest_version": "1.0",
+            "sdk_version": "0.1.0",
+            "protocol_version": "1.0",
+            "project_id": "navigation-drive",
+            "entry_point": "navigation_robot:WheelControlModule",
+            "modules": [
+              {
+                "module_id": "wheel_control",
+                "contract": "contracts/wheel_control.json",
+                "config": {}
+              }
+            ],
+            "connections": [
+              {
+                "from": "/robot/cmd_vel",
+                "to": "wheel_control.command"
+              },
+              {
+                "from": "/robot/sensors/joint_states",
+                "to": "wheel_control.wheels"
+              },
+              {
+                "from": "wheel_control.voltage",
+                "to": "/robot/wheels/cmd_voltage"
+              }
+            ],
+            "dependencies": [],
+            "pose_source": {
+              "mode": "system",
+              "module_id": null,
+              "fallback": "none"
+            }
+          },
+          "contracts": {
+            "wheel_control": {
+              "contract_version": "1.0",
+              "module_id": "wheel_control",
+              "entry_point": "navigation_robot:WheelControlModule",
+              "inputs": {
+                "command": {
+                  "schema": "twist@1",
+                  "required": true,
+                  "max_age_ticks": 12
+                },
+                "wheels": {
+                  "schema": "joint_state@1",
+                  "required": true,
+                  "max_age_ticks": 12
+                }
+              },
+              "outputs": {
+                "voltage": {
+                  "schema": "wheel_voltage@1"
+                }
+              },
+              "execution": {
+                "mode": "periodic",
+                "period_ticks": 6,
+                "deadline_ticks": 6,
+                "budget_ms": 20
+              },
+              "dependencies": [],
+              "state_version": "1"
+            }
+          },
+          "grants": {
+            "inputs": {
+              "/robot/cmd_vel": "twist@1",
+              "/robot/sensors/joint_states": "joint_state@1"
+            },
+            "outputs": [],
+            "actuators": {
+              "/robot/wheels/cmd_voltage": "wheel_voltage@1"
+            }
+          }
+        },
+        "sensors": [
+          {
+            "id": "wheel_encoder",
+            "robot_id": "player",
+            "type": "wheel_encoder",
+            "period_ticks": 2,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": null,
+            "topic": "/robot/sensors/joint_states",
+            "schema": "joint_state@1",
+            "frame_id": "base_link",
+            "update_hz": 30
+          }
+        ],
+        "rules": {
+          "target": null,
+          "time_limit_s": 24,
+          "timer_start": "first_control_commit",
+          "parameters": {
+            "movement_m": 0.0,
+            "turn_rad": 0.0,
+            "required_hits": 0,
+            "required_estimates": 0,
+            "max_origin_distance_m": 0.3,
+            "min_path_length_m": 7.2
+          },
+          "command_sequence": {
+            "type": "twist_sequence",
+            "topic": "/robot/cmd_vel",
+            "repeat": 4,
+            "segments": [
+              {
+                "duration_ticks": 240,
+                "twist": {
+                  "linear": {
+                    "x": 0.5,
+                    "y": 0.0,
+                    "z": 0.0
+                  },
+                  "angular": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                  }
+                }
+              },
+              {
+                "duration_ticks": 120,
+                "twist": {
+                  "linear": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                  },
+                  "angular": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.7853981633974483
+                  }
+                }
+              }
+            ]
+          },
+          "progress": {
+            "moved": {
+              "type": "displacement",
+              "parameter": "movement_m",
+              "sticky": true
+            },
+            "turned": {
+              "type": "heading_change",
+              "parameter": "turn_rad",
+              "sticky": true
+            }
+          },
+          "success": {
+            "type": "all",
+            "conditions": [
+              {
+                "type": "compare",
+                "metric": "sequence_complete",
+                "operator": "==",
+                "value": true
+              },
+              {
+                "type": "compare",
+                "metric": "origin_distance_m",
+                "operator": "<=",
+                "parameter": "max_origin_distance_m"
+              },
+              {
+                "type": "compare",
+                "metric": "path_length_m",
+                "operator": ">=",
+                "parameter": "min_path_length_m"
+              }
+            ]
+          },
+          "outcomes": [
+            {
+              "reason": "controller_error",
+              "result": "failure",
+              "when": {
+                "type": "compare",
+                "metric": "controller_faulted",
+                "operator": "==",
+                "value": true
+              }
+            },
+            {
+              "reason": "objective_completed",
+              "result": "success",
+              "when": {
+                "type": "compare",
+                "metric": "objective_complete",
+                "operator": "==",
+                "value": true
+              }
+            },
+            {
+              "reason": "trajectory_failed",
+              "result": "failure",
+              "when": {
+                "type": "compare",
+                "metric": "sequence_complete",
+                "operator": "==",
+                "value": true
+              }
+            },
+            {
+              "reason": "timeout",
+              "result": "failure",
+              "when": {
+                "type": "compare",
+                "metric": "elapsed_ticks",
+                "operator": ">=",
+                "parameter": "limit_ticks"
+              }
+            }
+          ]
+        },
+        "evaluation": {
+          "type": "terminal_diagnostics",
+          "publish_on": "terminal",
+          "metrics": []
+        },
+        "randomization": {
+          "seed": 0,
+          "reset_on": "new_run",
+          "generator": "python_random_v1"
+        },
+        "permissions": {
+          "data_access": {
+            "inputs": {
+              "/robot/cmd_vel": "twist@1",
+              "/robot/sensors/joint_states": "joint_state@1"
+            },
+            "outputs": [],
+            "actuators": {
+              "/robot/wheels/cmd_voltage": "wheel_voltage@1"
+            }
+          },
+          "public_initial_pose": true,
+          "public_map": true,
+          "visualization": {
+            "allowed_layers": [
+              "robot",
+              "trail",
+              "map",
+              "encoders",
+              "frames"
+            ],
+            "allowed_metrics": [
+              "origin_distance_m",
+              "path_length_m"
+            ],
+            "view_policy": {
+              "policy_id": "navigation-wheel-control",
+              "system_pose_allowed": true,
+              "player_pose_allowed": false,
+              "allowed_pose_frames": [
+                "map"
+              ],
+              "public_map": "open-training",
+              "local_observation_channels": [
+                "/robot/sensors/joint_states"
+              ],
+              "true_enemy_objects": false,
+              "world_effects": false,
+              "camera_source": "selected_pose_or_manual",
+              "pose_fresh_ticks": 12,
+              "pose_hide_after_ticks": 60,
+              "robot_topics_allowed": false,
+              "target_estimates_allowed": false
+            }
+          }
+        },
+        "visualization": {
+          "trail_points": 900,
+          "initial_enabled": [
+            "robot",
+            "trail",
+            "map",
+            "encoders",
+            "frames"
+          ],
+          "user_toggleable": [
+            "trail",
+            "encoders",
+            "frames"
+          ],
+          "sources": {
+            "robot": "selected_pose",
+            "trail": "selected_pose",
+            "map": "map",
+            "encoders": "local_observation",
+            "frames": "selected_pose"
+          },
+          "preserve_user_settings": false
+        },
+        "tutorial": {
+          "problem": "系统会发送四组“直行 4 秒、原地左转 2 秒”的速度指令。实现轮控制器，让真实底盘尽可能走完方形并回到起点。不能手动驾驶，也没有武器。",
+          "hints": [
+            "在 F2 中只需编辑高亮的 control/wheel_controller.py；Navigation 使用独立项目，Weapons 代码与历史保留在原工程。",
+            "轮速顺序永远是 [left,right]，单位 rad/s；正角速度表示逆时针左转，左轮应比右轮慢。",
+            "先做 FK 检查当前运动，再做 IK 得到目标轮速，结合电机反电动势、负载与速度误差计算两轮电压。",
+            "部署前的编辑与测试不计时。发现问题可主动结束，再修改代码；重试会从零初态重新执行整条序列。"
+          ],
+          "testing": {
+            "checks": [
+              "Python 语法、导入、模块合同、Topic 类型与执行器权限。",
+              "以当前获授权目标 Twist 与轮速试运行 {test_batches} 个批次，检查返回数组、有限值、异常和超时。"
+            ],
+            "meaning": "测试通过只表示可以部署；不会替你实现控制，也不代表完成方形挑战。测试输出不驱动物理世界。"
+          },
+          "lesson": {
+            "title": "Navigation C0 · 从两轮电压到车体运动",
+            "summary": "不写网络、消息或进程代码；只实现 WheelController.control。self.model 是不可变的当前底盘参数，点击类型帮助可查每个字段。",
+            "steps": [
+              "阅读 target 的 Twist 类型：linear.x 为 v，angular.z 为 w；其他轴本关均为零。",
+              "wheel_rates_radps 是本帧只读 NumPy float64 向量，shape=(2,)，两项依次为左轮和右轮角速度，不是历史。",
+              "FK：v=r(ωL+ωR)/2，w=r(ωR−ωL)/B。IK：ωL*=(v*−Bw*/2)/r，ωR*=(v*+Bw*/2)/r。",
+              "电机模型：i=(U−Ke·ω)/R，τ=Kt·i。左右轮力矩通过轮地反力推动车体；不是直接设置轮速。",
+              "直线等效质量 m_eff=m+2Jw/r²；偏航等效惯量 I_eff=I+JwB²/(2r²)。考虑车体阻力 Fx=−cx·v，Mz=−cw·w。轮端参数已等效到输出轴，不再额外乘减速比。",
+              "可自行实现反馈/前馈与积分；self.integral_error 提供有界的两项状态。每次部署或重试重新初始化，不必保存整段历史。",
+              "返回 np.array([U_left,U_right], dtype=np.float64)。输出逐轮限制在 ±self.model.max_voltage_v，不能返回目标速度、列表或元组。",
+              "零电压相当于短接电枢，存在反电动势制动；0.5 秒没有新控制也回到零电压，不会锁死轮子。",
+              "本关不增加纵向打滑或轮胎模型；侧向保留原黏性阻力和碰撞。接触后编码器随实际车体运动反算，不会在墙前凭空累计路程。"
+            ],
+            "files": [
+              {
+                "path": "control/wheel_controller.py",
+                "role": "本关玩家算法，整个文件可编辑并持久保存"
+              },
+              {
+                "path": "navigation_robot.py",
+                "role": "系统适配器，负责类型、轮序与电压消息"
+              },
+              {
+                "path": "tankbot.json",
+                "role": "系统模块连接与部署入口"
+              }
+            ],
+            "edit_files": [
+              "control/wheel_controller.py"
+            ],
+            "functions": [
+              {
+                "path": "control/wheel_controller.py",
+                "name": "control"
+              }
+            ],
+            "default_type": "DifferentialDriveParameters",
+            "aliases": {
+              "target": "Twist",
+              "wheel_rates_radps": "ndarray",
+              "model": "DifferentialDriveParameters"
+            },
+            "execution": "以 {algorithm_hz} Hz 调用；轮速 30 Hz，物理 60 Hz/4 子步，输出在固定 6 tick 后生效。首次部署后的第一批合法控制生效时起算，整条序列 {time_limit_s} 仿真秒；重复部署不重置序列。",
+            "completion": "在最后一段转向结束的当刻，真实车体距起点≤{max_origin_distance_m} m，且实际质心累计路程≥{min_path_length_m} m，两项同时满足通关；不另加朝向误差门槛。",
+            "common_errors": [
+              "轮角速度 rad/s 与车体速度 m/s 之间漏乘/漏除轮半径。",
+              "右转符号或轮序颠倒；非零 v 转弯形成圆弧，不能当作本关的原地转向。",
+              "直接返回 IK 的轮速，相当于把 rad/s 当作电压 V，未实现电机控制。",
+              "只让底盘停在原点不会通过累计路程检查；路程由仿真器测量，不接受玩家上报。"
+            ],
+            "type_notes": {},
+            "calibration": {
+              "wheel_radius_m": {
+                "source": "wheel_radius_m"
+              },
+              "wheel_separation_m": {
+                "source": "differential_track_m"
+              },
+              "body_mass_kg": {
+                "source": "body_mass_kg"
+              },
+              "body_yaw_inertia_kg_m2": {
+                "source": "body_yaw_inertia_kg_m2"
+              },
+              "drag_x_n_s_per_m": {
+                "source": "drag_x_n_s_per_m"
+              },
+              "drag_yaw_nm_s": {
+                "source": "drag_yaw_nm_s"
+              },
+              "motor": {
+                "source": "wheel_motor"
+              }
+            },
+            "ui": {
+              "state_heading": "SELF POSE / 系统自身位姿",
+              "legend_pose": "系统自身位姿 · 只用于观看",
+              "view_note": "只能由控制程序驱动双轮；真实轮速和轨迹用于观察，不需要定位算法。",
+              "mode_label": "Navigation · 双轮电压控制",
+              "freshness_message": "跟随底盘平移 · 世界坐标方向固定",
+              "progress_layout": "command_sequence",
+              "default_file": "control/wheel_controller.py"
+            }
+          }
+        },
+        "scaffolding": {
+          "workspace_scope": "navigation",
+          "components": [
+            "wheel_controller",
+            "wheel_control_adapter"
+          ],
+          "documentation": {}
+        },
+        "metadata": {
+          "id": "navigation.c0",
+          "name": "Navigation C0 · 让双轮执行速度指令",
+          "description": "从轮电压、轮速反馈与差速运动学，实现真实的底盘速度控制。",
+          "chapter": {
+            "chapter_id": "navigation",
+            "title": "Navigation",
+            "description": "只保留底盘，从轮驱动与运动控制逐步学习导航。"
+          },
+          "order": 6,
+          "version": "1.0.0",
+          "learning_objectives": [
+            "实现双轮差速 FK/IK，并结合直流电机状态方程闭环执行目标 Twist。"
+          ],
+          "recommended_algorithms": [],
+          "prerequisites": [
+            "c5"
           ]
         }
       }
@@ -7162,6 +7817,91 @@
           "weapons/target_prediction.py",
           "weapons/auto_aim.py"
         ]
+      },
+      "navigation.c0": {
+        "title": "Navigation C0 · 从两轮电压到车体运动",
+        "summary": "不写网络、消息或进程代码；只实现 WheelController.control。self.model 是不可变的当前底盘参数，点击类型帮助可查每个字段。",
+        "steps": [
+          "阅读 target 的 Twist 类型：linear.x 为 v，angular.z 为 w；其他轴本关均为零。",
+          "wheel_rates_radps 是本帧只读 NumPy float64 向量，shape=(2,)，两项依次为左轮和右轮角速度，不是历史。",
+          "FK：v=r(ωL+ωR)/2，w=r(ωR−ωL)/B。IK：ωL*=(v*−Bw*/2)/r，ωR*=(v*+Bw*/2)/r。",
+          "电机模型：i=(U−Ke·ω)/R，τ=Kt·i。左右轮力矩通过轮地反力推动车体；不是直接设置轮速。",
+          "直线等效质量 m_eff=m+2Jw/r²；偏航等效惯量 I_eff=I+JwB²/(2r²)。考虑车体阻力 Fx=−cx·v，Mz=−cw·w。轮端参数已等效到输出轴，不再额外乘减速比。",
+          "可自行实现反馈/前馈与积分；self.integral_error 提供有界的两项状态。每次部署或重试重新初始化，不必保存整段历史。",
+          "返回 np.array([U_left,U_right], dtype=np.float64)。输出逐轮限制在 ±self.model.max_voltage_v，不能返回目标速度、列表或元组。",
+          "零电压相当于短接电枢，存在反电动势制动；0.5 秒没有新控制也回到零电压，不会锁死轮子。",
+          "本关不增加纵向打滑或轮胎模型；侧向保留原黏性阻力和碰撞。接触后编码器随实际车体运动反算，不会在墙前凭空累计路程。"
+        ],
+        "files": [
+          {
+            "path": "control/wheel_controller.py",
+            "role": "本关玩家算法，整个文件可编辑并持久保存"
+          },
+          {
+            "path": "navigation_robot.py",
+            "role": "系统适配器，负责类型、轮序与电压消息"
+          },
+          {
+            "path": "tankbot.json",
+            "role": "系统模块连接与部署入口"
+          }
+        ],
+        "edit_files": [
+          "control/wheel_controller.py"
+        ],
+        "functions": [
+          {
+            "path": "control/wheel_controller.py",
+            "name": "control"
+          }
+        ],
+        "default_type": "DifferentialDriveParameters",
+        "aliases": {
+          "target": "Twist",
+          "wheel_rates_radps": "ndarray",
+          "model": "DifferentialDriveParameters"
+        },
+        "execution": "以 {algorithm_hz} Hz 调用；轮速 30 Hz，物理 60 Hz/4 子步，输出在固定 6 tick 后生效。首次部署后的第一批合法控制生效时起算，整条序列 {time_limit_s} 仿真秒；重复部署不重置序列。",
+        "completion": "在最后一段转向结束的当刻，真实车体距起点≤{max_origin_distance_m} m，且实际质心累计路程≥{min_path_length_m} m，两项同时满足通关；不另加朝向误差门槛。",
+        "common_errors": [
+          "轮角速度 rad/s 与车体速度 m/s 之间漏乘/漏除轮半径。",
+          "右转符号或轮序颠倒；非零 v 转弯形成圆弧，不能当作本关的原地转向。",
+          "直接返回 IK 的轮速，相当于把 rad/s 当作电压 V，未实现电机控制。",
+          "只让底盘停在原点不会通过累计路程检查；路程由仿真器测量，不接受玩家上报。"
+        ],
+        "type_notes": {},
+        "calibration": {
+          "wheel_radius_m": {
+            "source": "wheel_radius_m"
+          },
+          "wheel_separation_m": {
+            "source": "differential_track_m"
+          },
+          "body_mass_kg": {
+            "source": "body_mass_kg"
+          },
+          "body_yaw_inertia_kg_m2": {
+            "source": "body_yaw_inertia_kg_m2"
+          },
+          "drag_x_n_s_per_m": {
+            "source": "drag_x_n_s_per_m"
+          },
+          "drag_yaw_nm_s": {
+            "source": "drag_yaw_nm_s"
+          },
+          "motor": {
+            "source": "wheel_motor"
+          }
+        },
+        "ui": {
+          "state_heading": "SELF POSE / 系统自身位姿",
+          "legend_pose": "系统自身位姿 · 只用于观看",
+          "view_note": "只能由控制程序驱动双轮；真实轮速和轨迹用于观察，不需要定位算法。",
+          "mode_label": "Navigation · 双轮电压控制",
+          "freshness_message": "跟随底盘平移 · 世界坐标方向固定",
+          "progress_layout": "command_sequence",
+          "default_file": "control/wheel_controller.py"
+        }
       }
     },
     "chapters": [
@@ -7186,10 +7926,12 @@
         ]
       },
       {
-        "chapter_id": "locomotion",
-        "title": "Locomotion",
-        "description": "后续章节：底盘驱动、运动控制、自身状态估计，再逐步引入定位与建图。",
-        "levels": []
+        "chapter_id": "navigation",
+        "title": "Navigation",
+        "description": "只保留底盘，从轮驱动与运动控制逐步学习导航。",
+        "levels": [
+          "navigation.c0"
+        ]
       }
     ],
     "module_id": "perception",

@@ -30,6 +30,8 @@ class LocalServer:
         from .workspace_api import WorkspaceAPI
         from .deployment import DeploymentManager
         self.workspace = WorkspaceAPI(config, workspace, workspace_store)
+        from .workspace import workspace_scope
+        self.workspace_scopes={workspace_scope(config):self.workspace}
         self.campaign_directory = (Path(workspace_store) / "campaign" if workspace_store and not config.get("campaign", {}).get("active_level") else workspace_store)
         authority.deployment = DeploymentManager(authority)
         if config["host"]["bind"] != "127.0.0.1":
@@ -190,10 +192,8 @@ class LocalServer:
         candidate = Authority(scene, binary=getattr(old.core, "binary", None),
                               developer_mode=bool(self.application and self.application.developer))
         try:
-            if active(old.config):
-                self.workspace.unlock(config)
-            else:
-                self.workspace = WorkspaceAPI(config, directory=self.campaign_directory)
+            from .workspace_api import select_workspace
+            selected_workspace=select_workspace(config,self.workspace_scopes,self.campaign_directory)
             candidate.deployment = DeploymentManager(candidate)
             if self.application:
                 self.application.select_level(level_id)
@@ -202,6 +202,7 @@ class LocalServer:
             candidate.close()
             raise
         self.authority = candidate
+        self.workspace = selected_workspace
         old.close()
         return candidate.public_profile()
 

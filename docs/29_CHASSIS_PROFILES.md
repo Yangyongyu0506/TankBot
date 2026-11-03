@@ -55,3 +55,7 @@ flowchart LR
 只挪图层会使瞄准点与真实碰撞面不一致；放大外观可保留旧碰撞，却不符合本轮确认的紧凑几何。采用独立模型会增加一层受信配置编译；共享组件模型是对关卡自包含原则的明确修订，不允许关卡借此引用额外专用脚本/隐藏参数。
 
 验收覆盖 Schema/错误路径、双底盘独立几何、实际四向装甲与非装甲命中、GPS/教学/Runtime 一致、较大 C0 项目跨关及历史保留、原生/WASM 等价、两种真实网页切关及撤权。当前单一圆角矩形仍是车体碰撞近似，未单独模拟伸出的全向轮组件；其他平台与新模型需要另行验证。
+
+## Navigation 电机组件
+
+完整差速 profile 可选 motor，声明 dc_wheel_voltage@1 的 R、Kt、Ke、Jw、max_voltage_v 和 command_timeout_s，结构由 chassis-profile.schema.json 验证。只有关卡明确选择 wheel_voltage 才启用；Weapons 的 velocity_servo 以及世界时钟/求解器保持原状。模型方程、碰撞近似和已确认数值见 [33](33_NAVIGATION_MOTION_CONTROL.md)。

@@ -170,7 +170,9 @@ async function poll() {
       const selected = message.payload.selected_pose;
       if (selected) {
         if (!trail.length || trail.at(-1).tick !== selected.simulation_tick) trail.push({...selected.pose, tick: selected.simulation_tick});
-        trail = trail.slice(-profile.view.max_visual_trail);
+        const current=profile.campaign?.levels.find(level=>level.level_id===profile.campaign.active_level);
+        trail = trail.slice(-(current?.visualization.trail_points??profile.view.max_visual_trail));
+        canvas.dataset.trailPoints=trail.length;
         for (const [id, value] of [["x", selected.pose.x_m], ["y", selected.pose.y_m], ["yaw", selected.pose.yaw_rad]]) $(id).textContent = value.toFixed(3);
         $("tick").textContent = selected.simulation_tick;
         $("pose-label").textContent = `${selected.source_id} / ${selected.frame_id} · ${selected.freshness}`;
@@ -264,7 +266,7 @@ function draw(now) {
       ctx.save(); ctx.translate(...point(body.pose.x_m, body.pose.y_m)); ctx.rotate(-body.pose.yaw_rad);
       if(body.truth)ctx.globalAlpha=.7;
       drawChassis(ctx, profile.chassis_visual, scale, body.pose.stale, profile.wheel_calibration);
-      if(visualization?.enabled("turret"))drawTurret(ctx, profile.chassis_visual, scale, body.angle, profile.turret_muzzle_offset_m, profile.rendering.barrel_width_m);
+      if(profile.weapons_enabled!==false&&visualization?.enabled("turret"))drawTurret(ctx, profile.chassis_visual, scale, body.angle, profile.turret_muzzle_offset_m, profile.rendering.barrel_width_m);
       if(body.truth){ctx.strokeStyle="#61d7f0";ctx.lineWidth=2;ctx.strokeRect(-profile.body.length_m*scale/2,-profile.body.width_m*scale/2,profile.body.length_m*scale,profile.body.width_m*scale);}
       ctx.restore();
     }
@@ -359,6 +361,8 @@ try {
   }
   $("mode-label").textContent = profile.view_mode === "weapons-practice" ? "真值练习视图 / Ground Truth · 跟随平移，世界方向固定" : "估计视图 / Estimated State · 相机跟随授权估计";
   $("fire").disabled = profile.control_sources.weapon !== "keyboard";
+  $("tab-weapons").hidden=profile.weapons_enabled===false;
+  if(profile.weapons_enabled===false)$("hud-weapons").hidden=true;
   mountRobotGraph(profile,browser);
   mountMapPreview(releaseControls);
   mountWorkspace(browser).catch(error=>$("workspace-message").textContent="编辑器加载失败："+error.message+"。请运行 python3 tools/build.py 后刷新页面。");

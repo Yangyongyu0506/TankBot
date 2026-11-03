@@ -84,3 +84,7 @@ Authority 可直接接受 ResolvedScene；旧调用方传 dict 时先走同一 r
 ## 验收
 
 保存重构前六关×两底盘的 180 tick 轨迹摘要，见 tests/fixtures/simulator-before.json；测试使用固定输入，不把测试向量当游戏默认参数。覆盖物理状态、旧/新传感器序列一致、不同模型实际受力独立、定义不可变、重复引用/周期错误在 Core 前失败、reset/close、同定义不同 run 无串用、课程/工作区和进度回归。完整结果见 [验收报告](reports/SIMULATOR_REFACTOR_VALIDATION.md)：201 项 Python、18 项 Rust、原生/WASM 对比及两种真实网页 C3–C5 通关均通过。
+
+## Navigation 增量说明
+
+后续 Navigation 首关已在相同 ResolvedScene/实例架构下增加可选轮电机组件；明确选择 wheel_voltage 时启用，旧六关仍使用原伺服。轮参数集中在完整差速模型，不变更世界求解器。此项属于本篇原重构后的独立功能开发，详见 [33](33_NAVIGATION_MOTION_CONTROL.md)。

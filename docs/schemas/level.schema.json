@@ -118,6 +118,9 @@
             "source"
           ],
           "additionalProperties": false
+        },
+        "weapons_enabled": {
+          "type": "boolean"
         }
       },
       "required": [
@@ -274,6 +277,12 @@
             },
             "required": [],
             "additionalProperties": false
+          },
+          "drive": {
+            "enum": [
+              "velocity_servo",
+              "wheel_voltage"
+            ]
           }
         },
         "required": [
@@ -331,7 +340,7 @@
           }
         ]
       },
-      "minItems": 2
+      "minItems": 1
     },
     "communication": {
       "type": "object",
@@ -466,7 +475,9 @@
               "type": "array",
               "items": {
                 "enum": [
-                  "rmse_m"
+                  "rmse_m",
+                  "origin_distance_m",
+                  "path_length_m"
                 ]
               },
               "uniqueItems": true
@@ -524,6 +535,11 @@
         },
         "preserve_user_settings": {
           "type": "boolean"
+        },
+        "trail_points": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 4096
         }
       },
       "required": [
@@ -554,6 +570,14 @@
             },
             "required_estimates": {
               "type": "integer",
+              "minimum": 0
+            },
+            "max_origin_distance_m": {
+              "type": "number",
+              "minimum": 0
+            },
+            "min_path_length_m": {
+              "type": "number",
               "minimum": 0
             }
           },
@@ -658,11 +682,60 @@
         "timer_start": {
           "enum": [
             "first_control",
-            "first_deployment"
+            "first_deployment",
+            "first_control_commit"
           ]
         },
         "target": {
-          "type": "string"
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "command_sequence": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "twist_sequence"
+            },
+            "topic": {
+              "const": "/robot/cmd_vel"
+            },
+            "repeat": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 64
+            },
+            "segments": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 64,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "duration_ticks": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "twist": {
+                    "$ref": "payloads.schema.json#/$defs/twist"
+                  }
+                },
+                "required": [
+                  "duration_ticks",
+                  "twist"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "type",
+            "topic",
+            "repeat",
+            "segments"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
@@ -909,7 +982,12 @@
                           "gps_covariance",
                           "gps_mount",
                           "armor_covariance",
-                          "yaw_period_rad"
+                          "yaw_period_rad",
+                          "wheel_motor",
+                          "body_mass_kg",
+                          "body_yaw_inertia_kg_m2",
+                          "drag_x_n_s_per_m",
+                          "drag_yaw_nm_s"
                         ]
                       }
                     },
@@ -1047,6 +1125,11 @@
     "scaffolding": {
       "type": "object",
       "properties": {
+        "workspace_scope": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{0,47}$",
+          "description": "Stable project group; omitted means the original campaign workspace."
+        },
         "components": {
           "type": "array",
           "uniqueItems": true,
@@ -1073,7 +1156,9 @@
               "predictive_contract_tests",
               "armor_tracker",
               "armor_tracking_adapter",
-              "armor_contract_tests"
+              "armor_contract_tests",
+              "wheel_controller",
+              "wheel_control_adapter"
             ]
           }
         },
@@ -1367,7 +1452,11 @@
                 "target_alive",
                 "player_alive",
                 "objective_complete",
-                "elapsed_ticks"
+                "elapsed_ticks",
+                "sequence_complete",
+                "origin_distance_m",
+                "path_length_m",
+                "controller_faulted"
               ]
             },
             "operator": {
@@ -1392,7 +1481,9 @@
                 "turn_rad",
                 "required_hits",
                 "required_estimates",
-                "limit_ticks"
+                "limit_ticks",
+                "max_origin_distance_m",
+                "min_path_length_m"
               ]
             }
           },

@@ -2,7 +2,7 @@
 
 ## 目的与执行原则
 
-先验证本项目独特的端到端数据流，再扩展内容。M0、M1/M1b 已交付并完成[收尾复核](reports/M1_CLOSEOUT.md)；M2 已完成浏览器双 Worker、Adapter 一致性及本机资源验收，见 [M2 报告](reports/M2_VALIDATION.md)。其他 OS/浏览器验证仍待执行；M3 编辑部署和 M4 C0–C2 本机教学闭环已完成，见 [M3](reports/M3_VALIDATION.md)、[M4 报告](reports/M4_VALIDATION.md)。M5 多模块和 Weapons C3/C4 已完成本机验收，见 [M5 报告](reports/M5_VALIDATION.md)；M6 以后尚未实施。Accepted 安全/状态边界从 M1 开始，不把三层状态分离推迟到画面完成以后。
+先验证本项目独特的端到端数据流，再扩展内容。M0、M1/M1b 已交付并完成[收尾复核](reports/M1_CLOSEOUT.md)；M2 已完成浏览器双 Worker、Adapter 一致性及本机资源验收，见 [M2 报告](reports/M2_VALIDATION.md)。其他 OS/浏览器验证仍待执行；M3 编辑部署和 M4 C0–C2 本机教学闭环已完成，见 [M3](reports/M3_VALIDATION.md)、[M4 报告](reports/M4_VALIDATION.md)。M5 多模块和 Weapons C3/C4 已完成本机验收，见 [M5 报告](reports/M5_VALIDATION.md)；M6a 已新增 Navigation 首关，后续导航课程尚未实施。Accepted 安全/状态边界从 M1 开始，不把三层状态分离推迟到画面完成以后。
 
 ```mermaid
 flowchart LR
@@ -13,7 +13,7 @@ flowchart LR
     M2 --> M4[M4 前三关]
     M3 --> M4
     M4 --> M5[M5 多模块与自动武器]
-    M5 --> M6[M6 Locomotion 到自主]
+    M5 --> M6[M6 Navigation 到自主]
     M5 --> M7[M7 Algorithm Lab]
     M6 --> M8[M8 服务器与 Arena]
     M2 --> M8
@@ -32,7 +32,7 @@ flowchart LR
 | M3 Editor and Deployment（本机完成） | 依赖 M1；CodeMirror 原型、多文件 Workspace、模板 ledger、Manifest、Edit/Test/Deploy、失败回滚 | 不覆盖玩家文件；编辑不改变 Active；快照测试/部署摘要一致；Vim 焦点不误触控制 | 迁移冲突、多文件 import、安全打包 |
 | M4 First Three Playable Levels（本机完成） | 依赖 M2/M3；C0–C2、理想/噪声 Radar、函数到类、巡逻敌车与 3 HP 击杀 | 原生/Firefox 实际编辑部署并通关；两种跟踪法可用；跨关保留源码，无目标/弹道真值旁路 | 其他平台、难度曲线与长期教学反馈 |
 | M5 Multi-Module Robot Software（本机完成） | 依赖 M4；同步周期/event Contract 图、选源、章节；当前 C3 极坐标滤波、C4 中心预测与自瞄、C5 小陀螺自瞄，见 [28](28_WEAPONS_PROGRESSIVE_ESTIMATION.md) | 冻结/固定提交、失败与整图回滚；算法迁移无损；新三关闭环、旧三关冻结基线与原生/浏览器真实 UI 通关 | 管线时延、噪声融合、多文件预测与难度曲线 |
-| M6 Locomotion → Autonomous Control（待设计） | 依赖 M5；先底盘驱动/运动控制，再自身状态估计，后续建图、规划与决策；具体关卡另行确认 | 每步只增加主要学习负担；最终无键盘自主任务，失效安全制动，不改 Core 接管能力 | 新传感器、漂移、闭环时延、规划开销 |
+| M6 Navigation → Autonomous Control（首关已实现） | 依赖 M5；先双轮 FK/IK 与电机控制，再自身状态估计，后续建图、规划与决策；本章节不含武器，不加载 Weapons 算法 | 首关按固定指令测试回原点和真实路程；依据已确认电机模型实施；后续课程独立设计 | 电机/车体耦合、滚动约束、闭环时延、验收区分度 |
 | M7 Algorithm Lab | 依赖 M5；录制输入、参数比较、估计轨迹、停止后授权真值评分 | 传感器回放与闭环比较有明确区别；可重现错误；私有数据不进正式 Runtime | Replay 容量、评估 oracle、数据权限 |
 | M8 Remote Server and Arena | 依赖 M2/M6，复用 M7 录制设计；服务器 Authority、强化沙箱、公平配额、比赛审计 | 第三方代码攻击测试通过；客户端无真值/秘密地图；服务器评分；版本/资源锁定，超载处理可审计 | 逃逸、DoS、公平性、运维成本 |
 | M9 Cross-Platform Release and Maintenance | 依赖 M7/M8；桌面打包、验证后的平台支持表、兼容窗口、文档 CI、回放保留政策 | 每个声称支持的平台有安装/启动/安全/性能报告；旧项目可迁移或在声明窗口内运行 | 兼容回归、签名分发、浏览器/系统更新 |
@@ -86,7 +86,7 @@ M5 已按用户修订完成：M5a 多模块图、M5b C3 自动武器、M5c C4 �
 
 后续架构重构已将这五关迁移到独立 YAML 插件，统一发现/规则/权限/教材，见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)、[验收](reports/LEVEL_PLUGINS_VALIDATION.md) 和 ADR-0033。此项保留原玩法和进度，不新增正式关卡，也不表示 M6 已开始。
 
-建议下一项为 **M6a：Locomotion 首关设计与底盘驱动练习**。先共同确定任务、驱动输入与教学传感器；复用已有两个底盘和武器模块，先验证运动学/速度控制，不同时撤销系统自身位姿。交付关卡说明、带类型数值接口、非覆盖模板、权限和可测验收，再实现。新增物理或观测参数继续逐项确认；不在 M5 结束时自动开始。
+M6a 已按用户逐项确认实现 **Navigation C0：双轮驱动与运动控制**，见 [33](33_NAVIGATION_MOTION_CONTROL.md)。独立工程、无武器/敌车、轮电压模型、固定 24 秒方形指令与双阈值结算已接入；原生/WASM 及真实网页证据见 [验收报告](reports/NAVIGATION_CONTROL_VALIDATION.md)。后续关卡、定位/规划和更精细轮胎模型仍未实施，不把首关交付计为整个 M6 完成。
 
 ## 2026-10-25 范围核对
 

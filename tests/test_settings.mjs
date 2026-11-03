@@ -36,6 +36,15 @@ test('Weapons allows projectile layers while keeping enemy and developer truth h
   assert.deepEqual(allowedLayers(profile('c2'),true),Object.keys(layerLabels));
 });
 
+test('unarmed scenes omit unavailable weapon layers even in developer mode',()=>{
+  const profile={weapons_enabled:false,campaign:{active_level:'navigation.c0',levels:[{level_id:'navigation.c0',allowed_layers:['robot','map','trail']}]}};
+  for(const developer of [false,true]){
+    const allowed=allowedLayers(profile,developer);
+    for(const key of ['turret','projectiles','truth_targets'])assert.ok(!allowed.includes(key));
+    assert.ok(allowed.includes('robot'));
+  }
+});
+
 test('developer projection keeps estimated and true states independent',()=>{
   const data={run_id:'one',simulation_tick:4,sensors:{},truth:{truth_pose:[1,2,.3],projectiles:[{projectile_id:1,position:[3,4]}],targets:[{target_id:'a',pose:[5,6,.7],alive:true},{target_id:'dead',alive:false}],target_hits:{a:2}}};
   const view=developerView(data,{projectile_radius_m:.03});

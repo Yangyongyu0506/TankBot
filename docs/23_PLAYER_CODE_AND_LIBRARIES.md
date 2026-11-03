@@ -73,3 +73,7 @@ C2 的 `measurements` 是**本次采样的对象集合**，当前单敌车场景
 测试需覆盖全部文件跨关逐字节保留、禁止库静态/动态导入、预加载包拒绝、相对 import、两平台 NumPy 协方差往返及只读性、C2 空输入与有界数组大小。证据见 [玩家 Runtime 验收](reports/PLAYER_RUNTIME_VALIDATION.md)。当前不提供第三方库自由安装；将来只按新的教学需求审查少量基础库。完整平台与长期资源问题见 [M1–M4 核对](reports/M1_M4_STATUS_AUDIT.md)。
 
 矩阵 API 依据为 [NumPy ndarray](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html) 与 [buffer 视图](https://numpy.org/doc/stable/reference/generated/numpy.frombuffer.html)；浏览器可加载的包与原生包并不相同，参考 [Pyodide 包加载文档](https://pyodide.org/en/stable/usage/loading-packages.html)，实际版本以项目锁文件为准。
+
+## Navigation 独立课程项目
+
+Navigation 显式声明 scaffolding.workspace_scope=navigation。原 C0–C5 仍在 campaign 工程；新章节没有导入 Weapons 的算法、测试或模块连接，也没有删除它们。选回原章节可继续编辑原工程。两个默认项目都存于 userdata/workspaces；各自 revision/archive 保留，重试不清空源码，详见 [33](33_NAVIGATION_MOTION_CONTROL.md)。NumPy 白名单不变，不开放控制库代写本关算法。

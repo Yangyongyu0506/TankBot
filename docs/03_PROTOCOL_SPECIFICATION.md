@@ -210,3 +210,9 @@ M5 增加 `target_points@1`（Nx2）、`target_pose_estimate@1`（敌车 x/y/yaw
 ## 渐进 Weapons 的兼容增量
 
 2026-10-26 增加两个可选类型，不改变 Envelope 或既有负载：`gps_fix@1` 为 map 中带噪车头位置数组（缺测为空）；`target_polar_estimate@1` 为 base_link 中的非负 range_m、归一化 bearing_rad 和可空的 2×2 协方差（线上 row-major 4 元数组）。前者属于传感器输入，后者属于玩家估计输出。具体频道、单位、时间及权限见 [28](28_WEAPONS_PROGRESSIVE_ESTIMATION.md)。旧客户端未声明相应能力时不能订阅/发布新类型，不把原 target_estimate 的 x/y 偷换成 r/theta。
+
+## Navigation 轮电压增量
+
+wheel_voltage@1 为 topic，channel=/robot/wheels/cmd_voltage，frame_id=base_link，payload 为 left_voltage_v/right_voltage_v，单位 V，左右轮前进为正。Authority 校验权限、时序、有限值，并由底盘 motor 参数逐轮限幅；0.5 秒 watchdog 与电气制动见 [33](33_NAVIGATION_MOTION_CONTROL.md)。不增加执行起止时间，不改变旧类型。
+
+Navigation 的 /robot/cmd_vel 仍为相同 Twist，不过由受信 twist_sequence 发布、玩家模块订阅参考目标；玩家只获轮电压输出权限，不能发布 cmd_vel 绕过控制器。SDK WheelVoltage 与 NumPy (2,) 入门函数之间由框架适配，消息结构见 payloads/envelope Schema。

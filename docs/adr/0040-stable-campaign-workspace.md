@@ -10,7 +10,7 @@
 
 ## Decision
 
-默认 Campaign 项目使用 seed 与固定 campaign scope 生成身份，不包含关卡 ID、控制源、模板版本、Module 入口或物理配置。C0–C5 及后续课程因此共享一个长期项目。不同显式 seed 保持独立；沙盒沿用已有身份，--workspace-store 保持最高优先级。
+默认 Campaign 项目使用 seed 与固定 campaign scope 生成身份，不包含关卡 ID、控制源、模板版本、Module 入口或物理配置。C0–C5 共享一个长期项目；后续默认复用。用户要求独立的 Navigation 通过 [ADR-0045](0045-independent-course-workspaces.md) 显式选择新 scope，不改变或清空原工程。不同显式 seed 保持独立；沙盒沿用已有身份，--workspace-store 保持最高优先级。
 
 新默认目录尚不存在时，按已有课程 profile 计算旧 key 并检查已有库。将当前 Python 文件与课程模板及其 ledger 中的历史生成版本比较，识别包含非模板实现的项目；唯一候选优先于模板空库。完整复制该项目、全部历史与 archive，校验后原子发布，旧目录保留。存在多份不同已编辑项目时明确拒绝自动选择，提供 --workspace-store 路径，不按修改时间猜测、不合并同名算法。目标已存在时继续使用它，不反复迁移。
 

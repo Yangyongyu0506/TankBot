@@ -85,3 +85,11 @@ drive:
 wheels:
   radius_m: 0.1
   track_m: 0.5
+motor:
+  model: dc_wheel_voltage@1
+  resistance_ohm: 2.0
+  torque_constant_nm_per_a: 0.5
+  back_emf_v_s_per_rad: 0.5
+  wheel_inertia_kg_m2: 0.01
+  max_voltage_v: 12.0
+  command_timeout_s: 0.5

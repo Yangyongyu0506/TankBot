@@ -19,6 +19,8 @@ class BrowserServer:
         self.application = application
         from .workspace_api import WorkspaceAPI
         self.workspace = WorkspaceAPI(config, workspace, workspace_store)
+        from .workspace import workspace_scope
+        self.workspace_scopes={workspace_scope(config):self.workspace}
         self.campaign_directory = (Path(workspace_store) / "campaign" if workspace_store and not config.get("campaign", {}).get("active_level") else workspace_store)
         self.token = secrets.token_urlsafe()
         self.ui_origin = f"http://127.0.0.1:{config['host']['port']}"
@@ -159,12 +161,11 @@ class BrowserServer:
             self.application.require_level(level_id)
         scene = self.scenes.get(level_id)
         config = scene.to_config()
-        if active(self.config):
-            self.workspace.unlock(config)
-        else:
-            self.workspace = WorkspaceAPI(config, directory=self.campaign_directory)
+        from .workspace_api import select_workspace
+        selected_workspace=select_workspace(config,self.workspace_scopes,self.campaign_directory)
         self.scene = scene
         self.config = config
+        self.workspace = selected_workspace
         self.ui_json["/authority-config.json"] = config
         self.ui_json["/deployment.json"] = starter(config)
         if self.application:

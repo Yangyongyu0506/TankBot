@@ -17,6 +17,7 @@ SENSORS = {
     "armor_detector":("/robot/sensors/armor_detections","armor_detections@1","base_link",None),
 }
 ACTUATORS = {"/robot/cmd_vel":("twist@1","chassis","control.robot.drive"),
+              "/robot/wheels/cmd_voltage":("wheel_voltage@1","chassis","control.robot.wheel_voltage"),
               "/robot/turret/cmd_vel":("turret_velocity@1","turret","control.robot.turret_velocity"),
               "/robot/turret/cmd_accel":("turret_acceleration@1","turret","control.robot.turret_acceleration"),
               "/robot/weapons/cannon/fire":("fire_command@1","weapon","control.robot.fire")}
@@ -87,9 +88,20 @@ def _validate(value, filename, config, validator):
     if len(set(ids))!=len(ids):fail("robots","duplicate robot ID")
     players = [r for r in robots if r["role"]=="player"]
     targets = [r for r in robots if r["role"]=="target"]
-    if len(players)!=1 or len(targets)!=1:fail("robots","current components require one player and one objective target")
-    player,target = players[0],targets[0]
+    if len(players)!=1 or len(targets)>1:fail("robots","current components require one player and at most one objective target")
+    player = players[0]
+    target = targets[0] if targets else {"id":None,"type":None,"parameters":{}}
     if value["objectives"]["target"]!=target["id"]:fail("objectives.target","unknown objective target robot")
+    weapons=value["world"].get("weapons_enabled",True)
+    if not targets and weapons:fail("world.weapons_enabled","target-less scenes currently require weapons disabled")
+    if not weapons and (targets or player["health"] or any(player["control_sources"][a]!="disabled" for a in ("turret","weapon"))
+                        or any(s["type"] in ("turret_joint","weapon_state","radar","intercepted_gps","armor_detector") for s in player["sensors"])):
+        fail("world.weapons_enabled","unarmed scenes cannot declare weapon controls, targets, health or target/weapon sensors")
+    drive=player.get("drive","velocity_servo")
+    if drive=="wheel_voltage" and value["communication"]["runtime"]["mode"]!="graph":
+        fail("communication.runtime.mode","wheel control uses the registered Module graph adapter")
+    if drive=="wheel_voltage" and (player["model"]!="differential" or weapons or not config.get("chassis_profiles",{}).get("differential",{}).get("motor")):
+        fail(f"robots[{robots.index(player)}].drive","wheel voltage requires an unarmed differential chassis with a motor model")
     if target["type"]=="patrol_tank" and not target["parameters"].get("motion"):fail("robots","patrol_tank requires motion parameters")
     if target["type"]=="static_tank_target" and target["parameters"].get("motion"):fail("robots","static target cannot declare a patrol")
     motion=target["parameters"].get("motion",{})
@@ -103,6 +115,18 @@ def _validate(value, filename, config, validator):
     if clock["physics_hz"]%config["view"]["snapshot_hz"]:fail("world.simulation.physics_hz","view frequency must divide physics frequency")
     if clock["physics_hz"]//clock["algorithm_hz"]<config["runtime"]["commit_delay_ticks"]:fail("world.simulation.algorithm_hz","algorithm interval is shorter than the commit delay")
     sensor_topics = {"/robot/localization/pose":"pose2d@1"}
+    sequence=value["objectives"].get("command_sequence")
+    if sequence:
+        sensor_topics[sequence["topic"]]="twist@1"
+        period=clock["physics_hz"]//clock["algorithm_hz"]
+        if any(s["duration_ticks"]%period or s["twist"]["linear"]["y"]!=0 for s in sequence["segments"]):
+            fail("objectives.command_sequence.segments","durations must align to control periods; differential Twist must have vy=0")
+        duration=sequence["repeat"]*sum(s["duration_ticks"] for s in sequence["segments"])
+        if duration!=value["objectives"]["time_limit_s"]*clock["physics_hz"] or value["objectives"]["timer_start"]!="first_control_commit" or drive!="wheel_voltage":
+            fail("objectives.command_sequence","sequence requires wheel voltage, first-control commit start and a matching time limit")
+        if not {"max_origin_distance_m","min_path_length_m"}<=value["objectives"]["parameters"].keys():
+            fail("objectives.parameters","command sequence requires distance and actual path thresholds")
+    elif value["objectives"]["timer_start"]=="first_control_commit":fail("objectives.timer_start","first_control_commit requires a command sequence")
     sensor_ids = []
     instance_ids=set();streams=set()
     if len(player["sensors"])>limits["max_sensors"]:fail("robots[0].sensors","component count exceeds max_sensors")
@@ -138,6 +162,9 @@ def _validate(value, filename, config, validator):
         component=ACTUATORS.get(channel)
         if not component or component[0]!=schema:fail("permissions.data_access.actuators."+channel,"unknown actuator Topic/type")
         if player["control_sources"][component[1]]!="robot":fail("permissions.data_access.actuators."+channel,"actuator does not grant robot control")
+        if component[1]=="chassis":
+            expected="/robot/wheels/cmd_voltage" if drive=="wheel_voltage" else "/robot/cmd_vel"
+            if channel!=expected:fail("permissions.data_access.actuators."+channel,"actuator does not match the configured drive model")
     schemas = config["robot_graph"]["schemas"]
     if any(s not in schemas for s in grants["outputs"]):fail("permissions.data_access.outputs","unknown output schema")
     layers = value["permissions"]["visualization"]["allowed_layers"]
@@ -179,6 +206,7 @@ def _validate(value, filename, config, validator):
     from .level_templates import sources
     from string import Formatter
     fields={"movement_m","turn_rad","required_hits","required_estimates","time_limit_s","max_hp","damage_per_hit","algorithm_hz","radar_hz","observation_hz","range_stddev_m","bearing_stddev_rad","drop_probability"}
+    fields.update(value["objectives"]["parameters"])
     for key in ("completion","execution"):
         try:
             if any(field and field not in fields for _,field,_,_ in Formatter().parse(value["tutorial"]["lesson"][key])):raise ValueError("unknown public placeholder")
@@ -191,7 +219,7 @@ def _validate(value, filename, config, validator):
         for path,source in generated.items():
             if path.endswith(".py"):ast.parse(source,filename=path)
     except (ValueError,SyntaxError) as exc:fail("scaffolding",str(exc))
-    player_files={"perception/transforms.py","perception/tracker.py","perception/pose_tracker.py","perception/polar_tracker.py","perception/fusion_tracker.py","perception/armor_tracker.py","weapons/auto_aim.py","weapons/armor_aim.py","weapons/target_prediction.py"}
+    player_files={"control/wheel_controller.py","perception/transforms.py","perception/tracker.py","perception/pose_tracker.py","perception/polar_tracker.py","perception/fusion_tracker.py","perception/armor_tracker.py","weapons/auto_aim.py","weapons/armor_aim.py","weapons/target_prediction.py"}
     registered={p for component in COMPONENTS.values() for p in component}
     managed={p for p in registered|set(generated) if p not in player_files and not p.endswith("__init__.py")}
     if not set(runtime["managed_files"])<=managed:fail("communication.runtime.managed_files","managed files must exclude player algorithms and custom files")
@@ -313,7 +341,8 @@ def resolve_map(spec, source, config, field="world.map"):
 
 def _compile(value, walls, config):
     p=next(r for r in value["robots"] if r["role"]=="player")
-    target=next(r for r in value["robots"] if r["role"]=="target")
+    target=next((r for r in value["robots"] if r["role"]=="target"),None)
+    target_parameters=target["parameters"] if target else {}
     d=copy.deepcopy(value)
     meta=d["metadata"];runtime=d["communication"]["runtime"]
     radar=next((s["parameters"] for s in p["sensors"] if s["type"]=="radar"),None)
@@ -340,25 +369,26 @@ def _compile(value, walls, config):
     if radar and radar["noise"] is not None:caps.append("sensor.radar.read")
     if policy["true_enemy_objects"]:caps.append("view.enemy.truth")
     if policy["world_effects"]:caps.append("view.projectiles.truth")
-    if target["parameters"].get("health"):caps.append("view.enemy.health")
+    if target_parameters.get("health"):caps.append("view.enemy.health")
     if p["health"]:caps.append("view.player.health")
     caps += [ACTUATORS[channel][2] for channel in grants["actuators"]]
     if policy.get("robot_topics_allowed"):caps.append("view.robot_topics")
     if runtime["mode"]=="graph":caps.append("module.graph.manage")
     if "target_pose_estimate@1" in grants["outputs"]:caps.append("estimate.target_pose.publish")
     definition={"title":meta["name"],"problem":d["tutorial"]["problem"],"hints":d["tutorial"]["hints"],
-        "chapter_id":meta["chapter"]["chapter_id"],"capabilities":caps,"target":{"target_id":target["id"],"pose":target["initial_pose"],**target["parameters"]},
-        "objective":{**d["objectives"]["parameters"],"kind":"checklist" if d["objectives"]["success"]["type"]=="all" else "destroy_target"},
+        "chapter_id":meta["chapter"]["chapter_id"],"capabilities":caps,"target":({"target_id":target["id"],"pose":target["initial_pose"],**target_parameters} if target else None),
+        "objective":{**d["objectives"]["parameters"],"kind":"command_sequence" if "command_sequence" in d["objectives"] else "checklist" if d["objectives"]["success"]["type"]=="all" else "destroy_target"},
         "time_limit_s":d["objectives"]["time_limit_s"],"timer_start":d["objectives"]["timer_start"],
-        "player_health":"same_as_target" if p["health"]==target["parameters"].get("health") and p["health"] else None,
-        "control_sources":p["control_sources"],"robot_profile":runtime["profile_id"],"armor_mode":bool(target["parameters"].get("armor")),
+        "player_health":"same_as_target" if p["health"]==target_parameters.get("health") and p["health"] else None,
+        "control_sources":p["control_sources"],"robot_profile":runtime["profile_id"],"armor_mode":bool(target_parameters.get("armor")),
+        "weapons_enabled":d["world"].get("weapons_enabled",True),"drive":p.get("drive","velocity_servo"),
         "radar_profile":("noisy" if any(radar["noise"].values()) else "ideal") if radar else None,
         "scene":{**({"default_chassis":p["model"]} if p["model"]!="scene_selected" else {}),"initial_pose":p["initial_pose"],"initial_velocity":p["initial_velocity"],"player_health":p["health"],"walls":walls,
                  "public_initial_pose":d["permissions"]["public_initial_pose"],"public_map":d["permissions"]["public_map"]},
         "world_simulation":d["world"]["simulation"],"radar":radar,"runtime":runtime,"sensors":p["sensors"],
         "rules":d["objectives"],"evaluation":d["evaluation"],"randomization":d["randomization"],"permissions":d["permissions"],"visualization":d["visualization"],
         "tutorial":d["tutorial"],"scaffolding":d["scaffolding"],"metadata":meta}
-    if definition["target"].get("armor",{}).get("source")=="chassis_profile":
+    if target_parameters.get("armor",{}).get("source")=="chassis_profile":
         name=definition["target"].get("motion",{}).get("chassis",config["scene"]["default_chassis"])
         definition["target"]["armor"]=copy.deepcopy(config["chassis_profiles"][name]["armor"])
     return definition

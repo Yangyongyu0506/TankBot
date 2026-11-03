@@ -7,6 +7,7 @@ pub mod session;
 mod turret;
 #[cfg(target_arch = "wasm32")]
 mod wasm;
+mod wheel_drive;
 mod wheels;
 use cannon::CannonSystem;
 pub use cannon::{FiringConfig, Numerics, ProjectileConfig, ShotRequest, TargetConfig};
@@ -21,6 +22,7 @@ use std::{
 pub use turret::TurretAccelerationTarget;
 use turret::TurretSystem;
 pub use turret::{TurretConfig, TurretTarget};
+pub use wheel_drive::{WheelDriveConfig, WheelVoltageTarget};
 pub use wheels::Wheels;
 
 #[derive(Clone, Deserialize)]
@@ -90,6 +92,7 @@ pub struct Config {
     pub controller: Value,
     pub motion_limits: Value,
     pub weapons: WeaponsConfig,
+    pub wheel_drive: Option<WheelDriveConfig>,
 }
 
 #[derive(Clone, Deserialize)]
@@ -158,6 +161,8 @@ pub struct PrivateSnapshot {
     pub targets: Value,
     pub player_hp: Option<u64>,
     pub player_alive: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub motion_metrics: Option<Value>,
 }
 
 pub struct GameCore {
@@ -179,6 +184,8 @@ pub struct GameCore {
     enemies: BTreeMap<String, EnemyTank>,
     destroyed_targets: BTreeMap<String, Value>,
     destroyed_player_pose: Option<Pose>,
+    wheel_voltage: Option<WheelVoltageTarget>,
+    path_length_m: f64,
 }
 impl GameCore {
     pub fn new(config: Config, chassis_name: &str) -> Result<Self, String> {
@@ -198,6 +205,12 @@ impl GameCore {
             return Err("Invalid clock ratios".into());
         }
         config.wheels.validate()?;
+        if let Some(motor) = &config.wheel_drive {
+            motor.validate()?;
+            if chassis_name != "differential" || config.weapons.enabled {
+                return Err("Wheel voltage drive requires an unarmed differential chassis".into());
+            }
+        }
         if let Some(health) = &config.scene.player_health {
             if !config.weapons.enabled
                 || health.max_hp == 0
@@ -394,6 +407,8 @@ impl GameCore {
             enemies,
             destroyed_targets: BTreeMap::new(),
             destroyed_player_pose: None,
+            wheel_voltage: None,
+            path_length_m: 0.0,
         };
         core.wheel_rates = core.rates(core.body_velocity());
         core.last_sensors = Some(core.sensor_payload(Vector::ZERO, v[2]));
@@ -448,6 +463,9 @@ impl GameCore {
             .set_acceleration(target, self.tick)
     }
     pub fn set_target(&mut self, t: VelocityTarget) -> Result<(), String> {
+        if self.config.wheel_drive.is_some() {
+            return Err("ACTUATION_MODE_MISMATCH".into());
+        }
         if self.destroyed_player_pose.is_some() {
             return Err("PLAYER_DEAD".into());
         }
@@ -467,6 +485,21 @@ impl GameCore {
     }
     pub fn revoke_target(&mut self) {
         self.target = None;
+        self.wheel_voltage = None;
+    }
+    pub fn set_wheel_voltage(&mut self, target: WheelVoltageTarget) -> Result<(), String> {
+        if self.config.wheel_drive.is_none() {
+            return Err("ACTUATION_MODE_MISMATCH".into());
+        }
+        if target.source_tick > self.tick
+            || ![target.left_voltage_v, target.right_voltage_v]
+                .iter()
+                .all(|v| v.is_finite())
+        {
+            return Err("Invalid wheel voltage".into());
+        }
+        self.wheel_voltage = Some(target);
+        Ok(())
     }
     pub fn queue_fire(&mut self, request: ShotRequest) -> Result<(), String> {
         if self.destroyed_player_pose.is_some() {
@@ -518,14 +551,34 @@ impl GameCore {
                 .unwrap_or(Vector::ZERO);
             let old_angle = old_pose.rotation.angle();
             if self.destroyed_player_pose.is_none() {
-                drive_servo(
-                    &mut self.world,
-                    self.tank,
-                    &self.config.body,
-                    &self.config.servo,
-                    &self.chassis,
-                    goal,
-                );
+                if let Some(motor) = &self.config.wheel_drive {
+                    let voltage = self
+                        .wheel_voltage
+                        .filter(|v| {
+                            (self.tick - v.source_tick) as f64
+                                / (self.config.clock.physics_hz as f64)
+                                < motor.command_timeout_s
+                        })
+                        .map(|v| [v.left_voltage_v, v.right_voltage_v])
+                        .unwrap_or([0.0; 2]);
+                    motor.apply(
+                        &mut self.world,
+                        self.tank,
+                        &self.config.body,
+                        &self.chassis,
+                        &self.config.wheels,
+                        voltage,
+                    );
+                } else {
+                    drive_servo(
+                        &mut self.world,
+                        self.tank,
+                        &self.config.body,
+                        &self.config.servo,
+                        &self.chassis,
+                        goal,
+                    );
+                }
             }
             let enemy_starts: BTreeMap<_, _> = self
                 .enemies
@@ -545,6 +598,9 @@ impl GameCore {
             }
             self.world.step();
             let end = self.player_pose();
+            if self.config.wheel_drive.is_some() {
+                self.path_length_m += (end.translation - old_pose.translation).length();
+            }
             if let Some(c) = &mut self.cannon {
                 for (id, enemy) in &self.enemies {
                     let start = enemy_starts[id];
@@ -718,6 +774,7 @@ impl GameCore {
             targets: json!(self.config.weapons.targets.iter().map(|t| self.target_snapshot(t)).collect::<Vec<_>>()),
             player_hp: self.player_hp(),
             player_alive: self.destroyed_player_pose.is_none(),
+            motion_metrics: self.config.wheel_drive.as_ref().map(|_|json!({"path_length_m":self.path_length_m})),
             turret_state: self.turret.as_ref().map(|t|json!({"relative_angle_rad":t.relative_angle,
                 "relative_rate_radps":self.world.bodies[t.body].angvel()-self.world.bodies[self.tank].angvel(),
                 "position":[self.world.bodies[t.body].translation().x,self.world.bodies[t.body].translation().y],

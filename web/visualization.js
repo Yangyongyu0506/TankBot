@@ -4,8 +4,9 @@ import {polarHits} from "./campaign-ui.js";
 export const layerLabels={map:"静态地图",robot:"本关授权车体位姿",trail:"授权位姿轨迹",target_estimates:"玩家目标估计",radar:"Radar 观测",imu:"IMU 数据 / 加速度箭头",encoders:"轮编码器数据",turret:"炮台与武器观测",truth_robot:"真实车体与炮台",truth_targets:"真实目标",projectiles:"真实弹丸",frames:"坐标系",velocities:"真实速度向量",colliders:"碰撞外形"};
 export function allowedLayers(profile,developer){
   const current=profile.campaign?.levels.find(l=>l.level_id===profile.campaign.active_level),caps=current?.capabilities??[];
-  if(current?.allowed_layers)return developer?Object.keys(layerLabels):current.allowed_layers;
-  return Object.keys(layerLabels).filter(key=>{
+  const supported=Object.keys(layerLabels).filter(key=>profile.weapons_enabled!==false||!["turret","projectiles","truth_targets"].includes(key));
+  if(current?.allowed_layers)return developer?supported:current.allowed_layers.filter(key=>supported.includes(key));
+  return supported.filter(key=>{
     if(["truth_robot","velocities","colliders"].includes(key))return developer;
     if(key==="truth_targets")return developer||profile.view_mode==="weapons-practice"||caps.includes("view.enemy.truth");
     if(key==="projectiles")return developer||profile.view_mode==="weapons-practice"||caps.includes("view.projectiles.truth");

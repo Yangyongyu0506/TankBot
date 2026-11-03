@@ -107,12 +107,12 @@ C2 的实时累计 RMSE 是上段终局发布规则的显式教学例外。allow
 
 | Level | 原实现 | 唯一关卡源 | 状态 |
 | --- | --- | --- | --- |
-| C0 认识坦克与坐标 | game.yaml + 被动包装 + UI 真值分支 | [c0.yaml](../levels/c0.yaml) | 已迁移，基线及实际通关验证 |
-| C1 用 SE(3) 矩阵变换坐标 | ideal Radar profile + 函数模板 + checklist | [c1.yaml](../levels/c1.yaml) | 已迁移，旧玩家矩阵 API 保留 |
-| C2 噪声下跟踪 | noisy profile + Tracker 分支 + 击杀判断 | [c2.yaml](../levels/c2.yaml) | 已迁移，噪声、巡逻、生命和评分不变 |
-| 原 C3 让炮台自己瞄准 | 原 graph + 自动武器 | [c3.yaml](../levels/c3.yaml) | 迁移后又经用户要求重做为极坐标滤波；自动武器移至 C5 |
-| 原 C4 从底盘中心推算装甲瞄准点 | 原中心观测位姿/装甲组件 | [c4.yaml](../levels/c4.yaml) | 后续按 ADR-0038 改为 C3 同款中心观测下自瞄；装甲任务在 C5 |
-| C5 预测小陀螺并自动瞄准 | 本轮新增的可复用 GPS、全向巡逻与预测/控制适配器 | [c5.yaml](../levels/c5.yaml) | 新增 YAML 插件；无关卡 ID 初始化分支 |
+| C0 认识坦克与坐标 | game.yaml + 被动包装 + UI 真值分支 | [hello_robot.C0.yaml](../levels/hello_robot.C0.yaml) | 已迁移，基线及实际通关验证 |
+| C1 用 SE(3) 矩阵变换坐标 | ideal Radar profile + 函数模板 + checklist | [weapons.C1.yaml](../levels/weapons.C1.yaml) | 已迁移，旧玩家矩阵 API 保留 |
+| C2 噪声下跟踪 | noisy profile + Tracker 分支 + 击杀判断 | [weapons.C2.yaml](../levels/weapons.C2.yaml) | 已迁移，噪声、巡逻、生命和评分不变 |
+| 原 C3 让炮台自己瞄准 | 原 graph + 自动武器 | [weapons.C3.yaml](../levels/weapons.C3.yaml) | 迁移后又经用户要求重做为极坐标滤波；自动武器移至 C5 |
+| 原 C4 从底盘中心推算装甲瞄准点 | 原中心观测位姿/装甲组件 | [weapons.C4.yaml](../levels/weapons.C4.yaml) | 后续按 ADR-0038 改为 C3 同款中心观测下自瞄；装甲任务在 C5 |
+| C5 预测小陀螺并自动瞄准 | 本轮新增的可复用 GPS、全向巡逻与预测/控制适配器 | [weapons.C5.yaml](../levels/weapons.C5.yaml) | 新增 YAML 插件；无关卡 ID 初始化分支 |
 
 存档仍为原 v1 结构，五个 ID 保持；顺序来自 metadata.order，解锁来自 prerequisites，不从 ID 数字推断。已有源码和 userdata 目录不自动改写；原先带关卡判断的玩家包装作为用户代码兼容，新的引擎包装只读声明的 processing，不检查 ID。
 
@@ -123,3 +123,7 @@ C2 的实时累计 RMSE 是上段终局发布规则的显式教学例外。allow
 新传感器 `intercepted_gps` 的 Topic/type/frame 固定为 `/robot/sensors/intercepted_gps` / `gps_fix@1` / `map`，YAML 指定目标实例、前侧中央安装、量程、误差、可见性和独立 random_stream。`target_polar_estimate@1` 允许玩家输出当前 base_link 下的 r/theta，不改原消息。新模板和图适配器通过稳定类型登记；当前 C3/C4 各一个图模块、C5 两个，图并不要求至少两个模块。
 
 `tutorial.lesson.edit_files` 是可选的文件树高亮列表，省略则由 functions 推导；校验必须指向该配置生成的玩家算法，拒绝管理文件或不存在路径。它不限制玩家自建/编辑其他文件，不参与控制权或算法判断。GPS 可视化由观察层单独授权，订阅权与显示权仍然独立。细节及模型边界见 28。
+
+## Navigation 首关增量
+
+原五关迁移约束不变；随后用户明确要求新增 Navigation 首关 navigation.c0。统一加载器现支持无武器/无任务目标场景，新增 wheel_voltage 与 twist_sequence 通用组件；成功条件继续使用规则树，运动反馈独立授权，不按 ID 分支。workspace_scope 只控制持久工程分组，旧 campaign 工程不迁移或清空。组件、Schema、接口与实际范围见 [33](33_NAVIGATION_MOTION_CONTROL.md) 及其验收报告，不表示定位/规划课程已实现。

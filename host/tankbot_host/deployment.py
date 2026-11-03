@@ -289,6 +289,7 @@ class DeploymentManager:
         a._revoke_robot = True
         if a.config["control_sources"]["chassis"] == "robot":
             a._keyboard = None
+            a._wheel_voltage_target = None
         if a.config["control_sources"]["turret"] == "robot":
             a._turret_target = None
             a._turret_acceleration_target = None
@@ -304,6 +305,8 @@ class DeploymentManager:
         self.active = {"deployment_id": job["id"], "sha256": job["sha256"], "revision": job["artifact"]["revision"], "activated_tick": a.tick}
         if a.campaign is not None and a.campaign.definition["timer_start"] == "first_deployment":
             a.campaign.start(a.tick)
+        if a.campaign is not None and a.campaign.sequence:
+            a.campaign.deployment_armed=True
         self.history.append(copy.deepcopy(self.active))
         self.history = self.history[-a.config["workspace"]["max_deployments"]:]
         a.audit.append({"event": "deployment_activated", "tick": a.tick, **self.active})

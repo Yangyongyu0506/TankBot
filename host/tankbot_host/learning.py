@@ -14,6 +14,12 @@ from .campaign_templates import template_version, TRANSFORMS, TRACKER, MANAGED_F
 
 
 TYPE_TEXT: dict[str, tuple[str, dict[str, str]]] = {
+    "WheelVoltage": ("左右轮的电压命令，由框架从控制数组生成。", {"left_voltage_v":"左轮电压，V；正方向为前进。","right_voltage_v":"右轮电压，V；正方向为前进。"}),
+    "DifferentialDriveParameters": ("只读差速底盘与轮端等效电机参数，全部来自当前底盘 YAML。", {
+        "wheel_radius_m":"轮半径 r，m。","wheel_separation_m":"左右轮中心间距 B，m。","mass_kg":"车体质量 m，kg；不含轮转动惯量的等效增量。",
+        "yaw_inertia_kg_m2":"车体偏航惯量 I，kg·m²。","drag_x_n_s_per_m":"纵向黏性阻力系数 cx，N·s/m。","drag_yaw_nm_s":"偏航黏性阻力系数 cw，N·m·s。",
+        "resistance_ohm":"轮端等效电阻 R，Ω。","torque_constant_nm_per_a":"轮端力矩常数 Kt，N·m/A。","back_emf_v_s_per_rad":"反电动势常数 Ke，V·s/rad。",
+        "wheel_inertia_kg_m2":"每轮等效转动惯量 Jw，kg·m²。","max_voltage_v":"左右轮各自的对称电压限幅，V。"}),
     "ArmorDetections": ("本帧最近可见装甲中心的匿名观测；不是敌车中心或历史。", {
         "measurements_rt":"只读 float64 NumPy 数组，shape=(N,2)，N 为 0/1/2；每行 [range_m,bearing_rad]，参考系为当前我方 base_link，单位 m/rad。按加噪前距离排序，行号不是装甲 ID。"}),
     "PolarTargetEstimate": ("当前我方车体系的敌车中心距离与方位值。C3/C4 输入元组中是原始观测，函数返回值是玩家估计；类型相同不代表输入已滤波。", {
@@ -152,7 +158,7 @@ def learning_bundle(config: dict[str, Any]) -> dict[str, Any]:
     if level_id:
         definition=config["campaign"]["levels"][level_id]
         lesson=copy.deepcopy(definition["tutorial"]["lesson"])
-        health=definition["target"].get("health",{})
+        health=(definition["target"] or {}).get("health",{})
         context={**definition["rules"]["parameters"],"time_limit_s":definition["time_limit_s"],"max_hp":health.get("max_hp"),"damage_per_hit":health.get("damage_per_hit"),"algorithm_hz":config["clock"]["algorithm_hz"]}
         if definition["radar"]:context.update(radar_hz=definition["radar"]["update_hz"],**definition["radar"]["noise"])
         armor_sensor=next((sensor for sensor in definition["sensors"] if sensor["type"]=="armor_detector"),None)
@@ -161,7 +167,7 @@ def learning_bundle(config: dict[str, Any]) -> dict[str, Any]:
         lesson["execution"]=lesson["execution"].format(**context)
         if "calibration" in lesson:
             from .chassis_profiles import target_geometry
-            target=definition["target"];motion=target.get("motion",{})
+            target=definition["target"] or {};motion=target.get("motion",{})
             geometry=target_geometry(config,target)
             length,width=geometry["body"]["length_m"],geometry["body"]["width_m"]
             import math
@@ -176,6 +182,8 @@ def learning_bundle(config: dict[str, Any]) -> dict[str, Any]:
                           gps_covariance=[[gps["parameters"]["noise"]["position_stddev_m"]**2,0],[0,gps["parameters"]["noise"]["position_stddev_m"]**2]] if gps else None)
             public["armor_covariance"]=[[armor_sensor["parameters"]["noise"]["range_stddev_m"]**2,0],[0,armor_sensor["parameters"]["noise"]["bearing_stddev_rad"]**2]] if armor_sensor else None
             public["yaw_period_rad"]=next((metric["period_rad"] for metric in definition["evaluation"]["metrics"] if metric["type"]=="yaw_rmse" and "period_rad" in metric),math.tau)
+            public.update(wheel_motor=copy.deepcopy(config.get("wheel_drive")),body_mass_kg=config["body"]["mass_kg"],body_yaw_inertia_kg_m2=config["body"]["yaw_inertia_kg_m2"],
+                drag_x_n_s_per_m=config["chassis"][config["scene"]["default_chassis"]]["drag_x_n_s_per_m"],drag_yaw_nm_s=config["chassis"][config["scene"]["default_chassis"]]["drag_yaw_nm_s"])
             lesson["calibration"]={key:public[value["source"]] if "source" in value else value["text"] for key,value in lesson["calibration"].items()}
     else:
         lesson.update(execution="本关无需编程；关闭代码编辑器后使用键盘驾驶。",completion="可查阅类型、修改算法，并保存、测试和部署。",common_errors=["编辑器打开时，驾驶按键用于编辑代码；关闭后才能控制坦克。"])

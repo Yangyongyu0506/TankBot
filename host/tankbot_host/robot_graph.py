@@ -225,7 +225,7 @@ class GraphExecution:
                 a.logs.append(mid+": "+error.code+"\n",source="runtime",module_id=mid,tick=a.tick,stream="error")
                 if self.failures[mid] >= a.config["runtime"]["max_failures"]:
                     self.faults[mid] = error.code
-                    if any(ch in ("/robot/cmd_vel","/robot/turret/cmd_vel","/robot/turret/cmd_accel","/robot/weapons/cannon/fire") for ch in module["output_channels"].values()):
+                    if any(ch in ("/robot/cmd_vel","/robot/wheels/cmd_voltage","/robot/turret/cmd_vel","/robot/turret/cmd_accel","/robot/weapons/cannon/fire") for ch in module["output_channels"].values()):
                         a._revoke_robot = True
         return accepted
 

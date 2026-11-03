@@ -46,6 +46,27 @@ class Twist:
 
 
 @dataclass(frozen=True)
+class WheelVoltage:
+    left_voltage_v: float
+    right_voltage_v: float
+
+
+@dataclass(frozen=True)
+class DifferentialDriveParameters:
+    wheel_radius_m: float
+    wheel_separation_m: float
+    mass_kg: float
+    yaw_inertia_kg_m2: float
+    drag_x_n_s_per_m: float
+    drag_yaw_nm_s: float
+    resistance_ohm: float
+    torque_constant_nm_per_a: float
+    back_emf_v_s_per_rad: float
+    wheel_inertia_kg_m2: float
+    max_voltage_v: float
+
+
+@dataclass(frozen=True)
 class Pose2D:
     x_m: float
     y_m: float
@@ -293,6 +314,7 @@ class ModuleContext:
     def publish(self, port: str, value: Any, *, frame_id: str,
                 simulation_tick: int | None = None) -> None:
         types: dict[type, str] = {Pose2D: "pose2d@1", TargetEstimate: "target_estimate@1", TargetPoseEstimate:"target_pose_estimate@1", TargetPoints:"target_points@1", PolarTargetEstimate:"target_polar_estimate@1", Twist: "twist@1", TurretVelocity: "turret_velocity@1", TurretAcceleration:"turret_acceleration@1"}
+        types[WheelVoltage] = "wheel_voltage@1"
         if type(value) not in types:
             raise TypeError("Unsupported output value")
         payload: dict[str, Any] = asdict(value)

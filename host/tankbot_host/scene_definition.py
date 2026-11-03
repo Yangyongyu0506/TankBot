@@ -65,6 +65,8 @@ def resolve_scene(config):
     c=apply_profiles(copy.deepcopy(config));apply_override(c)
     Validator(c,'scene-resolution').structure(c,'simulation-profile.schema.json')
     validate_profile(c);validate_wheels(c['wheels'])
+    if c.get('wheel_drive') and (c['scene']['default_chassis']!='differential' or c['weapons']['enabled']):
+        raise ValueError('wheel_voltage requires an unarmed differential chassis')
     hz=c['clock']['physics_hz']
     if hz%c['clock']['sensor_hz'] or hz%c['clock']['algorithm_hz'] or c['solver']['dt']!=1/(hz*c['clock']['substeps']):
         raise ValueError('Invalid resolved scene clock/solver')

@@ -22,11 +22,11 @@ Schema 顶层为 metadata、world、robots、communication、permissions、visua
 
 | 关卡 | 配置 | 保持的行为与结果 |
 | --- | --- | --- |
-| C0 认识坦克与坐标 | [c0.yaml](../../levels/c0.yaml) | 人工驾驶、真值练习；移动/转向/命中清单；60秒首次操作起算 |
-| C1 用 SE(3) 矩阵变换坐标 | [c1.yaml](../../levels/c1.yaml) | 理想 Radar、实际 NumPy 矩阵乘法、人工武器；估计并命中；60秒首次部署起算 |
-| C2 噪声下跟踪 | [c2.yaml](../../levels/c2.yaml) | 带噪中心观测、差速巡逻、人工武器、双方3HP；120秒内存活击杀 |
-| C3 让炮台自己瞄准 | [c3.yaml](../../levels/c3.yaml) | 三模块、程序角加速度/开火、无人工武器；120秒内存活自动击杀 |
-| C4 从底盘中心推算装甲瞄准点 | [c4.yaml](../../levels/c4.yaml) | 中心观测、敌车姿态估计、四面装甲、非装甲吸弹；180秒内存活击杀 |
+| C0 认识坦克与坐标 | [hello_robot.C0.yaml](../../levels/hello_robot.C0.yaml) | 人工驾驶、真值练习；移动/转向/命中清单；60秒首次操作起算 |
+| C1 用 SE(3) 矩阵变换坐标 | [weapons.C1.yaml](../../levels/weapons.C1.yaml) | 理想 Radar、实际 NumPy 矩阵乘法、人工武器；估计并命中；60秒首次部署起算 |
+| C2 噪声下跟踪 | [weapons.C2.yaml](../../levels/weapons.C2.yaml) | 带噪中心观测、差速巡逻、人工武器、双方3HP；120秒内存活击杀 |
+| C3 让炮台自己瞄准 | [weapons.C3.yaml](../../levels/weapons.C3.yaml) | 三模块、程序角加速度/开火、无人工武器；120秒内存活自动击杀 |
+| C4 从底盘中心推算装甲瞄准点 | [weapons.C4.yaml](../../levels/weapons.C4.yaml) | 中心观测、敌车姿态估计、四面装甲、非装甲吸弹；180秒内存活击杀 |
 
 五关地图、玩家零初态、目标初态/路径、底盘、动力学、噪声及传感器结构保持。C1–C4 仍禁止驾驶，C3/C4 继续公开系统自身位姿。没有引入定位、scan 或建图课程。原诊断是位置/yaw RMSE 与采样/命中计数，无星级、加权评分或额外误差通关门槛；本次未增加。
 
@@ -145,11 +145,11 @@ git diff --check
 - [host/tankbot_host/level_rules.py](../../host/tankbot_host/level_rules.py)
 - [host/tankbot_host/level_templates.py](../../host/tankbot_host/level_templates.py)
 - [levels/README.md](../../levels/README.md)
-- [levels/c0.yaml](../../levels/c0.yaml)
-- [levels/c1.yaml](../../levels/c1.yaml)
-- [levels/c2.yaml](../../levels/c2.yaml)
-- [levels/c3.yaml](../../levels/c3.yaml)
-- [levels/c4.yaml](../../levels/c4.yaml)
+- [levels/hello_robot.C0.yaml](../../levels/hello_robot.C0.yaml)
+- [levels/weapons.C1.yaml](../../levels/weapons.C1.yaml)
+- [levels/weapons.C2.yaml](../../levels/weapons.C2.yaml)
+- [levels/weapons.C3.yaml](../../levels/weapons.C3.yaml)
+- [levels/weapons.C4.yaml](../../levels/weapons.C4.yaml)
 - [tests/fixtures/level-behavior-before.json](../../tests/fixtures/level-behavior-before.json)
 - [tests/level_baseline_support.py](../../tests/level_baseline_support.py)
 - [tests/test_level_plugins.py](../../tests/test_level_plugins.py)

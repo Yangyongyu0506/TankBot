@@ -2,7 +2,7 @@
 
 TankBot 将二维坦克运动、机器人算法学习与多文件 Python 编程结合。玩家通过传感器和自己的算法重建世界认知。
 
-当前完成 **M1 + M1b 本机闭环原型**：Rust/Rapier2D 权威物理、差速/四轮径向全向轮底盘、理想轮编码器与质心 IMU、外部 Python 里程计、固定 tick 提交、Pose Selector、View Policy 和 Canvas 页面。M1b 增加双刚体炮台、单发/冷却、连续弹道/反弹/弹丸互毁、后坐/受击冲量、靶标与 Python 武器接口；M2 增加真实浏览器 Rust/WASM + Pyodide 双 Worker、独立 Runtime origin 与多 Adapter 验证；M3 增加 CodeMirror/Vim、多文件 Workspace、模板预览、快照测试、部署与回滚。M5 增加模块图，现已调整为 C3 极坐标滤波、C4 中心自瞄与 C5 小陀螺装甲；Locomotion、规划和 Arena 尚未实现。
+当前完成 **M1 + M1b 本机闭环原型**：Rust/Rapier2D 权威物理、差速/四轮径向全向轮底盘、理想轮编码器与质心 IMU、外部 Python 里程计、固定 tick 提交、Pose Selector、View Policy 和 Canvas 页面。M1b 增加双刚体炮台、单发/冷却、连续弹道/反弹/弹丸互毁、后坐/受击冲量、靶标与 Python 武器接口；M2 增加真实浏览器 Rust/WASM + Pyodide 双 Worker、独立 Runtime origin 与多 Adapter 验证；M3 增加 CodeMirror/Vim、多文件 Workspace、模板预览、快照测试、部署与回滚。M5 增加模块图，现已调整为 C3 极坐标滤波、C4 中心自瞄与 C5 小陀螺装甲；Navigation 已新增首关双轮电压控制；后续规划和 Arena 尚未实现。
 
 M4 增加 C0–C2 教学关卡：真值驾驶练习、理想雷达 SE(3) 矩阵变换、带噪声/丢失的移动敌车跟踪与击杀。开始方式见下节；M5 当前课程为 C3 直接滤波车体系 (r, theta)、C4 复用滤波并接管武器自瞄、C5 全向小陀螺装甲预测；自身定位课程、建图、规划与 Arena 仍待实现。
 
@@ -163,7 +163,7 @@ M3 UI 验收使用独立临时编辑库启动服务和 Marionette Firefox，再�
 
 ## M5：Weapons 与多文件机器人
 
-章节按 **Hello Robot（C0）→ Weapons（C1–C5）→ 后续 Locomotion** 排列。C0–C2 玩法不变；C3 直接处理原始车体系距离/方位，输出仍是 `(r, theta)`，可实现 EKF；C4 沿用 C3 的中心 Radar 与差速敌车，玩家分文件实现中心预测与自动武器控制；C5 在此基础上加入匿名装甲观测、有效装甲与全向小陀螺，复用控制器并扩展旋转预测。
+章节按 **Hello Robot（C0）→ Weapons（C1–C5）→ Navigation（首关）** 排列。C0–C2 玩法不变；C3 直接处理原始车体系距离/方位，输出仍是 `(r, theta)`，可实现 EKF；C4 沿用 C3 的中心 Radar 与差速敌车，玩家分文件实现中心预测与自动武器控制；C5 在此基础上加入匿名装甲观测、有效装甲与全向小陀螺，复用控制器并扩展旋转预测。Navigation 首关实现 FK/IK 与轮电压控制：系统发送 24 秒方形指令，按终点误差和真实路程验收，见 [设计与状态](docs/33_NAVIGATION_MOTION_CONTROL.md)。
 
 C1–C5 底盘锁定并保留真实受力，系统自身位姿仍公开；C1–C3 人工炮台/开火，C4/C5 仅允许程序角加速度/单发。C3/C4/C5 时限为 120/120/180 仿真秒，首次成功部署起算。C2–C4 Radar 误差沿用 σr=0.45 m、σtheta=0.08 rad、10% 丢失；C4 不提供 GPS、不要求装甲命中，双方 HP、整车扣血和终局顺序与 C3 相同。C5 仅提供最近两块可见装甲的匿名车体系 `[r,theta]`，10 Hz、12 m，σr=0.03 m、σtheta=0.005 rad，每块独立丢失 10%，实际返回 0/1/2 行。没有中心 Radar 或 GPS，朝向按模 90° 解释。所有参数在对应 YAML。
 
@@ -180,3 +180,13 @@ C3/C4 的 `PolarTracker.update` 接收 `measurements: tuple[PolarTargetEstimate,
 当前 C0–C5 通过同一加载器自动发现，旧 ID、存档及既有 Topic 保持兼容；C3/C4 按用户要求重做，C5 为本轮新增。复用已有组件时，只需在 `levels/` 添加一个符合 Schema 的 YAML，无需修改引擎、UI 或注册列表；程序输入权限与 UI 显示权限独立配置。启动器会为原生和浏览器生成同一关卡目录，新增文件后重启服务。未知组件会明确拒绝，不支持 YAML 执行脚本。
 
 编写及启动流程见 [关卡指南](levels/README.md)，架构与原五关审计见 [27](docs/27_LEVEL_PLUGIN_ARCHITECTURE.md)，测试与限制见 [迁移验收](docs/reports/LEVEL_PLUGINS_VALIDATION.md)。
+
+## Navigation 首关
+
+通关 C5 后解锁 Navigation C0（稳定 ID navigation.c0）：
+
+```bash
+python3 tools/tankbot.py serve --level navigation.c0
+```
+
+开发者预览可追加 --developer；浏览器模式用 browser 替换 serve。F2 只需修改高亮的 control/wheel_controller.py，输入目标 Twist、左右轮速与 dt，返回左右轮电压 NumPy 向量。模型参数在 config/chassis/differential.yaml；指令与验收在 levels/navigation.C0.yaml。Navigation 使用独立工程，Weapons 源码/历史继续保留；本章没有武器或人工驾驶。

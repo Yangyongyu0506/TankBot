@@ -2,7 +2,7 @@
 
 ## 阅读方式与规范状态
 
-文档基线：`m5-progressive-weapons-1.0`，更新日期：2026-10-26。已完成 M1/M1b、M2 本机浏览器/Transport、M3 编辑部署和 M4 C0–C2 教学闭环验收：实现与限制见 [运行入口](../README.md)、[M4 验证报告](reports/M4_VALIDATION.md)；模型由用户逐项确认，见 [13](13_PHYSICS_MODEL_DECISIONS.md)、[18](18_CAMPAIGN_DESIGN.md)。M5 已实现模块图、角加速度与装甲；现按用户要求调整为 C3 极坐标滤波、C4 中心预测与自瞄、C5 小陀螺自瞄，当前边界及验收见 [28](28_WEAPONS_PROGRESSIVE_ESTIMATION.md)、[新课程报告](reports/WEAPONS_REDESIGN_VALIDATION.md)。关卡使用独立 YAML 插件，现有 C0–C5 六关，见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)。Locomotion、自身定位课程、建图、规划与 Arena 尚未实现。
+文档基线：`m5-progressive-weapons-1.0`，更新日期：2026-10-26。已完成 M1/M1b、M2 本机浏览器/Transport、M3 编辑部署和 M4 C0–C2 教学闭环验收：实现与限制见 [运行入口](../README.md)、[M4 验证报告](reports/M4_VALIDATION.md)；模型由用户逐项确认，见 [13](13_PHYSICS_MODEL_DECISIONS.md)、[18](18_CAMPAIGN_DESIGN.md)。M5 已实现模块图、角加速度与装甲；现按用户要求调整为 C3 极坐标滤波、C4 中心预测与自瞄、C5 小陀螺自瞄，当前边界及验收见 [28](28_WEAPONS_PROGRESSIVE_ESTIMATION.md)、[新课程报告](reports/WEAPONS_REDESIGN_VALIDATION.md)。关卡使用独立 YAML 插件，现有 C0–C5 与 navigation.c0 七关，见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)。Navigation 已新增首关双轮电压控制；后续自身定位、建图、规划与 Arena 尚未实现。
 
 “必须／不得”为设计约束；“建议／拟采用”为待验证方案。Accepted ADR 表示接受设计原则或接口方向，不表示实现或平台验证完成；Proposed 技术不得当作既成依赖。协议 `1.0` 是**未发布草案**，首次发布前由兼容性审查冻结；发布后执行版本规则。
 
@@ -12,6 +12,7 @@
 
 | 文档 | 负责的设计与接口 |
 | --- | --- |
+| [33 Navigation 首关](33_NAVIGATION_MOTION_CONTROL.md) | 已确认轮电压模型、FK/IK 接口、固定轨迹、无武器与独立项目 |
 | [仿真器重构验收](reports/SIMULATOR_REFACTOR_VALIDATION.md) | 轨迹基线、模型独立、实例生命周期、201 项回归及原生/WASM 实际部署 |
 | [32 场景与组件](32_RESOLVED_SCENE_AND_COMPONENTS.md) | 完整底盘、传感器实例/生命周期、不可变场景与重试缓存 |
 | [31 地图覆盖与预览](31_MAP_OVERRIDE_AND_PREVIEW.md) | --map、练习成绩隔离、权限、全景预览和生命周期 |

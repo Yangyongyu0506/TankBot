@@ -148,6 +148,7 @@ class Authority:
         self._pending = None
         self._last_activation = 0
         self._keyboard = None
+        self._wheel_voltage_target = None
         self._turret_target = None
         self._turret_acceleration_target = None
         self._fire_pending = []
@@ -185,6 +186,9 @@ class Authority:
             init["config"]["lesson"] = {"level_id": config["campaign"]["active_level"],
                                           "transform_tolerance": config["validation"]["numeric_tolerance"],
                                           "processing":self.campaign.definition["runtime"]["processing"]}
+            if config.get("wheel_drive"):
+                from .navigation import drive_parameters
+                init["config"]["drive_parameters"]=drive_parameters(config)
             if self.graph_profile() and self.radar.noise is not None:
                 noise = self.radar.noise
                 init["config"]["observations"] = {"radar_covariance":[[noise["range_stddev_m"]**2,0],[0,noise["bearing_stddev_rad"]**2]]}
@@ -199,11 +203,12 @@ class Authority:
                 init["config"]["lesson"]["tick_duration_s"] = 1/self.hz
                 init["config"]["lesson"]["estimate_history_ticks"] = config["runtime"]["estimate_history_ticks"]
                 armor = self.campaign.definition.get("armor_mode",False)
-                init["config"]["actuators"] = {"projectile_speed_mps":config["weapons"]["projectile"]["relative_speed_mps"],
-                    "max_acceleration_radps2":config["weapons"]["turret"]["acceleration_control"]["max_relative_acceleration_radps2"],
-                    "armor_mounts":geometry["armor_mounts"] if armor else [],
-                    "enemy_drive_model":self.campaign.definition["target"]["motion"]["chassis"],
-                    "enemy_forward_only":self.campaign.definition["target"]["motion"]["forward_speed_mps"] > 0}
+                if config["weapons"]["enabled"]:
+                    init["config"]["actuators"] = {"projectile_speed_mps":config["weapons"]["projectile"]["relative_speed_mps"],
+                        "max_acceleration_radps2":config["weapons"]["turret"]["acceleration_control"]["max_relative_acceleration_radps2"],
+                        "armor_mounts":geometry["armor_mounts"] if armor else [],
+                        "enemy_drive_model":self.campaign.definition["target"]["motion"]["chassis"],
+                        "enemy_forward_only":self.campaign.definition["target"]["motion"]["forward_speed_mps"] > 0}
         if startup_sources is not None:
             init["sources"] = copy.deepcopy(startup_sources)
         if self.graph_profile():
@@ -223,6 +228,8 @@ class Authority:
             explicit_startup = (workspace is not None or startup_sources is not None) if startup_is_deployment is None else startup_is_deployment
             if self.campaign and explicit_startup and self.campaign.definition["timer_start"] == "first_deployment":
                 self.campaign.start(self.tick)
+            if self.campaign and explicit_startup and self.campaign.sequence:
+                self.campaign.deployment_armed=True
         except BaseException:
             self.core.close()
             raise
@@ -255,6 +262,9 @@ class Authority:
             msg=self._message(instance.schema,instance.topic,payload,frame=instance.frame_id,publisher=instance.publisher_id)
             self.validator.validate(msg,now=self.tick,grants={(instance.publisher_id,instance.topic,instance.schema,instance.frame_id)})
             self._sensors[instance.topic]=msg
+        if self.campaign and self.campaign.sequence:
+            channel=self.campaign.sequence["topic"]
+            self._sensors[channel]=self._message("twist@1",channel,self.campaign.command(self.tick),frame="base_link",publisher="command_sequence")
 
     def _rate_limit(self):
         now = time.monotonic()
@@ -543,6 +553,11 @@ class Authority:
                         self.campaign.estimate(message,self._target_history.get(message["simulation_tick"]))
         elif channel == "/robot/cmd_vel":
             self._keyboard = copy.deepcopy(message)
+        elif channel == "/robot/wheels/cmd_voltage":
+            if self.campaign and self.campaign.sequence:
+                if not self.campaign.deployment_armed:return
+                self.campaign.start(self.tick,self._private)
+            self._wheel_voltage_target={**message["payload"],"source_tick":message["simulation_tick"]}
         elif channel == "/robot/turret/cmd_vel":
             self._turret_target = {**message["payload"],"source_tick":message["simulation_tick"]}
         elif channel == "/robot/turret/cmd_accel":
@@ -568,6 +583,8 @@ class Authority:
     def advance(self):
         """Process boundary n, then advance to S_(n+1). Player computation is never awaited in real time."""
         started = time.monotonic()
+        if self.campaign and self.campaign.sequence and self.campaign.status!="active":
+            return  # Fixed-sequence results and last rendered pose are terminal.
         self.collect_logs(self.worker, "runtime")
         if self.campaign is not None:
             alive = [target for target in self._private["targets"] if target["alive"]]
@@ -591,6 +608,8 @@ class Authority:
                  "revoke_turret":self._revoke_robot and self.config["control_sources"]["turret"]=="robot"}
         if self._turret_acceleration_target is not None:
             command["turret_acceleration_target"] = self._turret_acceleration_target
+        if self._wheel_voltage_target is not None:
+            command["wheel_voltage_target"]=self._wheel_voltage_target
         if self.config["control_sources"]["chassis"] == "disabled":
             command.update(target=None,revoke=True)
         if self.campaign is not None and self.campaign.status != "active":
@@ -601,12 +620,14 @@ class Authority:
         self._private = self.core.call(command)
         self._turret_target=None
         self._turret_acceleration_target=None
+        self._wheel_voltage_target=None
         self._fire_pending=[]
         self._revoke_robot=False
         for publisher,result in self._private["fire_results"]:
             self._fire_journal[publisher,result["request_id"]]=result
         self.tick += 1
         if self.campaign is not None:
+            self.campaign.controller_faulted=self._faulted or bool(self.graph and self.graph.faults)
             outcome = self.campaign.outcome(self._private, self.tick)
             if outcome:
                 self._finish_campaign(passed=self.campaign.outcome_passed(outcome), reason=outcome)
@@ -632,13 +653,15 @@ class Authority:
             self._pending = None
             self._keyboard = self._turret_target = None
             self._turret_acceleration_target = None
+            self._wheel_voltage_target = None
             self._fire_pending.clear()
             self.worker.close()
             self.collect_logs(self.worker, "runtime")
             if self.deployment is not None:
                 self.deployment.close()
             self._target_estimate = None
-            self.view_revision += 1
+            if not self.campaign.sequence:
+                self.view_revision += 1
             self._build_view()
         return self.campaign_status()
 
@@ -698,7 +721,8 @@ class Authority:
                 "control_sources":copy.deepcopy(self.config["control_sources"]),
                 "turret_muzzle_offset_m":copy.deepcopy(self.config["weapons"]["turret"]["muzzle_offset_m"]),
                 "projectile_radius_m": self.config["weapons"]["projectile"]["radius_m"],
-                "armor_width_m":self.campaign.definition["target"].get("armor",{}).get("width_m") if self.campaign else None,
+                "armor_width_m":(self.campaign.definition["target"] or {}).get("armor",{}).get("width_m") if self.campaign else None,
+                "weapons_enabled":self.config["weapons"]["enabled"],
                 "target_geometry":target_geometry(self.config),
                 "body": {k: self.config["body"][k] for k in ("length_m", "width_m", "corner_radius_m")},
                 "walls": copy.deepcopy(self.config["scene"]["walls"]) if self.config["scene"]["public_map"] and self.config["view_policy"]["public_map"] else [],

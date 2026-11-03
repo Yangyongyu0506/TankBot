@@ -42,6 +42,8 @@ def load_profiles(config):
             error=errors[0];raise LevelValidationError(path,error_path(error.absolute_path),error.message)
         if value["chassis_type"]!=name or name not in ("differential","omnidirectional"):
             raise LevelValidationError(path,"chassis_type","profile must match a registered chassis type")
+        if "motor" in value and (name!="differential" or value["schema_version"]!="2.0"):
+            raise LevelValidationError(path,"motor","DC wheel voltage is supported only by the complete differential model")
         body,armor=value["body"],value["armor"]
         if value["schema_version"]=="2.0":
             lateral=name=="omnidirectional"

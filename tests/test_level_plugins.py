@@ -30,6 +30,7 @@ class LevelPluginTests(unittest.TestCase):
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
         self.directory=Path(self.temp.name)
         self.levels=self.directory/'levels';shutil.copytree(ROOT/'levels',self.levels)
+        self.level_paths={load_yaml(path)['metadata']['id']:path for path in self.levels.glob('*.yaml')}
         self.base=load_yaml(ROOT/'config/game.yaml')
         self.base['level_plugins']['directory']=str(self.levels)
         self.path=self.directory/'game.yaml'
@@ -37,10 +38,10 @@ class LevelPluginTests(unittest.TestCase):
 
     def write_base(self):self.path.write_text(yaml.dump(self.base,Dumper=Dumper,allow_unicode=True,sort_keys=False))
 
-    def definition(self,lid='c0'):return load_yaml(self.levels/(lid+'.yaml'))
+    def definition(self,lid='c0'):return load_yaml(self.level_paths[lid])
 
     def write(self,value,lid='c0'):
-        (self.levels/(lid+'.yaml')).write_text(yaml.dump(value,Dumper=Dumper,allow_unicode=True,sort_keys=False))
+        self.level_paths.get(lid,self.levels/(lid+'.yaml')).write_text(yaml.dump(value,Dumper=Dumper,allow_unicode=True,sort_keys=False))
 
     def assert_subset(self,expected,actual,path=''):
         if isinstance(expected,dict):
@@ -53,7 +54,7 @@ class LevelPluginTests(unittest.TestCase):
     def test_all_five_match_frozen_pre_refactoring_runtime_baselines(self):
         baseline=json.loads((ROOT/'tests/fixtures/level-behavior-before.json').read_text())
         config=load_config(self.path)
-        self.assertEqual(list(config['campaign']['levels']),[*baseline['levels'],'c5'])
+        self.assertEqual(list(config['campaign']['levels']),[*baseline['levels'],'c5','navigation.c0'])
         for lid,expected in baseline['levels'].items():
             # User explicitly redesigned C3/C4 and added C5. Freeze the unchanged C0-C2 here;
             # new sensor/control/goal semantics have dedicated curriculum acceptance tests.
@@ -111,12 +112,12 @@ class LevelPluginTests(unittest.TestCase):
             with self.subTest(case=name):
                 d=copy.deepcopy(original);mutate(d);self.write(d)
                 with self.assertRaises(LevelValidationError) as raised:load_config(self.path)
-                self.assertEqual(Path(raised.exception.filename).name,'c0.yaml')
+                self.assertEqual(Path(raised.exception.filename).name,'hello_robot.C0.yaml')
                 self.assertTrue(raised.exception.path.startswith(path),raised.exception)
                 self.assertTrue(raised.exception.reason)
 
     def test_yaml_resource_limits_aliases_tags_and_duplicate_keys(self):
-        path=self.levels/'c0.yaml';original=path.read_text()
+        path=self.levels/'hello_robot.C0.yaml';original=path.read_text()
         for source in ('schema_version: 1\nschema_version: 2\n','x: !!python/object:object {}','x: &a [1]\ny: *a\n','x: '+('['*40)+'1'+(']'*40)):
             with self.subTest(source=source[:30]):
                 path.write_text(source)
@@ -149,13 +150,14 @@ class LevelPluginTests(unittest.TestCase):
 
     def test_temporary_plugin_runs_with_arbitrary_id_and_no_engine_edits(self):
         d=self.definition('c1');lid='robotics.temporary_probe'
-        d['metadata'].update(id=lid,name='Temporary test only',order=6,prerequisites=['c5'])
+        d['metadata'].update(id=lid,name='Temporary test only',order=7,prerequisites=['navigation.c0'])
+        d['metadata']['chapter']={'chapter_id':'temporary_test','title':'Temporary test','description':'Temporary discovery regression only.'}
         d['robots'][0]['initial_pose']=[.5,-.5,.2]
         d['objectives']['time_limit_s']=7
         d['objectives']['parameters']['required_hits']=2
         self.write(d,'temporary')
         config=load_config(self.path)
-        self.assertEqual(len(config['campaign']['levels']),7)
+        self.assertEqual(len(config['campaign']['levels']),8)
         resolved=configure(config,lid);files=starter(resolved);files['perception/transforms.py']=TRANSFORMS
         a=Authority(resolved,controlled=True,startup_sources=files);self.addCleanup(a.close)
         for _ in range(30):a.advance()
@@ -167,7 +169,7 @@ class LevelPluginTests(unittest.TestCase):
         state=ApplicationState(config,self.directory/'settings.yaml',self.directory/'progress.json')
         for key in state.levels[:-1]:state.complete(state.register_attempt(key),key)
         self.assertIn(lid,state.progress()['unlocked_levels'])
-        self.assertEqual(len(list((ROOT/'levels').glob('*.yaml'))),6)
+        self.assertEqual(len(list((ROOT/'levels').glob('*.yaml'))),7)
 
     def test_data_permission_is_independent_of_system_pose_visualization(self):
         d=self.definition();d['permissions']['data_access']['inputs']={}

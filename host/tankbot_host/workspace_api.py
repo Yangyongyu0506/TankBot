@@ -1,7 +1,23 @@
 """Local editor API. Storage does not execute player files or grant runtime permissions."""
-from .workspace import open_store, starter, digest
+from .workspace import open_store, starter, digest, workspace_scope
 from .learning import learning_bundle
 from .campaign_templates import template_version, framework_upgrade
+from pathlib import Path
+
+
+def select_workspace(config, scopes, directory=None):
+    """Select a course project without merging code across declared scopes."""
+    scope=workspace_scope(config)
+    if scope in scopes:
+        api=scopes[scope]
+        api.unlock(config)
+        return api
+    target=None
+    if directory is not None:
+        target=Path(directory) if None in scopes and scope=="campaign" else Path(directory)/"scopes"/scope
+    api=WorkspaceAPI(config,directory=target)
+    scopes[scope]=api
+    return api
 
 
 class WorkspaceAPI:
@@ -21,6 +37,8 @@ class WorkspaceAPI:
 
     def unlock(self, config):
         """Append newly granted files; explicit migration still handles existing paths."""
+        if workspace_scope(config) != workspace_scope(self.config):
+            raise ValueError("WORKSPACE_SCOPE_MISMATCH: 请打开本课程的独立工作区；未合并或修改已有代码。")
         snapshot = self.store.read()
         template_id = "campaign-" + config["campaign"]["active_level"] + "-unlock"
         sources = starter(config)

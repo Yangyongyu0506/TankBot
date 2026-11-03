@@ -50,7 +50,18 @@ try{
   spin.weapons.targets[0].body={...spin.body,...spin.chassis_profiles.omnidirectional.body};
   assert.equal((await exchange({op:"init",config:spin,chassis:"differential"})).ok,true);
   for(let tick=0;tick<600;tick++)assert.equal((await exchange({op:"step"})).ok,true);
+  const navigation=structuredClone(config);
+  Object.assign(navigation.scene,navigation.campaign.levels["navigation.c0"].scene);
+  navigation.weapons.enabled=false;navigation.weapons.targets=[];
+  navigation.wheel_drive=navigation.chassis_profiles.differential.motor;
+  assert.equal((await exchange({op:"init",config:navigation,chassis:"differential"})).ok,true);
+  for(let tick=0;tick<600;tick++){
+    const result=await exchange({op:"step",wheel_voltage_target:tick%6===0?{
+      left_voltage_v:3+Math.sin(tick/30),right_voltage_v:3-Math.sin(tick/30),source_tick:tick}:null});
+    assert.equal(result.ok,true);assert.equal(result.data.turret_state,null);
+    assert.ok(result.data.motion_metrics.path_length_m>=0);
+  }
   assert.equal(JSON.parse(wasm.call({op:"invalid"})).ok,false);
   assert.equal(wasm.exports.tankbot_input(1024*1024+1),0);
-  console.log("PASS: shared JSON ABI, 2 × 600 weapon + 1800 campaign + 600 acceleration/armor + 600 spinning-omni native/WASM snapshots, invalid operation and buffer limit");
+  console.log("PASS: shared JSON ABI, 2 × 600 weapon + 1800 campaign + 600 acceleration/armor + 600 spinning-omni + 600 wheel-voltage native/WASM snapshots, invalid operation and buffer limit");
 }finally{child.stdin.end();}

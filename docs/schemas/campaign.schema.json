@@ -197,15 +197,11 @@
     "outcome_priority": {
       "type": "array",
       "items": {
-        "enum": [
-          "player_dead",
-          "objective_completed",
-          "timeout"
-        ]
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_.-]{0,63}$"
       },
       "uniqueItems": true,
-      "minItems": 3,
-      "maxItems": 3
+      "minItems": 3
     },
     "chapters": {
       "type": "array",
@@ -392,7 +388,14 @@
           ]
         },
         "target": {
-          "$ref": "simulation-profile.schema.json#/properties/weapons/properties/targets/items"
+          "anyOf": [
+            {
+              "$ref": "simulation-profile.schema.json#/properties/weapons/properties/targets/items"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "objective": {
           "type": "object",
@@ -416,8 +419,17 @@
             "kind": {
               "enum": [
                 "destroy_target",
-                "checklist"
+                "checklist",
+                "command_sequence"
               ]
+            },
+            "max_origin_distance_m": {
+              "type": "number",
+              "minimum": 0
+            },
+            "min_path_length_m": {
+              "type": "number",
+              "minimum": 0
             }
           },
           "required": [
@@ -436,7 +448,8 @@
         "timer_start": {
           "enum": [
             "first_control",
-            "first_deployment"
+            "first_deployment",
+            "first_control_commit"
           ]
         },
         "player_health": {
@@ -529,6 +542,15 @@
           "type": [
             "object",
             "null"
+          ]
+        },
+        "weapons_enabled": {
+          "type": "boolean"
+        },
+        "drive": {
+          "enum": [
+            "velocity_servo",
+            "wheel_voltage"
           ]
         }
       },

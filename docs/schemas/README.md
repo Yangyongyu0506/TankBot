@@ -83,3 +83,7 @@ C5 匿名装甲增量为 `armor_detections@1`：Envelope 固定 Topic `/robot/se
 可选的 permissions.visualization.allowed_metrics 与 evaluation.live_feedback 显式授权运行中累计位置 RMSE；字段结构/精度/曲线容量由 level.schema.json 约束，指标是否登记并获授权由加载器交叉校验。反馈只走 Campaign 管理状态，不改变 view_snapshot 或机器人协议 Schema。
 
 渐进 Weapons 增量：Envelope/负载新增 gps_fix@1、target_polar_estimate@1；level.sensor 支持 intercepted_gps，patrol 支持全向 spin_rate_radps；教材可声明 edit_files。对应 SDK、帧、噪声/时间、独立可视化与兼容见 [28](../28_WEAPONS_PROGRESSIVE_ESTIMATION.md)。所有旧类型保留原形状，内部生成夹具仍由 export_profile 维护。
+
+## Navigation 控制增量
+
+轮电压 wheel_voltage@1 是新的兼容 topic 类型，固定 base_link 与 /robot/wheels/cmd_voltage；两个有限电压的限幅/过期由领域层执行。完整底盘可选 motor、内部仿真 DTO 可选 wheel_drive。关卡支持无武器/无目标、wheel_voltage 驱动、twist_sequence、首批控制起算及两项运动指标；默认均保持旧关卡语义。scaffolding.workspace_scope 只做项目分组，不决定物理行为。实际约束和状态见 [33](../33_NAVIGATION_MOTION_CONTROL.md)。

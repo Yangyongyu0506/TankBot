@@ -1567,6 +1567,22 @@
         "measurements_rt"
       ],
       "additionalProperties": false
+    },
+    "wheel_voltage": {
+      "type": "object",
+      "properties": {
+        "left_voltage_v": {
+          "type": "number"
+        },
+        "right_voltage_v": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "left_voltage_v",
+        "right_voltage_v"
+      ],
+      "additionalProperties": false
     }
   }
 }

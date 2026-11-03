@@ -28,7 +28,7 @@ def validate_profile(config):
     for lid,level in c["levels"].items():
         if type(level["time_limit_s"]) is not int or level["time_limit_s"]<=0:
             raise ValueError("Each level requires a positive time_limit_s")
-        if level["armor_mode"]!=bool(level["target"].get("armor")):
+        if level["armor_mode"]!=bool((level["target"] or {}).get("armor")):
             raise ValueError("Armor lesson and physical target disagree")
         name=level.get("robot_profile")
         if name and name not in config["robot_graph"]["profiles"]:
@@ -54,8 +54,11 @@ def configure(config, level_id):
     c["clock"]=copy.deepcopy(level["world_simulation"])
     c["solver"]["dt"]=1/(c["clock"]["physics_hz"]*c["clock"]["substeps"])
     c["scene"].update(copy.deepcopy(level["scene"]))
-    c["weapons"]["enabled"]=True
-    c["weapons"]["targets"]=[copy.deepcopy(level["target"])]
+    c["weapons"]["enabled"]=level.get("weapons_enabled",True)
+    c["weapons"]["targets"]=[copy.deepcopy(level["target"])] if level["target"] else []
+    c.pop("wheel_drive",None)
+    if level.get("drive")=="wheel_voltage":
+        c["wheel_drive"]=copy.deepcopy(c["chassis_profiles"]["differential"]["motor"])
     c["view_policy"]=copy.deepcopy(level["permissions"]["visualization"]["view_policy"])
     c["view"]["pose_source_id"]="system" if level["runtime"]["manifest"]["pose_source"]["mode"]=="system" else level["runtime"]["manifest"]["pose_source"]["module_id"]
     c["runtime"]["seed"]=level["randomization"]["seed"]
@@ -81,7 +84,7 @@ def catalog(config):
     for key, value in config.get("campaign", {}).get("levels", {}).items():
         item = {"level_id": key, **{name: copy.deepcopy(value[name]) for name in ("title", "problem", "hints", "capabilities", "objective", "time_limit_s", "timer_start")},
                 "chapter_id":value.get("chapter_id"),"control_sources":copy.deepcopy(value.get("control_sources")),"armor_mode":value.get("armor_mode",False),"ui":copy.deepcopy(value["tutorial"]["lesson"]["ui"]),"visualization":copy.deepcopy(value["visualization"]),"allowed_layers":copy.deepcopy(value["permissions"]["visualization"]["allowed_layers"])}
-        item["problem"] = item["problem"].format(time_limit_s=value["time_limit_s"], max_hp=value["target"].get("health", {}).get("max_hp"))
+        item["problem"] = item["problem"].format(time_limit_s=value["time_limit_s"], max_hp=(value["target"] or {}).get("health", {}).get("max_hp"))
         feedback=value["evaluation"].get("live_feedback")
         if feedback and feedback["metric"] in value["permissions"]["visualization"].get("allowed_metrics",[]):
             item["live_feedback"]=copy.deepcopy(feedback)
@@ -152,7 +155,7 @@ class CampaignSession:
         self.result = None
         self.moved = self.turned = False
         self.hits = 0
-        self.hp = self.definition["target"].get("health", {}).get("max_hp")
+        self.hp = (self.definition["target"] or {}).get("health", {}).get("max_hp")
         self.estimates = 0
         self.last_estimate_tick = -1
         self.squared_error = 0.0
@@ -166,20 +169,46 @@ class CampaignSession:
         self.limit_ticks = self.definition["time_limit_s"] * config["clock"]["physics_hz"]
         self.player_max_hp = config["scene"].get("player_health", {}).get("max_hp") if config["scene"].get("player_health") else None
         self.player_hp = self.player_max_hp
+        self.deployment_armed = False
+        self.controller_faulted = False
+        self.path_origin_m = 0.0
+        self.path_length_m = 0.0
+        self.origin_distance_m = 0.0
+        self.sequence = self.definition["rules"].get("command_sequence")
+        self.sequence_ticks = self.sequence["repeat"]*sum(s["duration_ticks"] for s in self.sequence["segments"]) if self.sequence else 0
 
-    def start(self, tick):
+    def start(self, tick, private=None):
         if self.status == "active" and self.started_tick is None:
             self.started_tick = tick
+            if private is not None:self.path_origin_m=private.get("motion_metrics",{}).get("path_length_m",0.0)
+
+    def command(self, tick):
+        """Authoritative body command source; no executable level callbacks."""
+        if not self.sequence:return None
+        elapsed=max(0,tick-self.started_tick) if self.started_tick is not None else 0
+        cycle=sum(s["duration_ticks"] for s in self.sequence["segments"])
+        if elapsed>=self.sequence_ticks:
+            return {"linear":{"x":0.,"y":0.,"z":0.},"angular":{"x":0.,"y":0.,"z":0.}}
+        offset=elapsed%cycle
+        for segment in self.sequence["segments"]:
+            if offset<segment["duration_ticks"]:return copy.deepcopy(segment["twist"])
+            offset-=segment["duration_ticks"]
+
+    def facts(self, private):
+        return {"player_alive":private.get("player_alive",True),"objective_complete":False,"elapsed_ticks":self.elapsed_ticks,
+                "moved":self.moved,"turned":self.turned,"hits":self.hits,"estimates":self.estimates,"target_alive":self.hp is None or self.hp>0,
+                "sequence_complete":bool(self.sequence) and self.elapsed_ticks>=self.sequence_ticks,
+                "controller_faulted":self.controller_faulted,
+                "origin_distance_m":self.origin_distance_m,"path_length_m":self.path_length_m}
 
     def outcome(self, private, tick):
-        if self.status != "active" or self.started_tick is None:
+        if self.status != "active" or (self.started_tick is None and not (self.sequence and self.deployment_armed)):
             return None
-        self.elapsed_ticks = tick-self.started_tick
+        self.elapsed_ticks = tick-self.started_tick if self.started_tick is not None else 0
         completed = self.observe(private)
         self.player_hp = private.get("player_hp")
         from .level_rules import evaluate
-        facts={"player_alive":private.get("player_alive",True),"objective_complete":completed,"elapsed_ticks":self.elapsed_ticks,
-               "moved":self.moved,"turned":self.turned,"hits":self.hits,"estimates":self.estimates,"target_alive":self.hp is None or self.hp>0}
+        facts={**self.facts(private),"objective_complete":completed}
         parameters={**self.definition["rules"]["parameters"],"limit_ticks":self.limit_ticks}
         for outcome in self.definition["rules"]["outcomes"]:
             if evaluate(outcome["when"],facts,parameters):return outcome["reason"]
@@ -205,11 +234,15 @@ class CampaignSession:
         for key,spec in self.definition["rules"]["progress"].items():
             reached=PROGRESS[spec["type"]](p,origin)>=parameters[spec["parameter"]]
             setattr(self,key,(getattr(self,key) or reached) if spec["sticky"] else reached)
-        target = next(item for item in private["targets"] if item["target_id"] == self.definition["target"]["target_id"])
-        self.hits = private["target_hits"].get(target["target_id"], 0)
-        self.hp = target["hp"]
-        facts={"moved":self.moved,"turned":self.turned,"hits":self.hits,"estimates":self.estimates,
-               "target_alive":target["alive"],"player_alive":private.get("player_alive",True),"objective_complete":False,"elapsed_ticks":self.elapsed_ticks}
+        target = next((item for item in private["targets"] if self.definition["target"] and item["target_id"] == self.definition["target"]["target_id"]),None)
+        if target:
+            self.hits = private["target_hits"].get(target["target_id"], 0)
+            self.hp = target["hp"]
+        if self.sequence:
+            self.path_length_m=private["motion_metrics"]["path_length_m"]-self.path_origin_m
+            self.origin_distance_m=math.hypot(p[0]-origin[0],p[1]-origin[1])
+        facts=self.facts(private)
+        if target:facts["target_alive"]=target["alive"]
         return evaluate(self.definition["rules"]["success"],facts,{**parameters,"limit_ticks":self.limit_ticks})
 
     def outcome_passed(self, reason):
@@ -223,6 +256,7 @@ class CampaignSession:
             self.elapsed_ticks = tick-self.started_tick
         self.result = {"passed":passed,"reason":reason,"finished_tick":tick,"estimate_samples":self.estimates,
                        **self.diagnostics.report(),"scored_samples":self.error_count,"hits":self.hits}
+        if self.sequence:self.result.update(origin_distance_m=self.origin_distance_m,path_length_m=self.path_length_m)
         return self.public()
 
     def public(self):
@@ -234,10 +268,16 @@ class CampaignSession:
                            "remaining_s": max(0, self.limit_ticks-self.elapsed_ticks)/self.config["clock"]["physics_hz"]},
                 "player_hp": self.player_hp if "view.player.health" in self.definition["capabilities"] else None,
                 "player_max_hp": self.player_max_hp if "view.player.health" in self.definition["capabilities"] else None,
-                "enemy_max_hp": self.definition["target"].get("health", {}).get("max_hp") if health_allowed else None,
+                "enemy_max_hp": (self.definition["target"] or {}).get("health", {}).get("max_hp") if health_allowed else None,
                 "progress": {"moved": self.moved, "turned": self.turned,
                              "has_estimate": self.estimates > 0, "hit": self.hits > 0},
                 "result": copy.deepcopy(self.result)}
+        if self.sequence:
+            allowed=self.definition["permissions"]["visualization"].get("allowed_metrics",[])
+            state["motion"]={key:getattr(self,key) for key in ("origin_distance_m","path_length_m") if key in allowed}
+            state["motion"]["sequence_ticks"]=self.sequence_ticks
+            command=self.command((self.started_tick or 0)+self.elapsed_ticks)
+            state["motion"].update(command_vx_mps=command["linear"]["x"],command_wz_radps=command["angular"]["z"])
         feedback=self.definition["evaluation"].get("live_feedback")
         if feedback and feedback["metric"] in self.definition["permissions"]["visualization"].get("allowed_metrics",[]):
             metric=feedback["metric"]

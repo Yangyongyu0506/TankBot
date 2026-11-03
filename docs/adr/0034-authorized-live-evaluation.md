@@ -29,6 +29,6 @@
 
 ## 2026-10-29 C3 授权扩展
 
-用户要求 C3 使用与 C2 相同的实时 RMSE 曲线。接受将现有声明式授权扩展到 C3：在 levels/c3.yaml 配置 allowed_metrics 和 live_feedback，复用已有 Authority 计分及 UI 曲线。C3 的极坐标输出按同采样时刻公开自身位姿投影后计算地图位置 RMSE（m），不混合距离与角度误差。
+用户要求 C3 使用与 C2 相同的实时 RMSE 曲线。接受将现有声明式授权扩展到 C3：在 levels/weapons.C3.yaml 配置 allowed_metrics 和 live_feedback，复用已有 Authority 计分及 UI 曲线。C3 的极坐标输出按同采样时刻公开自身位姿投影后计算地图位置 RMSE（m），不混合距离与角度误差。
 
 替代方案是单独增加角度/距离指标或新增图表；本次选择复用累计位置指标以保持跨关理解一致。运行期聚合误差对 C3 UI 同样明确授权，Python 输入权限不扩大；其余关卡仍默认不授权。生命周期、采样时序与隔离回归扩展到 C3，见 tests/test_live_metrics.py。

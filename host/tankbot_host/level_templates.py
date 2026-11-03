@@ -3,8 +3,11 @@ import ast
 from . import campaign_templates as basic
 from . import weapon_templates as weapons
 from . import weapon_curriculum as curriculum
+from . import navigation_templates as navigation
 
 COMPONENTS = {
+    "wheel_controller":{"control/__init__.py":"","control/wheel_controller.py":navigation.CONTROLLER},
+    "wheel_control_adapter":{"navigation_robot.py":navigation.ADAPTER},
     "armor_tracker":{"perception/__init__.py":"","perception/armor_tracker.py":curriculum.ARMOR_TRACKER},
     "armor_tracking_adapter":{"robot_modules/__init__.py":"","robot_modules/armor_observations.py":curriculum.ARMOR_ADAPTER},
     "armor_contract_tests":{"tests/test_armor_contract.py":curriculum.ARMOR_TEST},

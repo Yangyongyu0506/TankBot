@@ -137,6 +137,8 @@ validation:
     yaw_window_s: 0.5
     manual_aim_gain_per_s: 4.0
     manual_aim_rate_radps: 2.0
+  reference_drive:
+    voltage_kp: 2.0
 solver:
   dt: 0.004166666666666667
   min_ccd_dt: 0.00016666666666666666
@@ -351,6 +353,8 @@ robot_graph:
     - base_link
     target_pose_estimate@1:
     - map
+    wheel_voltage@1:
+    - base_link
   internal_schemas:
   - target_polar_estimate@1
   - pose2d@1
@@ -370,11 +374,7 @@ level_plugins:
     max_nodes: 20000
     max_robots: 16
     max_sensors: 16
-  planned_chapters:
-  - chapter_id: locomotion
-    title: Locomotion
-    description: 后续章节：底盘驱动、运动控制、自身状态估计，再逐步引入定位与建图。
-    levels: []
+  planned_chapters: []
 chassis_profiles:
   differential: config/chassis/differential.yaml
   omnidirectional: config/chassis/omnidirectional.yaml

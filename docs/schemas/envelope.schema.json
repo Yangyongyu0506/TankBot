@@ -93,7 +93,8 @@
         "view_snapshot@4",
         "gps_fix@1",
         "target_polar_estimate@1",
-        "armor_detections@1"
+        "armor_detections@1",
+        "wheel_voltage@1"
       ]
     },
     "payload": {
@@ -906,6 +907,31 @@
           },
           "channel": {
             "const": "/robot/sensors/armor_detections"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "wheel_voltage@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "payloads.schema.json#/$defs/wheel_voltage"
+          },
+          "message_type": {
+            "const": "topic"
+          },
+          "frame_id": {
+            "const": "base_link"
+          },
+          "channel": {
+            "const": "/robot/wheels/cmd_voltage"
           }
         }
       }

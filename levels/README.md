@@ -1,8 +1,11 @@
 # Level Plugins
 
-本目录当前有 C0–C5 六个独立 YAML，是关卡专属配置的唯一来源。C3/C4 已按用户要求重做，新增 C5；课程与模型见 [28](../docs/28_WEAPONS_PROGRESSIVE_ESTIMATION.md)。正式 Schema 为 [level.schema.json](../docs/schemas/level.schema.json)，架构和迁移说明见 [27](../docs/27_LEVEL_PLUGIN_ARCHITECTURE.md)。
+本目录当前有 C0–C5 和 navigation.c0 共七个独立 YAML，是关卡专属配置的唯一来源。Weapons 课程见 [28](../docs/28_WEAPONS_PROGRESSIVE_ESTIMATION.md)，Navigation 首关见 [33](../docs/33_NAVIGATION_MOTION_CONTROL.md)。正式 Schema 为 [level.schema.json](../docs/schemas/level.schema.json)，架构和迁移说明见 [27](../docs/27_LEVEL_PLUGIN_ARCHITECTURE.md)。
 
 ## 编写与验证流程
+
+文件名统一为 `<chapter_id>.C<n>.yaml`：章节使用 `metadata.chapter.chapter_id` 的小写标识，`C` 大写，保留当前课程编号。例如 `hello_robot.C0.yaml`、`weapons.C1.yaml` 至 `weapons.C5.yaml`、`navigation.C0.yaml`。
+文件名只用于组织配置；加载、`--level`、前置关卡及存档继续使用 YAML 内稳定的 `metadata.id`（现有 `c0`–`c5`、`navigation.c0`），不得因重命名而改变 ID 或玩家工作区。
 
 1. 选择使用相同现有组件的配置作为起点，完整保留所需字段。metadata.id 使用新的稳定 ID，order 唯一，prerequisites 只引用已发现且排在前面的关卡；不要修改现有 c0–c5 ID。
 2. 在同一 YAML 中声明地图/初态/传感器/控制源、通信合同、权限、规则、诊断、教材与模板。当前六关共同引用 [空旷教学场地](../assets/maps/README.md)，地图可 inline，或仅引用 assets/ 内 `{walls: [...]}` 格式的地图文件；禁止 include 其他配置或脚本。
@@ -29,3 +32,7 @@
 通用底盘在 `config/chassis/*.yaml` 定义几何、装甲、GPS 安装与外观，由 `config/game.yaml` 统一加载。`motion.chassis` 选择底盘，`armor: {source: chassis_profile}` 启用其装甲；不要在关卡或教材中重复安装数值。共享引擎模型是经 ADR-0036 允许的组件资产，不允许关卡任意 include 其他文件。C5 当前全向车体 0.42×0.42 m、装甲中心 ±0.21 m；完整约束见 [29](../docs/29_CHASSIS_PROFILES.md)。
 
 传感器正式源现显式声明 id、robot_id、mount、period_ticks、random_stream 与 topic/schema/frame_id。旧 update_hz 和内部适配字段在加载时生成并校验；不要复制两组矛盾参数。底盘 profile 2.0 为完整模型，世界配置不再手填重复的质量/伺服/轮组数值。关卡首次解析后缓存 ResolvedScene，重试共享定义而重新创建运行状态，详见 [32](../docs/32_RESOLVED_SCENE_AND_COMPONENTS.md)。
+
+scaffolding 可声明 workspace_scope（小写字母开头，后续为小写字母、数字、下划线或连字符，最长 48 字符），为默认项目指定稳定分组；省略保持原 campaign 项目。跨 scope 直接 unlock 拒绝，启动器通过 select_workspace 选库，原源码与历史不清空。
+
+Navigation 组件：world.weapons_enabled=false、objectives.target=null 支持无武器/无敌车；玩家 drive=wheel_voltage 选择差速底盘 motor 参数，输出为 /robot/wheels/cmd_voltage。objectives.command_sequence 声明 type=twist_sequence、topic=/robot/cmd_vel、repeat 和 duration_ticks/twist 组成的 segments，参考指令方向为 Authority→玩家。各段时长对齐控制周期、总时长匹配 time_limit_s；timer_start=first_control_commit。新增事实 sequence_complete、controller_faulted、origin_distance_m、path_length_m，以及参数 max_origin_distance_m/min_path_length_m。两个运动显示指标分别受 allowed_metrics 授权；不按关卡 ID 分支，完整设计见 [33](../docs/33_NAVIGATION_MOTION_CONTROL.md)。
