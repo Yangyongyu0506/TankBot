@@ -477,7 +477,24 @@
                 "enum": [
                   "rmse_m",
                   "origin_distance_m",
-                  "path_length_m"
+                  "path_length_m",
+                  "yaw_rmse_rad"
+                ]
+              },
+              "uniqueItems": true
+            },
+            "allowed_control_signals": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "command_vx_mps",
+                  "encoder_vx_mps",
+                  "command_wz_radps",
+                  "encoder_wz_radps",
+                  "left_wheel_radps",
+                  "right_wheel_radps",
+                  "left_voltage_v",
+                  "right_voltage_v"
                 ]
               },
               "uniqueItems": true
@@ -540,6 +557,115 @@
           "type": "integer",
           "minimum": 2,
           "maximum": 4096
+        },
+        "control_feedback": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160
+            },
+            "description": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024
+            },
+            "period_ticks": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "history_points": {
+              "type": "integer",
+              "minimum": 2,
+              "maximum": 512
+            },
+            "precision": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 6
+            },
+            "charts": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 4,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_]*$",
+                    "maxLength": 48
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160
+                  },
+                  "unit": {
+                    "enum": [
+                      "m/s",
+                      "rad/s",
+                      "V"
+                    ]
+                  },
+                  "signals": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 2,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "signal": {
+                          "enum": [
+                            "command_vx_mps",
+                            "encoder_vx_mps",
+                            "command_wz_radps",
+                            "encoder_wz_radps",
+                            "left_wheel_radps",
+                            "right_wheel_radps",
+                            "left_voltage_v",
+                            "right_voltage_v"
+                          ]
+                        },
+                        "label": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 160
+                        },
+                        "color": {
+                          "type": "string",
+                          "pattern": "^#[0-9a-fA-F]{6}$"
+                        }
+                      },
+                      "required": [
+                        "signal",
+                        "label",
+                        "color"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "id",
+                  "title",
+                  "unit",
+                  "signals"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "title",
+            "description",
+            "period_ticks",
+            "history_points",
+            "precision",
+            "charts"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
@@ -577,6 +703,14 @@
               "minimum": 0
             },
             "min_path_length_m": {
+              "type": "number",
+              "minimum": 0
+            },
+            "max_position_rmse_m": {
+              "type": "number",
+              "minimum": 0
+            },
+            "max_yaw_rmse_rad": {
               "type": "number",
               "minimum": 0
             }
@@ -719,6 +853,11 @@
                   },
                   "twist": {
                     "$ref": "payloads.schema.json#/$defs/twist"
+                  },
+                  "label": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160
                   }
                 },
                 "required": [
@@ -802,47 +941,25 @@
           }
         },
         "live_feedback": {
-          "type": "object",
-          "properties": {
-            "metric": {
-              "const": "rmse_m"
+          "oneOf": [
+            {
+              "$ref": "#/$defs/liveMetric"
             },
-            "title": {
-              "type": "string",
-              "minLength": 1
-            },
-            "label": {
-              "type": "string",
-              "minLength": 1
-            },
-            "unit": {
-              "const": "m"
-            },
-            "precision": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 6
-            },
-            "history_points": {
-              "type": "integer",
-              "minimum": 2,
-              "maximum": 1024
-            },
-            "description": {
-              "type": "string",
-              "minLength": 1
+            {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 2,
+              "items": {
+                "$ref": "#/$defs/liveMetric"
+              }
             }
-          },
-          "required": [
-            "metric",
-            "title",
-            "label",
-            "unit",
-            "precision",
-            "history_points",
-            "description"
-          ],
-          "additionalProperties": false
+          ]
+        },
+        "source": {
+          "enum": [
+            "target_estimate",
+            "player_pose"
+          ]
         }
       },
       "required": [
@@ -1158,7 +1275,9 @@
               "armor_tracking_adapter",
               "armor_contract_tests",
               "wheel_controller",
-              "wheel_control_adapter"
+              "wheel_control_adapter",
+              "wheel_odometry",
+              "wheel_odometry_adapter"
             ]
           }
         },
@@ -1456,7 +1575,9 @@
                 "sequence_complete",
                 "origin_distance_m",
                 "path_length_m",
-                "controller_faulted"
+                "controller_faulted",
+                "rmse_m",
+                "yaw_rmse_rad"
               ]
             },
             "operator": {
@@ -1483,7 +1604,9 @@
                 "required_estimates",
                 "limit_ticks",
                 "max_origin_distance_m",
-                "min_path_length_m"
+                "min_path_length_m",
+                "max_position_rmse_m",
+                "max_yaw_rmse_rad"
               ]
             }
           },
@@ -1868,6 +1991,55 @@
         "visibility",
         "ordering",
         "anonymous"
+      ],
+      "additionalProperties": false
+    },
+    "liveMetric": {
+      "type": "object",
+      "properties": {
+        "metric": {
+          "enum": [
+            "rmse_m",
+            "yaw_rmse_rad"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unit": {
+          "enum": [
+            "m",
+            "rad"
+          ]
+        },
+        "precision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 6
+        },
+        "history_points": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 1024
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "metric",
+        "title",
+        "label",
+        "unit",
+        "precision",
+        "history_points",
+        "description"
       ],
       "additionalProperties": false
     }

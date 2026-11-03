@@ -1,0 +1,486 @@
+schema_version: '1.0'
+metadata:
+  id: navigation.c1
+  name: Navigation C1 · 从轮速推算自身位姿
+  description: 复用双轮控制器，只根据实测轮速积分地图系位姿，用自己的估计恢复车体和轨迹显示。
+  chapter:
+    chapter_id: navigation
+    title: Navigation
+    description: 只保留底盘，从轮驱动与运动控制逐步学习导航。
+  order: 7
+  version: 1.0.0
+  learning_objectives:
+  - 由差速 FK 将轮速转换为车体 v/w，再在地图系积分 x/y/yaw；理解编码器采样时间与提交延迟。
+  recommended_algorithms: []
+  prerequisites:
+  - navigation.c0
+world:
+  dimension: 2
+  frame_id: map
+  weapons_enabled: false
+  simulation:
+    physics_hz: 60
+    substeps: 4
+    sensor_hz: 30
+    algorithm_hz: 10
+  map:
+    source: asset
+    path: maps/open_training.yaml
+robots:
+- id: player
+  type: tank
+  role: player
+  model: differential
+  drive: wheel_voltage
+  initial_pose:
+  - 0.0
+  - 0.0
+  - 0.0
+  initial_velocity:
+  - 0.0
+  - 0.0
+  - 0.0
+  health: null
+  control_sources:
+    chassis: robot
+    turret: disabled
+    weapon: disabled
+  sensors:
+  - id: wheel_encoder
+    robot_id: player
+    type: wheel_encoder
+    period_ticks: 2
+    mount:
+      parent_frame: base_link
+      translation_m:
+      - 0.0
+      - 0.0
+      yaw_rad: 0.0
+    random_stream: null
+    topic: /robot/sensors/joint_states
+    schema: joint_state@1
+    frame_id: base_link
+communication:
+  runtime:
+    template_version: 1.0.0
+    mode: graph
+    profile_id: differential-wheel-odometry-v1
+    processing: modules
+    logical_module:
+      module_id: wheel_control
+      entry_point: navigation_robot:WheelControlModule
+    target_source: wheel_control
+    managed_files:
+    - navigation_robot.py
+    - tankbot.json
+    - contracts/wheel_control.json
+    - localization/odometry_module.py
+    - contracts/odometry.json
+    manifest:
+      manifest_version: '1.0'
+      sdk_version: 0.1.0
+      protocol_version: '1.0'
+      project_id: navigation-odometry
+      entry_point: navigation_robot:WheelControlModule
+      modules:
+      - module_id: wheel_control
+        contract: contracts/wheel_control.json
+        config: {}
+      - module_id: odometry
+        contract: contracts/odometry.json
+        config: {}
+      connections:
+      - from: /robot/cmd_vel
+        to: wheel_control.command
+      - from: /robot/sensors/joint_states
+        to: wheel_control.wheels
+      - from: wheel_control.voltage
+        to: /robot/wheels/cmd_voltage
+      - from: /robot/sensors/joint_states
+        to: odometry.wheels
+      - from: odometry.pose
+        to: /robot/estimates/odometry/pose
+      dependencies: []
+      pose_source:
+        mode: player
+        module_id: odometry
+        fallback: none
+    contracts:
+      wheel_control:
+        contract_version: '1.0'
+        module_id: wheel_control
+        entry_point: navigation_robot:WheelControlModule
+        inputs:
+          command:
+            schema: twist@1
+            required: true
+            max_age_ticks: 12
+          wheels:
+            schema: joint_state@1
+            required: true
+            max_age_ticks: 12
+        outputs:
+          voltage:
+            schema: wheel_voltage@1
+        execution:
+          mode: periodic
+          period_ticks: 6
+          deadline_ticks: 6
+          budget_ms: 10
+        dependencies: []
+        state_version: '1'
+      odometry:
+        contract_version: '1.0'
+        module_id: odometry
+        entry_point: localization.odometry_module:WheelOdometryModule
+        inputs:
+          wheels:
+            schema: joint_state@1
+            required: true
+            max_age_ticks: 12
+        outputs:
+          pose:
+            schema: pose2d@1
+        execution:
+          mode: periodic
+          period_ticks: 6
+          deadline_ticks: 6
+          budget_ms: 10
+        dependencies: []
+        state_version: '1'
+permissions:
+  data_access:
+    inputs:
+      /robot/cmd_vel: twist@1
+      /robot/sensors/joint_states: joint_state@1
+    outputs:
+    - pose2d@1
+    actuators:
+      /robot/wheels/cmd_voltage: wheel_voltage@1
+  public_initial_pose: true
+  public_map: true
+  visualization:
+    allowed_layers:
+    - robot
+    - trail
+    - map
+    - encoders
+    - frames
+    allowed_metrics:
+    - origin_distance_m
+    - path_length_m
+    - rmse_m
+    - yaw_rmse_rad
+    allowed_control_signals:
+    - command_vx_mps
+    - encoder_vx_mps
+    - command_wz_radps
+    - encoder_wz_radps
+    - left_wheel_radps
+    - right_wheel_radps
+    - left_voltage_v
+    - right_voltage_v
+    view_policy:
+      policy_id: navigation-wheel-odometry
+      system_pose_allowed: false
+      player_pose_allowed: true
+      allowed_pose_frames:
+      - map
+      public_map: open-training
+      local_observation_channels:
+      - /robot/sensors/joint_states
+      true_enemy_objects: false
+      world_effects: false
+      camera_source: selected_pose_or_manual
+      pose_fresh_ticks: 12
+      pose_hide_after_ticks: 60
+      robot_topics_allowed: false
+      target_estimates_allowed: false
+visualization:
+  trail_points: 900
+  initial_enabled:
+  - robot
+  - trail
+  - map
+  - encoders
+  - frames
+  user_toggleable:
+  - trail
+  - encoders
+  - frames
+  sources:
+    robot: selected_pose
+    trail: selected_pose
+    map: map
+    encoders: local_observation
+    frames: selected_pose
+  preserve_user_settings: false
+  control_feedback:
+    title: 轮驱动调试
+    description: 目标速度来自系统指令；反馈速度由理想编码器计算，非真值速度。电压显示限幅后、通过看门狗的执行器输入。虚线标记直行与转向切换；时间轴使用仿真秒。
+    period_ticks: 6
+    history_points: 300
+    precision: 3
+    charts:
+    - id: forward_speed
+      title: 前进速度
+      unit: m/s
+      signals:
+      - signal: command_vx_mps
+        label: 目标
+        color: '#f4cf7e'
+      - signal: encoder_vx_mps
+        label: 编码器反馈
+        color: '#8fe3b5'
+    - id: yaw_rate
+      title: 转向角速度
+      unit: rad/s
+      signals:
+      - signal: command_wz_radps
+        label: 目标
+        color: '#f4cf7e'
+      - signal: encoder_wz_radps
+        label: 编码器反馈
+        color: '#8fe3b5'
+    - id: wheel_rates
+      title: 两轮角速度
+      unit: rad/s
+      signals:
+      - signal: left_wheel_radps
+        label: 左轮
+        color: '#91bcff'
+      - signal: right_wheel_radps
+        label: 右轮
+        color: '#e9a2da'
+    - id: motor_voltage
+      title: 两轮执行电压
+      unit: V
+      signals:
+      - signal: left_voltage_v
+        label: 左轮
+        color: '#91bcff'
+      - signal: right_voltage_v
+        label: 右轮
+        color: '#e9a2da'
+objectives:
+  target: null
+  time_limit_s: 24
+  timer_start: first_control_commit
+  parameters:
+    movement_m: 0.0
+    turn_rad: 0.0
+    required_hits: 0
+    required_estimates: 100
+    max_origin_distance_m: 0.3
+    min_path_length_m: 7.2
+    max_position_rmse_m: 0.15
+    max_yaw_rmse_rad: 0.1
+  command_sequence:
+    type: twist_sequence
+    topic: /robot/cmd_vel
+    repeat: 4
+    segments:
+    - duration_ticks: 240
+      label: 直行
+      twist:
+        linear:
+          x: 0.5
+          y: 0.0
+          z: 0.0
+        angular:
+          x: 0.0
+          y: 0.0
+          z: 0.0
+    - duration_ticks: 120
+      label: 原地左转
+      twist:
+        linear:
+          x: 0.0
+          y: 0.0
+          z: 0.0
+        angular:
+          x: 0.0
+          y: 0.0
+          z: 0.7853981633974483
+  progress:
+    moved:
+      type: displacement
+      parameter: movement_m
+      sticky: true
+    turned:
+      type: heading_change
+      parameter: turn_rad
+      sticky: true
+  success:
+    type: all
+    conditions:
+    - type: compare
+      metric: sequence_complete
+      operator: ==
+      value: true
+    - type: compare
+      metric: origin_distance_m
+      operator: <=
+      parameter: max_origin_distance_m
+    - type: compare
+      metric: path_length_m
+      operator: '>='
+      parameter: min_path_length_m
+    - type: compare
+      metric: estimates
+      operator: '>='
+      parameter: required_estimates
+    - type: compare
+      metric: rmse_m
+      operator: <=
+      parameter: max_position_rmse_m
+    - type: compare
+      metric: yaw_rmse_rad
+      operator: <=
+      parameter: max_yaw_rmse_rad
+  outcomes:
+  - reason: controller_error
+    result: failure
+    when:
+      type: compare
+      metric: controller_faulted
+      operator: ==
+      value: true
+  - reason: objective_completed
+    result: success
+    when:
+      type: compare
+      metric: objective_complete
+      operator: ==
+      value: true
+  - reason: estimation_failed
+    result: failure
+    when:
+      type: compare
+      metric: sequence_complete
+      operator: ==
+      value: true
+  - reason: timeout
+    result: failure
+    when:
+      type: compare
+      metric: elapsed_ticks
+      operator: '>='
+      parameter: limit_ticks
+evaluation:
+  type: terminal_diagnostics
+  publish_on: terminal
+  source: player_pose
+  metrics:
+  - id: rmse_m
+    type: position_rmse
+  - id: yaw_rmse_rad
+    type: yaw_rmse
+  live_feedback:
+  - metric: rmse_m
+    title: 里程计位置误差
+    label: 累计位置 RMSE
+    unit: m
+    precision: 3
+    history_points: 300
+    description: Authority 在估计的编码器采样 tick 与真实位姿对齐后计算累计位置 RMSE，只公开聚合指标。
+  - metric: yaw_rmse_rad
+    title: 里程计朝向误差
+    label: 累计朝向 RMSE
+    unit: rad
+    precision: 3
+    history_points: 300
+    description: 朝向差按最短弧计算，单位 rad；不会将提交延迟算作定位误差。
+randomization:
+  seed: 0
+  reset_on: new_run
+  generator: python_random_v1
+tutorial:
+  problem: 轮控制器可以推动车体，但全局位置不再由系统告诉你。根据左右轮速推算自己的 x/y/yaw，在同一段方形指令中恢复位姿与轨迹。
+  hints:
+  - 复用 C0 已写好的 control/wheel_controller.py；本关只新增高亮的 localization/odometry.py，原控制算法完整保留。
+  - initial_pose 是一次公开的地图系初始位姿；之后算法只收到编码器，没有当前真实位姿或车体目标速度。
+  - 先通过 FK 得到 v/w，再将 v 由车体系转到地图系积分。dt 来自编码器采样时间，不是渲染间隔或提交时间。
+  - “曲线”面板帮助核对控制；运行中位置/朝向 RMSE 越小越好。错误估计照常显示，不会被真值吸回。
+  testing:
+    checks:
+    - Python 语法、导入、两个 Module Contract、Topic 与权限。
+    - 以获授权编码器数据试运行 {test_batches} 个批次，验证控制电压 (2,) 和里程计位姿 (3,) 均为有限 float64 NumPy 数组。
+    meaning: 测试只检查能否安全部署，不判定算法是否准确。正式部署后，24 仿真秒末同时检查真实运动与累计位姿估计误差。
+  lesson:
+    title: Navigation C1 · 轮式里程计
+    summary: 保留 C0 的轮控制器；只填写 Odometry.update。框架处理采样、时间戳、Pose2D 消息与选源，玩家只负责运动学和积分。
+    steps:
+    - 构造时获得不可变的 model 和只读 initial_pose：[x_m,y_m,yaw_rad]，地图系，shape=(3,)。self.pose
+      为你自己的可写状态副本。
+    - wheel_rates_radps 是当前一帧只读 NumPy float64 (2,)，顺序 [left,right]，单位 rad/s。它不是目标值或历史列表。
+    - 差速 FK：v=r(ωL+ωR)/2，w=r(ωR−ωL)/B。r=self.model.wheel_radius_m，B=self.model.wheel_separation_m。
+    - 地图系连续运动学：dx/dt=v·cos(yaw)，dy/dt=v·sin(yaw)，dyaw/dt=w。你可采用 Euler、中点等积分法，不强制唯一答案。
+    - dt 为本次与上次已处理编码器样本的仿真时间差。算法每 10 Hz 取最新 30 Hz 样本，存在数值积分近似；重复样本由框架跳过。
+    - 返回 np.array([x,y,yaw],dtype=np.float64)，shape=(3,)。保持上次估计等有限状态即可，无需累计整个历史。
+    - 框架将结果发布到 /robot/estimates/odometry/pose（map → base_link），时间戳对应编码器采样 tick；6 tick
+      后提交，不外推或修正你的结果。
+    - 地图、相机和轨迹只使用你的估计。错误估计可能视觉穿墙，但真实车体仍由独立物理仿真碰撞；开发者真值图层是单独权限。
+    - C0 控制器仍执行同一 24 秒指令。位置/朝向 RMSE 按全程有效样本累计，不只检查返回原点时的位置。
+    files:
+    - path: localization/odometry.py
+      role: 本关玩家里程计，整个文件可编辑并持久保存
+    - path: control/wheel_controller.py
+      role: 复用 C0 控制器，源码原样保留，可按需调试
+    - path: localization/odometry_module.py
+      role: 系统管理的采样与发布适配器，无需编辑
+    - path: navigation_robot.py
+      role: 系统管理的轮控制适配器，无需编辑
+    edit_files:
+    - localization/odometry.py
+    functions:
+    - path: localization/odometry.py
+      name: update
+    default_type: DifferentialDriveParameters
+    aliases:
+      wheel_rates_radps: ndarray
+      initial_pose: ndarray
+      model: DifferentialDriveParameters
+    execution: 编码器 30 Hz，控制器与里程计各 {algorithm_hz} Hz，共享固定 6 tick 提交；dt 使用采样 tick 差。两个模块共用既有
+      20 ms 预算，各 10 ms。
+    completion: 序列 {time_limit_s} 秒结束时：真实终点距离≤{max_origin_distance_m} m、实际路程≥{min_path_length_m}
+      m；位置 RMSE≤{max_position_rmse_m} m、朝向 RMSE≤{max_yaw_rmse_rad} rad，且有效估计≥{required_estimates}
+      次。
+    common_errors:
+    - 将目标 Twist 当实测速度积分，忽略电机响应与真实轮速。
+    - 直接用车体 v 累加全局 x，忘记 yaw 对 x/y 的旋转。
+    - 把提交时间或浏览器帧率当作积分时间。
+    - 返回 list、tuple、错误 shape/dtype 或 NaN/Inf；错误日志可定位到你的函数。
+    - 只返回原点；即使最终回到原点，全程累计 RMSE 仍无法通过。
+    type_notes: {}
+    calibration:
+      wheel_radius_m:
+        source: wheel_radius_m
+      wheel_separation_m:
+        source: differential_track_m
+      body_mass_kg:
+        source: body_mass_kg
+      body_yaw_inertia_kg_m2:
+        source: body_yaw_inertia_kg_m2
+      drag_x_n_s_per_m:
+        source: drag_x_n_s_per_m
+      drag_yaw_nm_s:
+        source: drag_yaw_nm_s
+      motor:
+        source: wheel_motor
+    ui:
+      state_heading: SELF POSE / 玩家里程计
+      legend_pose: 玩家里程计估计
+      view_note: 车体、轨迹和相机只跟随玩家里程计；错误估计不会修改真实物理位置。
+      mode_label: Navigation · 差速里程计
+      freshness_message: 估计位姿 · 固定提交延迟 · 世界坐标方向固定
+      progress_layout: command_sequence
+      default_file: localization/odometry.py
+scaffolding:
+  workspace_scope: navigation
+  components:
+  - wheel_controller
+  - wheel_control_adapter
+  - wheel_odometry
+  - wheel_odometry_adapter
+  documentation: {}

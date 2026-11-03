@@ -178,6 +178,24 @@ def _validate(value, filename, config, validator):
         expected="authorized_truth" if layer in ("truth_targets","projectiles") else "map" if layer=="map" else "selected_pose" if layer in ("robot","trail","frames") else "player_estimate" if layer=="target_estimates" else "local_observation"
         if source!=expected:fail("visualization.sources."+layer,"source is not supported by this visualization component")
     policy=value["permissions"]["visualization"]["view_policy"]
+    feedback=vis.get("control_feedback")
+    if feedback:
+        from .control_feedback import SIGNALS
+        if not sequence or drive!="wheel_voltage" or "wheel_encoder" not in sensor_ids:
+            fail("visualization.control_feedback","control plots require a wheel-voltage command sequence and wheel encoder")
+        if "encoders" not in layers or "/robot/sensors/joint_states" not in policy["local_observation_channels"]:
+            fail("visualization.control_feedback","encoder visualization is not authorized")
+        if feedback["period_ticks"]%player["sensors"][sensor_ids.index("wheel_encoder")]["period_ticks"]:
+            fail("visualization.control_feedback.period_ticks","plot period must align with encoder samples")
+        if len({c["id"] for c in feedback["charts"]})!=len(feedback["charts"]):
+            fail("visualization.control_feedback.charts","duplicate chart ID")
+        allowed=set(value["permissions"]["visualization"].get("allowed_control_signals",[]))
+        for index,chart in enumerate(feedback["charts"]):
+            names=[s["signal"] for s in chart["signals"]]
+            if len(set(names))!=len(names) or not set(names)<=allowed:
+                fail(f"visualization.control_feedback.charts[{index}].signals","duplicate or unauthorized control signal")
+            if any(SIGNALS[name]!=chart["unit"] for name in names):
+                fail(f"visualization.control_feedback.charts[{index}].unit","unit does not match the control signal")
     if "truth_targets" in layers and not policy["true_enemy_objects"]:fail("permissions.visualization.allowed_layers","target truth is not authorized")
     if "projectiles" in layers and not policy["world_effects"]:fail("permissions.visualization.allowed_layers","projectile truth is not authorized")
     if set(layers)&{"truth_robot","velocities","colliders"}:fail("permissions.visualization.allowed_layers","these components require the separate developer grant")
@@ -219,7 +237,7 @@ def _validate(value, filename, config, validator):
         for path,source in generated.items():
             if path.endswith(".py"):ast.parse(source,filename=path)
     except (ValueError,SyntaxError) as exc:fail("scaffolding",str(exc))
-    player_files={"control/wheel_controller.py","perception/transforms.py","perception/tracker.py","perception/pose_tracker.py","perception/polar_tracker.py","perception/fusion_tracker.py","perception/armor_tracker.py","weapons/auto_aim.py","weapons/armor_aim.py","weapons/target_prediction.py"}
+    player_files={"localization/odometry.py","control/wheel_controller.py","perception/transforms.py","perception/tracker.py","perception/pose_tracker.py","perception/polar_tracker.py","perception/fusion_tracker.py","perception/armor_tracker.py","weapons/auto_aim.py","weapons/armor_aim.py","weapons/target_prediction.py"}
     registered={p for component in COMPONENTS.values() for p in component}
     managed={p for p in registered|set(generated) if p not in player_files and not p.endswith("__init__.py")}
     if not set(runtime["managed_files"])<=managed:fail("communication.runtime.managed_files","managed files must exclude player algorithms and custom files")
@@ -297,10 +315,16 @@ def _validate(value, filename, config, validator):
             if any(not any(math.hypot(c*x-s*y-a,s*x+c*y-b)<=tol and abs((yaw+angle-normal+math.pi)%math.tau-math.pi)<=tol for a,b,normal in mounts) for x,y,yaw in mounts):
                 fail(f"evaluation.metrics[{index}].period_rad","period must preserve the configured armor geometry")
     feedback=value["evaluation"].get("live_feedback")
-    if feedback:
-        metric=feedback["metric"]
+    entries=feedback if isinstance(feedback,list) else [feedback] if feedback else []
+    if len({entry["metric"] for entry in entries})!=len(entries):fail("evaluation.live_feedback","duplicate live metric")
+    for entry in entries:
+        metric=entry["metric"]
+        if entry["unit"]!={"rmse_m":"m","yaw_rmse_rad":"rad"}[metric]:fail("evaluation.live_feedback.unit","unit does not match the metric")
         if metric not in metric_ids:fail("evaluation.live_feedback.metric","live metric must be declared in evaluation.metrics")
         if metric not in value["permissions"]["visualization"].get("allowed_metrics",[]):fail("evaluation.live_feedback.metric","live metric visualization is not authorized")
+    if value["evaluation"].get("source")=="player_pose":
+        if "pose2d@1" not in grants["outputs"] or runtime["manifest"]["pose_source"]["mode"]!="player":
+            fail("evaluation.source","pose evaluation requires an authorized player pose publisher selected for display")
     reasons=[o["reason"] for o in value["objectives"]["outcomes"]]
     if len(reasons)!=len(set(reasons)):fail("objectives.outcomes","duplicate terminal reason")
 

@@ -83,5 +83,5 @@ class WorkspaceScopeTests(unittest.TestCase):
         chapters = self.config["campaign"]["chapters"]
         navigation = next(c for c in chapters if c["chapter_id"] == "navigation")
         self.assertEqual(navigation["title"], "Navigation")
-        self.assertEqual(navigation["levels"], ["navigation.c0"])
-        self.assertEqual(list(self.config["campaign"]["levels"]), ["c0", "c1", "c2", "c3", "c4", "c5", "navigation.c0"])
+        self.assertEqual(navigation["levels"], ["navigation.c0", "navigation.c1"])
+        self.assertEqual(list(self.config["campaign"]["levels"]), ["c0", "c1", "c2", "c3", "c4", "c5", "navigation.c0", "navigation.c1"])

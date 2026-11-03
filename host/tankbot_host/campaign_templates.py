@@ -161,6 +161,12 @@ def framework_upgrade(config: dict, files: dict[str, str], ledger: dict | None =
             current = bool(manifest.get("modules")) and all(item["contract"] in files for item in manifest["modules"])
             if current:
                 declared={item["module_id"]:json.loads(files[item["contract"]]) for item in manifest["modules"]}
+                source=manifest.get("pose_source",{})
+                policy=config["view_policy"]
+                if source.get("mode")=="system":
+                    current &= policy["system_pose_allowed"]
+                elif source.get("mode")=="player":
+                    current &= policy["player_pose_allowed"]
                 for connection in manifest.get("connections",[]):
                     if not connection["from"].startswith("/") and connection["to"].startswith("/robot/estimates/"):
                         mid,port=connection["from"].split(".")
@@ -189,7 +195,7 @@ def framework_upgrade(config: dict, files: dict[str, str], ledger: dict | None =
             current = False
         generated = generated_algorithm_updates(config,files,ledger or {})
         message = ("发现仍未修改的旧算法模板："+"、".join(generated)+"。请预览更新输入接口；已编写的算法文件保留。"
-                   if generated else "本关运行配置需要更新；请预览升级，已有 perception/ 和 weapons/ 算法文件会保留。" if not current else "")
+                   if generated else "本关的模块连接或显示权限已变化；请预览系统脚手架升级，已有算法文件完整保留。" if not current else "")
         return {"required":not current or bool(generated),"current_version":None,"target_version":profile["template_version"],
                 "managed_files":profile["managed_files"],"generated_algorithm_files":generated,"message":message}
     source: str = files.get("campaign_robot.py", "")

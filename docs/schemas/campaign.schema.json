@@ -430,6 +430,14 @@
             "min_path_length_m": {
               "type": "number",
               "minimum": 0
+            },
+            "max_position_rmse_m": {
+              "type": "number",
+              "minimum": 0
+            },
+            "max_yaw_rmse_rad": {
+              "type": "number",
+              "minimum": 0
             }
           },
           "required": [

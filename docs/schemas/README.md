@@ -87,3 +87,5 @@ C5 匿名装甲增量为 `armor_detections@1`：Envelope 固定 Topic `/robot/se
 ## Navigation 控制增量
 
 轮电压 wheel_voltage@1 是新的兼容 topic 类型，固定 base_link 与 /robot/wheels/cmd_voltage；两个有限电压的限幅/过期由领域层执行。完整底盘可选 motor、内部仿真 DTO 可选 wheel_drive。关卡支持无武器/无目标、wheel_voltage 驱动、twist_sequence、首批控制起算及两项运动指标；默认均保持旧关卡语义。scaffolding.workspace_scope 只做项目分组，不决定物理行为。实际约束和状态见 [33](../33_NAVIGATION_MOTION_CONTROL.md)。
+
+Navigation 增量：level 的 evaluation.source 可选 player_pose，live_feedback 兼容单对象/多指标数组；规则新增累计位置/朝向 RMSE 比较。visualization.control_feedback 声明有界控制曲线，permissions.visualization.allowed_control_signals 独立授权，不增加 Runtime 输入能力。候选位姿沿用 pose2d@1；源格式、Topic 和旧配置兼容。见 [34](../34_NAVIGATION_ODOMETRY_AND_FEEDBACK.md)。

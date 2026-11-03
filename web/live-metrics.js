@@ -22,6 +22,11 @@ export class MetricHistory{
 export function mountLiveMetric(root,config){
   root.hidden=!config;
   if(!config)return {update(){},get summary(){return "";}};
+  if(Array.isArray(config)){
+    root.classList.add("multiple-metrics");
+    const children=config.map(item=>{const child=document.createElement("div");root.append(child);return mountLiveMetric(child,item);});
+    return {update(runId,attempt){children.forEach(child=>child.update(runId,attempt));},get summary(){return children.map(child=>child.summary).filter(Boolean).join(" · ");}};
+  }
   const history=new MetricHistory(config);
   root.title=config.description;
   const title=document.createElement("span"),label=document.createElement("span"),value=document.createElement("strong"),unit=document.createElement("span"),count=document.createElement("small");

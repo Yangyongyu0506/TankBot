@@ -1,12 +1,13 @@
 // Teaching UI consumes the same narrow Authority controls in both runtime profiles.
 import {bindingHint} from "./keyboard.js";
 import {mountLiveMetric} from "./live-metrics.js";
+import {mountControlFeedback} from "./control-feedback.js";
 export function attemptSummary(attempt){
   if(!attempt)return "";
   const clock=attempt.timing,remaining=Math.ceil(clock.remaining_s),minutes=Math.floor(remaining/60),seconds=String(remaining%60).padStart(2,"0");
   const time=attempt.phase==="preparing"?`尚未计时 · 限时 ${clock.time_limit_s} 秒`:`剩余 ${minutes}:${seconds}`;
   const health=attempt.player_hp==null?"":` · 我方 HP ${attempt.player_hp}/${attempt.player_max_hp} · 敌方 HP ${attempt.enemy_hp}/${attempt.enemy_max_hp}`;
-  const reasons={aborted:"已主动结束",timeout:"失败：超时",player_dead:"失败：玩家死亡",trajectory_failed:"失败：终点误差或实际路程未达标",controller_error:"失败：控制程序异常，请查看运行日志",objective_completed:"已通关"};
+  const reasons={aborted:"已主动结束",timeout:"失败：超时",player_dead:"失败：玩家死亡",trajectory_failed:"失败：终点误差或实际路程未达标",estimation_failed:"失败：运动或里程计误差未达标",controller_error:"失败：机器人程序异常，请查看运行日志",objective_completed:"已通关"};
   return (attempt.result?reasons[attempt.result.reason]??"本次尝试已结束":time)+health;
 }
 export async function mountCampaign(profile,browser,onState,releaseControls){
@@ -15,6 +16,8 @@ export async function mountCampaign(profile,browser,onState,releaseControls){
   const practice=Boolean(profile.custom_map_practice);
   const current=levels.find(level=>level.level_id===profile.campaign.active_level);
   const liveMetric=mountLiveMetric($("live-evaluation"),current?.live_feedback);
+  const controlFeedback=mountControlFeedback($("hud-control"),current?.visualization?.control_feedback,profile.physics_hz,(current?.time_limit_s??0)*profile.physics_hz);
+  $("tab-control").hidden=!current?.visualization?.control_feedback;
   const options=levels.map(level=>{
     const option=document.createElement("option");option.value=level.level_id;option.textContent=level.title;
     option.selected=level===current;return option;
@@ -49,7 +52,8 @@ export async function mountCampaign(profile,browser,onState,releaseControls){
   }
   await updateProgress();
   async function runtime(path,value={}){
-    const r=browser?await browser.post(path,value):await fetch(path,path==="/api/campaign"?undefined:{method:"POST",headers:{"Content-Type":"application/json","X-TankBot-Control":token},body:JSON.stringify(value)});
+    const url=path==="/api/campaign"&&Object.keys(value).length?path+"?"+new URLSearchParams(value):path;
+    const r=browser?await browser.post(path,value):await fetch(url,path==="/api/campaign"?undefined:{method:"POST",headers:{"Content-Type":"application/json","X-TankBot-Control":token},body:JSON.stringify(value)});
     const result=await r.json();if(!r.ok)throw Error(result.error??"关卡请求失败");return result;
   }
   $("start-level").onclick=async()=>{
@@ -77,8 +81,9 @@ export async function mountCampaign(profile,browser,onState,releaseControls){
   let timer;
   async function poll(){
     try{
-      const {run_id,attempt,save_error}=await runtime("/api/campaign");
+      const {run_id,attempt,save_error}=await runtime("/api/campaign",controlFeedback.cursor??{});
       liveMetric.update(run_id,attempt);
+      controlFeedback.update(run_id,attempt);
       if(browser?.saveError()){await browser.retrySave();}
       await updateProgress();
       onState(attempt);
@@ -104,6 +109,7 @@ export async function mountCampaign(profile,browser,onState,releaseControls){
           $("task-message").textContent=(r.passed?(practice?"练习完成！自定义地图不计正式通关，不解锁后续关卡。":"通关！可选择下一关，已有源码会保留。"):attemptSummary(attempt)+"。可修改代码，再点击开始 / 重试。")+
             (r.rmse_m==null?"":" 本次估计 RMSE："+r.rmse_m.toFixed(3)+(current.live_feedback?" m。":" m（仅结束后公布）。"));
           if(motion)$("task-message").textContent+=` 最终距起点 ${r.origin_distance_m.toFixed(3)} m，实际路程 ${r.path_length_m.toFixed(3)} m。`;
+          if(r.yaw_rmse_rad!=null)$("task-message").textContent+=` 朝向 RMSE ${r.yaw_rmse_rad.toFixed(3)} rad，有效估计 ${r.scored_samples} 次。`;
           if(save_error||browser?.saveError())$("task-message").textContent=save_error||browser.saveError();
         }else{
           $("task-message").textContent=attempt.phase==="preparing"?(attempt.timing.start_on==="first_control"?"首次有效驾驶、炮台或开火操作后计时。":"保存 → 测试 → 部署。首次成功部署前不计时；部署后按本关权限运行机器人。"):"本局运行中，代码编辑器已锁定。发现问题请点击“结束本次尝试”，或点击“开始 / 重试”重置关卡；源码会保留。";

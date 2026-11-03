@@ -24,9 +24,10 @@ class MapAssetTests(unittest.TestCase):
         opened=load_yaml(ROOT/'assets/maps/open_training.yaml')['walls']
         self.assertEqual(self.config['scene']['walls'],legacy)
         self.assertEqual(opened,legacy[:4])
-        self.assertEqual(set(self.config['campaign']['levels']),{'c0','c1','c2','c3','c4','c5','navigation.c0'})
+        self.assertEqual(set(self.config['campaign']['levels']),{'c0','c1','c2','c3','c4','c5','navigation.c0','navigation.c1'})
+        definitions={value['metadata']['id']:value for path in (ROOT/'levels').glob('*.yaml') for value in [load_yaml(path)]}
         for lid in self.config['campaign']['levels']:
-            source=load_yaml(ROOT/f'levels/{lid}.yaml')
+            source=definitions[lid]
             self.assertEqual(source['world']['map'],{'source':'asset','path':'maps/open_training.yaml'})
             c=configure(self.config,lid)
             self.assertEqual(c['scene']['walls'],opened)

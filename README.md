@@ -190,3 +190,11 @@ python3 tools/tankbot.py serve --level navigation.c0
 ```
 
 开发者预览可追加 --developer；浏览器模式用 browser 替换 serve。F2 只需修改高亮的 control/wheel_controller.py，输入目标 Twist、左右轮速与 dt，返回左右轮电压 NumPy 向量。模型参数在 config/chassis/differential.yaml；指令与验收在 levels/navigation.C0.yaml。Navigation 使用独立工程，Weapons 源码/历史继续保留；本章没有武器或人工驾驶。
+
+Navigation C0/C1 可在右侧“曲线”中对比参考与编码器速度、两轮角速度及执行电压；点击“放大曲线”可四图同屏查看，结束后曲线保留。C1 复用你的轮控制器，只新增 localization/odometry.py，使用理想轮速推算自己的位姿，运行中显示位置/朝向 RMSE。
+
+```bash
+python3 tools/tankbot.py serve --level navigation.c1 --developer
+```
+
+玩家模式需先通关 Navigation C0。已有工程切关时如提示系统脚手架升级，可在 F2 中预览并更新模块连接；轮控制器源码完整保留。接口与验收见 [Navigation 里程计设计](docs/34_NAVIGATION_ODOMETRY_AND_FEEDBACK.md)。

@@ -2,7 +2,7 @@
 
 ## 目的与执行原则
 
-先验证本项目独特的端到端数据流，再扩展内容。M0、M1/M1b 已交付并完成[收尾复核](reports/M1_CLOSEOUT.md)；M2 已完成浏览器双 Worker、Adapter 一致性及本机资源验收，见 [M2 报告](reports/M2_VALIDATION.md)。其他 OS/浏览器验证仍待执行；M3 编辑部署和 M4 C0–C2 本机教学闭环已完成，见 [M3](reports/M3_VALIDATION.md)、[M4 报告](reports/M4_VALIDATION.md)。M5 多模块和 Weapons C3/C4 已完成本机验收，见 [M5 报告](reports/M5_VALIDATION.md)；M6a 已新增 Navigation 首关，后续导航课程尚未实施。Accepted 安全/状态边界从 M1 开始，不把三层状态分离推迟到画面完成以后。
+先验证本项目独特的端到端数据流，再扩展内容。M0、M1/M1b 已交付并完成[收尾复核](reports/M1_CLOSEOUT.md)；M2 已完成浏览器双 Worker、Adapter 一致性及本机资源验收，见 [M2 报告](reports/M2_VALIDATION.md)。其他 OS/浏览器验证仍待执行；M3 编辑部署和 M4 C0–C2 本机教学闭环已完成，见 [M3](reports/M3_VALIDATION.md)、[M4 报告](reports/M4_VALIDATION.md)。M5 多模块和 Weapons C3/C4 已完成本机验收，见 [M5 报告](reports/M5_VALIDATION.md)；M6a/M6b 已实现 Navigation 双轮控制、控制调试与理想轮式里程计；其他导航课程尚未实施。Accepted 安全/状态边界从 M1 开始，不把三层状态分离推迟到画面完成以后。
 
 ```mermaid
 flowchart LR
@@ -32,7 +32,7 @@ flowchart LR
 | M3 Editor and Deployment（本机完成） | 依赖 M1；CodeMirror 原型、多文件 Workspace、模板 ledger、Manifest、Edit/Test/Deploy、失败回滚 | 不覆盖玩家文件；编辑不改变 Active；快照测试/部署摘要一致；Vim 焦点不误触控制 | 迁移冲突、多文件 import、安全打包 |
 | M4 First Three Playable Levels（本机完成） | 依赖 M2/M3；C0–C2、理想/噪声 Radar、函数到类、巡逻敌车与 3 HP 击杀 | 原生/Firefox 实际编辑部署并通关；两种跟踪法可用；跨关保留源码，无目标/弹道真值旁路 | 其他平台、难度曲线与长期教学反馈 |
 | M5 Multi-Module Robot Software（本机完成） | 依赖 M4；同步周期/event Contract 图、选源、章节；当前 C3 极坐标滤波、C4 中心预测与自瞄、C5 小陀螺自瞄，见 [28](28_WEAPONS_PROGRESSIVE_ESTIMATION.md) | 冻结/固定提交、失败与整图回滚；算法迁移无损；新三关闭环、旧三关冻结基线与原生/浏览器真实 UI 通关 | 管线时延、噪声融合、多文件预测与难度曲线 |
-| M6 Navigation → Autonomous Control（首关已实现） | 依赖 M5；先双轮 FK/IK 与电机控制，再自身状态估计，后续建图、规划与决策；本章节不含武器，不加载 Weapons 算法 | 首关按固定指令测试回原点和真实路程；依据已确认电机模型实施；后续课程独立设计 | 电机/车体耦合、滚动约束、闭环时延、验收区分度 |
+| M6 Navigation → Autonomous Control（前两关已实现） | 依赖 M5；先双轮 FK/IK 与电机控制，再自身状态估计，后续建图、规划与决策；本章节不含武器，不加载 Weapons 算法 | 首关按固定指令测试回原点和真实路程；依据已确认电机模型实施；后续课程独立设计 | 电机/车体耦合、滚动约束、闭环时延、验收区分度 |
 | M7 Algorithm Lab | 依赖 M5；录制输入、参数比较、估计轨迹、停止后授权真值评分 | 传感器回放与闭环比较有明确区别；可重现错误；私有数据不进正式 Runtime | Replay 容量、评估 oracle、数据权限 |
 | M8 Remote Server and Arena | 依赖 M2/M6，复用 M7 录制设计；服务器 Authority、强化沙箱、公平配额、比赛审计 | 第三方代码攻击测试通过；客户端无真值/秘密地图；服务器评分；版本/资源锁定，超载处理可审计 | 逃逸、DoS、公平性、运维成本 |
 | M9 Cross-Platform Release and Maintenance | 依赖 M7/M8；桌面打包、验证后的平台支持表、兼容窗口、文档 CI、回放保留政策 | 每个声称支持的平台有安装/启动/安全/性能报告；旧项目可迁移或在声明窗口内运行 | 兼容回归、签名分发、浏览器/系统更新 |
@@ -93,3 +93,9 @@ M6a 已按用户逐项确认实现 **Navigation C0：双轮驱动与运动控制
 当前 M1–M4 的平台、资源、存储与教学开放项统一见 [状态核对](reports/M1_M4_STATUS_AUDIT.md)。本轮补充课程依赖白名单、NumPy 矩阵和运行日志反馈，强沙箱和独立浏览器存储仍未实现；M5 多模块/C3/C4 的新增证据单列于 M5 报告。
 
 本机 Campaign 另补每关运行时限、编辑器主动结束、C2 玩家 HP 与死亡失败，并统一迁移 YAML 参数源，见 [25](25_ATTEMPT_RULES_AND_CONFIGURATION.md) 和 [验收](reports/ATTEMPT_RULES_VALIDATION.md)。这不增加敌车攻击 AI，M5 的课程范围由本轮用户确认修订，以 26 为准。
+
+## Navigation 当前增量与下一步
+
+M6b 已补 C0/C1 的授权控制曲线，并新增 navigation.c1 理想编码器里程计。C1 复用 C0 控制代码，只新增定位文件；地图/车体/相机使用玩家估计，运行中显示分别授权的位置/朝向累计 RMSE，评分按采样 tick 对齐。设计与当前接口见 [34](34_NAVIGATION_ODOMETRY_AND_FEEDBACK.md)，实际验证见 [报告](reports/NAVIGATION_ODOMETRY_VALIDATION.md)。
+
+建议下一轮先共同确定编码器误差和 IMU 模型，再设计融合关卡；其后才进入航点跟踪、路径规划与建图。上述后续关卡均未实现，不能把当前理想里程计等同完整定位或 Navigation 全章完成。

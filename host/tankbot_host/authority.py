@@ -137,6 +137,8 @@ class Authority:
         self._candidates = {}
         self._target_estimate = None
         self.campaign = CampaignSession(config) if campaign_level(config) else None
+        from .control_feedback import ControlFeedback
+        self.control_feedback = ControlFeedback(config) if self.campaign else None
         from .sensor_instances import SensorScheduler
         self.sensor_scheduler=SensorScheduler(self.scene.sensors,config)
         self.radar=self.sensor_scheduler.backend("radar")
@@ -144,6 +146,7 @@ class Authority:
         self.armor_detector=self.sensor_scheduler.backend("armor_detector")
         self._public_pose_history = {}
         self._target_history = {}
+        self._self_pose_history = {}
         self._sequences = {}
         self._pending = None
         self._last_activation = 0
@@ -265,6 +268,7 @@ class Authority:
         if self.campaign and self.campaign.sequence:
             channel=self.campaign.sequence["topic"]
             self._sensors[channel]=self._message("twist@1",channel,self.campaign.command(self.tick),frame="base_link",publisher="command_sequence")
+            self.control_feedback.sample(self.tick,self._sensors,self.campaign)
 
     def _rate_limit(self):
         now = time.monotonic()
@@ -538,6 +542,8 @@ class Authority:
             self.selector.accept(module_id,message,self._message)
             if self.selector.source_id == module_id:
                 self._sensors["/robot/localization/pose"] = copy.deepcopy(self.selector.canonical)
+                if self.campaign:
+                    self.campaign.estimate(message,self._self_pose_history.get(message["simulation_tick"]))
             self.audit.append({"event":"pose_commit","module_id":module_id,"tick":self.tick,"sample_tick":message["simulation_tick"],"activation_tick":activation_tick})
         elif channel in (f"/robot/estimates/{module_id}/target",f"/robot/estimates/{module_id}/target_pose",f"/robot/estimates/{module_id}/target_polar"):
             profile = self.graph_profile()
@@ -558,6 +564,7 @@ class Authority:
                 if not self.campaign.deployment_armed:return
                 self.campaign.start(self.tick,self._private)
             self._wheel_voltage_target={**message["payload"],"source_tick":message["simulation_tick"]}
+            self.control_feedback.command(message)
         elif channel == "/robot/turret/cmd_vel":
             self._turret_target = {**message["payload"],"source_tick":message["simulation_tick"]}
         elif channel == "/robot/turret/cmd_accel":
@@ -591,9 +598,14 @@ class Authority:
             self._target_history[self.tick] = alive[0]["pose"] if alive else None
             cutoff = self.tick-self.config["runtime"]["estimate_history_ticks"]
             self._target_history = {tick: pose for tick, pose in self._target_history.items() if tick >= cutoff}
+            if self.campaign.definition["evaluation"].get("source")=="player_pose":
+                self._self_pose_history[self.tick]=list(self._private["truth_pose"])
+                self._self_pose_history={tick:pose for tick,pose in self._self_pose_history.items() if tick>=cutoff}
         if self.deployment is not None:
             self.deployment.advance()
         self._commit()
+        if self._revoke_robot and self.control_feedback:
+            self.control_feedback.revoke()
         self._sample()
         self._activate()
         if self.tick % (self.hz // self.config["view"]["snapshot_hz"]) == 0:
@@ -668,8 +680,15 @@ class Authority:
     def finish_campaign(self):
         return self._finish_campaign()
 
-    def campaign_status(self):
-        return {"run_id": self.run_id, "attempt": self.campaign.public() if self.campaign is not None else None}
+    def campaign_status(self, *, control_after_tick=None, run_id=None):
+        if control_after_tick is not None and (type(control_after_tick) is not int or control_after_tick < -1):
+            raise Rejected("INVALID_CURSOR")
+        if run_id is not None and (not isinstance(run_id,str) or len(run_id)>128):
+            raise Rejected("INVALID_CURSOR")
+        attempt=self.campaign.public() if self.campaign is not None else None
+        if attempt is not None and self.control_feedback.spec:
+            attempt["control_feedback"]=self.control_feedback.public(control_after_tick if run_id==self.run_id else None)
+        return {"run_id": self.run_id, "attempt": attempt}
 
     def developer_snapshot(self):
         """Explicit developer grant; never included in PlayerViewSnapshot or Runtime inputs."""

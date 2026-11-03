@@ -60,7 +60,7 @@ function key(code, down) {
 }
 function releaseControls(){keys.clear();joy?.suspend();joyControls=neutralControls();document.querySelectorAll("button[data-key].active").forEach(e=>e.classList.remove("active"));command();}
 const workspaceDialog=setupWorkspaceDialog(releaseControls);
-const editing = target => $("map-dialog").open||$("settings-dialog").open||$("workspace-dialog").open||target?.closest?.("input, textarea, select, [contenteditable]");
+const editing = target => Boolean(document.querySelector("dialog[open]"))||target?.closest?.("input, textarea, select, [contenteditable]");
 const visibleFocused=()=>!document.hidden&&document.hasFocus();
 const canDrive=()=>visibleFocused()&&!campaignEnded&&!campaignWaiting&&!editing(document.activeElement);
 function updateControlLabels(){
@@ -87,7 +87,7 @@ function sampleGamepad(now){
   let frame,error="";
   try{
     if(joy.enabled&&typeof navigator.getGamepads!=="function")throw Error("浏览器不支持手柄 API");
-    frame=joy.sample(joy.enabled?navigator.getGamepads():[],{motionAllowed:canDrive(),uiAllowed:visibleFocused()&&!$("map-dialog").open&&!$("settings-dialog").open});
+    frame=joy.sample(joy.enabled?navigator.getGamepads():[],{motionAllowed:canDrive(),uiAllowed:visibleFocused()&&!$("map-dialog").open&&!$("settings-dialog").open&&!$("control-dialog")?.open});
   }catch{
     joy.suspend(true);frame={...neutralControls(),devices:[],device:null,status:"unavailable"};
     error=isSecureContext?"浏览器未开放手柄访问；请检查浏览器设置。":"手柄需要 HTTPS 或 localhost；请使用安全地址。";

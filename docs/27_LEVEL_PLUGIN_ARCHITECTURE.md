@@ -127,3 +127,7 @@ C2 的实时累计 RMSE 是上段终局发布规则的显式教学例外。allow
 ## Navigation 首关增量
 
 原五关迁移约束不变；随后用户明确要求新增 Navigation 首关 navigation.c0。统一加载器现支持无武器/无任务目标场景，新增 wheel_voltage 与 twist_sequence 通用组件；成功条件继续使用规则树，运动反馈独立授权，不按 ID 分支。workspace_scope 只控制持久工程分组，旧 campaign 工程不迁移或清空。组件、Schema、接口与实际范围见 [33](33_NAVIGATION_MOTION_CONTROL.md) 及其验收报告，不表示定位/规划课程已实现。
+
+## Navigation 里程计与授权曲线增量
+
+新增 navigation.c1 YAML 复用原电机与控制器组件；wheel_odometry 生成玩家文件，wheel_odometry_adapter 负责时间与发布。evaluation.source=player_pose 选择自身候选评分，rmse_m/yaw_rmse_rad 作为声明式规则事实，live_feedback 支持分别授权的多个指标。control_feedback 使用固定语义信号注册表、独立显示 grant 与有界记录，不是可执行图表表达式；不修改原 Topic/Envelope，也不按关卡 ID 选择行为。详见 [34](34_NAVIGATION_ODOMETRY_AND_FEEDBACK.md)。

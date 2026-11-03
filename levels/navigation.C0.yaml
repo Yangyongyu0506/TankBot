@@ -87,6 +87,7 @@ permissions:
   visualization:
     allowed_layers: [robot, trail, map, encoders, frames]
     allowed_metrics: [origin_distance_m, path_length_m]
+    allowed_control_signals: [command_vx_mps, encoder_vx_mps, command_wz_radps, encoder_wz_radps, left_wheel_radps, right_wheel_radps, left_voltage_v, right_voltage_v]
     view_policy:
       policy_id: navigation-wheel-control
       system_pose_allowed: true
@@ -107,6 +108,37 @@ visualization:
   user_toggleable: [trail, encoders, frames]
   sources: {robot: selected_pose, trail: selected_pose, map: map, encoders: local_observation, frames: selected_pose}
   preserve_user_settings: false
+  control_feedback:
+    title: 轮驱动调试
+    description: 目标速度来自系统指令；反馈速度由理想编码器计算，非真值速度。电压显示限幅后、通过看门狗的执行器输入。虚线标记直行与转向切换；时间轴使用仿真秒。
+    period_ticks: 6
+    history_points: 300
+    precision: 3
+    charts:
+    - id: forward_speed
+      title: 前进速度
+      unit: m/s
+      signals:
+      - {signal: command_vx_mps, label: 目标, color: '#f4cf7e'}
+      - {signal: encoder_vx_mps, label: 编码器反馈, color: '#8fe3b5'}
+    - id: yaw_rate
+      title: 转向角速度
+      unit: rad/s
+      signals:
+      - {signal: command_wz_radps, label: 目标, color: '#f4cf7e'}
+      - {signal: encoder_wz_radps, label: 编码器反馈, color: '#8fe3b5'}
+    - id: wheel_rates
+      title: 两轮角速度
+      unit: rad/s
+      signals:
+      - {signal: left_wheel_radps, label: 左轮, color: '#91bcff'}
+      - {signal: right_wheel_radps, label: 右轮, color: '#e9a2da'}
+    - id: motor_voltage
+      title: 两轮执行电压
+      unit: V
+      signals:
+      - {signal: left_voltage_v, label: 左轮, color: '#91bcff'}
+      - {signal: right_voltage_v, label: 右轮, color: '#e9a2da'}
 objectives:
   target: null
   time_limit_s: 24
@@ -124,8 +156,10 @@ objectives:
     repeat: 4
     segments:
     - duration_ticks: 240
+      label: 直行
       twist: {linear: {x: 0.5, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}
     - duration_ticks: 120
+      label: 原地左转
       twist: {linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.7853981633974483}}
   progress:
     moved: {type: displacement, parameter: movement_m, sticky: true}
@@ -157,6 +191,7 @@ tutorial:
   - 在 F2 中只需编辑高亮的 control/wheel_controller.py；Navigation 使用独立项目，Weapons 代码与历史保留在原工程。
   - 轮速顺序永远是 [left,right]，单位 rad/s；正角速度表示逆时针左转，左轮应比右轮慢。
   - 先做 FK 检查当前运动，再做 IK 得到目标轮速，结合电机反电动势、负载与速度误差计算两轮电压。
+  - 运行时打开“曲线”，对比目标与编码器速度、左右轮速和执行电压；虚线标记指令切换，鼠标移入可查看采样值。
   - 部署前的编辑与测试不计时。发现问题可主动结束，再修改代码；重试会从零初态重新执行整条序列。
   testing:
     checks:

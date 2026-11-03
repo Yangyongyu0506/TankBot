@@ -6,7 +6,7 @@ from pathlib import Path
 import secrets
 import threading
 import time
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit,parse_qs
 from tankbot_protocol.wire import strict_loads
 from tankbot_protocol.validation import Rejected
 
@@ -88,10 +88,18 @@ class LocalServer:
                     value["control_token"] = owner.token
                     self.reply(200, json.dumps(value).encode())
                 elif path == "/api/campaign":
-                    with owner.lock:
-                        owner.save_progress()
-                        value = owner.authority.campaign_status()
-                        value["save_error"] = owner.save_error
+                    query=parse_qs(urlsplit(self.path).query)
+                    try:
+                        if any(len(values)!=1 for values in query.values()):raise ValueError("INVALID_CURSOR")
+                        cursor={}
+                        if "control_after_tick" in query:cursor["control_after_tick"]=int(query["control_after_tick"][0])
+                        if "run_id" in query:cursor["run_id"]=query["run_id"][0]
+                        with owner.lock:
+                            owner.save_progress()
+                            value=owner.authority.campaign_status(**cursor)
+                            value["save_error"]=owner.save_error
+                    except (ValueError,Rejected):
+                        self.reply(400,b'{"error":"INVALID_CURSOR"}');return
                     self.reply(200, json.dumps(value).encode())
                 elif path == "/api/deployment":
                     with owner.lock:
@@ -108,7 +116,7 @@ class LocalServer:
                         else:
                             value = copy.deepcopy(owner.authority.view)
                     self.reply(200, json.dumps(value, allow_nan=False).encode())
-                elif path in ("/", "/index.html", "/app.js", "/rendering.js", "/browser-client.js", "/style.css", "/workspace-ui.js", "/file-tree.js", "/workspace-dialog.js", "/campaign-ui.js", "/live-metrics.js", "/learning-ui.js", "/gamepad.js", "/settings-ui.js", "/keyboard.js", "/visualization.js", "/runtime-logs.js", "/robot-graph.js", "/map-preview.js"):
+                elif path in ("/", "/index.html", "/app.js", "/rendering.js", "/browser-client.js", "/style.css", "/workspace-ui.js", "/file-tree.js", "/workspace-dialog.js", "/campaign-ui.js", "/live-metrics.js", "/control-feedback.js", "/learning-ui.js", "/gamepad.js", "/settings-ui.js", "/keyboard.js", "/visualization.js", "/runtime-logs.js", "/robot-graph.js", "/map-preview.js"):
                     file = ROOT / "web" / ("index.html" if path == "/" else path[1:])
                     kind = {".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css"}[file.suffix]
                     self.reply(200, file.read_bytes(), kind)

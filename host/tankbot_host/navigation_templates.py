@@ -72,3 +72,80 @@ class WheelControlModule(Module):
             raise ValueError("control 返回的两轮电压必须有限，不能是 NaN/Inf")
         ctx.publish("voltage", WheelVoltage(float(voltage[0]), float(voltage[1])), frame_id="base_link")
 '''
+
+ODOMETRY = '''"""差速轮式里程计；此文件全部保留，只使用轮速与公开初始位姿。"""
+import numpy as np
+from numpy.typing import NDArray
+from tankbot import DifferentialDriveParameters
+
+
+class Odometry:
+    def __init__(
+        self,
+        model: DifferentialDriveParameters,
+        initial_pose: NDArray[np.float64],
+    ) -> None:
+        self.model: DifferentialDriveParameters = model
+        self.pose: NDArray[np.float64] = initial_pose.copy()
+
+    def update(
+        self,
+        wheel_rates_radps: NDArray[np.float64],
+        dt: float,
+    ) -> NDArray[np.float64]:
+        """根据实际轮速积分地图系位姿，返回 [x_m,y_m,yaw_rad]。
+
+        wheel_rates_radps: 只读 float64 (2,)，顺序 [left,right]，单位 rad/s。
+        dt: 本次与上次已处理编码器采样之间的仿真秒。
+        初始位姿仅在构造时提供一次，self.pose 保存你自己的当前估计。
+        轮半径 r 与轮距 B 来自 self.model；不要使用目标 Twist 代替实测轮速。
+        返回有限 float64 (3,) NumPy 数组；yaw 的发布归一化由框架处理。
+
+        TODO：先从左右轮速计算车体 v/w，再将车体系速度转到地图系并积分。
+        你可以选择 Euler、中点或其他积分方法，不需要维护无界历史。
+        """
+        return self.pose.copy()
+'''
+
+ODOMETRY_ADAPTER = '''"""系统管理的里程计适配器；只发布估计，不影响真实车体。"""
+import numpy as np
+from numpy.typing import NDArray
+from tankbot import DifferentialDriveParameters, Inputs, JointState, Module, ModuleContext, Pose2D, Sample
+from localization.odometry import Odometry
+
+
+class WheelOdometryModule(Module):
+    scaffold_api: str = "wheel_odometry@1"
+
+    def setup(self, ctx: ModuleContext) -> None:
+        initial_pose: NDArray[np.float64] = np.frombuffer(
+            np.array(ctx.config["initial_pose"], dtype=np.float64).tobytes(), dtype=np.float64
+        )
+        self.odometry: Odometry = Odometry(
+            DifferentialDriveParameters(**dict(ctx.config["drive_parameters"])), initial_pose
+        )
+        self.last_sample_tick: int = ctx.simulation_tick
+
+    def reset(self, ctx: ModuleContext, reason: str) -> None:
+        self.setup(ctx)
+
+    def update(self, inputs: Inputs, ctx: ModuleContext) -> None:
+        wheels: Sample[JointState] | None = inputs.latest("wheels")
+        if wheels is None or wheels.simulation_tick <= self.last_sample_tick:
+            return
+        state: JointState = wheels.data
+        rates: NDArray[np.float64] = np.frombuffer(np.array(
+            [state.velocity[state.name.index("left")], state.velocity[state.name.index("right")]],
+            dtype=np.float64,
+        ).tobytes(), dtype=np.float64)
+        dt: float = (wheels.simulation_tick-self.last_sample_tick)*ctx.config["lesson"]["tick_duration_s"]
+        estimate: NDArray[np.float64] = self.odometry.update(rates, dt)
+        if not isinstance(estimate, np.ndarray) or estimate.shape != (3,) or estimate.dtype != np.float64:
+            raise TypeError("Odometry.update 必须返回 shape=(3,) 的 float64 NumPy 数组：[x_m,y_m,yaw_rad]")
+        if not np.isfinite(estimate).all():
+            raise ValueError("里程计输出必须有限，不能是 NaN/Inf")
+        self.last_sample_tick = wheels.simulation_tick
+        ctx.publish("pose", Pose2D(float(estimate[0]), float(estimate[1]),
+                    float((estimate[2]+np.pi)%(2*np.pi)-np.pi)),
+                    frame_id="map", simulation_tick=wheels.simulation_tick)
+'''

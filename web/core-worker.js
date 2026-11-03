@@ -82,7 +82,7 @@ self.onmessage=async({data})=>{
       }
       py.globals.set("_command",JSON.stringify(data.value));
       if(data.path==="/api/campaign"||data.path==="/api/campaign/finish"){
-        py.runPython(data.path.endsWith("/finish")?"_reply=authority.finish_campaign()":"_reply=authority.campaign_status()");
+        py.runPython(data.path.endsWith("/finish")?"_reply=authority.finish_campaign()":"_reply=authority.campaign_status(**json.loads(_command))");
         self.postMessage({kind:"response",id:data.id,ok:true,value:evaluate("_reply")});return;
       }
       if(data.path==="/api/pose_source"){

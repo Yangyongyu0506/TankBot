@@ -86,8 +86,9 @@ def catalog(config):
                 "chapter_id":value.get("chapter_id"),"control_sources":copy.deepcopy(value.get("control_sources")),"armor_mode":value.get("armor_mode",False),"ui":copy.deepcopy(value["tutorial"]["lesson"]["ui"]),"visualization":copy.deepcopy(value["visualization"]),"allowed_layers":copy.deepcopy(value["permissions"]["visualization"]["allowed_layers"])}
         item["problem"] = item["problem"].format(time_limit_s=value["time_limit_s"], max_hp=(value["target"] or {}).get("health", {}).get("max_hp"))
         feedback=value["evaluation"].get("live_feedback")
-        if feedback and feedback["metric"] in value["permissions"]["visualization"].get("allowed_metrics",[]):
-            item["live_feedback"]=copy.deepcopy(feedback)
+        entries=feedback if isinstance(feedback,list) else [feedback] if feedback else []
+        permitted=[entry for entry in entries if entry["metric"] in value["permissions"]["visualization"].get("allowed_metrics",[])]
+        if permitted:item["live_feedback"]=copy.deepcopy(permitted if isinstance(feedback,list) else permitted[0])
         result.append(item)
     return result
 
@@ -194,12 +195,22 @@ class CampaignSession:
             if offset<segment["duration_ticks"]:return copy.deepcopy(segment["twist"])
             offset-=segment["duration_ticks"]
 
+    def sequence_phase(self, tick):
+        elapsed=max(0,tick-self.started_tick) if self.started_tick is not None else 0
+        cycle=sum(s["duration_ticks"] for s in self.sequence["segments"])
+        offset=elapsed%cycle
+        for index,segment in enumerate(self.sequence["segments"]):
+            if offset<segment["duration_ticks"]:
+                return {"cycle_index":elapsed//cycle,"segment_index":index,"label":segment.get("label",str(index+1))}
+            offset-=segment["duration_ticks"]
+
     def facts(self, private):
         return {"player_alive":private.get("player_alive",True),"objective_complete":False,"elapsed_ticks":self.elapsed_ticks,
                 "moved":self.moved,"turned":self.turned,"hits":self.hits,"estimates":self.estimates,"target_alive":self.hp is None or self.hp>0,
                 "sequence_complete":bool(self.sequence) and self.elapsed_ticks>=self.sequence_ticks,
                 "controller_faulted":self.controller_faulted,
-                "origin_distance_m":self.origin_distance_m,"path_length_m":self.path_length_m}
+                "origin_distance_m":self.origin_distance_m,"path_length_m":self.path_length_m,
+                **{key:value if value is not None else math.inf for key,value in self.diagnostics.report().items()}}
 
     def outcome(self, private, tick):
         if self.status != "active" or (self.started_tick is None and not (self.sequence and self.deployment_armed)):
@@ -216,6 +227,11 @@ class CampaignSession:
 
     def estimate(self, message, truth):
         if self.status != "active" or self.started_tick is None or message["simulation_tick"] <= self.last_estimate_tick:
+            return
+        source=self.definition["evaluation"].get("source","target_estimate")
+        if (message.get("schema")=="pose2d@1")!=(source=="player_pose"):
+            return
+        if source=="player_pose" and (message.get("frame_id")!="map" or truth is None or message["simulation_tick"]<self.started_tick):
             return
         self.last_estimate_tick = message["simulation_tick"]
         self.estimates += 1
@@ -279,7 +295,10 @@ class CampaignSession:
             command=self.command((self.started_tick or 0)+self.elapsed_ticks)
             state["motion"].update(command_vx_mps=command["linear"]["x"],command_wz_radps=command["angular"]["z"])
         feedback=self.definition["evaluation"].get("live_feedback")
-        if feedback and feedback["metric"] in self.definition["permissions"]["visualization"].get("allowed_metrics",[]):
-            metric=feedback["metric"]
-            state["live_metrics"]={metric:self.diagnostics.report()[metric],"scored_samples":self.diagnostics.counts[metric]}
+        entries=feedback if isinstance(feedback,list) else [feedback] if feedback else []
+        for entry in entries:
+            metric=entry["metric"]
+            if metric in self.definition["permissions"]["visualization"].get("allowed_metrics",[]):
+                state.setdefault("live_metrics",{})[metric]=self.diagnostics.report()[metric]
+                state["live_metrics"]["scored_samples"]=self.diagnostics.counts[metric]
         return state

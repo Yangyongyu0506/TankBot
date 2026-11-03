@@ -53,6 +53,8 @@ ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评
 | [0045](0045-independent-course-workspaces.md) | Navigation 独立课程工作区与旧 Campaign 身份兼容 | Accepted |
 | [0046](0046-confirmed-wheel-voltage-control.md) | 用户确认的双轮电压、电机耦合与固定指令评价 | Accepted |
 
+| [0047](0047-navigation-odometry-and-control-feedback.md) | Navigation 控制曲线、玩家里程计与采样对齐评价 | Accepted |
+
 ## 变更流程与完成条件
 
 新决策使用递增四位编号和英文描述文件名；记录 Context、Decision、Alternatives、Consequences、Status，并给验证或接受条件。修改核心权威、信息边界、调度或公共接口前先定位相关 ADR。重大变更新增替代 ADR，并同步链接、领域规范、Schema、夹具和测试计划；不得只把旧决定悄悄改成另一种含义。

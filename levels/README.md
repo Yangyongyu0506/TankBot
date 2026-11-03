@@ -1,6 +1,6 @@
 # Level Plugins
 
-本目录当前有 C0–C5 和 navigation.c0 共七个独立 YAML，是关卡专属配置的唯一来源。Weapons 课程见 [28](../docs/28_WEAPONS_PROGRESSIVE_ESTIMATION.md)，Navigation 首关见 [33](../docs/33_NAVIGATION_MOTION_CONTROL.md)。正式 Schema 为 [level.schema.json](../docs/schemas/level.schema.json)，架构和迁移说明见 [27](../docs/27_LEVEL_PLUGIN_ARCHITECTURE.md)。
+本目录当前有 C0–C5、navigation.c0 和 navigation.c1 共八个独立 YAML，是关卡专属配置的唯一来源。Weapons 课程见 [28](../docs/28_WEAPONS_PROGRESSIVE_ESTIMATION.md)，Navigation 首关见 [33](../docs/33_NAVIGATION_MOTION_CONTROL.md)。正式 Schema 为 [level.schema.json](../docs/schemas/level.schema.json)，架构和迁移说明见 [27](../docs/27_LEVEL_PLUGIN_ARCHITECTURE.md)。
 
 ## 编写与验证流程
 
@@ -8,7 +8,7 @@
 文件名只用于组织配置；加载、`--level`、前置关卡及存档继续使用 YAML 内稳定的 `metadata.id`（现有 `c0`–`c5`、`navigation.c0`），不得因重命名而改变 ID 或玩家工作区。
 
 1. 选择使用相同现有组件的配置作为起点，完整保留所需字段。metadata.id 使用新的稳定 ID，order 唯一，prerequisites 只引用已发现且排在前面的关卡；不要修改现有 c0–c5 ID。
-2. 在同一 YAML 中声明地图/初态/传感器/控制源、通信合同、权限、规则、诊断、教材与模板。当前六关共同引用 [空旷教学场地](../assets/maps/README.md)，地图可 inline，或仅引用 assets/ 内 `{walls: [...]}` 格式的地图文件；禁止 include 其他配置或脚本。
+2. 在同一 YAML 中声明地图/初态/传感器/控制源、通信合同、权限、规则、诊断、教材与模板。当前八关共同引用 [空旷教学场地](../assets/maps/README.md)，地图可 inline，或仅引用 assets/ 内 `{walls: [...]}` 格式的地图文件；禁止 include 其他配置或脚本。
 3. 机器人、传感器、规则、指标、可视化及模板必须使用已登记类型。调节现有参数不需要改引擎；未登记能力明确报错。当前仅一个玩家和一个目标，不提前宣称支持 SLAM、机械臂或多机器人课程。
 4. 先设置程序 inputs/outputs/actuators，再分别设置 View Policy 与 allowed_layers；初始显示和可切换项必须在显示权限内。默认保持旧用户图层偏好；需要按新关卡初始状态显示时可设 preserve_user_settings=false。
    运行中指标需同时声明 permissions.visualization.allowed_metrics 和 evaluation.live_feedback，且指标必须已在 evaluation.metrics 登记；标题、单位、小数精度和曲线容量全部由 YAML 配置。当前只实现累计位置 rmse_m，未声明时不发布运行中诊断。
@@ -36,3 +36,5 @@
 scaffolding 可声明 workspace_scope（小写字母开头，后续为小写字母、数字、下划线或连字符，最长 48 字符），为默认项目指定稳定分组；省略保持原 campaign 项目。跨 scope 直接 unlock 拒绝，启动器通过 select_workspace 选库，原源码与历史不清空。
 
 Navigation 组件：world.weapons_enabled=false、objectives.target=null 支持无武器/无敌车；玩家 drive=wheel_voltage 选择差速底盘 motor 参数，输出为 /robot/wheels/cmd_voltage。objectives.command_sequence 声明 type=twist_sequence、topic=/robot/cmd_vel、repeat 和 duration_ticks/twist 组成的 segments，参考指令方向为 Authority→玩家。各段时长对齐控制周期、总时长匹配 time_limit_s；timer_start=first_control_commit。新增事实 sequence_complete、controller_faulted、origin_distance_m、path_length_m，以及参数 max_origin_distance_m/min_path_length_m。两个运动显示指标分别受 allowed_metrics 授权；不按关卡 ID 分支，完整设计见 [33](../docs/33_NAVIGATION_MOTION_CONTROL.md)。
+
+Navigation C1（navigation.C1.yaml）复用 Navigation C0 的控制器，新增 wheel_odometry/wheel_odometry_adapter；evaluation.source=player_pose 明确评估选中的自身位姿候选。规则可比较 rmse_m/yaw_rmse_rad，live_feedback 兼容单对象或多指标数组，分别受 allowed_metrics 授权。control_feedback 的图表、周期与容量声明在 visualization，信号必须获 allowed_control_signals 授权；不能借调试曲线发布真值。完整接口见 [34](../docs/34_NAVIGATION_ODOMETRY_AND_FEEDBACK.md)。
