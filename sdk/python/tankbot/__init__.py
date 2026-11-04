@@ -138,6 +138,24 @@ class TargetEstimate:
 
 
 @dataclass(frozen=True)
+class WaypointGoal:
+    """Public map-frame target; no measured or true robot state."""
+    goal_index: int
+    position_m: NDArray[np.float64]
+
+    def __post_init__(self) -> None:
+        if type(self.goal_index) is not int or self.goal_index < 0:
+            raise ValueError("goal_index 必须是从 0 开始的非负整数")
+        original: np.ndarray = np.asarray(self.position_m)
+        if original.dtype.kind not in "fiu":
+            raise TypeError("航点 position_m 必须是实数数组")
+        position: NDArray[np.float64] = np.asarray(original, dtype=np.float64)
+        if position.shape != (2,) or not np.isfinite(position).all():
+            raise ValueError("航点 position_m 必须是有限的 shape=(2,) 数组：[x_m,y_m]")
+        object.__setattr__(self, "position_m", np.frombuffer(position.tobytes(), dtype=np.float64))
+
+
+@dataclass(frozen=True)
 class TargetPoseEstimate:
     x_m: float
     y_m: float

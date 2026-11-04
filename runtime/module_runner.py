@@ -5,7 +5,7 @@ import sys
 import traceback
 from importlib.metadata import PackageNotFoundError, version
 from dataclasses import asdict
-from tankbot import Module, ModuleContext, Inputs, Sample, Pose2D, RadarData, ArmorDetections, ImuData, JointState, WeaponState, FireCommand, TargetEstimate, TargetPoseEstimate, TargetPoints, GpsFixData, PositionFix2D, PolarTargetEstimate, Twist, Vector3, TurretAcceleration, TurretVelocity
+from tankbot import Module, ModuleContext, Inputs, Sample, Pose2D, RadarData, ArmorDetections, ImuData, JointState, WeaponState, FireCommand, TargetEstimate, TargetPoseEstimate, TargetPoints, GpsFixData, PositionFix2D, WaypointGoal, PolarTargetEstimate, Twist, Vector3, TurretAcceleration, TurretVelocity
 from tankbot_protocol.message import envelope
 from tankbot._imports import DependencyNotAllowed
 
@@ -46,6 +46,7 @@ class ModuleRunner:
     def step(self, request):
         init, contract, config = self.init, self.contract, self.init["config"]
         converters = {"position_fix2d@1":PositionFix2D,"imu@1": ImuData, "radar@1": RadarData, "armor_detections@1":ArmorDetections,"pose2d@1": Pose2D,"target_estimate@1":TargetEstimate,"target_pose_estimate@1":TargetPoseEstimate,"target_points@1":TargetPoints,"gps_fix@1":GpsFixData,"target_polar_estimate@1":PolarTargetEstimate,"turret_acceleration@1":TurretAcceleration,"turret_velocity@1":TurretVelocity,
+                      "waypoint_goal@1":WaypointGoal,
                       "twist@1":lambda **p:Twist(Vector3(**p["linear"]),Vector3(**p["angular"])),
                       "joint_state@1": lambda **p: JointState(**{k: tuple(v) for k, v in p.items()}), "weapon_state@1": WeaponState}
         p = request["payload"]

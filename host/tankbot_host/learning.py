@@ -14,6 +14,9 @@ from .campaign_templates import template_version, TRANSFORMS, TRACKER, MANAGED_F
 
 
 TYPE_TEXT: dict[str, tuple[str, dict[str, str]]] = {
+    "WaypointGoal": ("框架提供的公开地图航点，不是机器人位置测量；玩家控制函数直接获得 target_xy 数组。", {
+        "goal_index":"当前航点的从0开始的索引，int；顺序来自关卡YAML。",
+        "position_m":"只读float64 NumPy (2,) 数组，地图系 [x_m,y_m]，单位m。"}),
     "PositionFix2D": ("投影到 map 的二维位置观测，不含真实朝向。", {
         "position_m":"只读 float64 NumPy (2,) 数组 [x_m,y_m]，单位 m。",
         "covariance":"只读 float64 NumPy (2,2) 测量协方差，单位 m²；不是真实误差。"}),
@@ -187,6 +190,11 @@ def learning_bundle(config: dict[str, Any]) -> dict[str, Any]:
             public["yaw_period_rad"]=next((metric["period_rad"] for metric in definition["evaluation"]["metrics"] if metric["type"]=="yaw_rmse" and "period_rad" in metric),math.tau)
             public.update(wheel_motor=copy.deepcopy(config.get("wheel_drive")),body_mass_kg=config["body"]["mass_kg"],body_yaw_inertia_kg_m2=config["body"]["yaw_inertia_kg_m2"],
                 drag_x_n_s_per_m=config["chassis"][config["scene"]["default_chassis"]]["drag_x_n_s_per_m"],drag_yaw_nm_s=config["chassis"][config["scene"]["default_chassis"]]["drag_yaw_nm_s"])
+            route=definition["rules"].get("waypoint_route")
+            if route:
+                public.update(waypoints=copy.deepcopy(route["points_m"]),navigation_control_limits=copy.deepcopy(route["control_limits"]),
+                    navigation_position_tolerance_m=route["position_tolerance_m"],
+                    navigation_stop_conditions={key:route[key] for key in ("stop_linear_speed_mps","stop_yaw_rate_radps","stop_duration_ticks")})
             lesson["calibration"]={key:public[value["source"]] if "source" in value else value["text"] for key,value in lesson["calibration"].items()}
     else:
         lesson.update(execution="本关无需编程；关闭代码编辑器后使用键盘驾驶。",completion="可查阅类型、修改算法，并保存、测试和部署。",common_errors=["编辑器打开时，驾驶按键用于编辑代码；关闭后才能控制坦克。"])

@@ -96,7 +96,8 @@
         "armor_detections@1",
         "wheel_voltage@1",
         "position_fix2d@1",
-        "view_snapshot@5"
+        "view_snapshot@5",
+        "waypoint_goal@1"
       ]
     },
     "payload": {
@@ -972,6 +973,31 @@
           },
           "frame_id": {
             "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "waypoint_goal@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "payloads.schema.json#/$defs/waypoint_goal"
+          },
+          "message_type": {
+            "const": "topic"
+          },
+          "frame_id": {
+            "const": "map"
+          },
+          "channel": {
+            "const": "/robot/navigation/goal"
           }
         }
       }

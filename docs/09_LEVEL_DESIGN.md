@@ -2,9 +2,9 @@
 
 ## 目的、范围与要求
 
-把渐进失去信息转化为渐进建立能力，而非指定算法题库。关卡复用Core、SDK、Runtime、Protocol与View Policy，不按关卡复制引擎。Weapons见 [18](18_CAMPAIGN_DESIGN.md)、[28](28_WEAPONS_PROGRESSIVE_ESTIMATION.md)；Navigation C0/C1/C2已实现轮控制、里程计和GPS/EKF，见 [33](33_NAVIGATION_MOTION_CONTROL.md)、[34](34_NAVIGATION_ODOMETRY_AND_FEEDBACK.md)、[35](35_NAVIGATION_GPS_LOCALIZATION.md)。
+把渐进失去信息转化为渐进建立能力，而非指定算法题库。关卡复用Core、SDK、Runtime、Protocol与View Policy，不按关卡复制引擎。Weapons见 [18](18_CAMPAIGN_DESIGN.md)、[28](28_WEAPONS_PROGRESSIVE_ESTIMATION.md)；Navigation C0/C1/C2/C3已实现轮控制、里程计、GPS/EKF和位置闭环，见 [33](33_NAVIGATION_MOTION_CONTROL.md)、[34](34_NAVIGATION_ODOMETRY_AND_FEEDBACK.md)、[35](35_NAVIGATION_GPS_LOCALIZATION.md)、[37](37_NAVIGATION_WAYPOINT_CONTROL.md)。
 
-现有九关使用独立levels/*.yaml，统一发现、校验、加载和解释，不按ID选择行为；源格式见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)。公共c0后分为Weapons和Navigation两条独立主线，各自内部保留真实代码依赖，见 [36](36_BRANCHING_PROGRESSION.md)。下文未来课程示例仍不是当前YAML源格式。
+现有十关使用独立levels/*.yaml，统一发现、校验、加载和解释，不按ID选择行为；源格式见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)。公共c0后分为Weapons和Navigation两条独立主线，各自内部保留真实代码依赖，见 [36](36_BRANCHING_PROGRESSION.md)。下文未来课程示例仍不是当前YAML源格式。
 
 关卡必须同时声明：问题、撤回的系统能力、新授权输入、前置技能、可保留代码、反馈与可达成的验收标准。撤回能力前先给替代输入/模板和安全试验场。每次引入尽量只改变一个主要认知负担。
 
@@ -21,6 +21,7 @@
 | Navigation / C0 | 根据Twist与实测轮速执行轮电压控制 | 独立工程、FK/IK与电机反馈，不复用Weapons代码 | 固定序列末终点距离与实际路程 |
 | Navigation / C1 | 系统不再持续提供自身位姿 | 复用轮控制器，积分轮式里程计 | 同采样时刻位置/朝向RMSE及运动条件 |
 | Navigation / C2 | 编码器漂移、低频带噪GPS | 复用控制器/里程计，实现EKF并比较轨迹/协方差 | 固定EKF评分、实际路程与全程估计误差 |
+| Navigation / C3 | 从固定指令转为公开航点任务 | 复用轮控制器/里程计/EKF，新增位置反馈产生Twist参考 | 按序到点、终点停稳、限时完成；RMSE作反馈 |
 | 后续章节（待设计） | 未知环境、规划、决策、完整自治 | Localization / Mapping / Planning | 无人工执行器闭环；不强制指定算法 |
 
 Weapons C1–C5不允许人工/程序驾驶，零目标主动制动并保留受力；C1–C3保留人工武器，C4/C5授权程序炮台角加速度和单发。Navigation只保留底盘，工程与进度均独立于Weapons；公共c0后可交替学习，不要求先做完武器。全部硬前置由metadata.prerequisites声明，图中实线均表示必须通关。两条可选练习建议不产生额外解锁条件。旧“C3自身定位/C4建图”方案已撤回。

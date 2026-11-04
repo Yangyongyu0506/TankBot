@@ -451,6 +451,15 @@
               "additionalProperties": {
                 "type": "string"
               }
+            },
+            "references": {
+              "type": "object",
+              "properties": {
+                "/robot/cmd_vel": {
+                  "const": "twist@1"
+                }
+              },
+              "additionalProperties": false
             }
           },
           "required": [
@@ -551,7 +560,8 @@
               "selected_pose",
               "player_estimate",
               "local_observation",
-              "player_pose_candidates"
+              "player_pose_candidates",
+              "task_reference"
             ]
           }
         },
@@ -685,6 +695,49 @@
             "minLength": 1,
             "maxLength": 128
           }
+        },
+        "waypoints": {
+          "type": "object",
+          "properties": {
+            "route_color": {
+              "type": "string"
+            },
+            "current_color": {
+              "type": "string"
+            },
+            "pending_color": {
+              "type": "string"
+            },
+            "reached_color": {
+              "type": "string"
+            },
+            "tolerance_color": {
+              "type": "string"
+            },
+            "line_width_px": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "marker_radius_px": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "font_size_px": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          },
+          "required": [
+            "route_color",
+            "current_color",
+            "pending_color",
+            "reached_color",
+            "tolerance_color",
+            "line_width_px",
+            "marker_radius_px",
+            "font_size_px"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
@@ -894,6 +947,84 @@
             "segments"
           ],
           "additionalProperties": false
+        },
+        "waypoint_route": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "waypoint_route"
+            },
+            "goal_topic": {
+              "const": "/robot/navigation/goal"
+            },
+            "command_topic": {
+              "const": "/robot/cmd_vel"
+            },
+            "period_ticks": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "points_m": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 64,
+              "items": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "items": {
+                  "type": "number"
+                }
+              }
+            },
+            "position_tolerance_m": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "stop_linear_speed_mps": {
+              "type": "number",
+              "minimum": 0
+            },
+            "stop_yaw_rate_radps": {
+              "type": "number",
+              "minimum": 0
+            },
+            "stop_duration_ticks": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "control_limits": {
+              "type": "object",
+              "properties": {
+                "max_vx_mps": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "max_wz_radps": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                }
+              },
+              "required": [
+                "max_vx_mps",
+                "max_wz_radps"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "goal_topic",
+            "command_topic",
+            "period_ticks",
+            "points_m",
+            "position_tolerance_m",
+            "stop_linear_speed_mps",
+            "stop_yaw_rate_radps",
+            "stop_duration_ticks",
+            "control_limits"
+          ]
         }
       },
       "required": [
@@ -1133,7 +1264,11 @@
                           "body_mass_kg",
                           "body_yaw_inertia_kg_m2",
                           "drag_x_n_s_per_m",
-                          "drag_yaw_nm_s"
+                          "drag_yaw_nm_s",
+                          "waypoints",
+                          "navigation_control_limits",
+                          "navigation_position_tolerance_m",
+                          "navigation_stop_conditions"
                         ]
                       }
                     },
@@ -1308,7 +1443,9 @@
               "wheel_odometry",
               "wheel_odometry_adapter",
               "ekf_localization",
-              "ekf_localization_adapter"
+              "ekf_localization_adapter",
+              "waypoint_controller",
+              "waypoint_navigation_adapter"
             ]
           }
         },
@@ -1650,7 +1787,8 @@
                 "path_length_m",
                 "controller_faulted",
                 "rmse_m",
-                "yaw_rmse_rad"
+                "yaw_rmse_rad",
+                "waypoints_complete"
               ]
             },
             "operator": {
@@ -1809,6 +1947,15 @@
           "additionalProperties": {
             "type": "string"
           }
+        },
+        "references": {
+          "type": "object",
+          "properties": {
+            "/robot/cmd_vel": {
+              "const": "twist@1"
+            }
+          },
+          "additionalProperties": false
         }
       },
       "required": [

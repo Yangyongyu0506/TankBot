@@ -10,7 +10,9 @@ def make_parser():
     parser.add_argument("--config", type=Path, default=ROOT / "config/game.yaml")
     parser.add_argument("--level", help="Start a teaching level with its authorized capabilities")
     parser.add_argument("--map", help="Override the scene map with an assets/maps name or relative path")
-    parser.add_argument("--list-maps", action="store_true", help="List available map assets and exit")
+    inspect = parser.add_mutually_exclusive_group()
+    inspect.add_argument("--list-maps", action="store_true", help="List available map assets and exit")
+    inspect.add_argument("--level-tree", action="store_true", help="Show level dependencies and saved player progress, then exit without starting simulation")
     parser.add_argument("--chassis", choices=("differential", "omnidirectional"))
     parser.add_argument("--core-binary", type=Path)
     parser.add_argument("--workspace", type=Path)
@@ -32,8 +34,8 @@ def make_parser():
 def parse_args(argv=None):
     parser = make_parser()
     args = parser.parse_args(argv)
-    if args.mode is None and not args.list_maps:
-        parser.error("需要运行模式 serve/browser/headless/probe，或使用 --list-maps")
+    if args.mode is None and not (args.list_maps or args.level_tree):
+        parser.error("需要运行模式 serve/browser/headless/probe，或使用 --list-maps / --level-tree")
     if args.level and (args.view or args.robot_demo):
         parser.error("--level 不可与 --view 或 --robot-demo 合用")
     return parser, args
@@ -43,6 +45,23 @@ def main():
     parser, args = parse_args()
     from .authority import Authority, load_config
     config = load_config(args.config)
+    if args.level_tree:
+        from .progression import LevelProgression, format_level_tree
+        progression = LevelProgression(config)
+        path = args.save_file or ROOT / "userdata/progress.json"
+        try:
+            try:
+                progress = progression.load_progress(path)
+                note = ""
+            except FileNotFoundError:
+                progress = progression.new_progress()
+                note = "（尚无存档，按新玩家预览；未创建文件）"
+        except (ValueError, OSError) as error:
+            parser.error(str(error))
+        print(f"存档：{path}{note}")
+        print(format_level_tree(progression, progress))
+        print("\n游戏内也可点击顶部或任务面板的「关卡路线」查看交互式依赖树。")
+        return
     if args.list_maps:
         from .maps import discover_maps
         for item in discover_maps(config):

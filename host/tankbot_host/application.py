@@ -10,6 +10,7 @@ import secrets
 import threading
 import uuid
 from datetime import datetime, timezone
+from .progression import LevelProgression
 
 ROOT = Path(__file__).resolve().parents[2]
 ACTIONS = ("forward", "backward", "left", "right", "turn_left", "turn_right",
@@ -17,7 +18,7 @@ ACTIONS = ("forward", "backward", "left", "right", "turn_left", "turn_right",
 KEY_CODE = r"Key[A-Z]|Digit[0-9]|Arrow(?:Up|Down|Left|Right)|Space|F(?:[1-9]|1[0-2])|Numpad[0-9]"
 LEGACY_LAYERS = ("map", "robot", "trail", "target_estimates", "radar", "imu", "encoders", "turret",
           "truth_robot", "truth_targets", "projectiles", "frames", "velocities", "colliders")
-LAYERS = (*LEGACY_LAYERS, "gps", "pose_estimates", "pose_covariance")
+LAYERS = (*LEGACY_LAYERS, "gps", "pose_estimates", "pose_covariance", "waypoints")
 
 
 def validate_settings(value):
@@ -66,17 +67,14 @@ def revision(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
 
 
-class ApplicationState:
+class ApplicationState(LevelProgression):
     """One local profile; OS file locks and atomic replacement protect concurrent launchers."""
     def __init__(self, config, settings_path=None, progress_path=None):
         self.settings_path = Path(settings_path or ROOT / "userdata/settings.yaml")
         self.progress_path = Path(progress_path or ROOT / "userdata/progress.json")
         if self.settings_path.resolve() == self.progress_path.resolve():
             raise ValueError("设置文件和存档文件必须使用不同路径。")
-        self.levels = list(config.get("campaign", {}).get("levels", {}))
-        self.prerequisites={key:value["metadata"]["prerequisites"] for key,value in config.get("campaign",{}).get("levels",{}).items()}
-        self.level_titles={key:value["title"] for key,value in config.get("campaign",{}).get("levels",{}).items()}
-        self.initial_level=next((lid for lid in self.levels if not self.prerequisites[lid]),None)
+        super().__init__(config)
         self.lock = threading.RLock()
         self.tickets = {}
         self.defaults = load_settings(ROOT / "config/settings.yaml")
@@ -86,7 +84,7 @@ class ApplicationState:
             self.settings = load_settings(self.settings_path)
         with self.transaction(self.progress_path):
             if not self.progress_path.exists():
-                self.write(self.progress_path, {"version": 1, "completed_levels": [], "current_level": self.initial_level, "completions": {}})
+                self.write(self.progress_path, self.new_progress())
             self.read_progress()
 
     @contextmanager
@@ -155,39 +153,7 @@ class ApplicationState:
             return {**self.public_settings(), "mode_changed": changed, "reload_required": changed}
 
     def read_progress(self):
-        from tankbot_protocol.wire import strict_loads
-        raw = self.progress_path.read_bytes()
-        if len(raw) > 65536:
-            raise ValueError("存档文件过大。")
-        value = strict_loads(raw)
-        if (not isinstance(value, dict) or set(value) != {"version", "completed_levels", "current_level", "completions"}
-                or type(value["version"]) is not int or value["version"] != 1
-                or not isinstance(value["completed_levels"], list) or not isinstance(value["completions"], dict)):
-            raise ValueError("存档格式错误；请恢复备份，原文件未被重置。")
-        completed = value["completed_levels"]
-        if (completed != [lid for lid in self.levels if lid in completed] or len(completed) > len(self.levels)
-                or any(self.missing_prerequisites(lid,completed) for lid in completed if lid in self.prerequisites)
-                or set(value["completions"]) != set(completed)
-                or value["current_level"] not in self.levels + [None]):
-            raise ValueError("存档关卡顺序无效；原文件未被重置。")
-        for record in value["completions"].values():
-            if not isinstance(record, dict) or set(record) != {"completed_at"} or not isinstance(record["completed_at"], str):
-                raise ValueError("存档通关记录无效；原文件未被重置。")
-            datetime.fromisoformat(record["completed_at"])
-        if value["current_level"] is not None and value["current_level"] not in self.unlocked_levels(completed):
-            raise ValueError("存档中的当前关卡尚未解锁；原文件未被重置。")
-        return value
-
-    def missing_prerequisites(self, level_id, completed):
-        done=set(completed)
-        return [lid for lid in self.prerequisites[level_id] if lid not in done]
-
-    def unlocked_levels(self, completed):
-        return [lid for lid in self.levels if not self.missing_prerequisites(lid,completed)]
-
-    def locked_message(self, level_id, completed):
-        missing=self.missing_prerequisites(level_id,completed)
-        return "LEVEL_LOCKED: 尚未通关前置关卡："+"、".join(f"{self.level_titles[lid]} ({lid})" for lid in missing)+"。"
+        return self.load_progress(self.progress_path)
 
     def progress(self):
         with self.transaction(self.progress_path):

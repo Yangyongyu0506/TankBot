@@ -224,3 +224,9 @@ Navigation 的 /robot/cmd_vel 仍为相同 Twist，不过由受信 twist_sequenc
 用于我方 `/robot/sensors/gps/fix`；这是已投影的游戏平面位置，不是 WGS84 NavSatFix，不给 yaw。既有敌车截获 `gps_fix@1` / `GpsFixData` 不变。[示例](examples/position-fix2d-message.json) 说明接口形状；C2 的 2 Hz/σ=0.20 m 采样器、共享带噪编码器、去重/对齐及课程参数见 [35](35_NAVIGATION_GPS_LOCALIZATION.md)。
 
 新增可选 `view_snapshot@5`，保留 V4 字段并要求 `pose_estimates` 数组（最多16条 pose2d@1 Envelope），仅投影 View Policy `pose_estimate_channels` 白名单中的玩家候选，检查允许帧与样本年龄。示例见 [多源位姿视图](examples/pose-comparison-view.json)。只有配置此能力的关卡使用 V5，旧 V1–V4 类型不增加必填字段；当前 Web 客户端支持新版本，旧客户端不应把未认识的 Schema 当 V4 解码。候选只用于对照，Selector 标准出口与物理权威不变。
+
+## Navigation 航点与速度参考增量
+
+`waypoint_goal@1`为Authority发布的map系Topic `/robot/navigation/goal`，payload只有非负整数`goal_index`和两个米制数值组成的`position_m`。SDK读取为`WaypointGoal`，坐标是只读float64 NumPy (2,)；玩家控制函数直接获得该数组。它表示公开任务目标，含义区别于GPS测量或位姿估计，不能携带真实机器人状态。见 [样例](examples/waypoint-goal-message.json) 与 [C3](37_NAVIGATION_WAYPOINT_CONTROL.md)。
+
+`permissions.data_access.references`只增加宿主授权角色，不新增协议操作。C3轮电压模式中，玩家位置控制器发布已有`twist@1`到`/robot/cmd_vel`，frame为base_link；轮控制器订阅后发布实际电压。参考限幅在图缓存前完成，不能被当作Core速度伺服输入。原速度伺服关卡的同名执行器语义、Envelope和旧消息版本保持。

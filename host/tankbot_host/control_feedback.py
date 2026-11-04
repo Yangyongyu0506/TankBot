@@ -34,7 +34,8 @@ class ControlFeedback:
         if elapsed % self.spec["period_ticks"] or tick == self.last_tick:
             return
         wheels = sensors.get("/robot/sensors/joint_states")
-        reference = sensors.get(campaign.sequence["topic"])
+        channel = campaign.sequence["topic"] if campaign.sequence else campaign.navigation.spec["command_topic"]
+        reference = sensors.get(channel)
         if wheels is None or reference is None or wheels["simulation_tick"] != tick:
             return
         state = wheels["payload"]
@@ -51,7 +52,7 @@ class ControlFeedback:
                   "left_wheel_radps":left, "right_wheel_radps":right,
                   "left_voltage_v":volts[0], "right_voltage_v":volts[1]}
         self.points.append({"simulation_tick": tick, "elapsed_ticks": elapsed,
-                            **campaign.sequence_phase(tick), "values": values})
+                            **(campaign.sequence_phase(tick) if campaign.sequence else campaign.navigation.phase()), "values": values})
         self.last_tick = tick
 
     def public(self, after_tick=None):

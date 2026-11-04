@@ -55,6 +55,7 @@ ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评
 | [0047](0047-navigation-odometry-and-control-feedback.md) | Navigation 控制曲线、玩家里程计与采样对齐评价 | Accepted |
 | [0048](0048-navigation-gps-localization.md) | 我方 GPS、共享带噪轮速、EKF 合同与固定评分/授权对照 | Accepted |
 | [0049](0049-branching-course-progression.md) | 公共入门、双主线依赖与目录驱动关卡树；修订旧全局链式入口 | Accepted |
+| [0050](0050-estimated-pose-waypoint-control.md) | 玩家EKF反馈、航点闭环与轮电压速度参考；原生/浏览器闭环通过 | Accepted |
 
 ## 变更流程与完成条件
 

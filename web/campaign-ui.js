@@ -108,8 +108,9 @@ export async function mountCampaign(profile,browser,onState,releaseControls){
       if(attempt){
         const p=attempt.progress;
         const motion=attempt.motion;
+        const navigation=attempt.navigation;
         const originGoal=current.objective.max_origin_distance_m;
-        $("task-progress").textContent=motion?`目标 v ${motion.command_vx_mps.toFixed(2)} m/s · w ${motion.command_wz_radps.toFixed(2)} rad/s　${originGoal==null?"":`距起点 ${motion.origin_distance_m?.toFixed(3)??"—"} / ${originGoal} m　`}路程 ${motion.path_length_m?.toFixed(3)??"—"} ≥ ${current.objective.min_path_length_m} m`:
+        $("task-progress").textContent=navigation?`当前航点 ${navigation.goal_index+1} / ${navigation.total}　已到达 ${navigation.reached_count} / ${navigation.total}　终点停稳 ${(navigation.settled_ticks/profile.physics_hz).toFixed(2)} / ${(navigation.required_settle_ticks/profile.physics_hz).toFixed(2)} s`:motion?`目标 v ${motion.command_vx_mps.toFixed(2)} m/s · w ${motion.command_wz_radps.toFixed(2)} rad/s　${originGoal==null?"":`距起点 ${motion.origin_distance_m?.toFixed(3)??"—"} / ${originGoal} m　`}路程 ${motion.path_length_m?.toFixed(3)??"—"} ≥ ${current.objective.min_path_length_m} m`:
           attempt.player_hp!=null?`我方 HP：${attempt.player_hp} / ${attempt.player_max_hp}　敌车 HP：${attempt.enemy_hp} / ${attempt.enemy_max_hp}`:
           current.ui.progress_layout==="movement"?`移动 ≥ ${current.objective.movement_m} m ${p.moved?"✓":"○"}　转向 ≥ ${current.objective.turn_rad} rad ${p.turned?"✓":"○"}　命中 ${p.hit?"✓":"○"}`:
           `目标估计 ${p.has_estimate?"✓":"○"}　命中 ${p.hit?"✓":"○"}`;
@@ -118,6 +119,7 @@ export async function mountCampaign(profile,browser,onState,releaseControls){
           $("task-message").textContent=(r.passed?(practice?"练习完成！自定义地图不计正式通关，不解锁后续关卡。":"通关！打开关卡路线，可任选已开放的挑战或重玩；已有源码保留。"):attemptSummary(attempt)+"。可修改代码，再点击开始 / 重试。")+
             (r.rmse_m==null?"":" 本次估计 RMSE："+r.rmse_m.toFixed(3)+(current.live_feedback?" m。":" m（仅结束后公布）。"));
           if(motion)$("task-message").textContent+=` 最终距起点 ${r.origin_distance_m.toFixed(3)} m，实际路程 ${r.path_length_m.toFixed(3)} m。`;
+          if(navigation)$("task-message").textContent+=` 航点 ${r.waypoints_reached} / ${r.waypoint_count}，终点连续停稳 ${(r.settled_ticks/profile.physics_hz).toFixed(2)} s。`;
           if(r.yaw_rmse_rad!=null)$("task-message").textContent+=` 朝向 RMSE ${r.yaw_rmse_rad.toFixed(3)} rad，有效估计 ${r.scored_samples} 次。`;
           if(r.reference_rmse_m!=null)$("task-message").textContent+=` 纯里程计对照：位置 ${r.reference_rmse_m.toFixed(3)} m、朝向 ${r.reference_yaw_rmse_rad?.toFixed(3)??"—"} rad。`;
           if(save_error||browser?.saveError())$("task-message").textContent=save_error||browser.saveError();

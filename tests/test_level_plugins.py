@@ -54,7 +54,7 @@ class LevelPluginTests(unittest.TestCase):
     def test_all_five_match_frozen_pre_refactoring_runtime_baselines(self):
         baseline=json.loads((ROOT/'tests/fixtures/level-behavior-before.json').read_text())
         config=load_config(self.path)
-        self.assertEqual(list(config['campaign']['levels']),[*baseline['levels'],'c5','navigation.c0','navigation.c1','navigation.c2'])
+        self.assertEqual(list(config['campaign']['levels']),[*baseline['levels'],'c5','navigation.c0','navigation.c1','navigation.c2','navigation.c3'])
         for lid,expected in baseline['levels'].items():
             # User explicitly redesigned C3/C4 and added C5. Freeze the unchanged C0-C2 here;
             # new sensor/control/goal semantics have dedicated curriculum acceptance tests.
@@ -150,14 +150,14 @@ class LevelPluginTests(unittest.TestCase):
 
     def test_temporary_plugin_runs_with_arbitrary_id_and_no_engine_edits(self):
         d=self.definition('c1');lid='robotics.temporary_probe'
-        d['metadata'].update(id=lid,name='Temporary test only',order=9,prerequisites=['navigation.c2'])
+        d['metadata'].update(id=lid,name='Temporary test only',order=max(self.definition(lid)['metadata']['order'] for lid in self.level_paths)+1,prerequisites=['navigation.c2'])
         d['metadata']['chapter']={'chapter_id':'temporary_test','title':'Temporary test','description':'Temporary discovery regression only.'}
         d['robots'][0]['initial_pose']=[.5,-.5,.2]
         d['objectives']['time_limit_s']=7
         d['objectives']['parameters']['required_hits']=2
         self.write(d,'temporary')
         config=load_config(self.path)
-        self.assertEqual(len(config['campaign']['levels']),10)
+        self.assertEqual(len(config['campaign']['levels']),len(self.level_paths)+1)
         resolved=configure(config,lid);files=starter(resolved);files['perception/transforms.py']=TRANSFORMS
         a=Authority(resolved,controlled=True,startup_sources=files);self.addCleanup(a.close)
         for _ in range(30):a.advance()
@@ -169,7 +169,7 @@ class LevelPluginTests(unittest.TestCase):
         state=ApplicationState(config,self.directory/'settings.yaml',self.directory/'progress.json')
         for key in state.levels[:-1]:state.complete(state.register_attempt(key),key)
         self.assertIn(lid,state.progress()['unlocked_levels'])
-        self.assertEqual(len(list((ROOT/'levels').glob('*.yaml'))),9)
+        self.assertEqual(len(list((ROOT/'levels').glob('*.yaml'))),len(self.level_paths))
 
     def test_data_permission_is_independent_of_system_pose_visualization(self):
         d=self.definition();d['permissions']['data_access']['inputs']={}

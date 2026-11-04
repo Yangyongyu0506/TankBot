@@ -12,7 +12,8 @@ test('one public root and two lanes reflect all declared prerequisite edges',()=
   const g=graph();assert.deepEqual(g.roots.map(l=>l.level_id),['c0']);
   assert.deepEqual(g.lanes.map(l=>l.id),['weapons','navigation']);
   assert.deepEqual(g.edges.filter(e=>e.from==='c0'),[{from:'c0',to:'c1'},{from:'c0',to:'navigation.c0'}]);
-  assert.equal(g.edges.length,8);assert.equal(g.depths.get('navigation.c2'),3);assert.equal(g.depths.get('c5'),5);
+  assert.equal(g.edges.length,catalogue.reduce((n,level)=>n+level.prerequisites.length,0));assert.equal(g.depths.get('navigation.c2'),3);assert.equal(g.depths.get('navigation.c3'),4);assert.equal(g.depths.get('c5'),5);
+  assert.ok(g.edges.some(e=>e.from==='navigation.c2'&&e.to==='navigation.c3'));
 });
 
 test('availability comes from authoritative progress, with independent completed/current badges',()=>{

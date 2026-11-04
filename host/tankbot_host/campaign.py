@@ -87,6 +87,11 @@ def catalog(config):
                 "chapter_id":value.get("chapter_id"),"control_sources":copy.deepcopy(value.get("control_sources")),"armor_mode":value.get("armor_mode",False),"ui":copy.deepcopy(value["tutorial"]["lesson"]["ui"]),"visualization":copy.deepcopy(value["visualization"]),"allowed_layers":copy.deepcopy(value["permissions"]["visualization"]["allowed_layers"])}
         item.update(prerequisites=copy.deepcopy(value["metadata"]["prerequisites"]),
                     order=value["metadata"]["order"],description=value["metadata"]["description"])
+        route=value["rules"].get("waypoint_route")
+        if route and "waypoints" in item["allowed_layers"]:
+            item["navigation"]={key:copy.deepcopy(route[key]) for key in ("points_m","position_tolerance_m","stop_duration_ticks")}
+            if value["permissions"]["public_initial_pose"]:
+                item["navigation"]["initial_xy_m"]=list(value["scene"]["initial_pose"][:2])
         item["problem"] = item["problem"].format(time_limit_s=value["time_limit_s"], max_hp=(value["target"] or {}).get("health", {}).get("max_hp"))
         feedback=value["evaluation"].get("live_feedback")
         entries=feedback if isinstance(feedback,list) else [feedback] if feedback else []
@@ -186,6 +191,10 @@ class CampaignSession:
         self.origin_distance_m = 0.0
         self.sequence = self.definition["rules"].get("command_sequence")
         self.sequence_ticks = self.sequence["repeat"]*sum(s["duration_ticks"] for s in self.sequence["segments"]) if self.sequence else 0
+        from .navigation_task import WaypointRoute
+        route = self.definition["rules"].get("waypoint_route")
+        self.navigation = WaypointRoute(route) if route else None
+        self.motion_task = bool(self.sequence or self.navigation)
 
     def start(self, tick, private=None):
         if self.status == "active" and self.started_tick is None:
@@ -217,12 +226,13 @@ class CampaignSession:
         return {"player_alive":private.get("player_alive",True),"objective_complete":False,"elapsed_ticks":self.elapsed_ticks,
                 "moved":self.moved,"turned":self.turned,"hits":self.hits,"estimates":self.estimates,"target_alive":self.hp is None or self.hp>0,
                 "sequence_complete":bool(self.sequence) and self.elapsed_ticks>=self.sequence_ticks,
+                "waypoints_complete":bool(self.navigation and self.navigation.complete),
                 "controller_faulted":self.controller_faulted,
                 "origin_distance_m":self.origin_distance_m,"path_length_m":self.path_length_m,
                 **{key:value if value is not None else math.inf for key,value in self.diagnostics.report().items()}}
 
     def outcome(self, private, tick):
-        if self.status != "active" or (self.started_tick is None and not (self.sequence and self.deployment_armed)):
+        if self.status != "active" or (self.started_tick is None and not (self.motion_task and self.deployment_armed)):
             return None
         self.elapsed_ticks = tick-self.started_tick if self.started_tick is not None else 0
         completed = self.observe(private)
@@ -279,6 +289,8 @@ class CampaignSession:
         if self.sequence:
             self.path_length_m=private["motion_metrics"]["path_length_m"]-self.path_origin_m
             self.origin_distance_m=math.hypot(p[0]-origin[0],p[1]-origin[1])
+        if self.navigation and self.started_tick is not None:
+            self.navigation.observe(p, private["truth_velocity"], self.started_tick+self.elapsed_ticks)
         facts=self.facts(private)
         if target:facts["target_alive"]=target["alive"]
         return evaluate(self.definition["rules"]["success"],facts,{**parameters,"limit_ticks":self.limit_ticks})
@@ -297,6 +309,7 @@ class CampaignSession:
         if self.definition["evaluation"].get("reference_module_id"):
             self.result["reference_samples"]=self.reference_diagnostics.counts.get("rmse_m",0)
         if self.sequence:self.result.update(origin_distance_m=self.origin_distance_m,path_length_m=self.path_length_m)
+        if self.navigation:self.result.update(waypoints_reached=self.navigation.reached_count, waypoint_count=len(self.navigation.spec["points_m"]), settled_ticks=self.navigation.settled_ticks)
         return self.public()
 
     def public(self):
@@ -324,6 +337,8 @@ class CampaignSession:
             state["motion"]["sequence_ticks"]=self.sequence_ticks
             command=self.command((self.started_tick or 0)+self.elapsed_ticks)
             state["motion"].update(command_vx_mps=command["linear"]["x"],command_wz_radps=command["angular"]["z"])
+        if self.navigation and "waypoints" in self.definition["permissions"]["visualization"]["allowed_layers"]:
+            state["navigation"] = self.navigation.public()
         feedback=self.definition["evaluation"].get("live_feedback")
         entries=feedback if isinstance(feedback,list) else [feedback] if feedback else []
         for entry in entries:

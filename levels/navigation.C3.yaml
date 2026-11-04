@@ -1,0 +1,621 @@
+schema_version: '1.0'
+metadata:
+  id: navigation.c3
+  name: Navigation C3 · 让定位参与航点驾驶
+  description: 复用轮控制器、里程计与EKF，根据自身估计和当前航点形成位置闭环，按序到达并停稳。
+  chapter:
+    chapter_id: navigation
+    title: Navigation
+    description: 只保留底盘，从轮驱动与运动控制逐步学习导航。
+  order: 9
+  version: 1.0.0
+  learning_objectives:
+  - 将地图系位置误差与航向误差转为车体系Twist，理解内外环、限幅、管线延迟和接近目标时的制动。
+  recommended_algorithms:
+  - Position feedback control
+  prerequisites:
+  - navigation.c2
+world:
+  dimension: 2
+  frame_id: map
+  weapons_enabled: false
+  simulation:
+    physics_hz: 60
+    substeps: 4
+    sensor_hz: 30
+    algorithm_hz: 10
+  map:
+    source: asset
+    path: maps/open_training.yaml
+robots:
+- id: player
+  type: tank
+  role: player
+  model: differential
+  drive: wheel_voltage
+  initial_pose:
+  - 0.0
+  - 0.0
+  - 0.0
+  initial_velocity:
+  - 0.0
+  - 0.0
+  - 0.0
+  health: null
+  control_sources:
+    chassis: robot
+    turret: disabled
+    weapon: disabled
+  sensors:
+  - id: wheel_encoder
+    robot_id: player
+    type: wheel_encoder
+    period_ticks: 2
+    mount:
+      parent_frame: base_link
+      translation_m:
+      - 0.0
+      - 0.0
+      yaw_rad: 0.0
+    random_stream:
+      id: navigation-encoder
+      seed_mode: named
+    topic: /robot/sensors/joint_states
+    schema: joint_state@1
+    frame_id: base_link
+    parameters:
+      velocity_stddev_radps: 0.2
+      gain_error_min: -0.03
+      gain_error_max: 0.03
+      position_model: integrated_rate_noise
+  - id: gps
+    robot_id: player
+    type: gps
+    period_ticks: 30
+    mount:
+      parent_frame: base_link
+      translation_m:
+      - 0.0
+      - 0.0
+      yaw_rad: 0.0
+    random_stream:
+      id: navigation-gps
+      seed_mode: named
+    topic: /robot/sensors/gps/fix
+    schema: position_fix2d@1
+    frame_id: map
+    parameters:
+      noise:
+        position_stddev_m: 0.2
+        bias_m:
+        - 0.0
+        - 0.0
+        drop_probability: 0.0
+      latency_ticks: 0
+      wall_occlusion: false
+communication:
+  runtime:
+    template_version: 1.0.0
+    mode: graph
+    profile_id: differential-waypoint-navigation-v1
+    processing: modules
+    logical_module:
+      module_id: wheel_control
+      entry_point: navigation_robot:WheelControlModule
+    target_source: wheel_control
+    managed_files:
+    - navigation_robot.py
+    - tankbot.json
+    - contracts/wheel_control.json
+    - localization/odometry_module.py
+    - contracts/odometry.json
+    - localization/ekf_module.py
+    - contracts/ekf.json
+    - navigation/waypoint_module.py
+    - contracts/waypoint_navigation.json
+    manifest:
+      manifest_version: '1.0'
+      sdk_version: 0.1.0
+      protocol_version: '1.0'
+      project_id: navigation-waypoint-control
+      entry_point: navigation_robot:WheelControlModule
+      modules:
+      - module_id: wheel_control
+        contract: contracts/wheel_control.json
+        config: {}
+      - module_id: odometry
+        contract: contracts/odometry.json
+        config: {}
+      - module_id: ekf
+        contract: contracts/ekf.json
+        config:
+          initial_covariance:
+          - - 0.0
+            - 0.0
+            - 0.0
+          - - 0.0
+            - 0.0
+            - 0.0
+          - - 0.0
+            - 0.0
+            - 0.0
+      - module_id: waypoint_navigation
+        contract: contracts/waypoint_navigation.json
+        config: {}
+      connections:
+      - from: /robot/cmd_vel
+        to: wheel_control.command
+      - from: /robot/sensors/joint_states
+        to: wheel_control.wheels
+      - from: wheel_control.voltage
+        to: /robot/wheels/cmd_voltage
+      - from: /robot/sensors/joint_states
+        to: odometry.wheels
+      - from: odometry.pose
+        to: /robot/estimates/odometry/pose
+      - from: /robot/sensors/joint_states
+        to: ekf.wheels
+      - from: /robot/sensors/gps/fix
+        to: ekf.gps
+      - from: ekf.pose
+        to: /robot/estimates/ekf/pose
+      - from: /robot/estimates/ekf/pose
+        to: waypoint_navigation.pose
+      - from: /robot/navigation/goal
+        to: waypoint_navigation.goal
+      - from: waypoint_navigation.command
+        to: /robot/cmd_vel
+      dependencies: []
+      pose_source:
+        mode: player
+        module_id: ekf
+        fallback: none
+    contracts:
+      wheel_control:
+        contract_version: '1.0'
+        module_id: wheel_control
+        entry_point: navigation_robot:WheelControlModule
+        inputs:
+          command:
+            schema: twist@1
+            required: true
+            max_age_ticks: 12
+          wheels:
+            schema: joint_state@1
+            required: true
+            max_age_ticks: 12
+        outputs:
+          voltage:
+            schema: wheel_voltage@1
+        execution:
+          mode: periodic
+          period_ticks: 6
+          deadline_ticks: 6
+          budget_ms: 6
+        dependencies: []
+        state_version: '1'
+      odometry:
+        contract_version: '1.0'
+        module_id: odometry
+        entry_point: localization.odometry_module:WheelOdometryModule
+        inputs:
+          wheels:
+            schema: joint_state@1
+            required: true
+            max_age_ticks: 12
+        outputs:
+          pose:
+            schema: pose2d@1
+        execution:
+          mode: periodic
+          period_ticks: 6
+          deadline_ticks: 6
+          budget_ms: 3
+        dependencies: []
+        state_version: '1'
+      ekf:
+        contract_version: '1.0'
+        module_id: ekf
+        entry_point: localization.ekf_module:EkfLocalizationModule
+        inputs:
+          wheels:
+            schema: joint_state@1
+            required: true
+            max_age_ticks: 12
+          gps:
+            schema: position_fix2d@1
+            required: false
+            max_age_ticks: 12
+        outputs:
+          pose:
+            schema: pose2d@1
+        execution:
+          mode: periodic
+          period_ticks: 6
+          deadline_ticks: 6
+          budget_ms: 8
+        dependencies: []
+        state_version: '1'
+      waypoint_navigation:
+        contract_version: '1.0'
+        module_id: waypoint_navigation
+        entry_point: navigation.waypoint_module:WaypointNavigationModule
+        inputs:
+          pose:
+            schema: pose2d@1
+            required: false
+            max_age_ticks: 12
+          goal:
+            schema: waypoint_goal@1
+            required: true
+            max_age_ticks: 12
+        outputs:
+          command:
+            schema: twist@1
+        execution:
+          mode: periodic
+          period_ticks: 6
+          deadline_ticks: 6
+          budget_ms: 3
+        dependencies:
+        - ekf
+        state_version: '1'
+permissions:
+  data_access:
+    inputs:
+      /robot/sensors/joint_states: joint_state@1
+      /robot/sensors/gps/fix: position_fix2d@1
+      /robot/navigation/goal: waypoint_goal@1
+    outputs:
+    - pose2d@1
+    actuators:
+      /robot/wheels/cmd_voltage: wheel_voltage@1
+    references:
+      /robot/cmd_vel: twist@1
+  public_initial_pose: true
+  public_map: true
+  visualization:
+    allowed_layers:
+    - robot
+    - trail
+    - map
+    - encoders
+    - frames
+    - gps
+    - pose_estimates
+    - pose_covariance
+    - waypoints
+    allowed_metrics:
+    - rmse_m
+    - yaw_rmse_rad
+    - reference_rmse_m
+    - reference_yaw_rmse_rad
+    allowed_control_signals:
+    - command_vx_mps
+    - encoder_vx_mps
+    - command_wz_radps
+    - encoder_wz_radps
+    - left_wheel_radps
+    - right_wheel_radps
+    - left_voltage_v
+    - right_voltage_v
+    view_policy:
+      policy_id: navigation-gps-localization
+      system_pose_allowed: false
+      player_pose_allowed: true
+      allowed_pose_frames:
+      - map
+      public_map: open-training
+      local_observation_channels:
+      - /robot/sensors/joint_states
+      - /robot/sensors/gps/fix
+      true_enemy_objects: false
+      world_effects: false
+      camera_source: selected_pose_or_manual
+      pose_fresh_ticks: 12
+      pose_hide_after_ticks: 60
+      robot_topics_allowed: false
+      target_estimates_allowed: false
+      pose_estimate_channels:
+      - /robot/estimates/odometry/pose
+      - /robot/estimates/ekf/pose
+visualization:
+  trail_points: 900
+  initial_enabled:
+  - robot
+  - trail
+  - map
+  - encoders
+  - frames
+  - gps
+  - pose_estimates
+  - pose_covariance
+  - waypoints
+  user_toggleable:
+  - trail
+  - encoders
+  - frames
+  - gps
+  - pose_estimates
+  - pose_covariance
+  - waypoints
+  sources:
+    robot: selected_pose
+    trail: selected_pose
+    map: map
+    encoders: local_observation
+    frames: selected_pose
+    gps: local_observation
+    pose_estimates: player_pose_candidates
+    pose_covariance: selected_pose
+    waypoints: task_reference
+  preserve_user_settings: false
+  control_feedback:
+    title: 轮驱动调试
+    description: 目标是位置控制器提交并经限幅的Twist，反馈来自带噪编码器。电压来自轮控制器；虚线表示任务航点切换。定位、位置控制和轮控制通过前批输出连接，存在管线延迟。
+    period_ticks: 18
+    history_points: 512
+    precision: 3
+    charts:
+    - id: forward_speed
+      title: 前进速度
+      unit: m/s
+      signals:
+      - signal: command_vx_mps
+        label: 目标
+        color: '#f4cf7e'
+      - signal: encoder_vx_mps
+        label: 编码器反馈
+        color: '#8fe3b5'
+    - id: yaw_rate
+      title: 转向角速度
+      unit: rad/s
+      signals:
+      - signal: command_wz_radps
+        label: 目标
+        color: '#f4cf7e'
+      - signal: encoder_wz_radps
+        label: 编码器反馈
+        color: '#8fe3b5'
+    - id: wheel_rates
+      title: 两轮角速度
+      unit: rad/s
+      signals:
+      - signal: left_wheel_radps
+        label: 左轮
+        color: '#91bcff'
+      - signal: right_wheel_radps
+        label: 右轮
+        color: '#e9a2da'
+    - id: motor_voltage
+      title: 两轮执行电压
+      unit: V
+      signals:
+      - signal: left_voltage_v
+        label: 左轮
+        color: '#91bcff'
+      - signal: right_voltage_v
+        label: 右轮
+        color: '#e9a2da'
+  gps_history_points: 100
+  pose_labels:
+    odometry: 纯里程计
+    ekf: EKF
+  waypoints:
+    route_color: '#487e72'
+    current_color: '#f4cf7e'
+    pending_color: '#9bb9c8'
+    reached_color: '#8fe3b5'
+    tolerance_color: '#f4cf7e33'
+    line_width_px: 2.0
+    marker_radius_px: 5.0
+    font_size_px: 12.0
+objectives:
+  target: null
+  time_limit_s: 120
+  timer_start: first_control_commit
+  parameters:
+    movement_m: 0.0
+    turn_rad: 0.0
+    required_hits: 0
+    required_estimates: 0
+  progress:
+    moved:
+      type: displacement
+      parameter: movement_m
+      sticky: true
+    turned:
+      type: heading_change
+      parameter: turn_rad
+      sticky: true
+  success:
+    type: compare
+    metric: waypoints_complete
+    operator: ==
+    value: true
+  outcomes:
+  - reason: controller_error
+    result: failure
+    when:
+      type: compare
+      metric: controller_faulted
+      operator: ==
+      value: true
+  - reason: objective_completed
+    result: success
+    when:
+      type: compare
+      metric: objective_complete
+      operator: ==
+      value: true
+  - reason: timeout
+    result: failure
+    when:
+      type: compare
+      metric: elapsed_ticks
+      operator: '>='
+      parameter: limit_ticks
+  waypoint_route:
+    type: waypoint_route
+    goal_topic: /robot/navigation/goal
+    command_topic: /robot/cmd_vel
+    period_ticks: 6
+    points_m:
+    - - 2.0
+      - 0.0
+    - - 2.0
+      - 2.0
+    - - 0.0
+      - 2.0
+    - - 0.0
+      - 0.0
+    position_tolerance_m: 0.35
+    stop_linear_speed_mps: 0.05
+    stop_yaw_rate_radps: 0.1
+    stop_duration_ticks: 30
+    control_limits:
+      max_vx_mps: 0.5
+      max_wz_radps: 1.5
+evaluation:
+  type: terminal_diagnostics
+  publish_on: terminal
+  source: player_pose
+  metrics:
+  - id: rmse_m
+    type: position_rmse
+  - id: yaw_rmse_rad
+    type: yaw_rmse
+  live_feedback:
+  - metric: rmse_m
+    title: 位置 RMSE 对比
+    label: EKF
+    unit: m
+    precision: 3
+    history_points: 300
+    description: 同采样tick对齐的累计定位误差。用于理解定位对闭环的影响；本关按航点与终点停稳验收，不额外设置RMSE通关门槛。
+    reference_metric: reference_rmse_m
+    reference_label: 纯里程计
+    reference_color: '#74b9ff'
+  - metric: yaw_rmse_rad
+    title: 朝向 RMSE 对比
+    label: EKF
+    unit: rad
+    precision: 3
+    history_points: 300
+    description: 同采样tick对齐的累计定位误差。用于理解定位对闭环的影响；本关按航点与终点停稳验收，不额外设置RMSE通关门槛。
+    reference_metric: reference_yaw_rmse_rad
+    reference_label: 纯里程计
+    reference_color: '#74b9ff'
+  module_id: ekf
+  reference_module_id: odometry
+randomization:
+  seed: 0
+  reset_on: new_run
+  generator: python_random_v1
+tutorial:
+  problem: 机器人已经能估计自身位置，现在请让它根据估计自主驶向公开航点。按顺序到点，并在终点停稳；不能手动驾驶。
+  hints:
+  - 先沿用你在C0–C2写好的轮控制器、里程计和EKF；本关高亮 navigation/waypoint_controller.py。
+  - 目标和estimated_pose都在map中。先求位置差，再计算相对自身车头的最短弧角误差，输出车体系Twist。
+  - 接近目标时要减速；转向与轮速均有响应延迟，不宜用很大的控制增益。
+  - 框架按真实位置确认航点并切换当前目标，这是公开的离散任务反馈；没有给算法真实距离或速度。
+  - 定位RMSE继续显示用于调试，但不作为本关额外门槛。终点要停稳，不要求固定yaw。
+  testing:
+    checks:
+    - Python语法、导入、四个Module Contract、参考/执行器权限及连接。
+    - 以获授权的编码器、GPS、玩家估计和当前航点试运行 {test_batches} 个批次，检查Twist类型、有限性、二维分量和预算。
+    meaning: 测试只验证可安全部署，不替你完成航点任务。正式部署后的首个轮控制生效开始计时；测试不推进正式航点，重部署不重置进度。
+  lesson:
+    title: Navigation C3 · 从位置误差到速度参考
+    summary: 只需填写WaypointController.update。框架提供只读数组、构造参数、目标切换、消息、检查和发布；已有三个算法文件完整保留。
+    steps:
+    - 输入 estimated_pose 是只读float64 NumPy (3,)：[x_m,y_m,yaw_rad]，map系，来自你的EKF；它可能有误差。target_xy是只读(2,)的公开目标位置，单位m。
+    - dt是本位置控制器两次执行之间的仿真秒。控制按10Hz执行，不是GPS采样间隔或渲染帧时间；若使用积分/微分状态，可在类中增加带类型字段。
+    - 构造参数position_tolerance_m、max_vx_mps、max_wz_radps来自YAML，可在self中读取。构造、reset和文件组织由框架处理。
+    - 位置差delta=target_xy-estimated_pose[:2]，shape=(2,)；距离可用float(np.linalg.norm(delta))。期望航向可用float(np.arctan2(delta[1],delta[0]))。不要交换x/y或使用度。
+    - 航向误差e=desired_yaw-estimated_pose[2]，应按atan2(sin(e),cos(e))取最短弧。目标在左侧时通常需要正angular.z；可先转向再前进，也可设计平滑的线速度/转向联动。
+    - 返回Twist(linear=Vector3(x=v), angular=Vector3(z=w))，v单位m/s，w单位rad/s，均参考base_link；vy与其他二维模型未使用分量必须为0。不要返回NumPy速度向量、左右电压或直接改位姿。
+    - 距离误差可以形成前进速度，航向误差形成转向速度；临近目标逐步减速。可自行选择控制律和调参，教材不提供唯一答案。目标朝向未定义，终点不考核固定yaw。
+    - 数据流是EKF→位置控制→轮控制→电机。各模块读取之前已提交的数据，不在同一批直接串联；因此有多批次反馈延迟，过大的增益容易振荡。
+    - 框架对有限Twist逐轴限幅，Authority也在提交前执行同一限幅；零目标交给已有轮控制器制动。缺少新鲜合法的map系EKF时框架自动发零参考；轮电压失联仍执行已有0.5秒看门狗。
+    - 任务按四个公开航点的顺序推进，真实位置进入容差范围即确认到达。只有最后一个航点还需满足速度与连续停稳时长；精确真值距离、速度不会提供给玩家。
+    - 当前目标变化会传入新的target_xy，不需要你创建Topic或管理索引。末点仍会持续提供同一个目标，直到终点停稳、通关或超时。
+    - 地图上的路线和目标是公开任务数据；车体、相机与估计轨迹仍来自玩家定位。真实碰撞和到点判断独立于画面，错误定位不会被自动修正。
+    - 保存→测试→部署；部署后编辑器关闭并锁定，发现问题可结束尝试或重试。测试不会移动正式机器人，重试才重置任务和时间；已有源码及历史保留。
+    files:
+    - path: navigation/waypoint_controller.py
+      role: 本关玩家位置闭环；整个文件可编辑、持久保存
+    - path: control/wheel_controller.py
+      role: 完整复用C0轮电压控制器
+    - path: localization/odometry.py
+      role: 完整复用C1纯里程计对照
+    - path: localization/ekf.py
+      role: 完整复用C2定位，作为导航输入
+    - path: navigation/waypoint_module.py
+      role: 系统管理的只读输入、检查、限幅和参考发布
+    edit_files:
+    - navigation/waypoint_controller.py
+    functions:
+    - path: navigation/waypoint_controller.py
+      name: update
+    default_type: Twist
+    aliases:
+      estimated_pose: ndarray
+      target_xy: ndarray
+      dt: float
+      Twist: Twist
+      Vector3: Vector3
+    execution: 物理60Hz/4子步、编码器30Hz、GPS2Hz，四个算法各 {algorithm_hz} Hz、每批6tick提交；预算轮控6ms、里程计3ms、EKF8ms、位置控制3ms，总20ms。
+    completion: 首个正式轮控制生效后 {time_limit_s} 仿真秒内按序到达全部航点，并在终点连续停稳。位置、速度、时长与参考限幅见公开标定；不额外考核RMSE或终点朝向。
+    common_errors:
+    - 误把map系目标坐标当车体系速度，或忽略自身yaw。
+    - 直接用目标角减yaw且不归一化，导致跨±π时长路转向。
+    - 返回list/ndarray或Tuple；这里必须返回tankbot.Twist与Vector3。
+    - 输出非零vy、NaN/Inf，或把角速度当角加速度。
+    - 始终保持最大速度，导致目标附近过冲或来回振荡。
+    - 误认为模块在同批直接调用，忽略定位和控制的固定提交延迟。
+    - 只观察画面是否接近；任务按真实位置判断，而画面来自你的估计。
+    type_notes: {}
+    calibration:
+      wheel_radius_m:
+        source: wheel_radius_m
+      wheel_separation_m:
+        source: differential_track_m
+      body_mass_kg:
+        source: body_mass_kg
+      body_yaw_inertia_kg_m2:
+        source: body_yaw_inertia_kg_m2
+      drag_x_n_s_per_m:
+        source: drag_x_n_s_per_m
+      drag_yaw_nm_s:
+        source: drag_yaw_nm_s
+      motor:
+        source: wheel_motor
+      waypoints:
+        source: waypoints
+      position_tolerance_m:
+        source: navigation_position_tolerance_m
+      control_limits:
+        source: navigation_control_limits
+      stop_conditions:
+        source: navigation_stop_conditions
+    ui:
+      state_heading: SELF POSE / WAYPOINT CONTROL
+      legend_pose: 选中估计（默认 EKF）
+      view_note: 公开路线与当前航点可单独切换。车体/相机跟随玩家估计；定位误差保留，任务按真实位置独立判定。
+      mode_label: Navigation · 航点位置闭环
+      freshness_message: 估计位姿 · 固定提交延迟 · 世界坐标方向固定
+      progress_layout: waypoint_route
+      default_file: navigation/waypoint_controller.py
+scaffolding:
+  workspace_scope: navigation
+  components:
+  - wheel_controller
+  - wheel_control_adapter
+  - wheel_odometry
+  - wheel_odometry_adapter
+  - ekf_localization
+  - ekf_localization_adapter
+  - waypoint_controller
+  - waypoint_navigation_adapter
+  documentation: {}

@@ -1,0 +1,20 @@
+{
+  "protocol_version": "1.0",
+  "message_type": "topic",
+  "channel": "/robot/navigation/goal",
+  "sequence_number": 0,
+  "simulation_tick": 0,
+  "simulation_time_ns": 0,
+  "run_id": "run-position-example",
+  "publisher_id": "waypoint_route",
+  "request_id": null,
+  "frame_id": "map",
+  "schema": "waypoint_goal@1",
+  "payload": {
+    "goal_index": 0,
+    "position_m": [
+      2.0,
+      0.0
+    ]
+  }
+}

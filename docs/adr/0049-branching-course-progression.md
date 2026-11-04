@@ -19,6 +19,8 @@ YAML metadata.prerequisites 为唯一解锁定义，数组表示全部完成。�
 
 目录公开 prerequisites/order/description，UI由目录生成公共入口、章节分列、节点与实线依赖，展示完成/可挑战/锁定/当前状态，锁定节点仍可查看详情。通关展示所有新开放节点，不自动跳到唯一下一关。两条补充练习仅为教学文案，不另建推荐或权限系统。
 
+补充查看入口：--level-tree在启动仿真前输出目录依赖及正式玩家进度，复用ApplicationState继承的LevelProgression校验与解锁逻辑；不创建或改写用户文件，无存档时仅内存预览。文本输出与既有图形界面使用同一YAML前置，属于本决策的查看适配，不新增解锁规则。
+
 campaign/navigation 独立工程沿用ADR-0040/0045，切换只选择对应库，保留源码、revision、ledger及历史，旧测试/部署随Authority/Worker销毁。不复制跨主线算法、不赠送参考解。
 
 ## Alternatives

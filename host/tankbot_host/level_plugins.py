@@ -117,6 +117,24 @@ def _validate(value, filename, config, validator):
     if clock["physics_hz"]//clock["algorithm_hz"]<config["runtime"]["commit_delay_ticks"]:fail("world.simulation.algorithm_hz","algorithm interval is shorter than the commit delay")
     sensor_topics = {"/robot/localization/pose":"pose2d@1"}
     sequence=value["objectives"].get("command_sequence")
+    route=value["objectives"].get("waypoint_route")
+    if route:
+        import math
+        if sequence:fail("objectives.waypoint_route","a motion task must have only one reference source")
+        if drive!="wheel_voltage" or value["objectives"]["timer_start"]!="first_control_commit":
+            fail("objectives.waypoint_route","waypoints require wheel voltage and first-control commit timing")
+        if route["period_ticks"]!=clock["physics_hz"]//clock["algorithm_hz"]:
+            fail("objectives.waypoint_route.period_ticks","goal sampling must align with the algorithm period")
+        if route["stop_duration_ticks"]>value["objectives"]["time_limit_s"]*clock["physics_hz"]:
+            fail("objectives.waypoint_route.stop_duration_ticks","settling must fit within the time limit")
+        numbers=[v for point in route["points_m"] for v in point]
+        numbers += [route[k] for k in ("position_tolerance_m","stop_linear_speed_mps","stop_yaw_rate_radps")]
+        numbers += list(route["control_limits"].values())
+        if any(not math.isfinite(v) for v in numbers):fail("objectives.waypoint_route","all route coordinates and parameters must be finite")
+        drive_limits=config["chassis_profiles"][player["model"]]["motion_limits"]
+        if any(route["control_limits"][key]>drive_limits[key] for key in route["control_limits"]):
+            fail("objectives.waypoint_route.control_limits","reference limits exceed chassis limits")
+        sensor_topics[route["goal_topic"]]="waypoint_goal@1"
     if sequence:
         sensor_topics[sequence["topic"]]="twist@1"
         period=clock["physics_hz"]//clock["algorithm_hz"]
@@ -127,7 +145,7 @@ def _validate(value, filename, config, validator):
             fail("objectives.command_sequence","sequence requires wheel voltage, first-control commit start and a matching time limit")
         if "min_path_length_m" not in value["objectives"]["parameters"]:
             fail("objectives.parameters","command sequence requires an actual path threshold")
-    elif value["objectives"]["timer_start"]=="first_control_commit":fail("objectives.timer_start","first_control_commit requires a command sequence")
+    elif not route and value["objectives"]["timer_start"]=="first_control_commit":fail("objectives.timer_start","first_control_commit requires a motion task")
     sensor_ids = []
     instance_ids=set();streams=set()
     if len(player["sensors"])>limits["max_sensors"]:fail("robots[0].sensors","component count exceeds max_sensors")
@@ -161,6 +179,12 @@ def _validate(value, filename, config, validator):
                 fail(path+".parameters.mount_m","armor sensor requires center-aligned mounting")
     if len(sensor_ids)!=len(set(sensor_ids)):fail("robots[0].sensors","duplicate sensor/Topic")
     grants = value["permissions"]["data_access"]
+    references = grants.get("references",{})
+    if set(references)&grants["actuators"].keys():fail("permissions.data_access.references","reference and actuator publication must not overlap")
+    for channel,schema in references.items():
+        if channel!="/robot/cmd_vel" or schema!="twist@1" or drive!="wheel_voltage" or player["control_sources"]["chassis"]!="robot":
+            fail("permissions.data_access.references."+channel,"only a robot wheel-voltage drive can publish a body Twist reference")
+        if sequence:fail("permissions.data_access.references."+channel,"command sequence already owns this reference Topic")
     for channel,schema in grants["inputs"].items():
         if sensor_topics.get(channel)!=schema:fail("permissions.data_access.inputs."+channel,"unknown or undeclared input Topic/type")
     for channel,schema in grants["actuators"].items():
@@ -180,14 +204,14 @@ def _validate(value, filename, config, validator):
         if not set(vis[name])<=set(layers):fail("visualization."+name,"display state exceeds visualization permission")
     if set(vis["sources"])!=set(layers):fail("visualization.sources","each allowed layer needs exactly one source")
     for layer,source in vis["sources"].items():
-        expected="authorized_truth" if layer in ("truth_targets","projectiles") else "map" if layer=="map" else "selected_pose" if layer in ("robot","trail","frames","pose_covariance") else "player_pose_candidates" if layer=="pose_estimates" else "player_estimate" if layer=="target_estimates" else "local_observation"
+        expected="task_reference" if layer=="waypoints" else "authorized_truth" if layer in ("truth_targets","projectiles") else "map" if layer=="map" else "selected_pose" if layer in ("robot","trail","frames","pose_covariance") else "player_pose_candidates" if layer=="pose_estimates" else "player_estimate" if layer=="target_estimates" else "local_observation"
         if source!=expected:fail("visualization.sources."+layer,"source is not supported by this visualization component")
     policy=value["permissions"]["visualization"]["view_policy"]
     feedback=vis.get("control_feedback")
     if feedback:
         from .control_feedback import SIGNALS
-        if not sequence or drive!="wheel_voltage" or "wheel_encoder" not in sensor_ids:
-            fail("visualization.control_feedback","control plots require a wheel-voltage command sequence and wheel encoder")
+        if not (sequence or route) or drive!="wheel_voltage" or "wheel_encoder" not in sensor_ids:
+            fail("visualization.control_feedback","control plots require a wheel-voltage motion task and wheel encoder")
         if "encoders" not in layers or "/robot/sensors/joint_states" not in policy["local_observation_channels"]:
             fail("visualization.control_feedback","encoder visualization is not authorized")
         if feedback["period_ticks"]%player["sensors"][sensor_ids.index("wheel_encoder")]["period_ticks"]:
@@ -202,6 +226,10 @@ def _validate(value, filename, config, validator):
             if any(SIGNALS[name]!=chart["unit"] for name in names):
                 fail(f"visualization.control_feedback.charts[{index}].unit","unit does not match the control signal")
     if "truth_targets" in layers and not policy["true_enemy_objects"]:fail("permissions.visualization.allowed_layers","target truth is not authorized")
+    if ("waypoints" in layers or "waypoints" in vis) and not route:
+        fail("visualization.waypoints","waypoint visualization requires a route")
+    if "waypoints" in layers and "waypoints" not in vis:
+        fail("visualization.waypoints","waypoint display needs an explicit style")
     if "projectiles" in layers and not policy["world_effects"]:fail("permissions.visualization.allowed_layers","projectile truth is not authorized")
     if set(layers)&{"truth_robot","velocities","colliders"}:fail("permissions.visualization.allowed_layers","these components require the separate developer grant")
     if any(ch not in sensor_topics for ch in policy["local_observation_channels"]):fail("permissions.visualization.view_policy.local_observation_channels","undeclared sensor Topic")
@@ -284,7 +312,9 @@ def _validate(value, filename, config, validator):
         if (mid,port,"output") in bound:fail(path,"multiple output bindings")
         bound.add((mid,port,"output"))
         if destination in writers:fail(path,"multiple Topic publishers")
-        if destination in ACTUATORS:
+        if destination in references:
+            if references[destination]!=schema:fail(path,"reference publication denied")
+        elif destination in ACTUATORS:
             if grants["actuators"].get(destination)!=schema:fail(path,"actuator publication denied")
         elif destination==f"/robot/modules/{mid}/{port}":
             if schema not in config["robot_graph"]["internal_schemas"]:fail(path,"unsupported internal type")
@@ -301,6 +331,25 @@ def _validate(value, filename, config, validator):
         if schema is None:
             if binding["required"] or sensor_topics.get(source,dict((v[0],v[1]) for v in SENSORS.values()).get(source))!=binding["schema"]:fail(path,"input subscription denied")
         elif schema!=binding["schema"]:fail(path,"Topic type mismatch")
+    if route:
+        if references!={route["command_topic"]:"twist@1"}:
+            fail("permissions.data_access.references","route needs exactly one Twist reference grant")
+        if grants["inputs"].get(route["goal_topic"])!="waypoint_goal@1":
+            fail("permissions.data_access.inputs","route goal subscription is not authorized")
+        navigators=[(mid,c) for mid,c in runtime["contracts"].items() if c["entry_point"]=="navigation.waypoint_module:WaypointNavigationModule"]
+        if len(navigators)!=1:fail("communication.runtime.contracts","route requires one registered waypoint adapter")
+        mid,contract=navigators[0]
+        inputs=contract["inputs"]
+        if (set(inputs)!={"goal","pose"} or inputs["pose"]["schema"]!="pose2d@1" or inputs["pose"]["required"]
+                or inputs["goal"]["schema"]!="waypoint_goal@1" or not inputs["goal"]["required"]
+                or contract["outputs"]!={"command":{"schema":"twist@1"}}):
+            fail("communication.runtime.contracts."+mid,"waypoint adapter needs optional player pose, required goal and one Twist reference")
+        connections=runtime["manifest"]["connections"]
+        if {"from":mid+".command","to":route["command_topic"]} not in connections or {"from":route["goal_topic"],"to":mid+".goal"} not in connections:
+            fail("communication.runtime.manifest.connections","waypoint reference/goal binding mismatch")
+        pose_source=next((c["from"] for c in connections if c["to"]==mid+".pose"),None)
+        if pose_source is None or not pose_source.startswith("/robot/estimates/") or writers.get(pose_source)!="pose2d@1":
+            fail("communication.runtime.manifest.connections","navigation must read a declared player pose candidate")
     for mid,contract in runtime["contracts"].items():
         for direction in ("input","output"):
             for port in contract[direction+"s"]:
@@ -443,7 +492,7 @@ def _compile(value, walls, config):
     if "target_pose_estimate@1" in grants["outputs"]:caps.append("estimate.target_pose.publish")
     definition={"title":meta["name"],"problem":d["tutorial"]["problem"],"hints":d["tutorial"]["hints"],
         "chapter_id":meta["chapter"]["chapter_id"],"capabilities":caps,"target":({"target_id":target["id"],"pose":target["initial_pose"],**target_parameters} if target else None),
-        "objective":{**d["objectives"]["parameters"],"kind":"command_sequence" if "command_sequence" in d["objectives"] else "checklist" if d["objectives"]["success"]["type"]=="all" else "destroy_target"},
+        "objective":{**d["objectives"]["parameters"],"kind":"waypoint_route" if "waypoint_route" in d["objectives"] else "command_sequence" if "command_sequence" in d["objectives"] else "checklist" if d["objectives"]["success"]["type"]=="all" else "destroy_target"},
         "time_limit_s":d["objectives"]["time_limit_s"],"timer_start":d["objectives"]["timer_start"],
         "player_health":"same_as_target" if p["health"]==target_parameters.get("health") and p["health"] else None,
         "control_sources":p["control_sources"],"robot_profile":runtime["profile_id"],"armor_mode":bool(target_parameters.get("armor")),

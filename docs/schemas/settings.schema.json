@@ -131,6 +131,9 @@
         },
         "pose_covariance": {
           "type": "boolean"
+        },
+        "waypoints": {
+          "type": "boolean"
         }
       },
       "required": [

@@ -195,6 +195,15 @@ class Authority:
             if any(sensor.type=="gps" for sensor in self.scene.sensors):
                 from .navigation import localization_parameters
                 init["config"]["localization_parameters"]=localization_parameters(config)
+            if self.campaign.navigation:
+                route = self.campaign.navigation.spec
+                contract = next(c for c in self.campaign.definition["runtime"]["contracts"].values()
+                                if c["entry_point"] == "navigation.waypoint_module:WaypointNavigationModule")
+                init["config"]["navigation_parameters"] = {
+                    "position_tolerance_m": route["position_tolerance_m"],
+                    "control_limits": copy.deepcopy(route["control_limits"]),
+                    "pose_max_age_ticks": contract["inputs"]["pose"]["max_age_ticks"],
+                }
             if self.graph_profile() and self.radar.noise is not None:
                 noise = self.radar.noise
                 init["config"]["observations"] = {"radar_covariance":[[noise["range_stddev_m"]**2,0],[0,noise["bearing_stddev_rad"]**2]]}
@@ -234,7 +243,7 @@ class Authority:
             explicit_startup = (workspace is not None or startup_sources is not None) if startup_is_deployment is None else startup_is_deployment
             if self.campaign and explicit_startup and self.campaign.definition["timer_start"] == "first_deployment":
                 self.campaign.start(self.tick)
-            if self.campaign and explicit_startup and self.campaign.sequence:
+            if self.campaign and explicit_startup and self.campaign.motion_task:
                 self.campaign.deployment_armed=True
         except BaseException:
             self.core.close()
@@ -271,6 +280,12 @@ class Authority:
         if self.campaign and self.campaign.sequence:
             channel=self.campaign.sequence["topic"]
             self._sensors[channel]=self._message("twist@1",channel,self.campaign.command(self.tick),frame="base_link",publisher="command_sequence")
+        if self.campaign and self.campaign.navigation:
+            route = self.campaign.navigation
+            if self.tick % route.spec["period_ticks"] == 0:
+                channel = route.spec["goal_topic"]
+                self._sensors[channel] = self._message("waypoint_goal@1", channel, route.goal(), frame="map", publisher="waypoint_route")
+        if self.campaign and self.campaign.motion_task:
             self.control_feedback.sample(self.tick,self._sensors,self.campaign)
 
     def _rate_limit(self):
@@ -502,10 +517,10 @@ class Authority:
     def graph_outputs(self):
         if self.campaign:
             grants=self.campaign.definition["permissions"]["data_access"]
-            return {**{schema:None for schema in grants["outputs"]},**grants["actuators"]}
+            return {**{schema:None for schema in grants["outputs"]},**grants.get("references",{}),**grants["actuators"]}
         profile = self.graph_profile()
         if profile is not None:
-            return {**{name:None for name in profile["grants"]["outputs"]},**profile["grants"]["actuators"]}
+            return {**{name:None for name in profile["grants"]["outputs"]},**profile["grants"].get("references",{}),**profile["grants"]["actuators"]}
         from .module_profile import module_profile
         contract, _, outputs = module_profile(self.config)
         result = {p["schema"]:None for p in contract["outputs"].values()}
@@ -539,6 +554,20 @@ class Authority:
             self._revoke_robot = True
             self.worker.close()
 
+    def reference_output(self, message):
+        """Normalize before graph caching so every subscriber sees the same bounded reference."""
+        grants = self.campaign.definition["permissions"]["data_access"] if self.campaign else {}
+        if not self.config.get("wheel_drive") or grants.get("references",{}).get(message["channel"]) != message["schema"]:
+            raise Rejected("UNAUTHORIZED")
+        if message["channel"] != "/robot/cmd_vel" or message["frame_id"] != "base_link":
+            raise Rejected("INVALID_FRAME")
+        limits = self.campaign.navigation.spec["control_limits"] if self.campaign.navigation else self.config["motion_limits"]
+        bounded = copy.deepcopy(message)
+        p = bounded["payload"]
+        p["linear"]["x"] = max(-limits["max_vx_mps"], min(limits["max_vx_mps"], p["linear"]["x"]))
+        p["angular"]["z"] = max(-limits["max_wz_radps"], min(limits["max_wz_radps"], p["angular"]["z"]))
+        return bounded
+
     def accept_graph_output(self, module_id, message, *, activation_tick):
         channel, schema = message["channel"],message["schema"]
         if channel == f"/robot/estimates/{module_id}/pose":
@@ -567,9 +596,15 @@ class Authority:
                     if self.campaign:
                         self.campaign.estimate(message,self._target_history.get(message["simulation_tick"]))
         elif channel == "/robot/cmd_vel":
-            self._keyboard = copy.deepcopy(message)
+            if self.config.get("wheel_drive"):
+                # This drive consumes wheel voltage only. Twist remains a reference Topic.
+                if not self.campaign or self.campaign.definition["permissions"]["data_access"].get("references",{}).get(channel)!=schema:
+                    raise Rejected("UNAUTHORIZED")
+                self._sensors[channel] = self.reference_output(message)
+            else:
+                self._keyboard = copy.deepcopy(message)
         elif channel == "/robot/wheels/cmd_voltage":
-            if self.campaign and self.campaign.sequence:
+            if self.campaign and self.campaign.motion_task:
                 if not self.campaign.deployment_armed:return
                 self.campaign.start(self.tick,self._private)
             self._wheel_voltage_target={**message["payload"],"source_tick":message["simulation_tick"]}
@@ -599,7 +634,7 @@ class Authority:
     def advance(self):
         """Process boundary n, then advance to S_(n+1). Player computation is never awaited in real time."""
         started = time.monotonic()
-        if self.campaign and self.campaign.sequence and self.campaign.status!="active":
+        if self.campaign and self.campaign.motion_task and self.campaign.status!="active":
             return  # Fixed-sequence results and last rendered pose are terminal.
         self.collect_logs(self.worker, "runtime")
         if self.campaign is not None:
@@ -681,7 +716,7 @@ class Authority:
             if self.deployment is not None:
                 self.deployment.close()
             self._target_estimate = None
-            if not self.campaign.sequence:
+            if not self.campaign.motion_task:
                 self.view_revision += 1
             self._build_view()
         return self.campaign_status()

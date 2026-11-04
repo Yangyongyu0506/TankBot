@@ -2,7 +2,7 @@
 
 ## 阅读方式与规范状态
 
-文档基线：`branching-course-progression-1.0`，更新日期：2026-11-04。已完成 M1/M1b、M2 本机浏览器/Transport、M3 编辑部署和 M4 C0–C2 教学闭环验收：实现与限制见 [运行入口](../README.md)、[M4 验证报告](reports/M4_VALIDATION.md)；模型由用户逐项确认，见 [13](13_PHYSICS_MODEL_DECISIONS.md)、[18](18_CAMPAIGN_DESIGN.md)。M5 已实现模块图、角加速度与装甲；现按用户要求调整为 C3 极坐标滤波、C4 中心预测与自瞄、C5 小陀螺自瞄，当前边界及验收见 [28](28_WEAPONS_PROGRESSIVE_ESTIMATION.md)、[新课程报告](reports/WEAPONS_REDESIGN_VALIDATION.md)。关卡使用独立 YAML 插件，现有 C0–C5 与 Navigation C0/C1/C2 九关，见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)。Navigation 已实现双轮电压控制、控制曲线、理想里程计和GPS/EKF定位；IMU融合、建图、规划与 Arena 尚未实现。进度现为公共c0后同时开放Weapons与Navigation，两条主线可交替推进；当前规则与实测见 [36](36_BRANCHING_PROGRESSION.md)、[双主线验收](reports/BRANCHING_PROGRESSION_VALIDATION.md)。
+文档基线：`navigation-waypoint-control-1.0`，更新日期：2026-11-04。已完成 M1/M1b、M2 本机浏览器/Transport、M3 编辑部署和 M4 C0–C2 教学闭环验收：实现与限制见 [运行入口](../README.md)、[M4 验证报告](reports/M4_VALIDATION.md)；模型由用户逐项确认，见 [13](13_PHYSICS_MODEL_DECISIONS.md)、[18](18_CAMPAIGN_DESIGN.md)。M5 已实现模块图、角加速度与装甲；现按用户要求调整为 C3 极坐标滤波、C4 中心预测与自瞄、C5 小陀螺自瞄，当前边界及验收见 [28](28_WEAPONS_PROGRESSIVE_ESTIMATION.md)、[新课程报告](reports/WEAPONS_REDESIGN_VALIDATION.md)。关卡使用独立 YAML 插件，现有 C0–C5 与 Navigation C0/C1/C2/C3 十关，见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)。Navigation 已实现双轮电压控制、控制曲线、理想里程计、GPS/EKF定位和航点位置闭环；IMU融合、建图、规划与 Arena 尚未实现。进度现为公共c0后同时开放Weapons与Navigation，两条主线可交替推进；当前规则与实测见 [36](36_BRANCHING_PROGRESSION.md)、[双主线验收](reports/BRANCHING_PROGRESSION_VALIDATION.md)。
 
 “必须／不得”为设计约束；“建议／拟采用”为待验证方案。Accepted ADR 表示接受设计原则或接口方向，不表示实现或平台验证完成；Proposed 技术不得当作既成依赖。协议 `1.0` 是**未发布草案**，首次发布前由兼容性审查冻结；发布后执行版本规则。
 
@@ -12,6 +12,8 @@
 
 | 文档 | 负责的设计与接口 |
 | --- | --- |
+| [37 航点位置闭环](37_NAVIGATION_WAYPOINT_CONTROL.md) | Navigation C3：公开路线、玩家估计反馈、轮电压参考与到点/停稳规则 |
+| [航点闭环验收](reports/NAVIGATION_WAYPOINT_CONTROL_VALIDATION.md) | 四航点、停稳、参考授权、源码保留及原生/浏览器实际编辑部署通关 |
 | [36 双主线进度树](36_BRANCHING_PROGRESSION.md) | 公共c0、独立主线、声明式前置、可见关卡树与旧存档/工程兼容 |
 | [双主线验收](reports/BRANCHING_PROGRESSION_VALIDATION.md) | 263项回归、两种玩家流程、旧档/源码历史及宽窄屏界面 |
 | [35 GPS 与 EKF 定位](35_NAVIGATION_GPS_LOCALIZATION.md) | Navigation C2：共享带噪轮速、GPS 去重/对齐、协方差、双估计轨迹与固定评分 |

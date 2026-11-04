@@ -112,6 +112,7 @@ class GraphExecution:
     def __init__(self, authority, graph, origin_tick):
         self.a, self.graph, self.origin = authority, graph, origin_tick
         self.cache = {}
+        self.writer_channels = {channel for module in graph["modules"].values() for channel in module["output_channels"].values()}
         self.last_called = {mid:origin_tick for mid in graph["modules"]}
         self.events = {mid:None for mid in graph["modules"]}
         self.failures = {mid:0 for mid in graph["modules"]}
@@ -119,7 +120,7 @@ class GraphExecution:
 
     def request(self, tick, *, prefix="step"):
         a = self.a
-        available = {**a._sensors, **self.cache}
+        available = {**{ch:msg for ch,msg in a._sensors.items() if ch not in self.writer_channels}, **self.cache}
         calls, samples = [], {}
         for mid, module in sorted(self.graph["modules"].items()):
             if mid in self.faults:
@@ -214,7 +215,9 @@ class GraphExecution:
                         limits = a.config["weapons"]["firing"]
                         if len(a._fire_journal)>=limits["request_cache_capacity"] or len(a._fire_pending)>=limits["pending_capacity"]:
                             raise Rejected("RESOURCE_LIMIT")
-                accepted.extend((mid,message) for message in outputs)
+                references = a.campaign.definition["permissions"]["data_access"].get("references",{}) if a.campaign else {}
+                normalized = [(mid,a.reference_output(message) if message["channel"] in references else message) for message in outputs]
+                accepted.extend(normalized)
                 self.failures[mid] = 0
             except Rejected as error:
                 validator.sequences, validator.target_ticks = old_sequences, old_ticks
@@ -243,7 +246,7 @@ class GraphExecution:
                         tick=message["simulation_tick"],hz=a.hz,run_id=a.run_id,publisher_id="pose_selector",sequence=message["sequence_number"],frame_id=message["frame_id"])
 
     def public(self):
-        available = {**self.a._sensors, **self.cache}
+        available = {**{ch:msg for ch,msg in self.a._sensors.items() if ch not in self.writer_channels}, **self.cache}
         def waiting(module):
             missing = []
             for port,binding in module["contract"]["inputs"].items():

@@ -1,8 +1,9 @@
 import {SceneTimeline} from "./rendering.js";
 import {polarHits} from "./campaign-ui.js";
 import {LocalizationHistory,drawLocalization} from "./localization-view.js";
+import {WaypointOverlay,drawWaypoints} from "./navigation-view.js";
 
-export const layerLabels={map:"静态地图",robot:"本关授权车体位姿",trail:"授权位姿轨迹",target_estimates:"玩家目标估计",radar:"Radar 观测",imu:"IMU 数据 / 加速度箭头",encoders:"轮编码器数据",turret:"炮台与武器观测",truth_robot:"真实车体与炮台",truth_targets:"真实目标",projectiles:"真实弹丸",frames:"坐标系",velocities:"真实速度向量",colliders:"碰撞外形",gps:"带噪 GPS 点",pose_estimates:"其他玩家位姿估计 / 轨迹",pose_covariance:"选中位姿的 1σ 位置椭圆"};
+export const layerLabels={waypoints:"公开航点与路线",map:"静态地图",robot:"本关授权车体位姿",trail:"授权位姿轨迹",target_estimates:"玩家目标估计",radar:"Radar 观测",imu:"IMU 数据 / 加速度箭头",encoders:"轮编码器数据",turret:"炮台与武器观测",truth_robot:"真实车体与炮台",truth_targets:"真实目标",projectiles:"真实弹丸",frames:"坐标系",velocities:"真实速度向量",colliders:"碰撞外形",gps:"带噪 GPS 点",pose_estimates:"其他玩家位姿估计 / 轨迹",pose_covariance:"选中位姿的 1σ 位置椭圆"};
 export function allowedLayers(profile,developer){
   const current=profile.campaign?.levels.find(l=>l.level_id===profile.campaign.active_level),caps=current?.capabilities??[];
   const supported=Object.keys(layerLabels).filter(key=>profile.weapons_enabled!==false||!["turret","projectiles","truth_targets"].includes(key));
@@ -31,6 +32,7 @@ export function mountVisualization(profile,settings){
   let layers=configuration&&!configuration.preserve_user_settings?Object.fromEntries(Object.keys(layerLabels).map(key=>[key,configuration.initial_enabled.includes(key)])):{...settings.value.layers},data=null,message=null,robotTopics=[],saveQueue=Promise.resolve();
   const history=new SceneTimeline(profile.physics_hz,profile.rendering,profile.view.interpolation_jump_m);
   const localization=new LocalizationHistory(profile,configuration);
+  const navigation=new WaypointOverlay(profile);
   $("visualization-note").textContent=developer?"开发者图层 · 可独立显示真值、估计和传感器；不会把真值发给玩家代码。":"只列出本关授权图层；显示来源仍由关卡权限决定。";
   $("layer-list").replaceChildren(...[...allowed].map(key=>{
     const label=document.createElement("label"),input=document.createElement("input");input.type="checkbox";input.checked=layers[key];input.dataset.layer=key;input.disabled=Boolean(!developer&&configuration&&!configuration.user_toggleable.includes(key));
@@ -71,7 +73,7 @@ export function mountVisualization(profile,settings){
   $("message-topic").onchange=inspect;$("show-message").onchange=inspect;
   window.addEventListener("tankbot-deployment-status",event=>{robotTopics=event.detail.graph?.topics??[];inspect();});
   applyPanels();
-  return {enabled,developer,localization,renderNow:0,get data(){return data;},get message(){return message;},
+  return {enabled,developer,localization,navigation,renderNow:0,get data(){return data;},get message(){return message;},
     update(view,debug,now){message=view;data=developer?debug:null;if(data)history.push(developerView(data,profile),now);localization.update(view,now);applyPanels();inspect();},
     sample:now=>data?history.sample(now):null};
 }
@@ -85,6 +87,7 @@ export function drawVector(ctx,point,origin,vector,scale,color,label){
 
 export function drawVisualization(ctx,point,frame,debugFrame,panel,profile,scale){
   panel.renderNow=performance.now();drawLocalization(ctx,point,frame,panel,scale);
+  drawWaypoints(ctx,point,panel,scale);
   const base=panel.enabled("truth_robot")?debugFrame?.pose:frame.pose,data=panel.data;
   if(panel.enabled("frames")){
     const poses=[[0,0,0,"map"],...(base?[[base.x_m,base.y_m,base.yaw_rad,profile.radar_calibration?"base_link / radar_link":"base_link"]]:[])];

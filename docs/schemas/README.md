@@ -95,3 +95,5 @@ Navigation 增量：level 的 evaluation.source 可选 player_pose，live_feedba
 ## 分支进度
 
 [progress.schema.json](progress.schema.json)保留版本1和四个字段，关卡ID按与metadata.id相同的格式约束，不枚举固定关卡列表。已知ID、前置闭包、稳定序列化顺序与current_level合法性由ApplicationState依据目录验证；非连续完成集合合法。level.schema.json中order只负责展示，prerequisites要求全部完成并由加载器检查未知/循环引用。非连续完成存档示例见 [branch-progress.json](../examples/branch-progress.json)，当前树见 [36](../36_BRANCHING_PROGRESSION.md)。
+
+Navigation C3增量：`waypoint_goal@1`的payload在payloads.schema.json中定义，Envelope固定Topic/map帧；[正例](../examples/waypoint-goal-message.json)不含测量或真值。level.schema.json声明waypoint_route、waypoints_complete、参考发布白名单和任务样式；有限坐标、模型/频率、前置权限和发布者冲突由领域层验证。waypoints是向后兼容的可选设置字段，缺失时只在内存补false；显示与程序订阅分别授权。见 [37](../37_NAVIGATION_WAYPOINT_CONTROL.md)。

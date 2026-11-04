@@ -21,7 +21,7 @@ def main():
     from tankbot_host.authority import load_config
     config=load_config(ROOT/'config/game.yaml')
     browser=Browser(args.port);evidence={'url':args.url}
-    def ready():browser.until("return document.getElementById('workspace-panel').dataset.ready==='true'&&document.querySelectorAll('.level-node[data-state]').length===9;",120)
+    def ready():browser.until("return document.getElementById('workspace-panel').dataset.ready==='true'&&document.querySelectorAll('.level-node[data-state]').length===document.getElementById('level-select').options.length;",120)
     def click(name):
         browser.until('return !document.getElementById('+json.dumps(name)+').disabled;')
         browser.script('document.getElementById('+json.dumps(name)+').click();return true;')
@@ -65,7 +65,7 @@ def main():
         initial=workspace();browser.script('window.__treeToken='+json.dumps(initial['control_token'])+';return true;')
         if args.inspect_only:
             progress=http('/api/progress')['value'];assert not progress['developer_mode']
-            open_tree();browser.until("return document.querySelectorAll('#level-tree-edges path').length===8;")
+            open_tree();browser.until("return document.querySelectorAll('#level-tree-edges path').length===document.querySelectorAll('.level-node').length-1;")
             evidence['wide']=shot('wide')
             browser.call('WebDriver:SetWindowRect',{'width':500,'height':740});node('navigation.c2')
             layout=browser.script("const d=document.scrollingElement,b=document.getElementById('start-selected-level').getBoundingClientRect(),p=document.getElementById('level-lock-reason').getBoundingClientRect();return {pageFits:d.scrollWidth<=innerWidth&&d.scrollHeight<=innerHeight,buttonVisible:b.top>=0&&b.bottom<=innerHeight,missingVisible:p.top>=0&&p.bottom<=b.top};")
@@ -73,7 +73,7 @@ def main():
             evidence.update(narrow=shot('narrow'),layout=layout,progress=progress)
             args.output.write_text(json.dumps(evidence,ensure_ascii=False,indent=2)+'\n');print('PASS: current player tree, visible missing prerequisite and narrow action button');return
         p=http('/api/progress')['value'];assert p['completed_levels']==[] and p['unlocked_levels']==['c0'] and not p['developer_mode'],p
-        open_tree();browser.until("return document.querySelectorAll('#level-tree-edges path').length===8;")
+        open_tree();browser.until("return document.querySelectorAll('#level-tree-edges path').length===document.querySelectorAll('.level-node').length-1;")
         assert [lid for lid,state in nodes().items() if state=='available']==['c0']
         node('navigation.c0');assert browser.script("return document.getElementById('start-selected-level').disabled;")
         assert 'C0' in browser.script("return document.getElementById('level-lock-reason').textContent;")

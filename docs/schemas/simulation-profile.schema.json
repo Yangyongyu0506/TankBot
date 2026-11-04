@@ -723,6 +723,34 @@
             "yaw_process_std_rad_per_sqrt_s"
           ],
           "additionalProperties": false
+        },
+        "reference_navigation": {
+          "type": "object",
+          "properties": {
+            "position_gain_per_s": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "heading_gain_per_s": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "turn_in_place_threshold_rad": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "stop_radius_fraction": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          },
+          "required": [
+            "position_gain_per_s",
+            "heading_gain_per_s",
+            "turn_in_place_threshold_rad",
+            "stop_radius_fraction"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
@@ -2195,6 +2223,15 @@
                     "additionalProperties": {
                       "type": "string"
                     }
+                  },
+                  "references": {
+                    "type": "object",
+                    "properties": {
+                      "/robot/cmd_vel": {
+                        "const": "twist@1"
+                      }
+                    },
+                    "additionalProperties": false
                   }
                 },
                 "additionalProperties": false

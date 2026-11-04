@@ -2,7 +2,7 @@
 
 ## 目的、范围与要求
 
-让玩家任选目标感知/自瞄或底盘/自身定位主线，保留各自主线真实的知识和代码依赖。本轮只修改九关的进度与选择界面，不增加关卡或调整仿真、传感器、预算、评分与算法合同。用户已确认依赖，实施状态见 [ADR-0049](adr/0049-branching-course-progression.md)。
+让玩家任选目标感知/自瞄或底盘/自身定位主线，保留各自主线真实的知识和代码依赖。原进度重构只修改当时九关的选择界面与解锁；后续用户授权增加Navigation C3，当前共十关，见 [37](37_NAVIGATION_WAYPOINT_CONTROL.md)。用户已确认依赖，实施状态见 [ADR-0049](adr/0049-branching-course-progression.md)。
 
 ```mermaid
 flowchart TD
@@ -14,6 +14,7 @@ flowchart TD
     W4 --> W5[C5 装甲与小陀螺]
     N0 --> N1[Navigation C1 里程计]
     N1 --> N2[Navigation C2 GPS/EKF]
+    N2 --> N3[Navigation C3 航点位置闭环]
 ```
 
 实线均为必须通关的前置。公共入口保留Hello Robot章节与c0存储身份；Weapons和Navigation原章节ID、文件名及metadata.order不变。跨主线建议只进入现有关卡tutorial.hints，不影响解锁，也不复制算法。
@@ -35,6 +36,19 @@ metadata.prerequisites数组表示全部前置完成。ApplicationState统一判
 ## Workspace与生命周期
 
 默认campaign和navigation分组不变。只完成c0即可创建独立Navigation工程；返回Weapons复用原库。原生在成功创建候选Authority/Workspace后原子切换并关闭旧运行；浏览器切换对应配置/库后刷新，关闭旧Worker及缓存。保存、测试、部署和模板预览均沿用已有机制，不修改玩家源码或历史。失败切换保留当前运行与工程。
+
+## 启动前查看依赖树
+
+```bash
+python3 tools/tankbot.py --level-tree
+python3 tools/tankbot.py --level-tree --save-file /path/to/progress.json
+```
+
+无需serve/browser运行模式。命令加载同一关卡目录，按YAML前置生成文本树，标出已通关/可挑战/未解锁、当前关卡及缺少的前置。默认读取userdata/progress.json；缺失时只在内存生成新玩家预览，不创建用户数据目录、设置、存档、锁文件或Workspace，也不启动Core、Python玩家程序或Web服务。开发者开关不影响展示的正式通关记录，查看不会更改模式。
+
+ApplicationState继承host/tankbot_host/progression.py的LevelProgression，复用同一组前置、解锁和版本1存档校验。命令直接使用该目录规则组件读取一次原子保存的文件，不构造有初始化写入的ApplicationState；损坏/不兼容存档报错并保留。既有服务读改写仍使用原OS锁/原子替换机制。多前置节点明确列出全部要求，并在各父节点下显示引用，后代只展开一次；数量、ID和章节不硬编码。--config可选择另一目录配置，--list-maps与--level-tree互斥。首次运行仍沿用现有Python依赖引导机制，可使用--offline复用已准备的缓存。
+
+回归见tests/test_level_tree_cli.py，覆盖无副作用、非连续/旧存档、两分支开放、多前置共享节点、展示顺序独立及损坏文件拒绝。游戏内交互查看继续使用顶部或任务面板的「关卡路线」。
 
 ## 取舍、开放项与验收
 

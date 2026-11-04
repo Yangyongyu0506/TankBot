@@ -43,7 +43,42 @@ class Odometry:
 '''
     if 'ekf_localization' in config['campaign']['levels'][config['campaign']['active_level']]['scaffolding']['components']:
         files['localization/ekf.py']=ekf_solution(config)
+    if 'waypoint_controller' in config['campaign']['levels'][config['campaign']['active_level']]['scaffolding']['components']:
+        files['navigation/waypoint_controller.py']=waypoint_solution(config)
     return files
+
+
+def waypoint_solution(config):
+    """Verification controller kept out of generated/player projects."""
+    tuning=config['validation']['reference_navigation']
+    source='''import numpy as np
+from numpy.typing import NDArray
+from tankbot import Twist, Vector3
+
+class WaypointController:
+    def __init__(self, position_tolerance_m: float, max_vx_mps: float, max_wz_radps: float) -> None:
+        self.stop_radius_m: float = position_tolerance_m*STOP_FRACTION
+        self.max_vx_mps: float = max_vx_mps
+        self.max_wz_radps: float = max_wz_radps
+
+    def update(self, estimated_pose: NDArray[np.float64], target_xy: NDArray[np.float64], dt: float) -> Twist:
+        delta: NDArray[np.float64] = target_xy-estimated_pose[:2]
+        distance: float = float(np.linalg.norm(delta))
+        if distance<=self.stop_radius_m:
+            return Twist()
+        desired: float = float(np.arctan2(delta[1],delta[0]))
+        error: float = desired-float(estimated_pose[2])
+        error = float(np.arctan2(np.sin(error),np.cos(error)))
+        velocity: float = min(self.max_vx_mps,POSITION_GAIN*distance)*max(0.,float(np.cos(error)))
+        if abs(error)>TURN_THRESHOLD:
+            velocity = 0.
+        turn: float = float(np.clip(HEADING_GAIN*error,-self.max_wz_radps,self.max_wz_radps))
+        return Twist(linear=Vector3(x=velocity),angular=Vector3(z=turn))
+'''
+    for marker,key in [('STOP_FRACTION','stop_radius_fraction'),('POSITION_GAIN','position_gain_per_s'),
+                       ('TURN_THRESHOLD','turn_in_place_threshold_rad'),('HEADING_GAIN','heading_gain_per_s')]:
+        source=source.replace(marker,repr(tuning[key]))
+    return source
 
 
 def ekf_solution(config):

@@ -420,7 +420,8 @@
               "enum": [
                 "destroy_target",
                 "checklist",
-                "command_sequence"
+                "command_sequence",
+                "waypoint_route"
               ]
             },
             "max_origin_distance_m": {

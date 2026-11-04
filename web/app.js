@@ -367,12 +367,14 @@ try {
   mountMapPreview(releaseControls);
   mountWorkspace(browser).catch(error=>$("workspace-message").textContent="编辑器加载失败："+error.message+"。请运行 python3 tools/build.py 后刷新页面。");
   if(profile.control_sources.chassis!=="keyboard"){
-    $("controls").textContent="Weapons 章节：底盘锁定，零目标主动制动；后坐与受击继续按真实物理计算。";
+    $("controls").textContent=profile.weapons_enabled===false?"底盘由机器人程序控制；结束尝试后可编辑代码。":"Weapons 章节：底盘锁定，零目标主动制动；后坐与受击继续按真实物理计算。";
     document.querySelectorAll('[data-key="KeyW"],[data-key="KeyS"],[data-key="KeyA"],[data-key="KeyD"],[data-key="KeyQ"],[data-key="KeyE"]').forEach(button=>button.disabled=true);
   }
   if(profile.control_sources.turret!=="keyboard")document.querySelectorAll('[data-key="KeyJ"],[data-key="KeyL"]').forEach(button=>button.disabled=true);
   mountCampaign(profile,browser,state=>{
     workspaceDialog.updateAttempt(state);
+    visualization.navigation.update(profile.run_id,state?.navigation);
+    canvas.dataset.waypoints=JSON.stringify(state?.navigation??null);
     const ended=Boolean(state&&state.status!=="active");
     campaignWaiting=Boolean(state?.phase==="preparing"&&state?.timing.start_on==="first_deployment");
     if(ended&&!campaignEnded){campaignEnded=true;releaseControls();}

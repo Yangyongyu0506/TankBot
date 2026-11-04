@@ -32,3 +32,4 @@ layers:
   gps: false
   pose_estimates: false
   pose_covariance: false
+  waypoints: false

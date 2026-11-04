@@ -2,7 +2,7 @@
 
 TankBot 将二维坦克运动、机器人算法学习与多文件 Python 编程结合。玩家通过传感器和自己的算法重建世界认知。
 
-当前完成 **M1 + M1b 本机闭环原型**：Rust/Rapier2D 权威物理、差速/四轮径向全向轮底盘、理想轮编码器与质心 IMU、外部 Python 里程计、固定 tick 提交、Pose Selector、View Policy 和 Canvas 页面。M1b 增加双刚体炮台、单发/冷却、连续弹道/反弹/弹丸互毁、后坐/受击冲量、靶标与 Python 武器接口；M2 增加真实浏览器 Rust/WASM + Pyodide 双 Worker、独立 Runtime origin 与多 Adapter 验证；M3 增加 CodeMirror/Vim、多文件 Workspace、模板预览、快照测试、部署与回滚。M5 增加模块图，现已调整为 C3 极坐标滤波、C4 中心自瞄与 C5 小陀螺装甲；Navigation 已有双轮电压控制、理想里程计和 GPS/EKF 定位三关；后续规划和 Arena 尚未实现。
+当前完成 **M1 + M1b 本机闭环原型**：Rust/Rapier2D 权威物理、差速/四轮径向全向轮底盘、理想轮编码器与质心 IMU、外部 Python 里程计、固定 tick 提交、Pose Selector、View Policy 和 Canvas 页面。M1b 增加双刚体炮台、单发/冷却、连续弹道/反弹/弹丸互毁、后坐/受击冲量、靶标与 Python 武器接口；M2 增加真实浏览器 Rust/WASM + Pyodide 双 Worker、独立 Runtime origin 与多 Adapter 验证；M3 增加 CodeMirror/Vim、多文件 Workspace、模板预览、快照测试、部署与回滚。M5 增加模块图，现已调整为 C3 极坐标滤波、C4 中心自瞄与 C5 小陀螺装甲；Navigation 已有双轮电压控制、理想里程计、GPS/EKF 定位和航点闭环四关；后续规划和 Arena 尚未实现。
 
 M4 增加 C0–C2 教学关卡：真值驾驶练习、理想雷达 SE(3) 矩阵变换、带噪声/丢失的移动敌车跟踪与击杀。开始方式见下节；M5 当前课程为 C3 直接滤波车体系 (r, theta)、C4 复用滤波并接管武器自瞄、C5 全向小陀螺装甲预测；建图、规划与 Arena 仍待实现。
 
@@ -35,7 +35,7 @@ python3 tools/tankbot.py browser --level c0
 
 在顶部或「任务」面板打开「关卡路线」，选择节点查看简介和具体前置，再点击「开始本关 / 重试」。公共 C0 通关后，可任选 Weapons 或 Navigation 主线并交替推进。C0 先移动至少 1 m、转动车体至少 0.5 rad，并命中可见靶标。C1 隐藏敌车，F2 打开编辑器，完成自动生成的 `perception/transforms.py`，返回 `NDArray[np.float64]` 形式的 4×4 SE(3) 矩阵，测试并部署，利用目标估计瞄准命中。C2 保留该矩阵函数，追加 `perception/tracker.py`；处理带噪声和 10% 丢失的雷达，跟踪巡逻敌车，保持存活并击中三次使敌车 HP 归零即可通关。
 
-前三关保留系统自定位、公开地图与手动控制。Radar 是车体系局部观测，地图上的目标标记来自玩家 Python；Weapons C1–C5 默认显示炮弹，可在图层设置中开关；真实敌车和命中特效位置仍隐藏，Python 输入权限不变。C2/C3 显示双方 HP，以及运行中的累计位置 RMSE、有效样本数和变化曲线；编辑器也显示同一指标。测试不计入、重复部署不清零，重试重新累计。通关或点击「结束本次尝试」后关闭玩家程序并冻结最终误差报告；物理与已有弹丸继续运行。重试建立新场景，新关只补缺失文件，已有源码保留；保存的草稿须重新 Test/Deploy。Weapons 内部仍按 C1 → C2 → C3 → C4 → C5 解锁，Navigation 内部按 C0 → C1 → C2 解锁；两条首关均只依赖公共 c0。通关后列出所有新开放节点，允许重玩，不强制自动进入下一关。开发者仍可自由练习。
+前三关保留系统自定位、公开地图与手动控制。Radar 是车体系局部观测，地图上的目标标记来自玩家 Python；Weapons C1–C5 默认显示炮弹，可在图层设置中开关；真实敌车和命中特效位置仍隐藏，Python 输入权限不变。C2/C3 显示双方 HP，以及运行中的累计位置 RMSE、有效样本数和变化曲线；编辑器也显示同一指标。测试不计入、重复部署不清零，重试重新累计。通关或点击「结束本次尝试」后关闭玩家程序并冻结最终误差报告；物理与已有弹丸继续运行。重试建立新场景，新关只补缺失文件，已有源码保留；保存的草稿须重新 Test/Deploy。Weapons 内部仍按 C1 → C2 → C3 → C4 → C5 解锁，Navigation 内部按 C0 → C1 → C2 → C3 解锁；两条首关均只依赖公共 c0。通关后列出所有新开放节点，允许重玩，不强制自动进入下一关。开发者仍可自由练习。
 
 F1 或编辑器中的「关卡说明 / 类型」可随时查看每关步骤、输入输出签名、SDK 字段/单位、Python 速查与交互矩阵实验；悬停及 Ctrl+Space 提供类型提示。新模板显式标注变量和返回类型。旧工作区可预览模板升级并选择系统脚手架，已有算法默认保留。原生 NumPy 随首次启动自动准备；浏览器运行 `prepare_browser.py` 准备锁定的 Pyodide/NumPy 资源。
 
@@ -46,6 +46,16 @@ C0/C1/C2 分别限时 **60/60/120 仿真秒**。C0 首次有效人工操作起�
 完整模型和接口见 [M4 设计](docs/18_CAMPAIGN_DESIGN.md) 与 [学习说明设计](docs/19_LEARNING_GUIDES_AND_SE3.md)，验证见 [M4 报告](docs/reports/M4_VALIDATION.md) 及 [SE(3) 学习工具验收](docs/reports/LEARNING_VALIDATION.md)。
 
 默认炮台 J/L 转动，空格或按钮单发（长按不连射）。开发者自由试验场的估计视图隐藏真实弹丸，保留炮台与武器局部反馈；`--developer --view weapons-practice` 明确授权练习图层。Python 输入权限不增加。`--robot-demo` 使用独立的 [weapon_demo.py](examples/robot/weapon_demo.py) 控制炮台/开火，人工底盘仍可用；对应人工武器入口会拒绝。想观察程序控制可运行 `python3 tools/tankbot.py serve --developer --robot-demo --view weapons-practice`。
+
+查看完整关卡依赖树及存档中的通关状态，无需启动游戏：
+
+```bash
+python3 tools/tankbot.py --level-tree
+# 查看另一份存档
+python3 tools/tankbot.py --level-tree --save-file /path/to/progress.json
+```
+
+树形输出标出已通关、可挑战、未解锁、当前关卡和缺少的前置，依赖直接来自关卡 YAML。命令只读存档，不创建设置、工作区或仿真进程；没有存档时显示新玩家预览。游戏内可点击顶部「关卡路线」查看交互式依赖树。
 
 启动时可用 `--map open_large` 覆盖关卡地图（例如 `python3 tools/tankbot.py serve --level c0 --map open_large`），`--list-maps` 列出资产。顶部「地图预览」显示全景；开发者可浏览全部地图。覆盖地图作为自定义练习，不计正式通关，重试/切关继续沿用；省略参数重启服务恢复默认。详见 [地图覆盖与预览](docs/31_MAP_OVERRIDE_AND_PREVIEW.md)。
 
@@ -164,7 +174,7 @@ M3 UI 验收使用独立临时编辑库启动服务和 Marionette Firefox，再�
 
 ## M5：Weapons 与多文件机器人
 
-章节展示顺序保持 **Hello Robot（C0）、Weapons（C1–C5）、Navigation（C0–C2）**；公共 C0 后分为两条独立主线，展示顺序不产生解锁条件。C0–C2 玩法不变；C3 直接处理原始车体系距离/方位，输出仍是 `(r, theta)`，可实现 EKF；C4 沿用 C3 的中心 Radar 与差速敌车，玩家分文件实现中心预测与自动武器控制；C5 在此基础上加入匿名装甲观测、有效装甲与全向小陀螺，复用控制器并扩展旋转预测。Navigation 首关实现 FK/IK 与轮电压控制：系统发送 24 秒方形指令，按终点误差和真实路程验收，见 [设计与状态](docs/33_NAVIGATION_MOTION_CONTROL.md)。
+章节展示顺序保持 **Hello Robot（C0）、Weapons（C1–C5）、Navigation（C0–C3）**；公共 C0 后分为两条独立主线，展示顺序不产生解锁条件。C0–C2 玩法不变；C3 直接处理原始车体系距离/方位，输出仍是 `(r, theta)`，可实现 EKF；C4 沿用 C3 的中心 Radar 与差速敌车，玩家分文件实现中心预测与自动武器控制；C5 在此基础上加入匿名装甲观测、有效装甲与全向小陀螺，复用控制器并扩展旋转预测。Navigation 首关实现 FK/IK 与轮电压控制：系统发送 24 秒方形指令，按终点误差和真实路程验收，见 [设计与状态](docs/33_NAVIGATION_MOTION_CONTROL.md)。
 
 C1–C5 底盘锁定并保留真实受力，系统自身位姿仍公开；C1–C3 人工炮台/开火，C4/C5 仅允许程序角加速度/单发。C3/C4/C5 时限为 120/120/180 仿真秒，首次成功部署起算。C2–C4 Radar 误差沿用 σr=0.45 m、σtheta=0.08 rad、10% 丢失；C4 不提供 GPS、不要求装甲命中，双方 HP、整车扣血和终局顺序与 C3 相同。C5 仅提供最近两块可见装甲的匿名车体系 `[r,theta]`，10 Hz、12 m，σr=0.03 m、σtheta=0.005 rad，每块独立丢失 10%，实际返回 0/1/2 行。没有中心 Radar 或 GPS，朝向按模 90° 解释。所有参数在对应 YAML。
 
@@ -184,7 +194,7 @@ C3/C4 的 `PolarTracker.update` 接收 `measurements: tuple[PolarTargetEstimate,
 
 ## 双主线与 Navigation 首关
 
-当前进度树为 `c0 → {Weapons: c1→c2→c3→c4→c5, Navigation: navigation.c0→navigation.c1→navigation.c2}`。关卡路线显示已通关、可挑战、锁定和当前节点，锁定节点可查看具体缺少的前置。存档保持版本1，允许非连续完成集合；两个独立工作区的源码和历史保留。设计见 [双主线进度](docs/36_BRANCHING_PROGRESSION.md)。
+当前进度树为 `c0 → {Weapons: c1→c2→c3→c4→c5, Navigation: navigation.c0→navigation.c1→navigation.c2→navigation.c3}`。关卡路线显示已通关、可挑战、锁定和当前节点，锁定节点可查看具体缺少的前置。存档保持版本1，允许非连续完成集合；两个独立工作区的源码和历史保留。设计见 [双主线进度](docs/36_BRANCHING_PROGRESSION.md)。
 
 通关公共 c0 后即开放 Navigation C0（稳定 ID navigation.c0），不要求先完成 Weapons C5：
 
@@ -209,3 +219,13 @@ python3 tools/tankbot.py serve --level navigation.c2 --developer
 ```
 
 默认车体/相机跟随 EKF；图层可单独显示带噪 GPS、纯里程计轨迹与1σ位置椭圆，运行中比较两组 RMSE。24秒末按实际路程≥7.2 m、EKF位置RMSE≤0.15 m、朝向RMSE≤0.15 rad、有效估计≥100次通关，不再要求真实终点回原点。切换显示来源不改评分，真值仅在独立开发者图层显示；已有算法与历史保留。设计及本机验收见 [GPS/EKF](docs/35_NAVIGATION_GPS_LOCALIZATION.md)。
+
+Navigation C3 在通关 C2 后解锁，复用轮控制器、里程计和 EKF，只新增 `navigation/waypoint_controller.py`：输入地图系估计 `[x,y,yaw]`、当前航点 `[x,y]` 和 `dt`，返回 `Twist` 速度参考，再由已有轮控制器执行。地图显示可切换的公开路线、航点编号和目标容差圈。
+
+```bash
+python3 tools/tankbot.py serve --level navigation.c3
+# 开发者预览
+python3 tools/tankbot.py browser --level navigation.c3 --developer
+```
+
+120 仿真秒内按顺序进入四个航点的 0.35 m 范围，最后在终点满足平移速率≤0.05 m/s、绝对角速度≤0.10 rad/s 连续0.5秒通关。首次正式轮控制生效起算；位置控制参考限幅 vx ±0.5 m/s、wz ±1.5 rad/s，缺少有效定位时制动。定位 RMSE 继续用于反馈，不额外设为通关门槛。路线、时限、容差、停稳与显示参数均在 [关卡 YAML](levels/navigation.C3.yaml)，详细接口和时序见 [航点闭环](docs/37_NAVIGATION_WAYPOINT_CONTROL.md)。已有算法/历史保留；系统文件升级先预览，测试与正式任务隔离。
