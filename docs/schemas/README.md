@@ -23,6 +23,8 @@ payload 标识为 `joint_state@1`、`pose2d@1`、`imu@1`、`encoder@1`、`radar@
 
 ## 四层验证职责
 
+Navigation C2 增加 position_fix2d@1（二维位置与必填2×2协方差）及 view_snapshot@5（显式授权的玩家位姿候选列表），见 [位置样例](../examples/position-fix2d-message.json)、[多源视图](../examples/pose-comparison-view.json) 和 [设计](../35_NAVIGATION_GPS_LOCALIZATION.md)。旧消息标识保持兼容；新枚举不代表旧客户端已实现解码。level.schema.json 同时约束编码器误差、我方GPS、固定评分源及对照图层；数值PSD、候选权限及采样周期对齐仍需领域校验。settings.schema.json 新增可选图层键，旧文件加载时按false补齐到内存，保留原文件。
+
 1. 严格 JSON/Schema：重复键、结构、字段、类型、枚举、静态上下界；非有限数字在 JSON 解析/数值层拒绝。
 2. 数值/时序：PSD、物理范围、时间公式、run、未来/过期、周期与 deadline 的跨字段关系。
 3. 帧与业务：帧注册/变换许可、端口存在、依赖图、选源与策略窗口。
@@ -68,7 +70,7 @@ M4 内部配置为 **1.6**，增加必填 campaign；1.5 沙盒仍可读。新�
 
 手柄增量：1.5/1.6 的 view 可选 `gamepad`，一旦声明须提供全部映射和参数，未声明则仅键盘；Protocol、control_sources 枚举及速度消息保持兼容。范围见 [20](../20_GAMEPAD_INPUT.md)。
 
-本机设置增量：`settings.schema.json` 校验 YAML 解析后的模式、键盘与图层结构，`progress.schema.json` 校验 JSON 通关存档。它们属于本机管理文件，不是机器人消息；重复按键、连续完成前缀、尝试模式与当前关卡权限由领域层校验。语义见 [22](../22_SETTINGS_MODES_AND_PROGRESS.md)，不改变 SimulationProfile 或 Protocol 版本。
+本机设置增量：`settings.schema.json` 校验 YAML 解析后的模式、键盘与图层结构，`progress.schema.json` 校验 JSON 通关存档。它们属于本机管理文件，不是机器人消息；重复按键、完成项前置闭包、尝试模式与当前关卡权限由领域层校验。语义见 [22](../22_SETTINGS_MODES_AND_PROGRESS.md)，不改变 SimulationProfile 或 Protocol 版本。
 
 课程依赖增量：player-dependencies.schema.json 约束受信库策略结构，实际跨文件导入/相对模块/运行检查由 SDK 内部 loader 与 Authority 执行。策略见 [23](../23_PLAYER_CODE_AND_LIBRARIES.md)。协方差 JSON 仍为行优先扁平数组；SDK 使用二维 ndarray，不改消息 Schema。
 
@@ -89,3 +91,7 @@ C5 匿名装甲增量为 `armor_detections@1`：Envelope 固定 Topic `/robot/se
 轮电压 wheel_voltage@1 是新的兼容 topic 类型，固定 base_link 与 /robot/wheels/cmd_voltage；两个有限电压的限幅/过期由领域层执行。完整底盘可选 motor、内部仿真 DTO 可选 wheel_drive。关卡支持无武器/无目标、wheel_voltage 驱动、twist_sequence、首批控制起算及两项运动指标；默认均保持旧关卡语义。scaffolding.workspace_scope 只做项目分组，不决定物理行为。实际约束和状态见 [33](../33_NAVIGATION_MOTION_CONTROL.md)。
 
 Navigation 增量：level 的 evaluation.source 可选 player_pose，live_feedback 兼容单对象/多指标数组；规则新增累计位置/朝向 RMSE 比较。visualization.control_feedback 声明有界控制曲线，permissions.visualization.allowed_control_signals 独立授权，不增加 Runtime 输入能力。候选位姿沿用 pose2d@1；源格式、Topic 和旧配置兼容。见 [34](../34_NAVIGATION_ODOMETRY_AND_FEEDBACK.md)。
+
+## 分支进度
+
+[progress.schema.json](progress.schema.json)保留版本1和四个字段，关卡ID按与metadata.id相同的格式约束，不枚举固定关卡列表。已知ID、前置闭包、稳定序列化顺序与current_level合法性由ApplicationState依据目录验证；非连续完成集合合法。level.schema.json中order只负责展示，prerequisites要求全部完成并由加载器检查未知/循环引用。非连续完成存档示例见 [branch-progress.json](../examples/branch-progress.json)，当前树见 [36](../36_BRANCHING_PROGRESSION.md)。

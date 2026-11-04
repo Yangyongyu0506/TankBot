@@ -59,7 +59,7 @@ class ApplicationTests(unittest.TestCase):
         saved = self.state.progress_path.read_bytes()
         self.state.complete(ticket, "c0")
         self.assertEqual(self.state.progress_path.read_bytes(), saved)
-        self.assertEqual(self.state.progress()["unlocked_levels"], ["c0", "c1"])
+        self.assertEqual(self.state.progress()["unlocked_levels"], ["c0", "c1", "navigation.c0"])
         self.state.select_level("c1")
         reopened = ApplicationState(self.config, self.state.settings_path, self.state.progress_path)
         self.assertEqual(reopened.progress()["current_level"], "c1")

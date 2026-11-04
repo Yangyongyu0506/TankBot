@@ -122,6 +122,15 @@
         },
         "colliders": {
           "type": "boolean"
+        },
+        "gps": {
+          "type": "boolean"
+        },
+        "pose_estimates": {
+          "type": "boolean"
+        },
+        "pose_covariance": {
+          "type": "boolean"
         }
       },
       "required": [

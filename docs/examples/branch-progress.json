@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "completed_levels": [
+    "c0",
+    "navigation.c0",
+    "navigation.c1"
+  ],
+  "current_level": "navigation.c2",
+  "completions": {
+    "c0": {
+      "completed_at": "2026-11-03T12:00:00+00:00"
+    },
+    "navigation.c0": {
+      "completed_at": "2026-11-03T12:00:00+00:00"
+    },
+    "navigation.c1": {
+      "completed_at": "2026-11-03T12:00:00+00:00"
+    }
+  }
+}

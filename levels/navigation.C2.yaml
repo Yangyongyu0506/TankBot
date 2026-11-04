@@ -1,0 +1,608 @@
+schema_version: '1.0'
+metadata:
+  id: navigation.c2
+  name: Navigation C2 · 用 GPS 校正里程计漂移
+  description: 同一份带噪编码器驱动控制、纯里程计和 EKF，用低频 GPS 校正非线性运动预测并比较误差。
+  chapter:
+    chapter_id: navigation
+    title: Navigation
+    description: 只保留底盘，从轮驱动与运动控制逐步学习导航。
+  order: 8
+  version: 1.0.0
+  learning_objectives:
+  - 理解非线性运动预测、Jacobian、协方差传播与 GPS 测量更新；比较纯里程计与 EKF。
+  recommended_algorithms:
+  - Extended Kalman Filter
+  prerequisites:
+  - navigation.c1
+world:
+  dimension: 2
+  frame_id: map
+  weapons_enabled: false
+  simulation:
+    physics_hz: 60
+    substeps: 4
+    sensor_hz: 30
+    algorithm_hz: 10
+  map:
+    source: asset
+    path: maps/open_training.yaml
+robots:
+- id: player
+  type: tank
+  role: player
+  model: differential
+  drive: wheel_voltage
+  initial_pose:
+  - 0.0
+  - 0.0
+  - 0.0
+  initial_velocity:
+  - 0.0
+  - 0.0
+  - 0.0
+  health: null
+  control_sources:
+    chassis: robot
+    turret: disabled
+    weapon: disabled
+  sensors:
+  - id: wheel_encoder
+    robot_id: player
+    type: wheel_encoder
+    period_ticks: 2
+    mount:
+      parent_frame: base_link
+      translation_m:
+      - 0.0
+      - 0.0
+      yaw_rad: 0.0
+    random_stream:
+      id: navigation-encoder
+      seed_mode: named
+    topic: /robot/sensors/joint_states
+    schema: joint_state@1
+    frame_id: base_link
+    parameters:
+      velocity_stddev_radps: 0.2
+      gain_error_min: -0.03
+      gain_error_max: 0.03
+      position_model: integrated_rate_noise
+  - id: gps
+    robot_id: player
+    type: gps
+    period_ticks: 30
+    mount:
+      parent_frame: base_link
+      translation_m:
+      - 0.0
+      - 0.0
+      yaw_rad: 0.0
+    random_stream:
+      id: navigation-gps
+      seed_mode: named
+    topic: /robot/sensors/gps/fix
+    schema: position_fix2d@1
+    frame_id: map
+    parameters:
+      noise:
+        position_stddev_m: 0.2
+        bias_m:
+        - 0.0
+        - 0.0
+        drop_probability: 0.0
+      latency_ticks: 0
+      wall_occlusion: false
+communication:
+  runtime:
+    template_version: 1.0.0
+    mode: graph
+    profile_id: differential-gps-localization-v1
+    processing: modules
+    logical_module:
+      module_id: wheel_control
+      entry_point: navigation_robot:WheelControlModule
+    target_source: wheel_control
+    managed_files:
+    - navigation_robot.py
+    - tankbot.json
+    - contracts/wheel_control.json
+    - localization/odometry_module.py
+    - contracts/odometry.json
+    - localization/ekf_module.py
+    - contracts/ekf.json
+    manifest:
+      manifest_version: '1.0'
+      sdk_version: 0.1.0
+      protocol_version: '1.0'
+      project_id: navigation-gps-localization
+      entry_point: navigation_robot:WheelControlModule
+      modules:
+      - module_id: wheel_control
+        contract: contracts/wheel_control.json
+        config: {}
+      - module_id: odometry
+        contract: contracts/odometry.json
+        config: {}
+      - module_id: ekf
+        contract: contracts/ekf.json
+        config:
+          initial_covariance:
+          - - 0.0
+            - 0.0
+            - 0.0
+          - - 0.0
+            - 0.0
+            - 0.0
+          - - 0.0
+            - 0.0
+            - 0.0
+      connections:
+      - from: /robot/cmd_vel
+        to: wheel_control.command
+      - from: /robot/sensors/joint_states
+        to: wheel_control.wheels
+      - from: wheel_control.voltage
+        to: /robot/wheels/cmd_voltage
+      - from: /robot/sensors/joint_states
+        to: odometry.wheels
+      - from: odometry.pose
+        to: /robot/estimates/odometry/pose
+      - from: /robot/sensors/joint_states
+        to: ekf.wheels
+      - from: /robot/sensors/gps/fix
+        to: ekf.gps
+      - from: ekf.pose
+        to: /robot/estimates/ekf/pose
+      dependencies: []
+      pose_source:
+        mode: player
+        module_id: ekf
+        fallback: none
+    contracts:
+      wheel_control:
+        contract_version: '1.0'
+        module_id: wheel_control
+        entry_point: navigation_robot:WheelControlModule
+        inputs:
+          command:
+            schema: twist@1
+            required: true
+            max_age_ticks: 12
+          wheels:
+            schema: joint_state@1
+            required: true
+            max_age_ticks: 12
+        outputs:
+          voltage:
+            schema: wheel_voltage@1
+        execution:
+          mode: periodic
+          period_ticks: 6
+          deadline_ticks: 6
+          budget_ms: 8
+        dependencies: []
+        state_version: '1'
+      odometry:
+        contract_version: '1.0'
+        module_id: odometry
+        entry_point: localization.odometry_module:WheelOdometryModule
+        inputs:
+          wheels:
+            schema: joint_state@1
+            required: true
+            max_age_ticks: 12
+        outputs:
+          pose:
+            schema: pose2d@1
+        execution:
+          mode: periodic
+          period_ticks: 6
+          deadline_ticks: 6
+          budget_ms: 4
+        dependencies: []
+        state_version: '1'
+      ekf:
+        contract_version: '1.0'
+        module_id: ekf
+        entry_point: localization.ekf_module:EkfLocalizationModule
+        inputs:
+          wheels:
+            schema: joint_state@1
+            required: true
+            max_age_ticks: 12
+          gps:
+            schema: position_fix2d@1
+            required: false
+            max_age_ticks: 12
+        outputs:
+          pose:
+            schema: pose2d@1
+        execution:
+          mode: periodic
+          period_ticks: 6
+          deadline_ticks: 6
+          budget_ms: 8
+        dependencies: []
+        state_version: '1'
+permissions:
+  data_access:
+    inputs:
+      /robot/cmd_vel: twist@1
+      /robot/sensors/joint_states: joint_state@1
+      /robot/sensors/gps/fix: position_fix2d@1
+    outputs:
+    - pose2d@1
+    actuators:
+      /robot/wheels/cmd_voltage: wheel_voltage@1
+  public_initial_pose: true
+  public_map: true
+  visualization:
+    allowed_layers:
+    - robot
+    - trail
+    - map
+    - encoders
+    - frames
+    - gps
+    - pose_estimates
+    - pose_covariance
+    allowed_metrics:
+    - path_length_m
+    - rmse_m
+    - yaw_rmse_rad
+    - reference_rmse_m
+    - reference_yaw_rmse_rad
+    allowed_control_signals:
+    - command_vx_mps
+    - encoder_vx_mps
+    - command_wz_radps
+    - encoder_wz_radps
+    - left_wheel_radps
+    - right_wheel_radps
+    - left_voltage_v
+    - right_voltage_v
+    view_policy:
+      policy_id: navigation-gps-localization
+      system_pose_allowed: false
+      player_pose_allowed: true
+      allowed_pose_frames:
+      - map
+      public_map: open-training
+      local_observation_channels:
+      - /robot/sensors/joint_states
+      - /robot/sensors/gps/fix
+      true_enemy_objects: false
+      world_effects: false
+      camera_source: selected_pose_or_manual
+      pose_fresh_ticks: 12
+      pose_hide_after_ticks: 60
+      robot_topics_allowed: false
+      target_estimates_allowed: false
+      pose_estimate_channels:
+      - /robot/estimates/odometry/pose
+      - /robot/estimates/ekf/pose
+visualization:
+  trail_points: 900
+  initial_enabled:
+  - robot
+  - trail
+  - map
+  - encoders
+  - frames
+  - gps
+  - pose_estimates
+  - pose_covariance
+  user_toggleable:
+  - trail
+  - encoders
+  - frames
+  - gps
+  - pose_estimates
+  - pose_covariance
+  sources:
+    robot: selected_pose
+    trail: selected_pose
+    map: map
+    encoders: local_observation
+    frames: selected_pose
+    gps: local_observation
+    pose_estimates: player_pose_candidates
+    pose_covariance: selected_pose
+  preserve_user_settings: false
+  control_feedback:
+    title: 轮驱动调试
+    description: 目标速度来自系统指令；反馈来自与两个定位算法共享的带噪编码器。电压为限幅与看门狗处理后的执行器输入。虚线标记直行/转向切换；横轴为仿真秒。
+    period_ticks: 6
+    history_points: 300
+    precision: 3
+    charts:
+    - id: forward_speed
+      title: 前进速度
+      unit: m/s
+      signals:
+      - signal: command_vx_mps
+        label: 目标
+        color: '#f4cf7e'
+      - signal: encoder_vx_mps
+        label: 编码器反馈
+        color: '#8fe3b5'
+    - id: yaw_rate
+      title: 转向角速度
+      unit: rad/s
+      signals:
+      - signal: command_wz_radps
+        label: 目标
+        color: '#f4cf7e'
+      - signal: encoder_wz_radps
+        label: 编码器反馈
+        color: '#8fe3b5'
+    - id: wheel_rates
+      title: 两轮角速度
+      unit: rad/s
+      signals:
+      - signal: left_wheel_radps
+        label: 左轮
+        color: '#91bcff'
+      - signal: right_wheel_radps
+        label: 右轮
+        color: '#e9a2da'
+    - id: motor_voltage
+      title: 两轮执行电压
+      unit: V
+      signals:
+      - signal: left_voltage_v
+        label: 左轮
+        color: '#91bcff'
+      - signal: right_voltage_v
+        label: 右轮
+        color: '#e9a2da'
+  gps_history_points: 100
+  pose_labels:
+    odometry: 纯里程计
+    ekf: EKF
+objectives:
+  target: null
+  time_limit_s: 24
+  timer_start: first_control_commit
+  parameters:
+    movement_m: 0.0
+    turn_rad: 0.0
+    required_hits: 0
+    required_estimates: 100
+    min_path_length_m: 7.2
+    max_position_rmse_m: 0.15
+    max_yaw_rmse_rad: 0.15
+  command_sequence:
+    type: twist_sequence
+    topic: /robot/cmd_vel
+    repeat: 4
+    segments:
+    - duration_ticks: 240
+      label: 直行
+      twist:
+        linear:
+          x: 0.5
+          y: 0.0
+          z: 0.0
+        angular:
+          x: 0.0
+          y: 0.0
+          z: 0.0
+    - duration_ticks: 120
+      label: 原地左转
+      twist:
+        linear:
+          x: 0.0
+          y: 0.0
+          z: 0.0
+        angular:
+          x: 0.0
+          y: 0.0
+          z: 0.7853981633974483
+  progress:
+    moved:
+      type: displacement
+      parameter: movement_m
+      sticky: true
+    turned:
+      type: heading_change
+      parameter: turn_rad
+      sticky: true
+  success:
+    type: all
+    conditions:
+    - type: compare
+      metric: sequence_complete
+      operator: ==
+      value: true
+    - type: compare
+      metric: path_length_m
+      operator: '>='
+      parameter: min_path_length_m
+    - type: compare
+      metric: estimates
+      operator: '>='
+      parameter: required_estimates
+    - type: compare
+      metric: rmse_m
+      operator: <=
+      parameter: max_position_rmse_m
+    - type: compare
+      metric: yaw_rmse_rad
+      operator: <=
+      parameter: max_yaw_rmse_rad
+  outcomes:
+  - reason: controller_error
+    result: failure
+    when:
+      type: compare
+      metric: controller_faulted
+      operator: ==
+      value: true
+  - reason: objective_completed
+    result: success
+    when:
+      type: compare
+      metric: objective_complete
+      operator: ==
+      value: true
+  - reason: estimation_failed
+    result: failure
+    when:
+      type: compare
+      metric: sequence_complete
+      operator: ==
+      value: true
+  - reason: timeout
+    result: failure
+    when:
+      type: compare
+      metric: elapsed_ticks
+      operator: '>='
+      parameter: limit_ticks
+evaluation:
+  type: terminal_diagnostics
+  publish_on: terminal
+  source: player_pose
+  metrics:
+  - id: rmse_m
+    type: position_rmse
+  - id: yaw_rmse_rad
+    type: yaw_rmse
+  live_feedback:
+  - metric: rmse_m
+    title: 位置 RMSE 对比
+    label: EKF
+    unit: m
+    precision: 3
+    history_points: 300
+    description: 同采样 tick 对齐的累计误差：EKF 与纯里程计共用坐标轴。评分固定使用 EKF，不随界面选源改变。
+    reference_metric: reference_rmse_m
+    reference_label: 纯里程计
+    reference_color: '#74b9ff'
+  - metric: yaw_rmse_rad
+    title: 朝向 RMSE 对比
+    label: EKF
+    unit: rad
+    precision: 3
+    history_points: 300
+    description: 同采样 tick 对齐的累计误差：EKF 与纯里程计共用坐标轴。评分固定使用 EKF，不随界面选源改变。
+    reference_metric: reference_yaw_rmse_rad
+    reference_label: 纯里程计
+    reference_color: '#74b9ff'
+  module_id: ekf
+  reference_module_id: odometry
+randomization:
+  seed: 0
+  reset_on: new_run
+  generator: python_random_v1
+tutorial:
+  problem: 轮式里程计会因编码器增益与噪声漂移，GPS 又有位置抖动。实现 EKF，用非线性运动预测与低频位置观测融合恢复位姿。
+  hints:
+  - 可选补充练习：Weapons C2 帮助理解带噪观测、跨帧状态与滤波；有余力可继续练习 C3。这些不参与解锁。
+  - 沿用 C0 轮控制器和 C1 里程计，两个文件完整保留。只需修改高亮的 localization/ekf.py。
+  - 轮控制器、纯里程计和 EKF 获得同一次带噪轮速；没有隐藏的理想编码器通道。
+  - GPS 是地图系位置，不是 yaw 或真实位置；框架只对新且与预测时刻对齐的 GPS 调用 correct。
+  - 默认车体、相机和轨迹跟随 EKF；蓝色为纯里程计对照，GPS 点和 1σ 位置椭圆可单独切换。
+  testing:
+    checks:
+    - Python 语法、导入、三个 Module Contract、Topic 与权限。
+    - 以获授权编码器/GPS 试运行 {test_batches} 个批次，检查 state (3,) 和 covariance (3,3) 的 float64 类型、有限性、对称性与半正定。
+    meaning: 测试验证安全部署，不检查是否实现某种指定算法。正式尝试在 24 仿真秒末按 EKF 累计误差和实际路程评分；纯里程计只是对照。
+  lesson:
+    title: Navigation C2 · GPS 与扩展 Kalman Filter
+    summary: 只填写 EkfLocalization.predict 与 correct。框架管理构造、GPS 去重、采样对齐、数值校验与发布；已有控制器/里程计源码保留。
+    steps:
+    - 构造参数：model 为不可变差速模型；initial_pose 为只读 float64 (3,) [x,y,yaw]，只公开一次；initial_covariance 为 (3,3)。self.state
+      与 self.covariance 是你自己的可写副本，初始 P=0 因起点已知。
+    - wheel_rate_covariance 为只读 (2,2) 的轮速白噪声协方差（rad²/s²）；gain_error_bounds 为 (2,) [−0.03,+0.03]。真实增益每轮独立、每次重试采样一次且整局固定，不会提供给算法。
+    - 'predict(wheel_rates_radps: NDArray[np.float64], dt: float) -> None：轮速 (2,) 顺序 [left,right]，rad/s；dt
+      为两次已处理样本的仿真时间差。更新 self.state (3,) 与 self.covariance (3,3)，不返回数组。'
+    - 差速 FK：v=r(ωL+ωR)/2，w=r(ωR−ωL)/B。可采用中点运动模型，d=v·dt，a=w·dt，h=yaw+a/2；f=[x+d cos(h),y+d sin(h),yaw+a]。用非线性
+      f 预测均值，不要用 Jacobian F 乘状态来代替 f。
+    - 协方差预测：P⁻=F P Fᵀ+G Qω Gᵀ+Qmodel。F=∂f/∂state，G=∂f/∂[ωL,ωR]；中点 F=[[1,0,−d sin(h)],[0,1,d cos(h)],[0,0,1]]。Qmodel
+      是你选择的离散模型误差，不是 GPS 测量协方差。
+    - 中点 G 的两列：gx=[r dt cos(h)/2+d sin(h) r dt/(2B), r dt sin(h)/2−d cos(h) r dt/(2B), −r dt/B]；gy=[r dt cos(h)/2−d
+      sin(h) r dt/(2B), r dt sin(h)/2+d cos(h) r dt/(2B), r dt/B]。
+    - 轮速白噪声 σ=0.20 rad/s；每轮固定增益误差 uniform[−3%,+3%] 会导致相关漂移，不能只按独立白噪声理解。你可使用有效 Q 近似或增加内部状态，公开输出仍为 3 维位姿和对应 3×3
+      协方差。
+    - 'correct(position_m: NDArray[np.float64], measurement_covariance: NDArray[np.float64]) -> None：输入只读 GPS
+      (2,) 与 R (2,2)，map 系 m/m²，2 Hz、σx=σy=0.20 m；无 yaw、偏置、延迟、丢失或遮挡。'
+    - 位置观测 H=[[1,0,0],[0,1,0]]，innovation=z−H state，S=H P⁻ Hᵀ+R，K=P⁻ Hᵀ S⁻¹，state⁺=state⁻+K innovation。建议 np.linalg.solve
+      避免直接求逆。
+    - Joseph 更新：A=I−K H，P⁺=A P⁻ Aᵀ+K R Kᵀ。保持对称半正定、有限 float64；角度使用 rad，必要时归一到 [−π,π)。GPS 不测 yaw，交叉协方差可间接校正航向。
+    - 编码器 30 Hz，算法 10 Hz 取最新样本；GPS 2 Hz 恰与预测边界对齐，框架每条只校正一次，不会把重复缓存当成新观测。重新部署从一次公开初态重建滤波状态，不提供部署时真实位姿；正式尝试不重置时限。
+    - 框架发布 /robot/estimates/ekf/pose，map → base_link，stamp 为编码器采样 tick，6 tick 后提交。评分同 tick 对齐，固定评估 ekf 模块；纯里程计独立比较，切换显示来源不改变评分。
+    - 1σ 椭圆的半轴是位置协方差特征值的平方根；这是主轴标准差，不等于二维联合 68% 概率。估计不修改真实物理，真值仅供显式开发者图层。
+    files:
+    - path: localization/ekf.py
+      role: 本关玩家 predict/correct；整个文件可编辑、持久保存
+    - path: localization/odometry.py
+      role: 保留 C1 纯里程计，作为同输入对照
+    - path: control/wheel_controller.py
+      role: 保留 C0 轮电压控制器
+    - path: localization/ekf_module.py
+      role: 系统管理的 GPS 去重、时间对齐、检查与发布
+    edit_files:
+    - localization/ekf.py
+    functions:
+    - path: localization/ekf.py
+      name: predict
+    - path: localization/ekf.py
+      name: correct
+    default_type: DifferentialDriveParameters
+    aliases:
+      wheel_rates_radps: ndarray
+      initial_pose: ndarray
+      model: DifferentialDriveParameters
+      position_m: ndarray
+      measurement_covariance: ndarray
+      initial_covariance: ndarray
+      wheel_rate_covariance: ndarray
+      gain_error_bounds: ndarray
+    execution: 物理60 Hz/4子步，编码器30 Hz、GPS2 Hz、三个算法各 {algorithm_hz} Hz，共享6 tick提交；预算控制8 ms、里程计4 ms、EKF8 ms，总20
+      ms。
+    completion: 序列 {time_limit_s} 秒末：实际路程≥{min_path_length_m} m；EKF位置 RMSE≤{max_position_rmse_m} m、朝向 RMSE≤{max_yaw_rmse_rad}
+      rad、有效估计≥{required_estimates}次。不要求回到原点。
+    common_errors:
+    - 只修改返回值：predict/correct 应返回 None 并原位维护 self.state/self.covariance。
+    - 把 GPS 当真值或重复使用同一 GPS，使协方差虚假收缩。
+    - 对状态使用 F@state 代替非线性 f；忽略 yaw 的 Jacobian。
+    - 将每次固定的增益误差当作独立噪声，低估持续漂移。
+    - P 的 shape/dtype 错误、非对称、非半正定、NaN/Inf；日志会展示 Python 调用位置。
+    - 在编辑器中改代码不会立即改变机器人；先结束尝试，再测试和部署新快照。
+    type_notes: {}
+    calibration:
+      wheel_radius_m:
+        source: wheel_radius_m
+      wheel_separation_m:
+        source: differential_track_m
+      body_mass_kg:
+        source: body_mass_kg
+      body_yaw_inertia_kg_m2:
+        source: body_yaw_inertia_kg_m2
+      drag_x_n_s_per_m:
+        source: drag_x_n_s_per_m
+      drag_yaw_nm_s:
+        source: drag_yaw_nm_s
+      motor:
+        source: wheel_motor
+    ui:
+      state_heading: SELF POSE / EKF
+      legend_pose: 选中估计（默认 EKF）
+      view_note: 默认车体与相机跟随 EKF；GPS、纯里程计对照及 1σ 椭圆独立切换。评分始终使用 EKF。
+      mode_label: Navigation · GPS/EKF 定位
+      freshness_message: 估计位姿 · 固定提交延迟 · 世界坐标方向固定
+      progress_layout: command_sequence
+      default_file: localization/ekf.py
+scaffolding:
+  workspace_scope: navigation
+  components:
+  - wheel_controller
+  - wheel_control_adapter
+  - wheel_odometry
+  - wheel_odometry_adapter
+  - ekf_localization
+  - ekf_localization_adapter
+  documentation: {}

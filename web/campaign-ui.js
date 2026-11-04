@@ -2,6 +2,7 @@
 import {bindingHint} from "./keyboard.js";
 import {mountLiveMetric} from "./live-metrics.js";
 import {mountControlFeedback} from "./control-feedback.js";
+import {mountLevelTree,newlyUnlocked} from "./level-tree.js";
 export function attemptSummary(attempt){
   if(!attempt)return "";
   const clock=attempt.timing,remaining=Math.ceil(clock.remaining_s),minutes=Math.floor(remaining/60),seconds=String(remaining%60).padStart(2,"0");
@@ -12,7 +13,7 @@ export function attemptSummary(attempt){
 }
 export async function mountCampaign(profile,browser,onState,releaseControls){
   const $=id=>document.getElementById(id),levels=profile.campaign?.levels??[],chapters=profile.campaign?.chapters??[];
-  if(!levels.length){$("tab-task").hidden=true;return;}
+  if(!levels.length){$("tab-task").hidden=true;$("open-level-tree").hidden=true;return;}
   const practice=Boolean(profile.custom_map_practice);
   const current=levels.find(level=>level.level_id===profile.campaign.active_level);
   const liveMetric=mountLiveMetric($("live-evaluation"),current?.live_feedback);
@@ -41,9 +42,15 @@ export async function mountCampaign(profile,browser,onState,releaseControls){
     $("mode-label").textContent=current.ui.mode_label;
   }
   const initial=await (await fetch("/api/workspace")).json(),token=initial.control_token;
-  async function updateProgress(){
+  let previousProgress=null;
+  const tree=mountLevelTree(profile,{releaseControls,onStart:startLevel});
+  async function updateProgress(attempt){
     const response=await fetch("/api/progress"),progress=await response.json();
     if(!response.ok)throw Error(progress.error??"读取存档失败");
+    tree.update(progress);
+    if(attempt?.result?.passed)tree.announce(newlyUnlocked(previousProgress,progress,current.level_id,{practice}));
+    previousProgress=progress;
+    $("choose-level").textContent=`关卡路线 · 已通关 ${progress.completed_levels.length} / ${levels.length}`;
     for(const option of $("level-select").options){
       const level=levels.find(item=>item.level_id===option.value),completed=progress.completed_levels.includes(option.value);
       option.disabled=!progress.developer_mode&&!progress.unlocked_levels.includes(option.value);
@@ -56,22 +63,23 @@ export async function mountCampaign(profile,browser,onState,releaseControls){
     const r=browser?await browser.post(path,value):await fetch(url,path==="/api/campaign"?undefined:{method:"POST",headers:{"Content-Type":"application/json","X-TankBot-Control":token},body:JSON.stringify(value)});
     const result=await r.json();if(!r.ok)throw Error(result.error??"关卡请求失败");return result;
   }
-  $("start-level").onclick=async()=>{
+  async function startLevel(levelId){
     const workspace=$("workspace-panel");
     if(workspace.dataset.dirty==="true"||workspace.dataset.busy==="true"||workspace.dataset.runtimeBusy==="true"){
-      $("task-message").textContent="请先保存草稿，并等待当前测试或部署结束。";return;
+      const message="请先保存草稿，并等待当前测试或部署结束。";$("task-message").textContent=message;throw Error(message);
     }
-    $("start-level").disabled=true;releaseControls();
+    $("start-level").disabled=true;tree.setStarting(true);releaseControls();
     try{
-      const r=await fetch("/api/campaign/start",{method:"POST",headers:{"Content-Type":"application/json","X-TankBot-Control":token},body:JSON.stringify({level_id:$("level-select").value})});
+      const r=await fetch("/api/campaign/start",{method:"POST",headers:{"Content-Type":"application/json","X-TankBot-Control":token},body:JSON.stringify({level_id:levelId})});
       const result=await r.json();if(!r.ok)throw Error(result.error??"关卡启动失败");
       window.location.reload();
     }catch(error){
       const reason=error.message==="WORKSPACE_BYTE_LIMIT"?"保留的源码与本关所需文件超过工作区容量上限，原有代码已保留。":error.message;
       $("task-message").textContent="关卡切换失败："+reason+" 当前仍为 "+(current?.title??"原场景")+"。";
-      $("task-message").setAttribute("role","alert");$("start-level").disabled=false;
+      $("task-message").setAttribute("role","alert");$("start-level").disabled=false;tree.setStarting(false);throw Error(reason);
     }
-  };
+  }
+  $("start-level").onclick=()=>startLevel($("level-select").value).catch(()=>{});
   const finish=async()=>{
     try{releaseControls();await runtime("/api/campaign/finish");await poll();}
     catch(error){$("task-message").textContent=error.message;}
@@ -85,7 +93,7 @@ export async function mountCampaign(profile,browser,onState,releaseControls){
       liveMetric.update(run_id,attempt);
       controlFeedback.update(run_id,attempt);
       if(browser?.saveError()){await browser.retrySave();}
-      await updateProgress();
+      await updateProgress(attempt);
       onState(attempt);
       $("task-status").textContent=attempt?(attempt.phase==="preparing"?"准备中 · 尚未开始计时":{active:"进行中",passed:"已通关",ended:"本次尝试已结束"}[attempt.status]):"自由试验场";
       $("task-status").dataset.status=attempt?.status??"sandbox";
@@ -100,16 +108,18 @@ export async function mountCampaign(profile,browser,onState,releaseControls){
       if(attempt){
         const p=attempt.progress;
         const motion=attempt.motion;
-        $("task-progress").textContent=motion?`目标 v ${motion.command_vx_mps.toFixed(2)} m/s · w ${motion.command_wz_radps.toFixed(2)} rad/s　距起点 ${motion.origin_distance_m?.toFixed(3)??"—"} / ${current.objective.max_origin_distance_m} m　路程 ${motion.path_length_m?.toFixed(3)??"—"} ≥ ${current.objective.min_path_length_m} m`:
+        const originGoal=current.objective.max_origin_distance_m;
+        $("task-progress").textContent=motion?`目标 v ${motion.command_vx_mps.toFixed(2)} m/s · w ${motion.command_wz_radps.toFixed(2)} rad/s　${originGoal==null?"":`距起点 ${motion.origin_distance_m?.toFixed(3)??"—"} / ${originGoal} m　`}路程 ${motion.path_length_m?.toFixed(3)??"—"} ≥ ${current.objective.min_path_length_m} m`:
           attempt.player_hp!=null?`我方 HP：${attempt.player_hp} / ${attempt.player_max_hp}　敌车 HP：${attempt.enemy_hp} / ${attempt.enemy_max_hp}`:
           current.ui.progress_layout==="movement"?`移动 ≥ ${current.objective.movement_m} m ${p.moved?"✓":"○"}　转向 ≥ ${current.objective.turn_rad} rad ${p.turned?"✓":"○"}　命中 ${p.hit?"✓":"○"}`:
           `目标估计 ${p.has_estimate?"✓":"○"}　命中 ${p.hit?"✓":"○"}`;
         if(attempt.result){
           const r=attempt.result;
-          $("task-message").textContent=(r.passed?(practice?"练习完成！自定义地图不计正式通关，不解锁后续关卡。":"通关！可选择下一关，已有源码会保留。"):attemptSummary(attempt)+"。可修改代码，再点击开始 / 重试。")+
+          $("task-message").textContent=(r.passed?(practice?"练习完成！自定义地图不计正式通关，不解锁后续关卡。":"通关！打开关卡路线，可任选已开放的挑战或重玩；已有源码保留。"):attemptSummary(attempt)+"。可修改代码，再点击开始 / 重试。")+
             (r.rmse_m==null?"":" 本次估计 RMSE："+r.rmse_m.toFixed(3)+(current.live_feedback?" m。":" m（仅结束后公布）。"));
           if(motion)$("task-message").textContent+=` 最终距起点 ${r.origin_distance_m.toFixed(3)} m，实际路程 ${r.path_length_m.toFixed(3)} m。`;
           if(r.yaw_rmse_rad!=null)$("task-message").textContent+=` 朝向 RMSE ${r.yaw_rmse_rad.toFixed(3)} rad，有效估计 ${r.scored_samples} 次。`;
+          if(r.reference_rmse_m!=null)$("task-message").textContent+=` 纯里程计对照：位置 ${r.reference_rmse_m.toFixed(3)} m、朝向 ${r.reference_yaw_rmse_rad?.toFixed(3)??"—"} rad。`;
           if(save_error||browser?.saveError())$("task-message").textContent=save_error||browser.saveError();
         }else{
           $("task-message").textContent=attempt.phase==="preparing"?(attempt.timing.start_on==="first_control"?"首次有效驾驶、炮台或开火操作后计时。":"保存 → 测试 → 部署。首次成功部署前不计时；部署后按本关权限运行机器人。"):"本局运行中，代码编辑器已锁定。发现问题请点击“结束本次尝试”，或点击“开始 / 重试”重置关卡；源码会保留。";

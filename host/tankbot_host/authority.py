@@ -192,6 +192,9 @@ class Authority:
             if config.get("wheel_drive"):
                 from .navigation import drive_parameters
                 init["config"]["drive_parameters"]=drive_parameters(config)
+            if any(sensor.type=="gps" for sensor in self.scene.sensors):
+                from .navigation import localization_parameters
+                init["config"]["localization_parameters"]=localization_parameters(config)
             if self.graph_profile() and self.radar.noise is not None:
                 noise = self.radar.noise
                 init["config"]["observations"] = {"radar_covariance":[[noise["range_stddev_m"]**2,0],[0,noise["bearing_stddev_rad"]**2]]}
@@ -469,8 +472,9 @@ class Authority:
                 system=self._message("pose2d@1","/system/pose",pose,frame="map",publisher="system_pose_provider")
                 self.selector.accept("system",system,self._message)
         payload = self.gateway.build(self.tick,self.view_revision,self.selector,self._sensors,practice=practice,
-                                     target_estimate=self._target_estimate, campaign=campaign)
-        schema = "view_snapshot@4" if self.graph is not None and campaign else "view_snapshot@3" if campaign else "view_snapshot@2" if practice is not None else "view_snapshot@1"
+                                     target_estimate=self._target_estimate, campaign=campaign,
+                                     pose_candidates=self._candidates if self._private.get("player_alive",True) else {})
+        schema = "view_snapshot@5" if "pose_estimates" in payload else "view_snapshot@4" if self.graph is not None and campaign else "view_snapshot@3" if campaign else "view_snapshot@2" if practice is not None else "view_snapshot@1"
         self.view = self._message(schema, "/view/snapshot", payload, frame=None, publisher="view_gateway")
         self.validator.structure(self.view)
         import json
@@ -542,8 +546,13 @@ class Authority:
             self.selector.accept(module_id,message,self._message)
             if self.selector.source_id == module_id:
                 self._sensors["/robot/localization/pose"] = copy.deepcopy(self.selector.canonical)
-                if self.campaign:
-                    self.campaign.estimate(message,self._self_pose_history.get(message["simulation_tick"]))
+            if self.campaign:
+                evaluation=self.campaign.definition["evaluation"]
+                truth=self._self_pose_history.get(message["simulation_tick"])
+                if module_id==evaluation.get("module_id",self.selector.source_id):
+                    self.campaign.estimate(message,truth)
+                if module_id==evaluation.get("reference_module_id"):
+                    self.campaign.reference_estimate(message,truth)
             self.audit.append({"event":"pose_commit","module_id":module_id,"tick":self.tick,"sample_tick":message["simulation_tick"],"activation_tick":activation_tick})
         elif channel in (f"/robot/estimates/{module_id}/target",f"/robot/estimates/{module_id}/target_pose",f"/robot/estimates/{module_id}/target_polar"):
             profile = self.graph_profile()

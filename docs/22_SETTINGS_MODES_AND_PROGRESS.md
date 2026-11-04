@@ -4,7 +4,7 @@
 
 提供固定视口内的设置页面、持久键盘映射，以及玩家教学进度。开发者可像 RViz 的 Displays 一样独立开关当前已实现的数据图层；玩家只看本关授权信息。覆盖本机原生 Authority 与浏览器 Authority，不引入 ROS2、账号、云存档或 Arena 权限系统。
 
-本轮默认玩家模式，C0 → C1 → C2 顺序解锁；重玩已解锁关卡不撤销进度。开发者可选全部已注册关卡，但练习不记录玩家通关。两种模式不改变玩家 Python 的输入、输出或执行器权限。
+默认玩家模式，公共 c0 通关后同时开放 Weapons c1 和 Navigation navigation.c0；两条主线分别遵守自己的显式前置，可任选或交替推进。稳定ID/章节身份不变，完整树见 [36](36_BRANCHING_PROGRESSION.md)。重玩不撤销进度；开发者可练习所有已注册关卡，不奖玩家通关。两种模式不改变 Python 输入、输出或执行器权限。
 
 不含 Campaign 的旧 `1.5` 沙盒配置需使用 `--developer`，设置中拒绝切到不存在教学关卡的玩家模式。
 
@@ -24,22 +24,28 @@ YAML 使用 PyYAML SafeLoader 的受限子类，拒绝重复键及 Python 对象
 
 ## 关卡与存档语义
 
-通关条件继续由 `CampaignSession.observe()` 计算，点击“结束并评估”、Test 的 Ready、部署成功均不算通关。当前关卡 ID 按数字次序排列；解锁集合为已通关前缀加下一关。CLI `--level` 与 HTTP start 使用同一个 `require_level()`，修改下拉框不能跳关。默认启动恢复玩家上次选择的已解锁关卡，首次从 C0 开始。
+通关条件继续由 CampaignSession 与声明式规则计算，主动结束、Test Ready、部署成功均不算通关。metadata.prerequisites 表示必须全部通关的前置；metadata.order只用于目录展示及既有存档序列化。ApplicationState统一计算unlocked_levels，CLI/HTTP/浏览器启动都检查require_level，锁定消息列出缺少的关卡名称与ID；UI禁用按钮不构成权限。
+
+顶部或任务页“关卡路线”打开固定视口弹窗，公共入口置顶，Weapons/Navigation分列，窄屏纵向分组。节点可查看简介、前置、提示和开始/重试，区分已通关、可挑战、锁定及当前；通关列出本次所有新开放节点，不自动进入唯一下一关。默认恢复上次选择的已解锁关卡；新档选择首个无前置入口，不取展示列表第一项猜测权限。
 
 存档结构示例（`completed_at` 使用 UTC）：
 
 ```json
 {
   "version": 1,
-  "completed_levels": ["c0"],
-  "current_level": "c1",
-  "completions": {"c0": {"completed_at": "2026-10-24T12:00:00+00:00"}}
+  "completed_levels": ["c0", "navigation.c0", "navigation.c1"],
+  "current_level": "navigation.c2",
+  "completions": {
+    "c0": {"completed_at": "2026-11-03T12:00:00+00:00"},
+    "navigation.c0": {"completed_at": "2026-11-03T12:10:00+00:00"},
+    "navigation.c1": {"completed_at": "2026-11-03T12:20:00+00:00"}
+  }
 }
 ```
 
-[Progress Schema](schemas/progress.schema.json) 裁决结构；连续前缀、当前关卡已解锁、记录与完成列表对应等由领域验证。重复通关幂等；写临时文件、flush/fsync 后原子替换，OS 文件锁保护读改写。模式切换撤销旧 attempt ticket；开发者选关不改玩家的 `current_level`，关闭开发者后回到该关。
+[Progress Schema](schemas/progress.schema.json)约束结构与ID格式，已知ID、完成项前置闭包、稳定序列化顺序、当前关卡已解锁、记录与完成列表对应由领域验证。完成集合无需是全局前缀，上例未完成Weapons C1也合法。版本仍为1；读取不排序重写，不补送未玩关卡，旧链式存档和成绩/当前关卡保留。新增完成按原metadata.order写出，重复通关幂等；写临时文件、flush/fsync后原子替换，OS锁保护读改写。模式切换撤销旧ticket；开发者选关不改玩家current_level。
 
-原生宿主观察 Authority 的 passed 状态后记录，失败在任务面板提示并重试。浏览器由独立 Core Worker 发出完成通知，UI 用启动 ticket 向本机存储服务提交，仅通知当前已注册尝试；服务验证 ticket、模式、关卡顺序并幂等保存。该本机完成通知不是服务器独立验算，设备所有者仍可编辑文件或调试 Worker，不能用作竞技成绩证明。未来 Arena 必须在服务器运行比赛并验算。
+原生宿主观察 Authority 的 passed 状态后记录，失败在任务面板提示并重试。浏览器由独立 Core Worker 发出完成通知，UI 用启动 ticket 向本机存储服务提交，仅通知当前已注册尝试；服务验证 ticket、模式、显式前置关系并幂等保存。该本机完成通知不是服务器独立验算，设备所有者仍可编辑文件或调试 Worker，不能用作竞技成绩证明。未来 Arena 必须在服务器运行比赛并验算。
 
 ## 可视化与权限边界
 
@@ -72,17 +78,18 @@ flowchart LR
 | `GET /api/settings` | 返回 settings、defaults、revision、文件位置与本机 control token |
 | `POST /api/settings` | `{revision, settings}`；严格校验与 CAS，返回 mode_changed / reload_required |
 | `GET /api/progress` | 完成列表、当前关卡、解锁列表、developer_mode |
+| `GET /api/profile` | 公共目录含level_id/title/chapter_id/prerequisites/order/description；浏览器由共享Authority生成相同profile |
 | `POST /api/campaign/start` | `{level_id}`；检查模式及存档，再建立新关卡 |
 | `GET /api/developer` | 原生开发者 DTO；浏览器使用同名 Worker RPC |
 | `POST /api/session/start` | 浏览器 `{}`，为当前启动关卡登记 ticket 与模式 |
 | `POST /api/progress/complete` | 仅浏览器本机持久化 `{ticket, level_id}`；原生无此客户端写入入口 |
 
-变更接口沿用 Host/Origin/control-token 校验，Runtime origin 不服务设置/存档。配置版本、玩家协议 Envelope、控制消息均保持兼容。headless/probe 属诊断运行，不自动记录 UI Campaign 进度；`serve/browser --developer`、`--player` 可显式保存模式选择。
+变更接口沿用Host/Origin/control-token校验，Runtime origin不服务设置/存档。配置版本、Envelope、控制消息保持兼容。headless/probe指定--level也检查玩家前置，但不改current_level或记录通关；诊断--developer只在本次覆盖模式、不写个人设置。serve/browser的--developer/--player沿用持久模式选择。没有--level的诊断沙盒不是正式挑战，不产生关卡成绩。
 
 ## 取舍、开放项与验收
 
-采用单个本机存档文件，暂不引入账号/多个槽位 UI；不同存档可用路径区分。UI 单独禁用按钮不能保障关卡顺序，因此 Authority 入口和本机存储入口均检查。开发者数据走独立受权入口，避免扩宽关卡策略或污染标准估计 Topic。修改 YAML 时格式/注释可能规范化，不影响算法文件。
+采用单个本机存档文件，暂不引入账号/多个槽位 UI；不同存档可用路径区分。UI 单独禁用按钮不能保障前置权限，因此 Authority 入口和本机存储入口均检查。开发者数据走独立受权入口，避免扩宽关卡策略或污染标准估计 Topic。修改 YAML 时格式/注释可能规范化，不影响算法文件。
 
 存档未来版本升级需要显式迁移；当前遇到未知版本拒绝，不能推断新旧课程对应关系。未验证跨平台文件锁/原子替换和其他浏览器快捷键；多人身份、远程管理员授权与竞技存档另行设计。
 
-验收要求：改键跨刷新有效、编辑/设置不驱动坦克；玩家 CLI/API/UI 均不能跳关；实际通关解锁并持久化；开发者练习不奖励进度；图层独立开关且保存；关闭开发者撤回真值，玩家程序输入不扩权。验证命令与实际记录见 [验收报告](reports/SETTINGS_VALIDATION.md)。
+原设置/模式验收见 [历史报告](reports/SETTINGS_VALIDATION.md)，其中链式进度描述记录当时规则。当前双主线取代全局连续前缀约定，见 [ADR-0049](adr/0049-branching-course-progression.md)；其他模式、权限和文件约束保持。两种玩家UI真实完成公共c0、两分支开放、跨scope往返及旧存档/源码历史保留均已验收，详见 [双主线报告](reports/BRANCHING_PROGRESSION_VALIDATION.md)。

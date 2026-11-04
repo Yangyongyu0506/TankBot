@@ -23,8 +23,9 @@ def validate_profile(config):
     if set(c["levels"])-c["lessons"].keys():
         raise ValueError("Every level requires a learning guide")
     chapters=c["chapters"]
-    if [lid for chapter in chapters for lid in chapter["levels"]]!=list(c["levels"]):
-        raise ValueError("Chapters must contain every level once in progression order")
+    members=[lid for chapter in chapters for lid in chapter["levels"]]
+    if len(members)!=len(c["levels"]) or set(members)!=set(c["levels"]):
+        raise ValueError("Chapters must contain every level exactly once")
     for lid,level in c["levels"].items():
         if type(level["time_limit_s"]) is not int or level["time_limit_s"]<=0:
             raise ValueError("Each level requires a positive time_limit_s")
@@ -84,10 +85,16 @@ def catalog(config):
     for key, value in config.get("campaign", {}).get("levels", {}).items():
         item = {"level_id": key, **{name: copy.deepcopy(value[name]) for name in ("title", "problem", "hints", "capabilities", "objective", "time_limit_s", "timer_start")},
                 "chapter_id":value.get("chapter_id"),"control_sources":copy.deepcopy(value.get("control_sources")),"armor_mode":value.get("armor_mode",False),"ui":copy.deepcopy(value["tutorial"]["lesson"]["ui"]),"visualization":copy.deepcopy(value["visualization"]),"allowed_layers":copy.deepcopy(value["permissions"]["visualization"]["allowed_layers"])}
+        item.update(prerequisites=copy.deepcopy(value["metadata"]["prerequisites"]),
+                    order=value["metadata"]["order"],description=value["metadata"]["description"])
         item["problem"] = item["problem"].format(time_limit_s=value["time_limit_s"], max_hp=(value["target"] or {}).get("health", {}).get("max_hp"))
         feedback=value["evaluation"].get("live_feedback")
         entries=feedback if isinstance(feedback,list) else [feedback] if feedback else []
-        permitted=[entry for entry in entries if entry["metric"] in value["permissions"]["visualization"].get("allowed_metrics",[])]
+        allowed=value["permissions"]["visualization"].get("allowed_metrics",[])
+        permitted=[copy.deepcopy(entry) for entry in entries if entry["metric"] in allowed]
+        for entry in permitted:
+            if entry.get("reference_metric") not in allowed:
+                for field in ("reference_metric","reference_label","reference_color"):entry.pop(field,None)
         if permitted:item["live_feedback"]=copy.deepcopy(permitted if isinstance(feedback,list) else permitted[0])
         result.append(item)
     return result
@@ -165,6 +172,8 @@ class CampaignSession:
         self.yaw_error_count = 0
         from .level_rules import Diagnostics
         self.diagnostics = Diagnostics(self.definition["evaluation"])
+        self.reference_diagnostics = Diagnostics(self.definition["evaluation"])
+        self.reference_last_tick = -1
         self.started_tick = None
         self.elapsed_ticks = 0
         self.limit_ticks = self.definition["time_limit_s"] * config["clock"]["physics_hz"]
@@ -241,6 +250,19 @@ class CampaignSession:
         self.yaw_error_count=self.diagnostics.counts.get("yaw_rmse_rad",0)
         self.yaw_squared_error=self.diagnostics.squared.get("yaw_rmse_rad",0.0)
 
+    def reference_estimate(self, message, truth):
+        if (self.status!="active" or self.started_tick is None or truth is None or message["frame_id"]!="map"
+                or message["simulation_tick"]<self.started_tick or message["simulation_tick"]<=self.reference_last_tick):
+            return
+        self.reference_last_tick=message["simulation_tick"]
+        self.reference_diagnostics.observe(message["payload"],truth)
+
+    def metric_report(self):
+        result=self.diagnostics.report()
+        if self.definition["evaluation"].get("reference_module_id"):
+            result.update({"reference_"+key:value for key,value in self.reference_diagnostics.report().items()})
+        return result
+
     def observe(self, private):
         if self.status != "active":
             return False
@@ -271,7 +293,9 @@ class CampaignSession:
         if self.started_tick is not None:
             self.elapsed_ticks = tick-self.started_tick
         self.result = {"passed":passed,"reason":reason,"finished_tick":tick,"estimate_samples":self.estimates,
-                       **self.diagnostics.report(),"scored_samples":self.error_count,"hits":self.hits}
+                       **self.metric_report(),"scored_samples":self.error_count,"hits":self.hits}
+        if self.definition["evaluation"].get("reference_module_id"):
+            self.result["reference_samples"]=self.reference_diagnostics.counts.get("rmse_m",0)
         if self.sequence:self.result.update(origin_distance_m=self.origin_distance_m,path_length_m=self.path_length_m)
         return self.public()
 
@@ -288,6 +312,12 @@ class CampaignSession:
                 "progress": {"moved": self.moved, "turned": self.turned,
                              "has_estimate": self.estimates > 0, "hit": self.hits > 0},
                 "result": copy.deepcopy(self.result)}
+        if state["result"]:
+            allowed=self.definition["permissions"]["visualization"].get("allowed_metrics",[])
+            for metric in ("reference_rmse_m","reference_yaw_rmse_rad"):
+                if metric not in allowed:state["result"].pop(metric,None)
+            if not set(allowed)&{"reference_rmse_m","reference_yaw_rmse_rad"}:
+                state["result"].pop("reference_samples",None)
         if self.sequence:
             allowed=self.definition["permissions"]["visualization"].get("allowed_metrics",[])
             state["motion"]={key:getattr(self,key) for key in ("origin_distance_m","path_length_m") if key in allowed}
@@ -301,4 +331,8 @@ class CampaignSession:
             if metric in self.definition["permissions"]["visualization"].get("allowed_metrics",[]):
                 state.setdefault("live_metrics",{})[metric]=self.diagnostics.report()[metric]
                 state["live_metrics"]["scored_samples"]=self.diagnostics.counts[metric]
+                reference=entry.get("reference_metric")
+                if reference and reference in self.definition["permissions"]["visualization"].get("allowed_metrics",[]):
+                    state["live_metrics"][reference]=self.metric_report()[reference]
+                    state["live_metrics"]["reference_samples"]=self.reference_diagnostics.counts[metric]
         return state

@@ -68,7 +68,7 @@ class Validator:
             raise Rejected("OUT_OF_ORDER")
         if msg["schema"] in ("pose2d@1", "target_pose_estimate@1"):
             self.covariance(msg["payload"]["covariance"])
-        if msg["schema"] in ("target_estimate@1", "target_polar_estimate@1") and msg["payload"]["covariance"] is not None:
+        if msg["schema"] in ("position_fix2d@1", "target_estimate@1", "target_polar_estimate@1") and msg["payload"]["covariance"] is not None:
             a, b, c, d = msg["payload"]["covariance"]
             self.covariance([a, b, 0, c, d, 0, 0, 0, 0])
         if msg["schema"] in ("twist@1", "wheel_voltage@1", "turret_velocity@1", "turret_acceleration@1"):

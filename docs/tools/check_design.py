@@ -56,6 +56,8 @@ def schema_for(value):
         return "chassis-controller.schema.json", None
     if "config_version" in value:
         return "simulation-profile.schema.json", None
+    if "completed_levels" in value and "completions" in value:
+        return "progress.schema.json", None
     if "activation_tick" in value:
         return "payloads.schema.json", "runtime_step_request"
     if "step_id" in value and "results" in value:

@@ -74,6 +74,16 @@
     },
     "robot_topics_allowed": {
       "type": "boolean"
+    },
+    "pose_estimate_channels": {
+      "type": "array",
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "maxLength": 160,
+        "pattern": "^/robot/estimates/[a-z][a-z0-9_]*/pose$"
+      }
     }
   },
   "required": [

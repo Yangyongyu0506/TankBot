@@ -2,7 +2,7 @@
 
 ## 目的与范围
 
-Navigation 首关稳定 ID 为 `navigation.c0`，通关 C5 后解锁，开发者可直达。只保留差速底盘，不创建炮台、武器、敌车或血量，不加载 Weapons 工程。玩家不能人工驾驶；系统发送目标 Twist，玩家实现 FK/IK 与电机控制，输出左右轮电压。实际验收证据见 [报告](reports/NAVIGATION_CONTROL_VALIDATION.md)。
+Navigation 首关稳定 ID 为 navigation.c0，通关公共c0后即开放，与Weapons C1并行，开发者仍可直达。当前进度见 [36](36_BRANCHING_PROGRESSION.md)，不再要求完成Weapons C5。只保留差速底盘，不创建炮台、武器、敌车或血量，不加载Weapons工程。玩家不能人工驾驶；系统发送Twist，玩家实现FK/IK与电机控制，输出两轮电压。[原验收](reports/NAVIGATION_CONTROL_VALIDATION.md)保留当时链式入口的历史，物理/接口/阈值未改。
 
 物理参数集中在 [差速底盘](../config/chassis/differential.yaml)，指令、权限、教材与评价在 [关卡 YAML](../levels/navigation.C0.yaml)。`robots[].drive: wheel_voltage` 选择新驱动；省略时继续 velocity_servo，保持旧关卡轨迹。`world.weapons_enabled: false`、`objectives.target: null` 表达无武器/目标场景；加载器拒绝矛盾的武器控制、生命与敌方/武器传感器。不存在隐藏靶标或关卡 ID 物理分支。
 
@@ -85,7 +85,7 @@ YAML twist_sequence 四次交替：vx=0.5 m/s 直行 240 tick；vx=0、wz=π/4 r
 
 两个启动器通过 select_workspace 选库，跨 scope 直接 unlock 拒绝。默认重启身份不依赖关卡、入口或模板版本。显式 --workspace-store 指向初始工程；同服务切到其他分组使用其 scopes/<scope> 子目录，返回原组复用原路径。显式选择已有工程不触发自动清空。
 
-ResolvedScene 重试复用定义，新建 run/Core、轮状态、路程、指令时钟、传感器与 Runtime；源码/revision/archive 不清空。存档版本不变，只新增 C5→navigation.c0 前置关系。
+ResolvedScene重试复用定义，新建run/Core、轮状态、路程、指令时钟、传感器与Runtime；源码/revision/archive不清空。版本1存档保留，当前入口关系为c0→navigation.c0；原C5前置由 [ADR-0049](adr/0049-branching-course-progression.md)明确修订。
 
 ## 验证、取舍与开放项
 

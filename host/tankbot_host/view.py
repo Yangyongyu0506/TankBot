@@ -31,7 +31,7 @@ class ViewGateway:
                 size += length
         return result
 
-    def build(self, tick, revision, selector, sensors, *, practice=None, target_estimate=None, campaign=False):
+    def build(self, tick, revision, selector, sensors, *, practice=None, target_estimate=None, campaign=False, pose_candidates=None):
         policy = self.policy
         selected = None
         candidate = selector.canonical
@@ -45,6 +45,12 @@ class ViewGateway:
         observations = [copy.deepcopy(sensors[c]) for c in policy["local_observation_channels"] if c in sensors]
         payload = {"view_revision": revision, "policy_id": policy["policy_id"], "selected_pose": selected,
                    "local_observations": observations, "objects": objects, "effects": []}
+        channels = policy.get("pose_estimate_channels", [])
+        if channels:
+            payload["pose_estimates"] = [copy.deepcopy(message) for message in (pose_candidates or {}).values()
+                if policy["player_pose_allowed"] and message["channel"] in channels
+                and message["frame_id"] in policy["allowed_pose_frames"]
+                and 0 <= tick-message["simulation_tick"] <= policy["pose_hide_after_ticks"]]
         if campaign:
             payload["target_estimates"] = []
             projected = target_estimate is not None and target_estimate.get("channel")=="/view/target_estimate" and target_estimate.get("publisher_id")=="view_gateway"

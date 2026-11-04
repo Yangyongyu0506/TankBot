@@ -2,9 +2,9 @@
 
 TankBot 将二维坦克运动、机器人算法学习与多文件 Python 编程结合。玩家通过传感器和自己的算法重建世界认知。
 
-当前完成 **M1 + M1b 本机闭环原型**：Rust/Rapier2D 权威物理、差速/四轮径向全向轮底盘、理想轮编码器与质心 IMU、外部 Python 里程计、固定 tick 提交、Pose Selector、View Policy 和 Canvas 页面。M1b 增加双刚体炮台、单发/冷却、连续弹道/反弹/弹丸互毁、后坐/受击冲量、靶标与 Python 武器接口；M2 增加真实浏览器 Rust/WASM + Pyodide 双 Worker、独立 Runtime origin 与多 Adapter 验证；M3 增加 CodeMirror/Vim、多文件 Workspace、模板预览、快照测试、部署与回滚。M5 增加模块图，现已调整为 C3 极坐标滤波、C4 中心自瞄与 C5 小陀螺装甲；Navigation 已新增首关双轮电压控制；后续规划和 Arena 尚未实现。
+当前完成 **M1 + M1b 本机闭环原型**：Rust/Rapier2D 权威物理、差速/四轮径向全向轮底盘、理想轮编码器与质心 IMU、外部 Python 里程计、固定 tick 提交、Pose Selector、View Policy 和 Canvas 页面。M1b 增加双刚体炮台、单发/冷却、连续弹道/反弹/弹丸互毁、后坐/受击冲量、靶标与 Python 武器接口；M2 增加真实浏览器 Rust/WASM + Pyodide 双 Worker、独立 Runtime origin 与多 Adapter 验证；M3 增加 CodeMirror/Vim、多文件 Workspace、模板预览、快照测试、部署与回滚。M5 增加模块图，现已调整为 C3 极坐标滤波、C4 中心自瞄与 C5 小陀螺装甲；Navigation 已有双轮电压控制、理想里程计和 GPS/EKF 定位三关；后续规划和 Arena 尚未实现。
 
-M4 增加 C0–C2 教学关卡：真值驾驶练习、理想雷达 SE(3) 矩阵变换、带噪声/丢失的移动敌车跟踪与击杀。开始方式见下节；M5 当前课程为 C3 直接滤波车体系 (r, theta)、C4 复用滤波并接管武器自瞄、C5 全向小陀螺装甲预测；自身定位课程、建图、规划与 Arena 仍待实现。
+M4 增加 C0–C2 教学关卡：真值驾驶练习、理想雷达 SE(3) 矩阵变换、带噪声/丢失的移动敌车跟踪与击杀。开始方式见下节；M5 当前课程为 C3 直接滤波车体系 (r, theta)、C4 复用滤波并接管武器自瞄、C5 全向小陀螺装甲预测；建图、规划与 Arena 仍待实现。
 
 ## 构建与运行
 
@@ -33,9 +33,9 @@ python3 tools/tankbot.py serve --level c0
 python3 tools/tankbot.py browser --level c0
 ```
 
-在「任务」面板选择 C0/C1/C2，点击「开始 / 重试」。C0 先移动至少 1 m、转动车体至少 0.5 rad，并命中可见靶标。C1 隐藏敌车，F2 打开编辑器，完成自动生成的 `perception/transforms.py`，返回 `NDArray[np.float64]` 形式的 4×4 SE(3) 矩阵，测试并部署，利用目标估计瞄准命中。C2 保留该矩阵函数，追加 `perception/tracker.py`；处理带噪声和 10% 丢失的雷达，跟踪巡逻敌车，保持存活并击中三次使敌车 HP 归零即可通关。
+在顶部或「任务」面板打开「关卡路线」，选择节点查看简介和具体前置，再点击「开始本关 / 重试」。公共 C0 通关后，可任选 Weapons 或 Navigation 主线并交替推进。C0 先移动至少 1 m、转动车体至少 0.5 rad，并命中可见靶标。C1 隐藏敌车，F2 打开编辑器，完成自动生成的 `perception/transforms.py`，返回 `NDArray[np.float64]` 形式的 4×4 SE(3) 矩阵，测试并部署，利用目标估计瞄准命中。C2 保留该矩阵函数，追加 `perception/tracker.py`；处理带噪声和 10% 丢失的雷达，跟踪巡逻敌车，保持存活并击中三次使敌车 HP 归零即可通关。
 
-前三关保留系统自定位、公开地图与手动控制。Radar 是车体系局部观测，地图上的目标标记来自玩家 Python；Weapons C1–C5 默认显示炮弹，可在图层设置中开关；真实敌车和命中特效位置仍隐藏，Python 输入权限不变。C2/C3 显示双方 HP，以及运行中的累计位置 RMSE、有效样本数和变化曲线；编辑器也显示同一指标。测试不计入、重复部署不清零，重试重新累计。通关或点击「结束本次尝试」后关闭玩家程序并冻结最终误差报告；物理与已有弹丸继续运行。重试建立新场景，新关只补缺失文件，已有源码保留；保存的草稿须重新 Test/Deploy。玩家按 C0 → C1 → C2 解锁，通关写入存档；开发者模式可自由选关练习。
+前三关保留系统自定位、公开地图与手动控制。Radar 是车体系局部观测，地图上的目标标记来自玩家 Python；Weapons C1–C5 默认显示炮弹，可在图层设置中开关；真实敌车和命中特效位置仍隐藏，Python 输入权限不变。C2/C3 显示双方 HP，以及运行中的累计位置 RMSE、有效样本数和变化曲线；编辑器也显示同一指标。测试不计入、重复部署不清零，重试重新累计。通关或点击「结束本次尝试」后关闭玩家程序并冻结最终误差报告；物理与已有弹丸继续运行。重试建立新场景，新关只补缺失文件，已有源码保留；保存的草稿须重新 Test/Deploy。Weapons 内部仍按 C1 → C2 → C3 → C4 → C5 解锁，Navigation 内部按 C0 → C1 → C2 解锁；两条首关均只依赖公共 c0。通关后列出所有新开放节点，允许重玩，不强制自动进入下一关。开发者仍可自由练习。
 
 F1 或编辑器中的「关卡说明 / 类型」可随时查看每关步骤、输入输出签名、SDK 字段/单位、Python 速查与交互矩阵实验；悬停及 Ctrl+Space 提供类型提示。新模板显式标注变量和返回类型。旧工作区可预览模板升级并选择系统脚手架，已有算法默认保留。原生 NumPy 随首次启动自动准备；浏览器运行 `prepare_browser.py` 准备锁定的 Pyodide/NumPy 资源。
 
@@ -57,7 +57,7 @@ C0/C1/C2 分别限时 **60/60/120 仿真秒**。C0 首次有效人工操作起�
 
 点击顶部「设置」或默认 **F10** 打开设置页面，× 关闭。可修改键盘绑定、恢复默认键位，并切换开发者模式；编辑器默认 F2、说明默认 F1，也可改键。设置界面打开期间暂停驾驶与开火。模式切换会重新开始关卡，先保存代码并等待测试/部署结束。
 
-首次创建 `userdata/settings.yaml`，保存键盘映射、开发者开关和图层选择；默认模板在 [config/settings.yaml](config/settings.yaml)。玩家通关记录在 `userdata/progress.json`，刷新或重启后保留；首次只开放 C0，完成后解锁下一关，CLI/API 同样检查存档。可以用 `--settings-file /path/settings.yaml --save-file /path/progress.json` 指定自己的文件。损坏或未知版本的文件报错并保留原件。
+首次创建 `userdata/settings.yaml`，保存键盘映射、开发者开关和图层选择；默认模板在 [config/settings.yaml](config/settings.yaml)。玩家通关记录在 `userdata/progress.json`，刷新或重启后保留；首次只开放公共 C0，完成后同时开放 Weapons C1 和 Navigation C0，CLI/API 同样按各节点前置检查存档。可以用 `--settings-file /path/settings.yaml --save-file /path/progress.json` 指定自己的文件。损坏或未知版本的文件报错并保留原件。
 
 开发者模式通过设置开关或 `--developer` 开启，`--player` 切回玩家模式。「图层」页可独立显示/隐藏真实车体、目标、弹丸、玩家估计、轨迹、Radar、IMU、坐标系、速度箭头与碰撞外形，并选择消息查看器中的 Topic。开发者练习不计入玩家进度；关闭模式后撤回真值并返回玩家关卡。玩家只列出本关授权图层，Python 算法的数据权限保持关卡约定。设计和单机信任范围见 [22](docs/22_SETTINGS_MODES_AND_PROGRESS.md)，实测见 [验收报告](docs/reports/SETTINGS_VALIDATION.md)。
 
@@ -129,6 +129,7 @@ node tests/test_gamepad.mjs    # 模拟量、按键、设备切换和恢复边�
 node tests/test_settings.mjs   # 改键语义、图层权限和真值/估计独立
 node tests/test_runtime_logs.mjs # 连续 Python 日志、版本隔离和源码行号
 node tests/test_live_metrics.mjs # 累计指标展示、曲线容量和重试清零
+node tests/test_localization_view.mjs # GPS/估计有界历史、协方差椭圆与插值
 node tests/test_wasm.mjs       # 先构建原生 debug 与 WASM release
 python3 docs/tools/check_design.py
 python3 tools/build.py --format-check
@@ -163,7 +164,7 @@ M3 UI 验收使用独立临时编辑库启动服务和 Marionette Firefox，再�
 
 ## M5：Weapons 与多文件机器人
 
-章节按 **Hello Robot（C0）→ Weapons（C1–C5）→ Navigation（首关）** 排列。C0–C2 玩法不变；C3 直接处理原始车体系距离/方位，输出仍是 `(r, theta)`，可实现 EKF；C4 沿用 C3 的中心 Radar 与差速敌车，玩家分文件实现中心预测与自动武器控制；C5 在此基础上加入匿名装甲观测、有效装甲与全向小陀螺，复用控制器并扩展旋转预测。Navigation 首关实现 FK/IK 与轮电压控制：系统发送 24 秒方形指令，按终点误差和真实路程验收，见 [设计与状态](docs/33_NAVIGATION_MOTION_CONTROL.md)。
+章节展示顺序保持 **Hello Robot（C0）、Weapons（C1–C5）、Navigation（C0–C2）**；公共 C0 后分为两条独立主线，展示顺序不产生解锁条件。C0–C2 玩法不变；C3 直接处理原始车体系距离/方位，输出仍是 `(r, theta)`，可实现 EKF；C4 沿用 C3 的中心 Radar 与差速敌车，玩家分文件实现中心预测与自动武器控制；C5 在此基础上加入匿名装甲观测、有效装甲与全向小陀螺，复用控制器并扩展旋转预测。Navigation 首关实现 FK/IK 与轮电压控制：系统发送 24 秒方形指令，按终点误差和真实路程验收，见 [设计与状态](docs/33_NAVIGATION_MOTION_CONTROL.md)。
 
 C1–C5 底盘锁定并保留真实受力，系统自身位姿仍公开；C1–C3 人工炮台/开火，C4/C5 仅允许程序角加速度/单发。C3/C4/C5 时限为 120/120/180 仿真秒，首次成功部署起算。C2–C4 Radar 误差沿用 σr=0.45 m、σtheta=0.08 rad、10% 丢失；C4 不提供 GPS、不要求装甲命中，双方 HP、整车扣血和终局顺序与 C3 相同。C5 仅提供最近两块可见装甲的匿名车体系 `[r,theta]`，10 Hz、12 m，σr=0.03 m、σtheta=0.005 rad，每块独立丢失 10%，实际返回 0/1/2 行。没有中心 Radar 或 GPS，朝向按模 90° 解释。所有参数在对应 YAML。
 
@@ -181,9 +182,11 @@ C3/C4 的 `PolarTracker.update` 接收 `measurements: tuple[PolarTargetEstimate,
 
 编写及启动流程见 [关卡指南](levels/README.md)，架构与原五关审计见 [27](docs/27_LEVEL_PLUGIN_ARCHITECTURE.md)，测试与限制见 [迁移验收](docs/reports/LEVEL_PLUGINS_VALIDATION.md)。
 
-## Navigation 首关
+## 双主线与 Navigation 首关
 
-通关 C5 后解锁 Navigation C0（稳定 ID navigation.c0）：
+当前进度树为 `c0 → {Weapons: c1→c2→c3→c4→c5, Navigation: navigation.c0→navigation.c1→navigation.c2}`。关卡路线显示已通关、可挑战、锁定和当前节点，锁定节点可查看具体缺少的前置。存档保持版本1，允许非连续完成集合；两个独立工作区的源码和历史保留。设计见 [双主线进度](docs/36_BRANCHING_PROGRESSION.md)。
+
+通关公共 c0 后即开放 Navigation C0（稳定 ID navigation.c0），不要求先完成 Weapons C5：
 
 ```bash
 python3 tools/tankbot.py serve --level navigation.c0
@@ -198,3 +201,11 @@ python3 tools/tankbot.py serve --level navigation.c1 --developer
 ```
 
 玩家模式需先通关 Navigation C0。已有工程切关时如提示系统脚手架升级，可在 F2 中预览并更新模块连接；轮控制器源码完整保留。接口与验收见 [Navigation 里程计设计](docs/34_NAVIGATION_ODOMETRY_AND_FEEDBACK.md)。
+
+Navigation C2 在通关 C1 后解锁，复用已有控制器/里程计，只新增 localization/ekf.py，填写 predict 与 correct，维护 NumPy state (3,) 和 covariance (3,3)。GPS 提供2 Hz带噪地图系位置，编码器增加固定增益误差和速率噪声；三个算法共享同一测量。F2 指南提供完整类型、单位、Jacobian 和更新公式。
+
+```bash
+python3 tools/tankbot.py serve --level navigation.c2 --developer
+```
+
+默认车体/相机跟随 EKF；图层可单独显示带噪 GPS、纯里程计轨迹与1σ位置椭圆，运行中比较两组 RMSE。24秒末按实际路程≥7.2 m、EKF位置RMSE≤0.15 m、朝向RMSE≤0.15 rad、有效估计≥100次通关，不再要求真实终点回原点。切换显示来源不改评分，真值仅在独立开发者图层显示；已有算法与历史保留。设计及本机验收见 [GPS/EKF](docs/35_NAVIGATION_GPS_LOCALIZATION.md)。

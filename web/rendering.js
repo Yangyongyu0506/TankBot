@@ -107,6 +107,7 @@ export class SceneTimeline {
       const [p, q, t] = pair;
       pose = {x_m: lerp(p.pose.x_m, q.pose.x_m, t), y_m: lerp(p.pose.y_m, q.pose.y_m, t),
         yaw_rad: p.pose.yaw_rad + shortAngle(q.pose.yaw_rad - p.pose.yaw_rad) * t,
+        covariance: p.pose.covariance&&q.pose.covariance?p.pose.covariance.map((v,i)=>(1-t)*v+t*q.pose.covariance[i]):null,
         stale: selected.freshness === "stale"};
     }
     const joints = bracket(this.turrets, this.renderTime);

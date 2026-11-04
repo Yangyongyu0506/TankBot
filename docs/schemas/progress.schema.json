@@ -11,29 +11,27 @@
       "type": "array",
       "uniqueItems": true,
       "items": {
-        "enum": [
-          "c0",
-          "c1",
-          "c2"
-        ]
-      }
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_.-]{0,63}$"
+      },
+      "description": "完成集合按metadata.order稳定序列化，不要求是全局连续前缀；已知ID与前置条件由当前目录领域校验。"
     },
     "current_level": {
-      "enum": [
-        "c0",
-        "c1",
-        "c2",
-        null
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_.-]{0,63}$"
+        },
+        {
+          "type": "null"
+        }
       ]
     },
     "completions": {
       "type": "object",
       "propertyNames": {
-        "enum": [
-          "c0",
-          "c1",
-          "c2"
-        ]
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_.-]{0,63}$"
       },
       "additionalProperties": {
         "type": "object",

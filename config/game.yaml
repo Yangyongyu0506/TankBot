@@ -139,6 +139,9 @@ validation:
     manual_aim_rate_radps: 2.0
   reference_drive:
     voltage_kp: 2.0
+  reference_localization:
+    position_process_std_m_per_sqrt_s: 0.03
+    yaw_process_std_rad_per_sqrt_s: 0.05
 solver:
   dt: 0.004166666666666667
   min_ccd_dt: 0.00016666666666666666
@@ -325,6 +328,8 @@ robot_graph:
   schemas:
     armor_detections@1:
     - base_link
+    position_fix2d@1:
+    - map
     gps_fix@1:
     - map
     target_polar_estimate@1:

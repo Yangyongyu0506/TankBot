@@ -41,4 +41,48 @@ class Odometry:
         self.pose += np.array([velocity*np.cos(middle),velocity*np.sin(middle),angular],dtype=np.float64)*dt
         return self.pose.copy()
 '''
+    if 'ekf_localization' in config['campaign']['levels'][config['campaign']['active_level']]['scaffolding']['components']:
+        files['localization/ekf.py']=ekf_solution(config)
     return files
+
+
+def ekf_solution(config):
+    """Trusted verification reference, never generated in a player workspace."""
+    tuning=config['validation']['reference_localization']
+    return '''import numpy as np
+from numpy.typing import NDArray
+from tankbot import DifferentialDriveParameters
+
+class EkfLocalization:
+    def __init__(self, model: DifferentialDriveParameters, initial_pose: NDArray[np.float64],
+                 initial_covariance: NDArray[np.float64], wheel_rate_covariance: NDArray[np.float64],
+                 gain_error_bounds: NDArray[np.float64]) -> None:
+        self.model: DifferentialDriveParameters = model
+        self.state: NDArray[np.float64] = initial_pose.copy()
+        self.covariance: NDArray[np.float64] = initial_covariance.copy()
+        self.wheel_rate_covariance: NDArray[np.float64] = wheel_rate_covariance
+        self.gain_variance: float = float(np.diff(gain_error_bounds)[0]**2/12)
+
+    def predict(self, wheel_rates_radps: NDArray[np.float64], dt: float) -> None:
+        r: float = self.model.wheel_radius_m
+        b: float = self.model.wheel_separation_m
+        d: float = r*float(np.sum(wheel_rates_radps))*dt/2
+        a: float = r*float(wheel_rates_radps[1]-wheel_rates_radps[0])*dt/b
+        h: float = self.state[2]+a/2
+        c: float = float(np.cos(h))
+        s: float = float(np.sin(h))
+        f: NDArray[np.float64] = np.array([[1.,0.,-d*s],[0.,1.,d*c],[0.,0.,1.]],dtype=np.float64)
+        g: NDArray[np.float64] = np.array([
+            [r*dt*c/2+d*s*r*dt/(2*b),r*dt*c/2-d*s*r*dt/(2*b)],
+            [r*dt*s/2-d*c*r*dt/(2*b),r*dt*s/2+d*c*r*dt/(2*b)],[-r*dt/b,r*dt/b]],dtype=np.float64)
+        q: NDArray[np.float64] = self.wheel_rate_covariance+np.diag(wheel_rates_radps**2*self.gain_variance)
+        self.state += np.array([d*c,d*s,a],dtype=np.float64)
+        self.covariance = f@self.covariance@f.T+g@q@g.T+np.diag([POS_STD**2,POS_STD**2,YAW_STD**2])*dt
+
+    def correct(self, position_m: NDArray[np.float64], measurement_covariance: NDArray[np.float64]) -> None:
+        h: NDArray[np.float64] = np.array([[1.,0.,0.],[0.,1.,0.]],dtype=np.float64)
+        gain: NDArray[np.float64] = np.linalg.solve(h@self.covariance@h.T+measurement_covariance,h@self.covariance).T
+        self.state += gain@(position_m-h@self.state)
+        residual: NDArray[np.float64] = np.eye(3,dtype=np.float64)-gain@h
+        self.covariance = residual@self.covariance@residual.T+gain@measurement_covariance@gain.T
+'''.replace('POS_STD',repr(tuning['position_process_std_m_per_sqrt_s'])).replace('YAW_STD',repr(tuning['yaw_process_std_rad_per_sqrt_s']))

@@ -87,7 +87,7 @@ function sampleGamepad(now){
   let frame,error="";
   try{
     if(joy.enabled&&typeof navigator.getGamepads!=="function")throw Error("浏览器不支持手柄 API");
-    frame=joy.sample(joy.enabled?navigator.getGamepads():[],{motionAllowed:canDrive(),uiAllowed:visibleFocused()&&!$("map-dialog").open&&!$("settings-dialog").open&&!$("control-dialog")?.open});
+    frame=joy.sample(joy.enabled?navigator.getGamepads():[],{motionAllowed:canDrive(),uiAllowed:visibleFocused()&&!$("map-dialog").open&&!$("settings-dialog").open&&!$("control-dialog")?.open&&!$("level-tree-dialog")?.open});
   }catch{
     joy.suspend(true);frame={...neutralControls(),devices:[],device:null,status:"unavailable"};
     error=isSecureContext?"浏览器未开放手柄访问；请检查浏览器设置。":"手柄需要 HTTPS 或 localhost；请使用安全地址。";

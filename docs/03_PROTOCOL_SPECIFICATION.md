@@ -216,3 +216,11 @@ M5 增加 `target_points@1`（Nx2）、`target_pose_estimate@1`（敌车 x/y/yaw
 wheel_voltage@1 为 topic，channel=/robot/wheels/cmd_voltage，frame_id=base_link，payload 为 left_voltage_v/right_voltage_v，单位 V，左右轮前进为正。Authority 校验权限、时序、有限值，并由底盘 motor 参数逐轮限幅；0.5 秒 watchdog 与电气制动见 [33](33_NAVIGATION_MOTION_CONTROL.md)。不增加执行起止时间，不改变旧类型。
 
 Navigation 的 /robot/cmd_vel 仍为相同 Twist，不过由受信 twist_sequence 发布、玩家模块订阅参考目标；玩家只获轮电压输出权限，不能发布 cmd_vel 绕过控制器。SDK WheelVoltage 与 NumPy (2,) 入门函数之间由框架适配，消息结构见 payloads/envelope Schema。
+
+## Navigation GPS 与多源位姿对照
+
+新增可选输入 `position_fix2d@1`，payload 为 `position_m`（map 系 `[x_m,y_m]`）及非空行优先 2×2 `covariance`（m²）；SDK 对应只读 NumPy `PositionFix2D`。二维协方差验证对称性及 PSD，测量时间仍由 Envelope/`Sample` 承载。玩家不通过 ModuleContext 发布此传感器类型，订阅仍须关卡授权。
+
+用于我方 `/robot/sensors/gps/fix`；这是已投影的游戏平面位置，不是 WGS84 NavSatFix，不给 yaw。既有敌车截获 `gps_fix@1` / `GpsFixData` 不变。[示例](examples/position-fix2d-message.json) 说明接口形状；C2 的 2 Hz/σ=0.20 m 采样器、共享带噪编码器、去重/对齐及课程参数见 [35](35_NAVIGATION_GPS_LOCALIZATION.md)。
+
+新增可选 `view_snapshot@5`，保留 V4 字段并要求 `pose_estimates` 数组（最多16条 pose2d@1 Envelope），仅投影 View Policy `pose_estimate_channels` 白名单中的玩家候选，检查允许帧与样本年龄。示例见 [多源位姿视图](examples/pose-comparison-view.json)。只有配置此能力的关卡使用 V5，旧 V1–V4 类型不增加必填字段；当前 Web 客户端支持新版本，旧客户端不应把未认识的 Schema 当 V4 解码。候选只用于对照，Selector 标准出口与物理权威不变。

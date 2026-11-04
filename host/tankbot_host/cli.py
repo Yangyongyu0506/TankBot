@@ -49,22 +49,28 @@ def main():
             print(f"{item['path']}  ({len(item['walls'])} walls)")
         return
     application = None
-    if args.mode in ("serve", "browser"):
+    if args.mode in ("serve", "browser") or args.level is not None:
         from .application import ApplicationState
         try:
             application = ApplicationState(config, args.settings_file, args.save_file)
             if args.developer_mode is not None:
                 value = application.public_settings()
                 value["settings"]["developer_mode"] = args.developer_mode
-                application.update_settings({"revision": value["revision"], "settings": value["settings"]})
+                if args.mode in ("serve","browser"):
+                    application.update_settings({"revision": value["revision"], "settings": value["settings"]})
+                else:
+                    application.settings=value["settings"]  # Diagnostic overrides do not rewrite personal settings.
             if not application.developer:
                 if not application.levels:
                     parser.error("此配置不含教学关卡；请使用 --developer 运行自由试验场，或选择教学配置。")
                 if args.view or args.robot_demo:
                     parser.error("真值练习和机器人演示需要开发者模式；请使用 --developer 或在设置中开启。")
-                args.level = args.level or application.progress()["current_level"] or application.levels[0]
+                args.level = args.level or application.progress()["current_level"] or application.initial_level
             if args.level:
-                application.select_level(args.level)
+                if args.mode in ("serve","browser"):
+                    application.select_level(args.level)
+                else:
+                    application.require_level(args.level)
         except (ValueError, OSError) as error:
             parser.error(str(error))
     if args.level:

@@ -10,6 +10,8 @@ COMPONENTS = {
     "wheel_control_adapter":{"navigation_robot.py":navigation.ADAPTER},
     "wheel_odometry":{"localization/__init__.py":"","localization/odometry.py":navigation.ODOMETRY},
     "wheel_odometry_adapter":{"localization/odometry_module.py":navigation.ODOMETRY_ADAPTER},
+    "ekf_localization":{"localization/ekf.py":navigation.EKF},
+    "ekf_localization_adapter":{"localization/ekf_module.py":navigation.EKF_ADAPTER},
     "armor_tracker":{"perception/__init__.py":"","perception/armor_tracker.py":curriculum.ARMOR_TRACKER},
     "armor_tracking_adapter":{"robot_modules/__init__.py":"","robot_modules/armor_observations.py":curriculum.ARMOR_ADAPTER},
     "armor_contract_tests":{"tests/test_armor_contract.py":curriculum.ARMOR_TEST},

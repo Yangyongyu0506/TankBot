@@ -2,9 +2,9 @@
 
 ## 目的、范围与要求
 
-把渐进失去信息转化为渐进建立能力，而非指定算法的题库。关卡数据复用相同 Core、SDK、Runtime、Protocol 与 View Policy，不按关卡复制引擎代码。C0–C2 的当前实现与用户确认模型见 [18](18_CAMPAIGN_DESIGN.md)，C3–C5 的当前实现与用户确认见 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)，Locomotion 以后仍为后续设计。
+把渐进失去信息转化为渐进建立能力，而非指定算法题库。关卡复用Core、SDK、Runtime、Protocol与View Policy，不按关卡复制引擎。Weapons见 [18](18_CAMPAIGN_DESIGN.md)、[28](28_WEAPONS_PROGRESSIVE_ESTIMATION.md)；Navigation C0/C1/C2已实现轮控制、里程计和GPS/EKF，见 [33](33_NAVIGATION_MOTION_CONTROL.md)、[34](34_NAVIGATION_ODOMETRY_AND_FEEDBACK.md)、[35](35_NAVIGATION_GPS_LOCALIZATION.md)。
 
-现有五关已迁移到独立 `levels/*.yaml`，统一发现、校验、加载和解释，不按 ID 选择行为；实际源格式、当前组件与迁移记录见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)。下文通用课程蓝图中的未来关卡示例不是当前可加载的 YAML 格式。
+现有九关使用独立levels/*.yaml，统一发现、校验、加载和解释，不按ID选择行为；源格式见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)。公共c0后分为Weapons和Navigation两条独立主线，各自内部保留真实代码依赖，见 [36](36_BRANCHING_PROGRESSION.md)。下文未来课程示例仍不是当前YAML源格式。
 
 关卡必须同时声明：问题、撤回的系统能力、新授权输入、前置技能、可保留代码、反馈与可达成的验收标准。撤回能力前先给替代输入/模板和安全试验场。每次引入尽量只改变一个主要认知负担。
 
@@ -18,10 +18,12 @@
 | Weapons / C3 | 直接接收车体系原始距离/方位 | 非线性观测滤波，输出仍为 r/theta | 人工瞄准，存活击杀 |
 | Weapons / C4 | 沿用 C3 中心 Radar/差速敌车，撤回人工武器 | 复用极坐标滤波，中心预测与角加速度闭环 | 自主整车击杀 |
 | Weapons / C5 | 改用匿名装甲观测，敌车全向小陀螺 | 匿名装甲关联、等价相位估计、多文件预测与炮台闭环 | 自主装甲击杀 |
-| Locomotion（待设计） | 从底盘驱动、运动学、控制逐步进入自身状态估计 | 延续武器模块，逐步接管驾驶 | 具体关卡/阈值与用户共同确认 |
+| Navigation / C0 | 根据Twist与实测轮速执行轮电压控制 | 独立工程、FK/IK与电机反馈，不复用Weapons代码 | 固定序列末终点距离与实际路程 |
+| Navigation / C1 | 系统不再持续提供自身位姿 | 复用轮控制器，积分轮式里程计 | 同采样时刻位置/朝向RMSE及运动条件 |
+| Navigation / C2 | 编码器漂移、低频带噪GPS | 复用控制器/里程计，实现EKF并比较轨迹/协方差 | 固定EKF评分、实际路程与全程估计误差 |
 | 后续章节（待设计） | 未知环境、规划、决策、完整自治 | Localization / Mapping / Planning | 无人工执行器闭环；不强制指定算法 |
 
-C1–C5 始终不允许人工/程序驾驶，保持零目标主动制动并保留受力；C1–C3 保留人工武器，C4/C5 授权程序炮台角加速度和单发。先解决目标感知与武器，再引入自己的运动/定位，避免同时增加两种主要负担。后续关卡编号未定，旧路线图的“C3 自身定位 / C4 建图”已经撤回，不能继续按其编号实现。
+Weapons C1–C5不允许人工/程序驾驶，零目标主动制动并保留受力；C1–C3保留人工武器，C4/C5授权程序炮台角加速度和单发。Navigation只保留底盘，工程与进度均独立于Weapons；公共c0后可交替学习，不要求先做完武器。全部硬前置由metadata.prerequisites声明，图中实线均表示必须通关。两条可选练习建议不产生额外解锁条件。旧“C3自身定位/C4建图”方案已撤回。
 
 ## LevelDefinition 与能力接管
 

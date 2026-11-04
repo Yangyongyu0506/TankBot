@@ -42,6 +42,8 @@ UI 能显示系统位姿不代表 Runtime 可以读取它。向玩家订阅者�
 
 Selector 配置形如 `{ "mode": "player", "module_id": "odometry", "fallback": "none" }`。`system` 模式必须有 `view.system_pose` grant；`player` 模式只能选择本部署注册的候选。多候选并行运行时由玩家显式选择或采用任务给定固定优先级，不按真值误差、最新网络到达者或置信度最小者自动选优。自动融合必须是玩家自己的模块。
 
+Navigation C2 在 `view_snapshot@5` 中显式授权 `pose_estimate_channels` 对照列表，让纯里程计和 EKF 可同时显示；Gateway 仍检查候选白名单、帧与过期，UI 不从私有调试对象补数据。`evaluation.module_id` 和 `reference_module_id` 固定主评分与独立对照，显示选源不切换评分。GPS/对照轨迹/选中位姿1σ椭圆分别由图层权限限制，误差反馈每项独立授权。具体时序、协方差和有界历史见 [35](35_NAVIGATION_GPS_LOCALIZATION.md)。
+
 选源在 tick 边界原子提交并发出授权事件。模式、来源或 `run_id` 改变时清空插值历史。`fallback="none"` 是默认且唯一的首发回退策略；玩家源失效不自动回落到系统真值。
 
 ## 初始位姿、坐标系与合法性

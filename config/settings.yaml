@@ -29,3 +29,6 @@ layers:
   frames: false
   velocities: false
   colliders: false
+  gps: false
+  pose_estimates: false
+  pose_covariance: false

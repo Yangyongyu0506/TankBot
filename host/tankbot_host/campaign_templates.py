@@ -171,7 +171,8 @@ def framework_upgrade(config: dict, files: dict[str, str], ledger: dict | None =
                     if not connection["from"].startswith("/") and connection["to"].startswith("/robot/estimates/"):
                         mid,port=connection["from"].split(".")
                         current &= declared[mid]["outputs"][port]["schema"] in profile["grants"]["outputs"]
-            if current and manifest.get("project_id") == profile["manifest"]["project_id"]:
+            managed_projects = {p["manifest"]["project_id"] for p in config["robot_graph"]["profiles"].values()}
+            if current and manifest.get("project_id") in managed_projects:
                 current &= {m["module_id"] for m in manifest["modules"]} == set(profile["contracts"])
                 # Port types and managed Python adapter APIs can evolve independently.
                 from .level_templates import sources

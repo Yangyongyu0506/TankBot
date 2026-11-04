@@ -38,6 +38,14 @@ class SensorInstance:
     parameters_json: str
 
 
+def python_backend(sensor):
+    from .level_plugins import SENSORS
+    entry=SENSORS.get(sensor['type'])
+    # Unknown types are reported by the shared structural validator, including
+    # legacy standalone instances that are normalized before validation.
+    return entry is not None and (entry[3] is None or (sensor['type']=='wheel_encoder' and bool(sensor.get('parameters'))))
+
+
 def normalize_sensors(value, source):
     """Legacy rate/center fields are translated once; contradictions are rejected."""
     from .level_plugins import LevelValidationError,SENSORS
@@ -71,11 +79,14 @@ def normalize_sensors(value, source):
                 for key,expected in [('mount_m',mount['translation_m']),('yaw_rad',mount['yaw_rad'])]:
                     if key in p and p[key]!=expected:fail('parameters.'+key,'legacy parameter conflicts with the instance definition')
                     p[key]=copy.deepcopy(expected)
-            default=None if s['type'] not in ('radar','armor_detector','intercepted_gps') else {'id':p.get('random_stream',s['type']),'seed_mode':'legacy_seed' if s['type']=='radar' else 'named'}
+            stochastic=python_backend(s)
+            default=None if not stochastic else {'id':p.get('random_stream',s['type']),'seed_mode':'legacy_seed' if s['type']=='radar' else 'named'}
             s.setdefault('random_stream',default)
             stream=s['random_stream']
-            if s['type'] not in ('radar','armor_detector','intercepted_gps') and stream is not None:fail('random_stream','ideal Rust sensor does not consume a random stream')
-            if s['type'] in ('radar','armor_detector','intercepted_gps') and stream is None:fail('random_stream','stochastic backend needs an explicit random stream')
+            if not stochastic and stream is not None:fail('random_stream','ideal Rust sensor does not consume a random stream')
+            if stochastic and stream is None:fail('random_stream','stochastic backend needs an explicit random stream')
+            if (s['type']=='gps' or (s['type']=='wheel_encoder' and stochastic)) and isinstance(stream,dict) and stream.get('seed_mode')!='named':
+                fail('random_stream.seed_mode','navigation measurement errors require an independent named stream')
             if s['type'] in ('armor_detector','intercepted_gps') and isinstance(stream,dict):
                 if 'random_stream' in p and p['random_stream']!=stream['id']:fail('parameters.random_stream','random stream definitions disagree')
                 p['random_stream']=stream['id']
@@ -110,7 +121,7 @@ def definitions(config):
             streams.add(stream)
     result=[]
     for s in sensors:
-        native=SENSORS[s['type']][3]
+        native=not python_backend(s)
         stream=s['random_stream'];mount=s['mount']
         publisher='authority' if native else 'sensor:'+s['type']
         result.append(SensorInstance(s['id'],s['robot_id'],s['type'],'rust' if native else 'python',
@@ -129,6 +140,11 @@ class SensorScheduler:
         self.instances=tuple(instances);self._config=config
         self._backends={'radar':RadarSimulator(config) if active(config) else None,
                         'intercepted_gps':GpsInterceptSimulator(config),'armor_detector':ArmorDetectionSimulator(config)}
+        from .navigation_sensors import EncoderMeasurement,GpsSimulator
+        for instance in self.instances:
+            if instance.type=='gps':self._backends[instance.type]=GpsSimulator(instance)
+            elif instance.type=='wheel_encoder' and instance.backend=='python':
+                self._backends[instance.type]=EncoderMeasurement(instance,config['clock']['physics_hz'])
         self._native={kind:entry[3] for kind,entry in SENSORS.items()}
         self.closed=False;self.reset()
 
@@ -140,8 +156,11 @@ class SensorScheduler:
         for instance in self.instances:
             if instance.backend=='python':
                 backend=self._backends[instance.type]
-                backend.last_tick=None
-                backend.random=random.Random(instance.random_stream.seed(self._config['runtime']['seed']))
+                seed=instance.random_stream.seed(self._config['runtime']['seed'])
+                if hasattr(backend,'reset'):backend.reset(seed)
+                else:
+                    backend.last_tick=None
+                    backend.random=random.Random(seed)
 
     def sample(self,private,tick):
         if self.closed:raise ValueError('SENSORS_CLOSED')

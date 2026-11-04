@@ -124,10 +124,12 @@ class WeaponsM5Tests(unittest.TestCase):
     def test_config_rejects_inconsistent_chapters_armor_and_actuator_grants(self):
         from tankbot_host.campaign import validate_profile
         config = load_config(ROOT / "config/game.yaml")
-        for case in ("order","armor","grant","profile"):
+        for case in ("duplicate_chapter_member","armor","grant","profile"):
             c = copy.deepcopy(config)
-            if case == "order":c["campaign"]["chapters"][1]["levels"].reverse()
+            if case == "duplicate_chapter_member":c["campaign"]["chapters"][1]["levels"].append("c1")
             if case == "armor":c["campaign"]["levels"]["c5"]["target"].pop("armor")
             if case == "grant":c["robot_graph"]["profiles"]["weapons_predictive"]["grants"]["actuators"]["/robot/cmd_vel"]="twist@1"
             if case == "profile":c["campaign"]["levels"]["c3"]["robot_profile"]="missing"
             with self.subTest(case=case),self.assertRaises(ValueError):validate_profile(c)
+        reordered=copy.deepcopy(config);reordered["campaign"]["chapters"][1]["levels"].reverse()
+        validate_profile(reordered)  # Presentation order is not an authorization rule.

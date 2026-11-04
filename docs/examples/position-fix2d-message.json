@@ -1,0 +1,25 @@
+{
+  "protocol_version": "1.0",
+  "message_type": "topic",
+  "channel": "/robot/sensors/gps/fix",
+  "sequence_number": 0,
+  "simulation_tick": 0,
+  "simulation_time_ns": 0,
+  "run_id": "run-position-example",
+  "publisher_id": "sensor:gps",
+  "request_id": null,
+  "frame_id": "map",
+  "schema": "position_fix2d@1",
+  "payload": {
+    "position_m": [
+      1.0,
+      2.0
+    ],
+    "covariance": [
+      1.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  }
+}

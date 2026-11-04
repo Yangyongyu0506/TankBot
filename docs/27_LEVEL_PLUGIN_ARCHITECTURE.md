@@ -22,6 +22,8 @@
 
 当前地图更新（2026-10-28）：C0–C5 已改为引用 `assets/maps/open_training.yaml`，仅保留原四面边界墙；旧地图保存为自由试验场资产。另有不同尺寸的导航布局资产，尚未绑定课程。上述迁移前表格保留历史事实，当前配置与预览见 [地图资产](../assets/maps/README.md)、[ADR-0041](adr/0041-shared-map-assets.md)。
 
+当前进度更新（2026-11-04）：九关保留稳定身份，公共c0后分为独立Weapons/Navigation主线。prerequisites是唯一前置规则，order仅展示/序列化；目录驱动的关卡树与存档兼容见 [36](36_BRANCHING_PROGRESSION.md)、[验收报告](reports/BRANCHING_PROGRESSION_VALIDATION.md)。
+
 ## 原实现职责与问题
 
 `campaign.configure` 已统一启动，但 `game.yaml` 同时混有关卡、Radar profile、lesson 和 graph profile；仅改文件仍无法新增可运行关卡。`campaign_templates` 生成/执行按 c0/c1/c2 分支；learning 另有按 ID 的文案和行为；前端按 ID 选文件、展示真值说明/进度。CLI choices、Schema 枚举及存档数字排序也固定了关卡集合。权限校验对 c0 特许，成功规则直接耦合 CampaignSession。
@@ -68,7 +70,7 @@ flowchart TD
 
 | YAML 字段 | 权威内容与限制 |
 | --- | --- |
-| metadata | 稳定 id、name、description、chapter、order、version、学习元信息与 prerequisites；ID 无数值解析规则 |
+| metadata | 稳定id/name/description/chapter/version与学习元信息；order只负责展示/序列化，prerequisites是全部必须完成的前置；ID无数值解析规则 |
 | world | 2D/map、现有 clock 参数、inline 矩形墙体或 assets 内地图；地图资产沿用 `{walls:[{center,size}]}` 形状 |
 | robots | 一个 player 与一个任务 target；当前可复用 tank、static_tank_target、patrol_tank；实例初态、生命、控制源、传感器归属及既有巡逻/装甲参数 |
 | communication.runtime | 单模块/图模式、Manifest、Contract、处理组件、预算与模板版本；默认入口只能来自注册的脚手架 Module |

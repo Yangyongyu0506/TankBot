@@ -92,6 +92,25 @@ class ImuData:
 
 
 @dataclass(frozen=True)
+class PositionFix2D:
+    """A projected map-frame position measurement; no heading or geodetic coordinates."""
+    position_m: NDArray[np.float64]
+    covariance: NDArray[np.float64]
+
+    def __post_init__(self) -> None:
+        original: np.ndarray = np.asarray(self.position_m)
+        if original.dtype.kind not in "fiu":
+            raise TypeError("position_m 必须包含实数，不接受复数、字符串或对象数组")
+        position: NDArray[np.float64] = np.asarray(original, dtype=np.float64)
+        if position.shape != (2,) or not np.isfinite(position).all():
+            raise ValueError("position_m 必须是有限的 [x_m,y_m]，shape=(2,)")
+        object.__setattr__(self,"position_m",np.frombuffer(position.tobytes(),dtype=np.float64))
+        if self.covariance is None:
+            raise ValueError("位置定位测量必须提供 (2,2) 协方差，单位 m²")
+        object.__setattr__(self,"covariance",_covariance_matrix(self.covariance,2))
+
+
+@dataclass(frozen=True)
 class RadarDetection:
     observation_id: str
     range_m: float

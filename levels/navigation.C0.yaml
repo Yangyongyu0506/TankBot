@@ -12,7 +12,7 @@ metadata:
   learning_objectives:
   - 实现双轮差速 FK/IK，并结合直流电机状态方程闭环执行目标 Twist。
   recommended_algorithms: []
-  prerequisites: [c5]
+  prerequisites: [c0]
 world:
   dimension: 2
   frame_id: map

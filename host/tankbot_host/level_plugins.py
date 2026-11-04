@@ -14,6 +14,7 @@ SENSORS = {
     "weapon_state":("/robot/weapons/cannon/state","weapon_state@1","base_link","weapon_state"),
     "radar":("/robot/sensors/radar","radar@1","radar_link",None),
     "intercepted_gps":("/robot/sensors/intercepted_gps","gps_fix@1","map",None),
+    "gps":("/robot/sensors/gps/fix","position_fix2d@1","map",None),
     "armor_detector":("/robot/sensors/armor_detections","armor_detections@1","base_link",None),
 }
 ACTUATORS = {"/robot/cmd_vel":("twist@1","chassis","control.robot.drive"),
@@ -124,8 +125,8 @@ def _validate(value, filename, config, validator):
         duration=sequence["repeat"]*sum(s["duration_ticks"] for s in sequence["segments"])
         if duration!=value["objectives"]["time_limit_s"]*clock["physics_hz"] or value["objectives"]["timer_start"]!="first_control_commit" or drive!="wheel_voltage":
             fail("objectives.command_sequence","sequence requires wheel voltage, first-control commit start and a matching time limit")
-        if not {"max_origin_distance_m","min_path_length_m"}<=value["objectives"]["parameters"].keys():
-            fail("objectives.parameters","command sequence requires distance and actual path thresholds")
+        if "min_path_length_m" not in value["objectives"]["parameters"]:
+            fail("objectives.parameters","command sequence requires an actual path threshold")
     elif value["objectives"]["timer_start"]=="first_control_commit":fail("objectives.timer_start","first_control_commit requires a command sequence")
     sensor_ids = []
     instance_ids=set();streams=set()
@@ -143,7 +144,11 @@ def _validate(value, filename, config, validator):
         sensor_ids.append(sensor["type"])
         sensor_topics[topic]=schema
         if clock["physics_hz"]%sensor["update_hz"] or clock["sensor_hz"]%sensor["update_hz"]:fail(path+".update_hz","rate must divide physics and sensor rates")
-        if sensor["type"] not in ("radar","intercepted_gps","armor_detector") and sensor["update_hz"]!=clock["sensor_hz"]:fail(path+".update_hz","this component samples at the base sensor rate")
+        if SENSORS[sensor["type"]][3] and sensor["update_hz"]!=clock["sensor_hz"]:fail(path+".update_hz","this component samples at the base sensor rate")
+        if sensor["type"]=="wheel_encoder" and sensor.get("parameters"):
+            p=sensor["parameters"]
+            if player["model"]!="differential":fail(path+".parameters","encoder errors currently require an explicit differential model")
+            if p["gain_error_min"]>p["gain_error_max"]:fail(path+".parameters.gain_error_max","gain error bounds are reversed")
         if sensor["type"]=="radar":
             p = sensor["parameters"]
             if p["update_hz"]!=sensor["update_hz"]:fail(path+".parameters.update_hz","sensor rates disagree")
@@ -175,7 +180,7 @@ def _validate(value, filename, config, validator):
         if not set(vis[name])<=set(layers):fail("visualization."+name,"display state exceeds visualization permission")
     if set(vis["sources"])!=set(layers):fail("visualization.sources","each allowed layer needs exactly one source")
     for layer,source in vis["sources"].items():
-        expected="authorized_truth" if layer in ("truth_targets","projectiles") else "map" if layer=="map" else "selected_pose" if layer in ("robot","trail","frames") else "player_estimate" if layer=="target_estimates" else "local_observation"
+        expected="authorized_truth" if layer in ("truth_targets","projectiles") else "map" if layer=="map" else "selected_pose" if layer in ("robot","trail","frames","pose_covariance") else "player_pose_candidates" if layer=="pose_estimates" else "player_estimate" if layer=="target_estimates" else "local_observation"
         if source!=expected:fail("visualization.sources."+layer,"source is not supported by this visualization component")
     policy=value["permissions"]["visualization"]["view_policy"]
     feedback=vis.get("control_feedback")
@@ -237,7 +242,7 @@ def _validate(value, filename, config, validator):
         for path,source in generated.items():
             if path.endswith(".py"):ast.parse(source,filename=path)
     except (ValueError,SyntaxError) as exc:fail("scaffolding",str(exc))
-    player_files={"localization/odometry.py","control/wheel_controller.py","perception/transforms.py","perception/tracker.py","perception/pose_tracker.py","perception/polar_tracker.py","perception/fusion_tracker.py","perception/armor_tracker.py","weapons/auto_aim.py","weapons/armor_aim.py","weapons/target_prediction.py"}
+    player_files={"localization/ekf.py","localization/odometry.py","control/wheel_controller.py","perception/transforms.py","perception/tracker.py","perception/pose_tracker.py","perception/polar_tracker.py","perception/fusion_tracker.py","perception/armor_tracker.py","weapons/auto_aim.py","weapons/armor_aim.py","weapons/target_prediction.py"}
     registered={p for component in COMPONENTS.values() for p in component}
     managed={p for p in registered|set(generated) if p not in player_files and not p.endswith("__init__.py")}
     if not set(runtime["managed_files"])<=managed:fail("communication.runtime.managed_files","managed files must exclude player algorithms and custom files")
@@ -300,6 +305,37 @@ def _validate(value, filename, config, validator):
         for direction in ("input","output"):
             for port in contract[direction+"s"]:
                 if (mid,port,direction) not in bound:fail("communication.runtime.contracts."+mid+"."+direction+"s."+port,"unbound port")
+    candidates={f"/robot/estimates/{mid}/pose" for mid in module_ids if writers.get(f"/robot/estimates/{mid}/pose")=="pose2d@1"}
+    if not set(policy.get("pose_estimate_channels",[])) <= candidates:
+        fail("permissions.visualization.view_policy.pose_estimate_channels","undeclared player pose publisher")
+    if policy.get("pose_estimate_channels") and not policy["player_pose_allowed"]:
+        fail("permissions.visualization.view_policy.pose_estimate_channels","player pose visualization is not authorized")
+    if not set(vis.get("pose_labels",{})) <= {channel.split('/')[3] for channel in candidates}:
+        fail("visualization.pose_labels","unknown player pose publisher")
+    evaluation=value["evaluation"]
+    for field in ("module_id","reference_module_id"):
+        if field in evaluation and (evaluation.get("source")!="player_pose" or f"/robot/estimates/{evaluation[field]}/pose" not in candidates):
+            fail("evaluation."+field,"metric source must be an authorized map pose publisher")
+    if evaluation.get("reference_module_id") and (not evaluation.get("module_id") or evaluation["module_id"]==evaluation["reference_module_id"]):
+        fail("evaluation.reference_module_id","reference requires a distinct fixed scored publisher")
+    for module_index,module in enumerate(modules):
+        contract=runtime["contracts"][module["module_id"]]
+        if contract["entry_point"]=="localization.ekf_module:EkfLocalizationModule":
+            path="communication.runtime.contracts."+module["module_id"]
+            gps=next((s for s in player["sensors"] if s["type"]=="gps"),None)
+            encoder=next((s for s in player["sensors"] if s["type"]=="wheel_encoder"),None)
+            execution=contract["execution"]
+            if not gps or not encoder or execution["mode"]!="periodic" or gps["period_ticks"]%execution["period_ticks"] or execution["period_ticks"]%encoder["period_ticks"]:
+                fail(path+".execution","EKF requires GPS and encoder boundaries aligned with periodic predictions")
+            import math
+            matrix=module["config"].get("initial_covariance")
+            valid=isinstance(matrix,list) and len(matrix)==3 and all(isinstance(row,list) and len(row)==3 and all(type(n) in (int,float) and math.isfinite(n) for n in row) for row in matrix)
+            if valid:
+                from tankbot_protocol.validation import Validator, Rejected
+                try:Validator(config,"configuration").covariance([n for row in matrix for n in row])
+                except Rejected:valid=False
+            if not valid:
+                fail(f"communication.runtime.manifest.modules[{module_index}].config.initial_covariance","EKF initial_covariance must be a finite symmetric PSD 3x3 matrix")
     metric_ids=[m["id"] for m in value["evaluation"]["metrics"]]
     if len(metric_ids)!=len(set(metric_ids)):fail("evaluation.metrics","duplicate metric ID")
     expected_metrics={"position_rmse":"rmse_m","yaw_rmse":"yaw_rmse_rad"}
@@ -322,6 +358,11 @@ def _validate(value, filename, config, validator):
         if entry["unit"]!={"rmse_m":"m","yaw_rmse_rad":"rad"}[metric]:fail("evaluation.live_feedback.unit","unit does not match the metric")
         if metric not in metric_ids:fail("evaluation.live_feedback.metric","live metric must be declared in evaluation.metrics")
         if metric not in value["permissions"]["visualization"].get("allowed_metrics",[]):fail("evaluation.live_feedback.metric","live metric visualization is not authorized")
+        if "reference_metric" in entry:
+            if not evaluation.get("reference_module_id") or entry["reference_metric"]!="reference_"+metric:
+                fail("evaluation.live_feedback.reference_metric","reference metric must match a configured comparison publisher")
+            if entry["reference_metric"] not in value["permissions"]["visualization"].get("allowed_metrics",[]):
+                fail("evaluation.live_feedback.reference_metric","comparison metric visualization is not authorized")
     if value["evaluation"].get("source")=="player_pose":
         if "pose2d@1" not in grants["outputs"] or runtime["manifest"]["pose_source"]["mode"]!="player":
             fail("evaluation.source","pose evaluation requires an authorized player pose publisher selected for display")
@@ -378,12 +419,13 @@ def _compile(value, walls, config):
     policy["true_enemy_objects"] &= "truth_targets" in layers
     policy["world_effects"] &= "projectiles" in layers
     policy["target_estimates_allowed"] &= "target_estimates" in layers
-    if not layers & {"robot","trail","frames"}:
+    if not layers & {"robot","trail","frames","pose_estimates","pose_covariance"}:
         policy["system_pose_allowed"]=policy["player_pose_allowed"]=False
+    if "pose_estimates" not in layers:policy.pop("pose_estimate_channels",None)
     if "map" not in layers:policy["public_map"]=None
     observation_layers={"/robot/sensors/joint_states":"encoders","/robot/sensors/imu":"imu",
                         "/robot/turret/joint_states":"turret","/robot/weapons/cannon/state":"turret",
-                        "/robot/sensors/radar":"radar","/robot/sensors/intercepted_gps":"radar","/robot/sensors/armor_detections":"radar"}
+                        "/robot/sensors/radar":"radar","/robot/sensors/intercepted_gps":"radar","/robot/sensors/armor_detections":"radar","/robot/sensors/gps/fix":"gps"}
     policy["local_observation_channels"]=[channel for channel in policy["local_observation_channels"] if observation_layers.get(channel) in layers]
     runtime["grants"]=copy.deepcopy(grants)
     caps=[]
@@ -430,15 +472,22 @@ def discover(config):
         _validate(value,path,config,validator)
         meta=value["metadata"]
         if meta["id"] in ids:raise LevelValidationError(path,"metadata.id","duplicate level ID")
-        if meta["order"] in orders:raise LevelValidationError(path,"metadata.order","duplicate progression order")
+        if meta["order"] in orders:raise LevelValidationError(path,"metadata.order","duplicate display order")
         ids.add(meta["id"]);orders.add(meta["order"])
         entries.append((meta["order"],path,_compile(value,_map(value,path,config),config)))
     entries.sort(key=lambda x:x[0])
     levels={d["metadata"]["id"]:d for _,_,d in entries}
-    known=set()
+    paths={d["metadata"]["id"]:path for _,path,d in entries}
     for _,path,d in entries:
-        if not set(d["metadata"]["prerequisites"])<=known:raise LevelValidationError(path,"metadata.prerequisites","unknown, cyclic or later prerequisite")
-        known.add(d["metadata"]["id"])
+        unknown=set(d["metadata"]["prerequisites"])-levels.keys()
+        if unknown:raise LevelValidationError(path,"metadata.prerequisites","unknown prerequisite: "+", ".join(sorted(unknown)))
+    pending=set(levels);visited=set()
+    while pending:
+        ready={lid for lid in pending if set(levels[lid]["metadata"]["prerequisites"])<=visited}
+        if not ready:
+            lid=next(lid for lid in levels if lid in pending)
+            raise LevelValidationError(paths[lid],"metadata.prerequisites","cyclic prerequisites: "+", ".join(lid for lid in levels if lid in pending))
+        visited.update(ready);pending.difference_update(ready)
     return levels
 
 

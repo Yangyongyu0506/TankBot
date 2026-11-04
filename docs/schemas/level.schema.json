@@ -43,7 +43,8 @@
         },
         "order": {
           "type": "integer",
-          "minimum": 0
+          "minimum": 0,
+          "description": "目录展示及稳定序列化顺序，不参与解锁判断。"
         },
         "version": {
           "type": "string",
@@ -67,7 +68,8 @@
             "type": "string",
             "pattern": "^[a-z][a-z0-9_.-]{0,63}$"
           },
-          "uniqueItems": true
+          "uniqueItems": true,
+          "description": "必须全部通关的显式前置ID；允许跨展示顺序引用，加载器验证已知ID与无环。"
         }
       },
       "required": [
@@ -478,7 +480,9 @@
                   "rmse_m",
                   "origin_distance_m",
                   "path_length_m",
-                  "yaw_rmse_rad"
+                  "yaw_rmse_rad",
+                  "reference_rmse_m",
+                  "reference_yaw_rmse_rad"
                 ]
               },
               "uniqueItems": true
@@ -546,7 +550,8 @@
               "map",
               "selected_pose",
               "player_estimate",
-              "local_observation"
+              "local_observation",
+              "player_pose_candidates"
             ]
           }
         },
@@ -666,6 +671,20 @@
             "charts"
           ],
           "additionalProperties": false
+        },
+        "gps_history_points": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4096
+        },
+        "pose_labels": {
+          "type": "object",
+          "maxProperties": 16,
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
         }
       },
       "required": [
@@ -960,6 +979,16 @@
             "target_estimate",
             "player_pose"
           ]
+        },
+        "module_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "maxLength": 64
+        },
+        "reference_module_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "maxLength": 64
         }
       },
       "required": [
@@ -1277,7 +1306,9 @@
               "wheel_controller",
               "wheel_control_adapter",
               "wheel_odometry",
-              "wheel_odometry_adapter"
+              "wheel_odometry_adapter",
+              "ekf_localization",
+              "ekf_localization_adapter"
             ]
           }
         },
@@ -1338,7 +1369,8 @@
             "weapon_state",
             "radar",
             "intercepted_gps",
-            "armor_detector"
+            "armor_detector",
+            "gps"
           ]
         },
         "topic": {
@@ -1368,6 +1400,12 @@
             },
             {
               "$ref": "#/$defs/armorParameters"
+            },
+            {
+              "$ref": "#/$defs/selfGpsParameters"
+            },
+            {
+              "$ref": "#/$defs/encoderErrorParameters"
             }
           ]
         },
@@ -1497,6 +1535,41 @@
             "properties": {
               "parameters": {
                 "$ref": "#/$defs/armorParameters"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "gps"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "parameters": {
+                "$ref": "#/$defs/selfGpsParameters"
+              }
+            },
+            "required": [
+              "parameters"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "wheel_encoder"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "parameters": {
+                "$ref": "#/$defs/encoderErrorParameters"
               }
             }
           }
@@ -2030,6 +2103,21 @@
         "description": {
           "type": "string",
           "minLength": 1
+        },
+        "reference_metric": {
+          "enum": [
+            "reference_rmse_m",
+            "reference_yaw_rmse_rad"
+          ]
+        },
+        "reference_label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "reference_color": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
         }
       },
       "required": [
@@ -2040,6 +2128,92 @@
         "precision",
         "history_points",
         "description"
+      ],
+      "additionalProperties": false,
+      "dependentRequired": {
+        "reference_metric": [
+          "reference_label",
+          "reference_color"
+        ],
+        "reference_label": [
+          "reference_metric",
+          "reference_color"
+        ],
+        "reference_color": [
+          "reference_metric",
+          "reference_label"
+        ]
+      }
+    },
+    "selfGpsParameters": {
+      "type": "object",
+      "properties": {
+        "noise": {
+          "type": "object",
+          "properties": {
+            "position_stddev_m": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1000
+            },
+            "bias_m": {
+              "const": [
+                0,
+                0
+              ]
+            },
+            "drop_probability": {
+              "const": 0
+            }
+          },
+          "required": [
+            "position_stddev_m",
+            "bias_m",
+            "drop_probability"
+          ],
+          "additionalProperties": false
+        },
+        "latency_ticks": {
+          "const": 0
+        },
+        "wall_occlusion": {
+          "const": false
+        }
+      },
+      "required": [
+        "noise",
+        "latency_ticks",
+        "wall_occlusion"
+      ],
+      "additionalProperties": false
+    },
+    "encoderErrorParameters": {
+      "type": "object",
+      "properties": {
+        "velocity_stddev_radps": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "gain_error_min": {
+          "type": "number",
+          "exclusiveMinimum": -1,
+          "maximum": 1
+        },
+        "gain_error_max": {
+          "type": "number",
+          "exclusiveMinimum": -1,
+          "maximum": 1
+        },
+        "position_model": {
+          "const": "integrated_rate_noise"
+        }
+      },
+      "required": [
+        "velocity_stddev_radps",
+        "gain_error_min",
+        "gain_error_max",
+        "position_model"
       ],
       "additionalProperties": false
     }

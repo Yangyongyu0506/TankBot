@@ -14,6 +14,9 @@ from .campaign_templates import template_version, TRANSFORMS, TRACKER, MANAGED_F
 
 
 TYPE_TEXT: dict[str, tuple[str, dict[str, str]]] = {
+    "PositionFix2D": ("投影到 map 的二维位置观测，不含真实朝向。", {
+        "position_m":"只读 float64 NumPy (2,) 数组 [x_m,y_m]，单位 m。",
+        "covariance":"只读 float64 NumPy (2,2) 测量协方差，单位 m²；不是真实误差。"}),
     "WheelVoltage": ("左右轮的电压命令，由框架从控制数组生成。", {"left_voltage_v":"左轮电压，V；正方向为前进。","right_voltage_v":"右轮电压，V；正方向为前进。"}),
     "DifferentialDriveParameters": ("只读差速底盘与轮端等效电机参数，全部来自当前底盘 YAML。", {
         "wheel_radius_m":"轮半径 r，m。","wheel_separation_m":"左右轮中心间距 B，m。","mass_kg":"车体质量 m，kg；不含轮转动惯量的等效增量。",

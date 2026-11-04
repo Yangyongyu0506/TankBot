@@ -705,6 +705,24 @@
             "voltage_kp"
           ],
           "additionalProperties": false
+        },
+        "reference_localization": {
+          "type": "object",
+          "properties": {
+            "position_process_std_m_per_sqrt_s": {
+              "type": "number",
+              "minimum": 0
+            },
+            "yaw_process_std_rad_per_sqrt_s": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "position_process_std_m_per_sqrt_s",
+            "yaw_process_std_rad_per_sqrt_s"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [

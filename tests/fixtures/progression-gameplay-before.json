@@ -1,0 +1,79 @@
+{
+  "c0": {
+    "configuration_sha256": "1b0b8ae5890d4515c80b40f49399d4bc9162b75eea6154049e9563bb220cedaa",
+    "hints": [
+      "W/S 前后，差速 A/D 转向；全向 Q/E 转向。",
+      "J/L 转动炮台，空格单发。炮弹会反弹；瞄准左侧红色靶标。"
+    ]
+  },
+  "navigation.c0": {
+    "configuration_sha256": "6be51a467fe90586a95c44a2ca181439957596173d5b3b25d1adce61b8043e52",
+    "hints": [
+      "在 F2 中只需编辑高亮的 control/wheel_controller.py；Navigation 使用独立项目，Weapons 代码与历史保留在原工程。",
+      "轮速顺序永远是 [left,right]，单位 rad/s；正角速度表示逆时针左转，左轮应比右轮慢。",
+      "先做 FK 检查当前运动，再做 IK 得到目标轮速，结合电机反电动势、负载与速度误差计算两轮电压。",
+      "运行时打开“曲线”，对比目标与编码器速度、左右轮速和执行电压；虚线标记指令切换，鼠标移入可查看采样值。",
+      "部署前的编辑与测试不计时。发现问题可主动结束，再修改代码；重试会从零初态重新执行整条序列。"
+    ]
+  },
+  "navigation.c1": {
+    "configuration_sha256": "e59ad7f7093097e90d4ee51452867881b226e62cb527a16272dae10660687f81",
+    "hints": [
+      "复用 C0 已写好的 control/wheel_controller.py；本关只新增高亮的 localization/odometry.py，原控制算法完整保留。",
+      "initial_pose 是一次公开的地图系初始位姿；之后算法只收到编码器，没有当前真实位姿或车体目标速度。",
+      "先通过 FK 得到 v/w，再将 v 由车体系转到地图系积分。dt 来自编码器采样时间，不是渲染间隔或提交时间。",
+      "“曲线”面板帮助核对控制；运行中位置/朝向 RMSE 越小越好。错误估计照常显示，不会被真值吸回。"
+    ]
+  },
+  "navigation.c2": {
+    "configuration_sha256": "63ca7e80e49c5dd47056101feeb1cd039b4abe2ac8853094a24b4eff0a4f89de",
+    "hints": [
+      "沿用 C0 轮控制器和 C1 里程计，两个文件完整保留。只需修改高亮的 localization/ekf.py。",
+      "轮控制器、纯里程计和 EKF 获得同一次带噪轮速；没有隐藏的理想编码器通道。",
+      "GPS 是地图系位置，不是 yaw 或真实位置；框架只对新且与预测时刻对齐的 GPS 调用 correct。",
+      "默认车体、相机和轨迹跟随 EKF；蓝色为纯里程计对照，GPS 点和 1σ 位置椭圆可单独切换。"
+    ]
+  },
+  "c1": {
+    "configuration_sha256": "f4132a484b85304e9450de7bb1c020d58ec70fcc15ea68019ca149ee52cb31bd",
+    "hints": [
+      "F2 打开编辑器，阅读任务说明，完成 perception/transforms.py 的 radar_to_map。",
+      "F1 查看 Pose2D 字段、NumPy 返回类型及矩阵实验：前三列是基向量，最后一列是原点位置。",
+      "系统负责极坐标展开和 T @ p；保存 → 测试快照 → 部署，然后手动瞄准命中。",
+      "Weapons 章节底盘锁定：本关只练习瞄准，W/A/S/D/Q/E 不控制移动；后坐和受击仍是真实物理。"
+    ]
+  },
+  "c2": {
+    "configuration_sha256": "a53f9db02d93ab77153d03cc7dfc5e32451f89cffa93691127cb92636e99285a",
+    "hints": [
+      "完成 perception/tracker.py；C1 的 transforms.py 继续用于矩阵坐标变换。",
+      "空测量时也可输出合理预测；不要把每个 observation_id 当作同一实体 ID。",
+      "J/L 手动瞄准，给移动目标留出弹丸飞行时间。HP 和运行中的累计位置 RMSE 都是授权教学反馈；观察数值与曲线评估去噪效果。",
+      "Weapons 章节底盘锁定：本关只练习瞄准，W/A/S/D/Q/E 不控制移动；后坐和受击仍是真实物理。"
+    ]
+  },
+  "c3": {
+    "configuration_sha256": "9193a24e8ae8bc1d597dee8111442befd1e51f85a8de8d091573ed2e36de8378",
+    "hints": [
+      "从线性位置观测进阶到距离/方位观测；内部模型可使用 EKF，对外仍返回 (r,theta)。",
+      "F2 文件树高亮本关主要编辑文件；已有 perception/、weapons/ 源码和历史版本保留。",
+      "运行中主界面可看日志，修改前请结束或重置本次尝试。"
+    ]
+  },
+  "c4": {
+    "configuration_sha256": "dcd30d6e929a5089401b8f97bf6cedd24ab5d2f4cf6d73f25dc233ef5f6e6f7d",
+    "hints": [
+      "复用 C3 极坐标滤波，分文件实现中心运动预测、炮台角加速度闭环与自动开火。",
+      "F2 文件树高亮本关主要编辑文件；已有 perception/、weapons/ 源码和历史版本保留。",
+      "运行中主界面可看日志，修改前请结束或重置本次尝试。"
+    ]
+  },
+  "c5": {
+    "configuration_sha256": "fd6e4abf9e4bee86b2f785523f5520b9bbdd27e6045af6ae6e084dbd7319cfe8",
+    "hints": [
+      "关联匿名装甲观测，估计中心与模 90° 的朝向；分文件实现装甲跟踪、提前量预测和角加速度控制。",
+      "F2 文件树高亮本关主要编辑文件；已有 perception/、weapons/ 源码和历史版本保留。",
+      "运行中主界面可看日志，修改前请结束或重置本次尝试。"
+    ]
+  }
+}

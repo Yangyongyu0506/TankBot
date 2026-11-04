@@ -2,7 +2,7 @@
 
 ## 目的与状态
 
-ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评审变更。初版日期为 2026-10-20，当前更新到玩家依赖与运行反馈（2026-10-25）。`Accepted` 表示当前接受的设计约束；不是实施完成证明。`Proposed` 表示仍需指定实验/审查，不得当成已锁定依赖。`Superseded` 表示被明确编号的新 ADR 完整替代，保留原记录与链接。ADR-0003 已由 M3 实证后的 ADR-0021 替代；ADR-0014 局部修订 0004/0010 的速度接口表达，其余约束仍有效。ADR-0017 局部修订武器阶段与后坐作用模型，未整体废弃 ADR-0015。
+ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评审变更。初版日期为 2026-10-20，当前更新到公共入门与双主线进度树（2026-11-04）。`Accepted` 表示当前接受的设计约束；不是实施完成证明。`Proposed` 表示仍需指定实验/审查，不得当成已锁定依赖。`Superseded` 表示被明确编号的新 ADR 完整替代，保留原记录与链接。ADR-0003 已由 M3 实证后的 ADR-0021 替代；ADR-0014 局部修订 0004/0010 的速度接口表达，其余约束仍有效。ADR-0017 局部修订武器阶段与后坐作用模型，未整体废弃 ADR-0015。
 
 | 编号 | 决策 | Status |
 | --- | --- | --- |
@@ -52,8 +52,9 @@ ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评
 | [0044](0044-preview-untouched-algorithm-upgrades.md) | 来源可证的旧算法空模板纳入显式升级预览 | Accepted |
 | [0045](0045-independent-course-workspaces.md) | Navigation 独立课程工作区与旧 Campaign 身份兼容 | Accepted |
 | [0046](0046-confirmed-wheel-voltage-control.md) | 用户确认的双轮电压、电机耦合与固定指令评价 | Accepted |
-
 | [0047](0047-navigation-odometry-and-control-feedback.md) | Navigation 控制曲线、玩家里程计与采样对齐评价 | Accepted |
+| [0048](0048-navigation-gps-localization.md) | 我方 GPS、共享带噪轮速、EKF 合同与固定评分/授权对照 | Accepted |
+| [0049](0049-branching-course-progression.md) | 公共入门、双主线依赖与目录驱动关卡树；修订旧全局链式入口 | Accepted |
 
 ## 变更流程与完成条件
 

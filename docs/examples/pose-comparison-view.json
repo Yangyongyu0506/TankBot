@@ -1,0 +1,76 @@
+{
+  "protocol_version": "1.0",
+  "message_type": "topic",
+  "channel": "/view/snapshot",
+  "sequence_number": 0,
+  "simulation_tick": 12,
+  "simulation_time_ns": 200000000,
+  "run_id": "example-run",
+  "publisher_id": "view_gateway",
+  "request_id": null,
+  "frame_id": null,
+  "schema": "view_snapshot@5",
+  "payload": {
+    "view_revision": 1,
+    "policy_id": "navigation-gps-localization",
+    "selected_pose": {
+      "source_id": "ekf",
+      "frame_id": "map",
+      "simulation_tick": 6,
+      "freshness": "fresh",
+      "pose": {
+        "x_m": 1.0,
+        "y_m": 2.0,
+        "yaw_rad": 0.0,
+        "covariance": [
+          0.04,
+          0.0,
+          0.0,
+          0.0,
+          0.04,
+          0.0,
+          0.0,
+          0.0,
+          0.02
+        ],
+        "child_frame_id": "base_link"
+      }
+    },
+    "local_observations": [],
+    "objects": [],
+    "effects": [],
+    "target_estimates": [],
+    "pose_estimates": [
+      {
+        "protocol_version": "1.0",
+        "message_type": "topic",
+        "channel": "/robot/estimates/ekf/pose",
+        "sequence_number": 0,
+        "simulation_tick": 6,
+        "simulation_time_ns": 100000000,
+        "run_id": "example-run",
+        "publisher_id": "module:ekf",
+        "request_id": null,
+        "frame_id": "map",
+        "schema": "pose2d@1",
+        "payload": {
+          "x_m": 1.0,
+          "y_m": 2.0,
+          "yaw_rad": 0.0,
+          "covariance": [
+            0.04,
+            0.0,
+            0.0,
+            0.0,
+            0.04,
+            0.0,
+            0.0,
+            0.0,
+            0.02
+          ],
+          "child_frame_id": "base_link"
+        }
+      }
+    ]
+  }
+}

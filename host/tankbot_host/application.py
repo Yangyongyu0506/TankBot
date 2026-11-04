@@ -15,8 +15,9 @@ ROOT = Path(__file__).resolve().parents[2]
 ACTIONS = ("forward", "backward", "left", "right", "turn_left", "turn_right",
            "turret_left", "turret_right", "fire", "editor", "help", "settings")
 KEY_CODE = r"Key[A-Z]|Digit[0-9]|Arrow(?:Up|Down|Left|Right)|Space|F(?:[1-9]|1[0-2])|Numpad[0-9]"
-LAYERS = ("map", "robot", "trail", "target_estimates", "radar", "imu", "encoders", "turret",
+LEGACY_LAYERS = ("map", "robot", "trail", "target_estimates", "radar", "imu", "encoders", "turret",
           "truth_robot", "truth_targets", "projectiles", "frames", "velocities", "colliders")
+LAYERS = (*LEGACY_LAYERS, "gps", "pose_estimates", "pose_covariance")
 
 
 def validate_settings(value):
@@ -29,9 +30,13 @@ def validate_settings(value):
         raise ValueError("不支持此按键；请使用字母、数字、方向键、空格或 F1–F12。")
     if len(set(keys.values())) != len(keys):
         raise ValueError("多个操作不能使用同一个按键。")
-    if not isinstance(value["layers"], dict) or set(value["layers"]) != set(LAYERS) or any(type(v) is not bool for v in value["layers"].values()):
+    if (not isinstance(value["layers"], dict) or not set(LEGACY_LAYERS) <= set(value["layers"]) <= set(LAYERS)
+            or any(type(v) is not bool for v in value["layers"].values())):
         raise ValueError("图层设置必须为完整的布尔开关列表。")
-    return copy.deepcopy(value)
+    normalized = copy.deepcopy(value)
+    for layer in LAYERS:
+        normalized["layers"].setdefault(layer, False)
+    return normalized
 
 
 def load_settings(path):
@@ -70,6 +75,8 @@ class ApplicationState:
             raise ValueError("设置文件和存档文件必须使用不同路径。")
         self.levels = list(config.get("campaign", {}).get("levels", {}))
         self.prerequisites={key:value["metadata"]["prerequisites"] for key,value in config.get("campaign",{}).get("levels",{}).items()}
+        self.level_titles={key:value["title"] for key,value in config.get("campaign",{}).get("levels",{}).items()}
+        self.initial_level=next((lid for lid in self.levels if not self.prerequisites[lid]),None)
         self.lock = threading.RLock()
         self.tickets = {}
         self.defaults = load_settings(ROOT / "config/settings.yaml")
@@ -79,7 +86,7 @@ class ApplicationState:
             self.settings = load_settings(self.settings_path)
         with self.transaction(self.progress_path):
             if not self.progress_path.exists():
-                self.write(self.progress_path, {"version": 1, "completed_levels": [], "current_level": self.levels[0] if self.levels else None, "completions": {}})
+                self.write(self.progress_path, {"version": 1, "completed_levels": [], "current_level": self.initial_level, "completions": {}})
             self.read_progress()
 
     @contextmanager
@@ -159,7 +166,7 @@ class ApplicationState:
             raise ValueError("存档格式错误；请恢复备份，原文件未被重置。")
         completed = value["completed_levels"]
         if (completed != [lid for lid in self.levels if lid in completed] or len(completed) > len(self.levels)
-                or any(not set(self.prerequisites[lid])<=set(completed) for lid in completed if lid in self.prerequisites)
+                or any(self.missing_prerequisites(lid,completed) for lid in completed if lid in self.prerequisites)
                 or set(value["completions"]) != set(completed)
                 or value["current_level"] not in self.levels + [None]):
             raise ValueError("存档关卡顺序无效；原文件未被重置。")
@@ -167,21 +174,33 @@ class ApplicationState:
             if not isinstance(record, dict) or set(record) != {"completed_at"} or not isinstance(record["completed_at"], str):
                 raise ValueError("存档通关记录无效；原文件未被重置。")
             datetime.fromisoformat(record["completed_at"])
-        if value["current_level"] is not None and value["current_level"] not in [lid for lid in self.levels if set(self.prerequisites[lid])<=set(completed)]:
+        if value["current_level"] is not None and value["current_level"] not in self.unlocked_levels(completed):
             raise ValueError("存档中的当前关卡尚未解锁；原文件未被重置。")
         return value
+
+    def missing_prerequisites(self, level_id, completed):
+        done=set(completed)
+        return [lid for lid in self.prerequisites[level_id] if lid not in done]
+
+    def unlocked_levels(self, completed):
+        return [lid for lid in self.levels if not self.missing_prerequisites(lid,completed)]
+
+    def locked_message(self, level_id, completed):
+        missing=self.missing_prerequisites(level_id,completed)
+        return "LEVEL_LOCKED: 尚未通关前置关卡："+"、".join(f"{self.level_titles[lid]} ({lid})" for lid in missing)+"。"
 
     def progress(self):
         with self.transaction(self.progress_path):
             value = self.read_progress()
-        count = len(value["completed_levels"])
-        return {**value, "unlocked_levels": [lid for lid in self.levels if set(self.prerequisites[lid])<=set(value["completed_levels"])], "developer_mode": self.developer}
+        return {**value, "unlocked_levels": self.unlocked_levels(value["completed_levels"]), "developer_mode": self.developer}
 
     def require_level(self, level_id):
         if level_id not in self.levels:
             raise ValueError("UNKNOWN_LEVEL")
-        if not self.developer and level_id not in self.progress()["unlocked_levels"]:
-            raise ValueError("LEVEL_LOCKED: 请先完成前面的教学关卡。")
+        if not self.developer:
+            completed=self.progress()["completed_levels"]
+            if self.missing_prerequisites(level_id,completed):
+                raise ValueError(self.locked_message(level_id,completed))
 
     def select_level(self, level_id):
         self.require_level(level_id)
@@ -209,8 +228,8 @@ class ApplicationState:
                 with self.transaction(self.progress_path):
                     value = self.read_progress()
                     if level_id not in value["completed_levels"]:
-                        if not set(self.prerequisites[level_id])<=set(value["completed_levels"]):
-                            raise ValueError("LEVEL_LOCKED")
+                        if self.missing_prerequisites(level_id,value["completed_levels"]):
+                            raise ValueError(self.locked_message(level_id,value["completed_levels"]))
                         value["completed_levels"].append(level_id)
                         value["completed_levels"].sort(key=self.levels.index)
                         value["completions"][level_id] = {"completed_at": datetime.now(timezone.utc).isoformat()}
