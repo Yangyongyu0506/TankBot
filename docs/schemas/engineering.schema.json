@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tankbot.example/schemas/v1/engineering.schema.json",
+  "type": "object",
+  "properties": {
+    "version": {
+      "const": "1.0"
+    },
+    "lab": {
+      "type": "object",
+      "properties": {
+        "max_batches": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "max_record_bytes": {
+          "type": "integer",
+          "minimum": 4096,
+          "maximum": 262144
+        },
+        "max_saved_records": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128
+        },
+        "max_comparisons": {
+          "const": 2
+        },
+        "segment_ticks": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 36000
+        },
+        "diagnostic_max_events": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8
+        },
+        "diagnostic_max_values": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9
+        },
+        "poll_ms": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 10000
+        }
+      },
+      "required": [
+        "max_batches",
+        "max_record_bytes",
+        "max_saved_records",
+        "max_comparisons",
+        "segment_ticks",
+        "diagnostic_max_events",
+        "diagnostic_max_values",
+        "poll_ms"
+      ],
+      "additionalProperties": false
+    },
+    "storage": {
+      "type": "object",
+      "properties": {
+        "max_backup_bytes": {
+          "type": "integer",
+          "minimum": 65536,
+          "maximum": 134217728
+        },
+        "max_backup_files": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16384
+        },
+        "max_cleanup_plans": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32
+        },
+        "keep_recent_revisions": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "warning_bytes": {
+          "type": "integer",
+          "minimum": 1024,
+          "maximum": 134217728
+        },
+        "max_pins": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 256
+        }
+      },
+      "required": [
+        "max_backup_bytes",
+        "max_backup_files",
+        "max_cleanup_plans",
+        "keep_recent_revisions",
+        "warning_bytes",
+        "max_pins"
+      ],
+      "additionalProperties": false
+    },
+    "ui": {
+      "type": "object",
+      "properties": {
+        "series_colors": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {
+            "type": "string",
+            "pattern": "^#[a-fA-F0-9]{6}$"
+          }
+        },
+        "plot_width": {
+          "type": "integer",
+          "minimum": 320,
+          "maximum": 1920
+        },
+        "plot_height": {
+          "type": "integer",
+          "minimum": 80,
+          "maximum": 600
+        }
+      },
+      "required": [
+        "series_colors",
+        "plot_width",
+        "plot_height"
+      ],
+      "additionalProperties": false
+    },
+    "timing": {
+      "type": "object",
+      "properties": {
+        "max_batches": {
+          "type": "integer",
+          "minimum": 16,
+          "maximum": 4096
+        },
+        "max_public_samples": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        }
+      },
+      "required": [
+        "max_batches",
+        "max_public_samples"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "version",
+    "lab",
+    "storage",
+    "ui",
+    "timing"
+  ],
+  "additionalProperties": false
+}

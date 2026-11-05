@@ -2,9 +2,9 @@
 
 TankBot 将二维坦克运动、机器人算法学习与多文件 Python 编程结合。玩家通过传感器和自己的算法重建世界认知。
 
-当前完成 **M1 + M1b 本机闭环原型**：Rust/Rapier2D 权威物理、差速/四轮径向全向轮底盘、理想轮编码器与质心 IMU、外部 Python 里程计、固定 tick 提交、Pose Selector、View Policy 和 Canvas 页面。M1b 增加双刚体炮台、单发/冷却、连续弹道/反弹/弹丸互毁、后坐/受击冲量、靶标与 Python 武器接口；M2 增加真实浏览器 Rust/WASM + Pyodide 双 Worker、独立 Runtime origin 与多 Adapter 验证；M3 增加 CodeMirror/Vim、多文件 Workspace、模板预览、快照测试、部署与回滚。M5 增加模块图，现已调整为 C3 极坐标滤波、C4 中心自瞄与 C5 小陀螺装甲；Navigation 已有双轮电压控制、理想里程计、GPS/EKF 定位和航点闭环四关；后续规划和 Arena 尚未实现。
+当前为可玩的本机原型：Rust/Rapier2D 权威物理、差速/四轮径向全向底盘、Python SDK/Runtime、固定 tick 提交、授权视图和 CodeMirror 多文件编辑部署。原生模式与 Rust/WASM + Pyodide 双 Worker 浏览器模式共享仿真及课程语义。
 
-M4 增加 C0–C2 教学关卡：真值驾驶练习、理想雷达 SE(3) 矩阵变换、带噪声/丢失的移动敌车跟踪与击杀。开始方式见下节；M5 当前课程为 C3 直接滤波车体系 (r, theta)、C4 复用滤波并接管武器自瞄、C5 全向小陀螺装甲预测；建图、规划与 Arena 仍待实现。
+现有公共 C0、Weapons C1–C5 和 Navigation C0–C3 共十关，由 YAML 自动发现。Weapons 覆盖坐标变换、目标滤波、预测自瞄和小陀螺装甲；Navigation 已有轮电压控制、里程计、GPS/EKF 和航点位置闭环。C2 滤波回放实验、耗时诊断和可恢复项目备份已接入；连续路径、规划、建图及 Arena 尚未实现。各阶段历史与当前验收范围见 [文档索引](docs/README.md)。
 
 ## 构建与运行
 
@@ -35,7 +35,7 @@ python3 tools/tankbot.py browser --level c0
 
 在顶部或「任务」面板打开「关卡路线」，选择节点查看简介和具体前置，再点击「开始本关 / 重试」。公共 C0 通关后，可任选 Weapons 或 Navigation 主线并交替推进。C0 先移动至少 1 m、转动车体至少 0.5 rad，并命中可见靶标。C1 隐藏敌车，F2 打开编辑器，完成自动生成的 `perception/transforms.py`，返回 `NDArray[np.float64]` 形式的 4×4 SE(3) 矩阵，测试并部署，利用目标估计瞄准命中。C2 保留该矩阵函数，追加 `perception/tracker.py`；处理带噪声和 10% 丢失的雷达，跟踪巡逻敌车，保持存活并击中三次使敌车 HP 归零即可通关。
 
-前三关保留系统自定位、公开地图与手动控制。Radar 是车体系局部观测，地图上的目标标记来自玩家 Python；Weapons C1–C5 默认显示炮弹，可在图层设置中开关；真实敌车和命中特效位置仍隐藏，Python 输入权限不变。C2/C3 显示双方 HP，以及运行中的累计位置 RMSE、有效样本数和变化曲线；编辑器也显示同一指标。测试不计入、重复部署不清零，重试重新累计。通关或点击「结束本次尝试」后关闭玩家程序并冻结最终误差报告；物理与已有弹丸继续运行。重试建立新场景，新关只补缺失文件，已有源码保留；保存的草稿须重新 Test/Deploy。Weapons 内部仍按 C1 → C2 → C3 → C4 → C5 解锁，Navigation 内部按 C0 → C1 → C2 → C3 解锁；两条首关均只依赖公共 c0。通关后列出所有新开放节点，允许重玩，不强制自动进入下一关。开发者仍可自由练习。
+前三关保留系统自定位和公开地图；C0 可人工驾驶，C1/C2 锁定底盘并保留人工炮台与开火。Radar 是车体系局部观测，地图上的目标标记来自玩家 Python；Weapons C1–C5 默认显示炮弹，可在图层设置中开关；真实敌车和命中特效位置仍隐藏，Python 输入权限不变。C2/C3 显示双方 HP，以及运行中的累计位置 RMSE、有效样本数和变化曲线；编辑器也显示同一指标。测试不计入、重复部署不清零，重试重新累计。通关或点击「结束本次尝试」后关闭玩家程序并冻结最终误差报告；物理与已有弹丸继续运行。重试建立新场景，新关只补缺失文件，已有源码保留；保存的草稿须重新 Test/Deploy。Weapons 内部仍按 C1 → C2 → C3 → C4 → C5 解锁，Navigation 内部按 C0 → C1 → C2 → C3 解锁；两条首关均只依赖公共 c0。通关后列出所有新开放节点，允许重玩，不强制自动进入下一关。开发者仍可自由练习。
 
 F1 或编辑器中的「关卡说明 / 类型」可随时查看每关步骤、输入输出签名、SDK 字段/单位、Python 速查与交互矩阵实验；悬停及 Ctrl+Space 提供类型提示。新模板显式标注变量和返回类型。旧工作区可预览模板升级并选择系统脚手架，已有算法默认保留。原生 NumPy 随首次启动自动准备；浏览器运行 `prepare_browser.py` 准备锁定的 Pyodide/NumPy 资源。
 
@@ -59,9 +59,9 @@ python3 tools/tankbot.py --level-tree --save-file /path/to/progress.json
 
 启动时可用 `--map open_large` 覆盖关卡地图（例如 `python3 tools/tankbot.py serve --level c0 --map open_large`），`--list-maps` 列出资产。顶部「地图预览」显示全景；开发者可浏览全部地图。覆盖地图作为自定义练习，不计正式通关，重试/切关继续沿用；省略参数重启服务恢复默认。详见 [地图覆盖与预览](docs/31_MAP_OVERRIDE_AND_PREVIEW.md)。
 
-地图集中在 [assets/maps](assets/maps/README.md)：Hello Robot / Weapons 共用 12×8 m 空旷场地，另提供大型空旷、绕行、仓储布局和原试验场。导航地图暂未绑定关卡，布局预览及引用方式见目录说明。
+地图集中在 [assets/maps](assets/maps/README.md)：Hello Robot / Weapons 共用 12×8 m 空旷场地，另提供大型空旷、绕行、仓储布局和原试验场。复杂导航布局尚未绑定正式课程，当前 Navigation 沿用空旷教学场地；布局预览及引用方式见目录说明。
 
-完整底盘模型（质量、惯量、轮组、伺服、阻力、限制与外观）在 [config/chassis](config/chassis/)；世界时钟、求解器、武器与平台参数在 [config/game.yaml](config/game.yaml)。统一传感器实例及不可变场景的接口见 [32](docs/32_RESOLVED_SCENE_AND_COMPONENTS.md)；六关的地图组合、传感器、权限、规则、合同和教材分别在 [levels/](levels/README.md) 的独立 YAML 中，缺项报错，不补隐藏默认值。底盘只能在场景启动时选择。可在网页中保存、测试并部署 Python 项目；编辑与部署分离，成功部署不重置物理世界。示例算法在 [examples/robot](examples/robot/localization/odometry.py)，支持多文件 import，启动不会改写源码。
+完整底盘模型（质量、惯量、轮组、伺服、阻力、限制与外观）在 [config/chassis](config/chassis/)；世界时钟、求解器、武器与平台参数在 [config/game.yaml](config/game.yaml)。统一传感器实例及不可变场景的接口见 [32](docs/32_RESOLVED_SCENE_AND_COMPONENTS.md)；各关的地图组合、传感器、权限、规则、合同和教材分别在 [levels/](levels/README.md) 的独立 YAML 中，缺项报错，不补隐藏默认值。底盘只能在场景启动时选择。可在网页中保存、测试并部署 Python 项目；编辑与部署分离，成功部署不重置物理世界。示例算法在 [examples/robot](examples/robot/localization/odometry.py)，支持多文件 import，启动不会改写源码。
 
 ## 设置、玩家存档与开发者图层
 
@@ -97,7 +97,7 @@ python3 tools/prepare_browser.py          # 首次下载锁定版本/摘要的 P
 python3 tools/tankbot.py browser --chassis omnidirectional
 ```
 
-打开 `http://127.0.0.1:8765/?runtime=browser`，操作与原生模式相同。首次启动会加载两个 Python 解释器；Test/Deploy 时额外启动候选 Worker，当前机器人继续运行。玩家源码在页面中编辑并显式部署；修改 SDK/Authority 源码须重新 prepare bundle 并刷新。`--view weapons-practice` / `--robot-demo` 同样适用。资源准备后可运行 `python3 tools/prepare_browser.py --offline`；底盘/武器参数仍只在 config/game.yaml。两个 loopback 端口默认 8765/8766，不能与原生服务同时占用同一端口。
+打开 `http://127.0.0.1:8765/?runtime=browser`，操作与原生模式相同。首次启动会加载两个 Python 解释器；Test/Deploy 时额外启动候选 Worker，当前机器人继续运行。玩家源码在页面中编辑并显式部署；修改 SDK/Authority 源码须重新 prepare bundle 并刷新。`--view weapons-practice` / `--robot-demo` 同样适用。资源准备后可运行 `python3 tools/prepare_browser.py --offline`；底盘参数来自 config/chassis/*.yaml，世界时钟、求解器与武器参数来自 config/game.yaml，课程组合来自 levels/*.yaml。两个 loopback 端口默认 8765/8766，不能与原生服务同时占用同一端口。
 
 已验证 Linux / Firefox 157，其他平台仍待验证。Runtime origin 的 CSP 限制跨 origin 网络/嵌套 Worker，仍没有浏览器硬内存/CPU/存储额度。服务器沙箱、Arena 与第三方代码上传未开放。详细流程及代价见 [浏览器设计](docs/16_BROWSER_RUNTIME.md)。
 
@@ -131,21 +131,14 @@ python3 tools/tankbot.py browser --workspace /path/to/robot-seed --workspace-sto
 独立测试工具使用已具备 `requirements.txt` 的解释器；可用开发虚拟环境，或 `.m1-cache/python/envs/*/ready.json` 记录的专用解释器。
 
 ```bash
-cargo test --locked
-python3 -m unittest discover -s tests -v
-node tests/test_rendering.mjs  # Node 22+，浏览器表现行为测试
-node tests/test_sdk_hints.mjs  # 学习类型与成员提示
-node tests/test_gamepad.mjs    # 模拟量、按键、设备切换和恢复边界
-node tests/test_settings.mjs   # 改键语义、图层权限和真值/估计独立
-node tests/test_runtime_logs.mjs # 连续 Python 日志、版本隔离和源码行号
-node tests/test_live_metrics.mjs # 累计指标展示、曲线容量和重试清零
-node tests/test_localization_view.mjs # GPS/估计有界历史、协方差椭圆与插值
-node tests/test_wasm.mjs       # 先构建原生 debug 与 WASM release
+python3 tools/check.py --offline    # Node自动发现 + Python + Rust + 文档 + 生成配置
+npm test                           # 自动发现普通前端组件测试
+python3 tools/check.py --suite python --offline
+npm run test:wasm                   # 先构建原生debug及WASM release
+npm run test:browser -- --mode both --offline  # 隔离Firefox真实流程，需已准备浏览器资源
 python3 docs/tools/check_design.py
+python3 tools/export_profile.py --offline --check
 python3 tools/build.py --format-check
-python3 tools/build.py --wasm
-node tools/wasm_probe.mjs
-python3 tools/measure_omni.py
 ```
 
 单元/集成测试包含临时 loopback HTTP 服务；受限环境需允许本地套接字。`measure_m1.py` / `measure_m1b.py` 写入 current-profile 测量 JSON，保留原历史 baseline，报告实际机器/摘要/时延/误差；不要把本机测量当成所有平台性能保证。运行说明与边界见 [M1b 验证报告](docs/reports/M1B_VALIDATION.md)，旧 [M1 报告](docs/reports/M1_VALIDATION.md) 与基线保留为历史证据。
@@ -164,7 +157,7 @@ python3 tools/measure_omni.py
 
 原生模式仅运行**本人可信的本机 Python**；普通子进程不是安全沙箱，不能开放第三方代码上传。UI 仅接收 View Policy 授权的估计/传感器或显式练习图层，不提供通用真值接口；本机设备所有者仍可通过文件/调试器读取自己的数据。实测为 Linux x86_64 原生和 Firefox 浏览器单机；Windows/macOS 构建 CI 已配置但尚无本次运行证据，其他浏览器与服务器隔离仍待验证。
 
-从 [文档索引](docs/README.md)、[物理确认记录](docs/13_PHYSICS_MODEL_DECISIONS.md) 与 [路线图](docs/10_DEVELOPMENT_ROADMAP.md) 阅读。根 [AGENTS.md](AGENTS.md) 按用户要求保留原文件；其中“只有设计文档”的状态描述为历史基线，当前实现范围以本 README、[M1 收尾](docs/reports/M1_CLOSEOUT.md) 、[M2 报告](docs/reports/M2_VALIDATION.md) 、[M3 报告](docs/reports/M3_VALIDATION.md) 和 [M4 报告](docs/reports/M4_VALIDATION.md) 为准，其架构约束继续有效。
+从 [文档索引](docs/README.md)、[物理确认记录](docs/13_PHYSICS_MODEL_DECISIONS.md) 与 [路线图](docs/10_DEVELOPMENT_ROADMAP.md) 阅读。根 [AGENTS.md](AGENTS.md) 已同步当前实现目录和检查入口；当前功能以本 README、文档索引及对应验收为准，历史报告按各自日期/平台范围保留。
 
 M2 浏览器验收需先启动带 `--browser-qa` 的 browser 服务及启用 Marionette 的无头 Firefox，再运行 `python3 tools/browser_m2.py`；死循环用服务端 `--fault infinite_loop` 与工具 `--expect-fault`，程序武器用服务端 `--robot-demo` 与工具 `--expect-weapons`。普通构建/测试不需要下载 Pyodide；HTTP 资源边界测试在未准备 bundle 的 CI 中显式跳过，真实浏览器证据单独记录。
 
@@ -188,7 +181,7 @@ C3/C4 的 `PolarTracker.update` 接收 `measurements: tuple[PolarTargetEstimate,
 
 ## YAML 关卡插件
 
-当前 C0–C5 通过同一加载器自动发现，旧 ID、存档及既有 Topic 保持兼容；C3/C4 按用户要求重做，C5 为本轮新增。复用已有组件时，只需在 `levels/` 添加一个符合 Schema 的 YAML，无需修改引擎、UI 或注册列表；程序输入权限与 UI 显示权限独立配置。启动器会为原生和浏览器生成同一关卡目录，新增文件后重启服务。未知组件会明确拒绝，不支持 YAML 执行脚本。
+当前十关通过同一加载器自动发现，稳定 ID、存档及既有 Topic 保持兼容；早期五关迁移与后续 Weapons 调整的历史分别保留于对应报告。复用已有组件时，只需在 `levels/` 添加一个符合 Schema 的 YAML，无需修改引擎、UI 或注册列表；程序输入权限与 UI 显示权限独立配置。启动器会为原生和浏览器生成同一关卡目录，新增文件后重启服务。未知组件会明确拒绝，不支持 YAML 执行脚本。
 
 编写及启动流程见 [关卡指南](levels/README.md)，架构与原五关审计见 [27](docs/27_LEVEL_PLUGIN_ARCHITECTURE.md)，测试与限制见 [迁移验收](docs/reports/LEVEL_PLUGINS_VALIDATION.md)。
 
@@ -229,3 +222,12 @@ python3 tools/tankbot.py browser --level navigation.c3 --developer
 ```
 
 120 仿真秒内按顺序进入四个航点的 0.35 m 范围，最后在终点满足平移速率≤0.05 m/s、绝对角速度≤0.10 rad/s 连续0.5秒通关。首次正式轮控制生效起算；位置控制参考限幅 vx ±0.5 m/s、wz ±1.5 rad/s，缺少有效定位时制动。定位 RMSE 继续用于反馈，不额外设为通关门槛。路线、时限、容差、停稳与显示参数均在 [关卡 YAML](levels/navigation.C3.yaml)，详细接口和时序见 [航点闭环](docs/37_NAVIGATION_WAYPOINT_CONTROL.md)。已有算法/历史保留；系统文件升级先预览，测试与正式任务隔离。
+
+
+## 工程工具与算法实验台
+
+任务页的“算法实验台”目前由 Weapons C2 显式开放：部署后开始/停止录制，结束尝试，再选择两个保存版本比较同一组授权输入。可查看实际执行、测量/估计/协方差、累计和分段误差、缺测、可选创新及原生Python错误栈，保存/导出失败复现记录。导出含源码、revision、配置/环境摘要和时刻，不含敌车真值；重新导入没有私有参考时，新RMSE留空。传感器回放不是完整通关，控制器须从同初态重跑，不能套用旧测量。
+
+“日志→耗时诊断”显示整批/模块、编码/解码、往返、等待提交的p50/p95/p99及超时位置。仍沿用20ms墙钟和固定tick，并非新的CPU配额。F2“模板、备份与恢复→项目容量与完整备份”可导出整个当前课程工程、固定历史版本，预览并确认可恢复清理；旧源码/历史不自动删除。恢复前备份当前HEAD，异常中断可以回滚。工程配额在 [engineering.yaml](config/engineering.yaml)。
+
+完整接口、操作及限制见 [工程与实验台](docs/38_ENGINEERING_AND_ALGORITHM_LAB.md)，实际命令/截图/失败见 [本轮验收](docs/reports/ENGINEERING_QUALITY_VALIDATION_20261105.md)，当前风险见 [评估跟进](docs/reports/PROJECT_REVIEW_FOLLOWUP_20261105.md)。后续连续路径、全局规划、局部避障及IMU/建图/SLAM仅为 [课程提案](docs/39_NAVIGATION_COURSE_PROPOSALS.md)，本轮未增加正式关卡。CI跨平台构建与Linux/Firefox实际玩家流程分别记录；其他OS/浏览器仍需独立实测。

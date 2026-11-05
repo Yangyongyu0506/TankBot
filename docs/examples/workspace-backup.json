@@ -1,0 +1,8 @@
+{
+  "backup_version": "1.0",
+  "head_revision": "683a50234ce90faef79ae700c302ea91ca905de649018402daad9aa51c32cd56",
+  "entries": {
+    "683a50234ce90faef79ae700c302ea91ca905de649018402daad9aa51c32cd56.json": "{\n  \"files\": {\n    \"main.py\": \"# player source\\n\"\n  },\n  \"ledger\": {},\n  \"revision\": \"683a50234ce90faef79ae700c302ea91ca905de649018402daad9aa51c32cd56\"\n}"
+  },
+  "sha256": "c2ee483626bde975a11ce1803d9ceb36d8a61158aed8859810eed82bfa497f9c"
+}

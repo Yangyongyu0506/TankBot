@@ -179,51 +179,8 @@ class Authority:
             "publisher_id": self.publisher_id, "input_channels": self.input_channels, "output_channels": self.output_channels}
         from tankbot._imports import load_policy
         init["import_policy"] = load_policy()
-        if config.get("campaign", {}).get("active_level"):
-            from .chassis_profiles import target_geometry
-            geometry=target_geometry(config)
-            from .workspace import starter, read_sources
-            init["sources"] = starter(config)
-            if workspace is not None:
-                init["sources"].update(read_sources(workspace, config["workspace"]))
-            init["config"]["lesson"] = {"level_id": config["campaign"]["active_level"],
-                                          "transform_tolerance": config["validation"]["numeric_tolerance"],
-                                          "processing":self.campaign.definition["runtime"]["processing"]}
-            if config.get("wheel_drive"):
-                from .navigation import drive_parameters
-                init["config"]["drive_parameters"]=drive_parameters(config)
-            if any(sensor.type=="gps" for sensor in self.scene.sensors):
-                from .navigation import localization_parameters
-                init["config"]["localization_parameters"]=localization_parameters(config)
-            if self.campaign.navigation:
-                route = self.campaign.navigation.spec
-                contract = next(c for c in self.campaign.definition["runtime"]["contracts"].values()
-                                if c["entry_point"] == "navigation.waypoint_module:WaypointNavigationModule")
-                init["config"]["navigation_parameters"] = {
-                    "position_tolerance_m": route["position_tolerance_m"],
-                    "control_limits": copy.deepcopy(route["control_limits"]),
-                    "pose_max_age_ticks": contract["inputs"]["pose"]["max_age_ticks"],
-                }
-            if self.graph_profile() and self.radar.noise is not None:
-                noise = self.radar.noise
-                init["config"]["observations"] = {"radar_covariance":[[noise["range_stddev_m"]**2,0],[0,noise["bearing_stddev_rad"]**2]]}
-            if self.intercepted_gps.sensor:
-                variance = self.intercepted_gps.sensor["parameters"]["noise"]["position_stddev_m"]**2
-                init["config"]["observations"].update(gps_covariance=[[variance,0],[0,variance]],gps_mount=geometry["gps_mount_m"])
-            if self.armor_detector.sensor:
-                noise=self.armor_detector.sensor["parameters"]["noise"]
-                init["config"]["observations"]={"armor_covariance":[[noise["range_stddev_m"]**2,0],[0,noise["bearing_stddev_rad"]**2]],"armor_mounts":geometry["armor_mounts"]}
-            if self.graph_profile():
-                import math
-                init["config"]["lesson"]["tick_duration_s"] = 1/self.hz
-                init["config"]["lesson"]["estimate_history_ticks"] = config["runtime"]["estimate_history_ticks"]
-                armor = self.campaign.definition.get("armor_mode",False)
-                if config["weapons"]["enabled"]:
-                    init["config"]["actuators"] = {"projectile_speed_mps":config["weapons"]["projectile"]["relative_speed_mps"],
-                        "max_acceleration_radps2":config["weapons"]["turret"]["acceleration_control"]["max_relative_acceleration_radps2"],
-                        "armor_mounts":geometry["armor_mounts"] if armor else [],
-                        "enemy_drive_model":self.campaign.definition["target"]["motion"]["chassis"],
-                        "enemy_forward_only":self.campaign.definition["target"]["motion"]["forward_speed_mps"] > 0}
+        from .runtime_profile import configure_course_runtime
+        configure_course_runtime(self,init,workspace)
         if startup_sources is not None:
             init["sources"] = copy.deepcopy(startup_sources)
         if self.graph_profile():
@@ -233,6 +190,9 @@ class Authority:
             init["graph"] = bind_publishers(graph,self.run_id)
             self.graph = GraphExecution(self,init["graph"],0)
             self.selector.source_id = "system" if graph["pose_source"]["mode"] == "system" else graph["pose_source"]["module_id"]
+        from .experiments import diagnostic_policy,ExperimentLab
+        init["config"]["diagnostic_policy"] = diagnostic_policy(self)
+        self.lab = ExperimentLab(self)
         self.worker_factory = worker_factory
         self.worker_init = copy.deepcopy(init)
         self.deployment = None
@@ -383,12 +343,15 @@ class Authority:
             return
         pending, self._pending = self._pending, None
         response = self.worker.finish(controlled=self.controlled)
+        decision = None
         try:
             if response is None:
                 raise Rejected(self.worker.fault or "MISSED_DEADLINE")
             self.validator.validate(response, now=self.tick,
                                     grants={("runtime", "/runtime/step", "runtime_step_result@1", None)},
                                     source_tick=pending["activation"])
+            from .experiments import check_diagnostics,diagnostic_policy
+            check_diagnostics(response,diagnostic_policy(self),[self.contract["module_id"]])
             p = response["payload"]
             expected_result = [{"module_id": self.contract["module_id"], "status": "completed", "error_code": None}]
             if response["schema"] != "runtime_step_result@1" or response["channel"] != "/runtime/step" or response["message_type"] != "service_response" or response["publisher_id"] != "runtime" or response["frame_id"] is not None or response["run_id"] != self.run_id or response["request_id"] != pending["step_id"] or p["step_id"] != pending["step_id"]:
@@ -437,6 +400,7 @@ class Authority:
                     self._queue_fire(msg)
             self._failures = 0
         except Rejected as e:
+            decision = e.code
             self.audit.append({"event": "rejected", "tick": self.tick, "code": e.code})
             self.logs.append("Runtime 批次失败：" + e.code + "\n", source="runtime", module_id=self.contract["module_id"], tick=self.tick, stream="error",
                              deployment_id=getattr(self.worker, "deployment_id", "startup"), revision=getattr(self.worker, "revision", None))
@@ -445,6 +409,11 @@ class Authority:
                 self._faulted = True
                 self._revoke_robot = True
                 self.worker.close()
+
+        finally:
+            if hasattr(self.worker,"timing"):self.worker.timing.decision(decision,pending["step_id"])
+            if self.lab.record is not None and "request" in pending:
+                self.lab.complete(pending["request"],response,decision)
 
     def _activate(self):
         if self.graph is not None:
@@ -469,7 +438,8 @@ class Authority:
                            message_type="service_request", request_id=step_id)
         self.validator.structure(request)
         if self.worker.submit(request):
-            self._pending = {"step_id": step_id, "activation": self.tick, "commit": self.tick+self.delay}
+            self._pending = {"step_id": step_id, "activation": self.tick, "commit": self.tick+self.delay, "request":request}
+            self.lab.capture(request)
             self._last_activation = self.tick
             self.audit.append({"event": "activation", "tick": self.tick, "commit_tick": self.tick+self.delay})
 
@@ -634,6 +604,7 @@ class Authority:
     def advance(self):
         """Process boundary n, then advance to S_(n+1). Player computation is never awaited in real time."""
         started = time.monotonic()
+        self.lab.advance()
         if self.campaign and self.campaign.motion_task and self.campaign.status!="active":
             return  # Fixed-sequence results and last rendered pose are terminal.
         self.collect_logs(self.worker, "runtime")
@@ -799,6 +770,7 @@ class Authority:
         return hashlib.sha256(json.dumps(list(self.replay), sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
     def close(self):
+        self.lab.close()
         self.sensor_scheduler.close()
         if self.deployment is not None:
             self.deployment.close()

@@ -105,6 +105,19 @@ def build_editor(root, env, offline):
             raise BuildError(f"编辑器构建缺少产物：{relative}。")
 
 
+def cargo_tool(root, env):
+    """Reuse the same normal/local toolchain selection for builds and regression checks."""
+    cargo = shutil.which("cargo", path=env.get("PATH"))
+    if cargo is None:
+        directory = root / ".tools/rust/bin"
+        cargo = str(directory / "cargo")
+        if not Path(cargo).is_file():
+            raise BuildError("需要 Rust 1.99.1；使用 --wasm 时还需要 wasm32-unknown-unknown target。")
+        env["PATH"] = str(directory) + os.pathsep + env.get("PATH", "")
+        env["CARGO_HOME"] = str(root / ".tools/cargo")
+    return cargo
+
+
 def build_core(root, env, args):
     if not args.format_check:
         export = [sys.executable, str(root / "tools/export_profile.py")]
@@ -114,14 +127,7 @@ def build_core(root, env, args):
             run(export, root, env)
         except subprocess.CalledProcessError as exc:
             raise BuildError("无法从 config/game.yaml 生成核心测试配置。") from exc
-    cargo = shutil.which("cargo", path=env.get("PATH"))
-    if cargo is None:
-        directory = root / ".tools/rust/bin"
-        cargo = str(directory / "cargo")
-        if not Path(cargo).is_file():
-            raise BuildError("需要 Rust 1.99.1；使用 --wasm 时还需要 wasm32-unknown-unknown target。")
-        env["PATH"] = str(directory) + os.pathsep + env.get("PATH", "")
-        env["CARGO_HOME"] = str(root / ".tools/cargo")
+    cargo = cargo_tool(root, env)
     command = [cargo, "fmt", "--all", "--check"] if args.format_check else [cargo, "build", "--locked"]
     if not args.format_check:
         if args.release:

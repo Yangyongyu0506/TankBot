@@ -2,7 +2,7 @@
 
 ## 项目状态与阅读入口
 
-TankBot 处于 Design & Documentation 阶段，当前只有技术文档、Schema、夹具和文档检查工具，没有游戏、SDK 或 Runtime 实现。新任务先读 [文档索引](docs/README.md)、相关领域设计及 [ADR 状态表](docs/adr/README.md)，再按 [路线图](docs/10_DEVELOPMENT_ROADMAP.md) 确定范围。不得把 Proposed 技术或示例版本视为已验证功能。
+TankBot 已有 Rust 权威仿真、Python SDK/Runtime、Web 编辑器与两种本机运行方式。当前课程由 `levels/*.yaml` 自动发现；真实范围、平台证据及限制以 [文档索引](docs/README.md) 和 [路线图](docs/10_DEVELOPMENT_ROADMAP.md) 为准。新任务先读相关设计及 [ADR 状态表](docs/adr/README.md)，检查 `git status`，保留已有修改；不得把 Proposed 或历史报告视为当前已验证功能。
 
 ## 必须遵守的架构规则
 
@@ -24,8 +24,8 @@ TankBot 处于 Design & Documentation 阶段，当前只有技术文档、Schema
 
 ## 组织、检查与贡献
 
-文档使用中文，标识符/文件名用英文；设计正文在 `docs/`，决策在 `docs/adr/`，结构/夹具在 `docs/schemas/` 和 `docs/examples/`。实现目录建议见 [02](docs/02_SYSTEM_ARCHITECTURE.md)，尚未创建的目录不是现有代码。使用空格缩进和语言惯例；选定语言后再提交 formatter/linter 配置。
+文档使用中文，标识符/文件名用英文；设计在 `docs/`，决策在 `docs/adr/`，Schema/夹具在 `docs/schemas/` 和 `docs/examples/`。实现位于 `core/`、`host/`、`runtime/`、`sdk/python/`、`web/`；课程在 `levels/`，公共模型和参数在 `config/`，地图在 `assets/maps/`。新增参数写入对应 YAML。使用空格缩进及现有风格；Rust 使用 rustfmt。
 
-文档检查命令为 `python3 docs/tools/check_design.py`（需现有 `jsonschema`/`referencing` 环境）；另查 `git status --short`、`git diff --check`。领域安全与游戏测试尚未实现，不能用文档检查代替，详见 [验证计划](docs/12_VALIDATION_AND_OPEN_QUESTIONS.md)。引入实现后在根 README 写明真实 build/test/run 命令。
+本地与CI共用 `python3 tools/check.py`；普通前端测试由 `npm test` 自动发现，构建后另跑 `npm run test:wasm`，真实网页另跑 `npm run test:browser -- --help` 查看运行分组。构建和运行命令见根 README；文档检查不代替权限、调度、迁移或玩家流程回归。收尾运行 `git diff --check`。使用隔离存档/工作区验收，勿操作日常 `userdata/`。
 
-现有 Git 历史仅有初始化提交，尚无稳定约定；采用简短祈使句提交主题，如 `Add protocol schema fixtures`，每次提交聚焦一个目的。PR 说明问题、变化、相关 issue、实际验证及限制；可见界面变化附图。不得提交凭据、本机环境文件、私有回放或生成垃圾。
+提交主题参考近期 `git log`，每次聚焦一个目的；未经用户要求不提交或推送。PR 说明问题、变化、实际验证及限制，可见界面变化附图。区分跨平台构建与完整玩家流程验证；不得提交凭据、本机环境、私有记录或构建缓存。

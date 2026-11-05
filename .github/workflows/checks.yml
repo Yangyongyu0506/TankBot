@@ -1,4 +1,4 @@
-name: Design and core checks
+name: Cross-platform builds and Linux regression
 on: [push, pull_request, workflow_dispatch]
 jobs:
   core:
@@ -11,7 +11,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install pinned toolchain
         run: rustup toolchain install 1.99.1 --profile minimal --component rustfmt --target wasm32-unknown-unknown
-      - name: Native and WASM build
+      - name: Cross-platform native and WASM build checks (not a player-flow certification)
         run: |
           cargo +1.99.1 fmt --all --check
           cargo +1.99.1 build --locked
@@ -25,14 +25,11 @@ jobs:
           node-version: '22'
       - name: Build editor from locked npm dependencies
         run: python tools/build.py --web-only
-      - name: Protocol, runtime, rendering and documentation
+      - name: Shared local/CI regression entry
         if: runner.os == 'Linux'
         run: |
           python -m pip install -r requirements.txt
-          python -m unittest discover -s tests -v
-          node tests/test_rendering.mjs
-          node tests/test_sdk_hints.mjs
-          node tests/test_gamepad.mjs
-          node tests/test_settings.mjs
-          node tests/test_wasm.mjs
-          python docs/tools/check_design.py
+          python tools/check.py
+      - name: Built native/WASM equivalence (separate from browser UI)
+        if: runner.os == 'Linux'
+        run: npm run test:wasm

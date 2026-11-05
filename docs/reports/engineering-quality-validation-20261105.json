@@ -1,0 +1,4138 @@
+{
+  "date": "2026-11-05",
+  "base_commit": "38207aab2c564cbf24207736ad7d88ace18b7858",
+  "scope": "Linux x86_64 / Firefox local player workflows; c0/c1 completion fixture, no new full-course pass claim",
+  "daily_userdata_modified": false,
+  "environments": {
+    "native": {
+      "passed": true,
+      "comparison": [
+        {
+          "revision": "d2704c6ccac10556c2f9c945b19752a2ab7a9d58e63bf6c1c7107eb32ce848e3",
+          "rmse_m": 0.23544402625491914,
+          "scored_samples": 36,
+          "input_sha256": "db7e6110069f604a5e9080ea358d8d89b37d2eee23c33640aee279ebed06e4fd",
+          "status": "Completed"
+        },
+        {
+          "revision": "052cb1e0f6889d31f884e10931bf07d5a6f12d3052973d095e26ce1e48003434",
+          "rmse_m": 0.23759354044505035,
+          "scored_samples": 36,
+          "input_sha256": "db7e6110069f604a5e9080ea358d8d89b37d2eee23c33640aee279ebed06e4fd",
+          "status": "Completed"
+        }
+      ],
+      "record_metadata": {
+        "seed": 0,
+        "recording_start_tick": 221,
+        "deployment_tick": 198,
+        "configuration_sha256": "657e00d64e36f9690e660288b08903a88f2d18511b6aa43b7175970542e244d6",
+        "environment": {
+          "python": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+          "platform": "linux",
+          "machine": "x86_64",
+          "core_sha256": "87043fa708c2324a4e0b471ab8068b13e1b77c86868cb077c3dae001dfd79fef",
+          "runtime_packages": {
+            "numpy": "2.3.3"
+          }
+        }
+      },
+      "timing": {
+        "backend": "native",
+        "budget_ms": 20,
+        "observational_only": true,
+        "window_capacity": 512,
+        "total_batches": 40,
+        "window_batches": 40,
+        "timeouts": 0,
+        "timeout_rate": 0,
+        "costs": {
+          "round_trip_ms": {
+            "count": 40,
+            "p50_ms": 3.1438599980901927,
+            "p95_ms": 4.306185997847933,
+            "p99_ms": 4.512768995482475,
+            "max_ms": 4.512768995482475
+          },
+          "request_encode_ms": {
+            "count": 40,
+            "p50_ms": 0.020184001186862588,
+            "p95_ms": 0.035617995308712125,
+            "p99_ms": 0.03917899448424578,
+            "max_ms": 0.03917899448424578
+          },
+          "request_write_ms": {
+            "count": 40,
+            "p50_ms": 0.009497998689766973,
+            "p95_ms": 0.011872005416080356,
+            "p99_ms": 0.013060001947451383,
+            "max_ms": 0.013060001947451383
+          },
+          "response_decode_ms": {
+            "count": 40,
+            "p50_ms": 0.09379300172440708,
+            "p95_ms": 0.11753899889299646,
+            "p99_ms": 0.14722000196343288,
+            "max_ms": 0.14722000196343288
+          },
+          "gate_wait_ms": {
+            "count": 40,
+            "p50_ms": 91.26453399949241,
+            "p95_ms": 92.29982399847358,
+            "p99_ms": 93.43009300209815,
+            "max_ms": 93.43009300209815
+          },
+          "runtime_python_ms": {
+            "count": 40,
+            "p50_ms": 0.3621139985625632,
+            "p95_ms": 0.4333499964559451,
+            "p99_ms": 3.209157999663148,
+            "max_ms": 3.209157999663148
+          },
+          "worker_decode_ms": {
+            "count": 40,
+            "p50_ms": 0.10685299639590085,
+            "p95_ms": 0.13416100409813225,
+            "p99_ms": 0.14722000196343288,
+            "max_ms": 0.14722000196343288
+          },
+          "worker_encode_previous_ms": {
+            "count": 39,
+            "p50_ms": 0.03680500230984762,
+            "p95_ms": 0.047490997530985624,
+            "p99_ms": 0.05105200398247689,
+            "max_ms": 0.05105200398247689
+          },
+          "bridge_round_trip_ms": {
+            "count": 0,
+            "p50_ms": null,
+            "p95_ms": null,
+            "p99_ms": null,
+            "max_ms": null
+          },
+          "elapsed_to_failure_ms": {
+            "count": 0,
+            "p50_ms": null,
+            "p95_ms": null,
+            "p99_ms": null,
+            "max_ms": null
+          }
+        },
+        "modules": {
+          "perception": {
+            "input_decode_ms": {
+              "count": 40,
+              "p50_ms": 0.048677000449970365,
+              "p95_ms": 0.05698900349671021,
+              "p99_ms": 1.8829920009011403,
+              "max_ms": 1.8829920009011403
+            },
+            "update_ms": {
+              "count": 40,
+              "p50_ms": 0.29562700365204364,
+              "p95_ms": 0.3478660000837408,
+              "p99_ms": 1.314294000621885,
+              "max_ms": 1.314294000621885
+            },
+            "output_build_ms": {
+              "count": 40,
+              "p50_ms": 0.007122995157260448,
+              "p95_ms": 0.00831099896458909,
+              "p99_ms": 0.008311006240546703,
+              "max_ms": 0.008311006240546703
+            }
+          }
+        },
+        "recent": [
+          {
+            "step_id": "step-246",
+            "activation_tick": 246,
+            "commit_tick": 252,
+            "sample_ticks": [
+              246
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 54152.223405145,
+            "received_monotonic_s": 54152.226480144,
+            "commit_monotonic_s": 54152.31817091,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0.01780800084816292,
+            "request_write_ms": 0.007123999239411205,
+            "round_trip_ms": 3.0749990037293173,
+            "response_decode_ms": 0.09735499770613387,
+            "worker_decode_ms": 0.10685299639590085,
+            "runtime_python_ms": 0.39060800190782174,
+            "worker_encode_previous_ms": 0.0344299987773411,
+            "worker_encode_previous_step_id": "step-240",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0.054613999964203686,
+                "update_ms": 0.31581100483890623,
+                "output_build_ms": 0.007122995157260448
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 91.69076599937398
+          },
+          {
+            "step_id": "step-252",
+            "activation_tick": 252,
+            "commit_tick": 258,
+            "sample_ticks": [
+              252
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 54152.323197761,
+            "received_monotonic_s": 54152.326252576,
+            "commit_monotonic_s": 54152.418193853,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0.02018299710471183,
+            "request_write_ms": 0.010686002497095615,
+            "round_trip_ms": 3.0548150025424547,
+            "response_decode_ms": 0.07717200060142204,
+            "worker_decode_ms": 0.11635199916781858,
+            "runtime_python_ms": 0.3229349968023598,
+            "worker_encode_previous_ms": 0.047490997530985624,
+            "worker_encode_previous_step_id": "step-246",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0.04986400017514825,
+                "update_ms": 0.25644800189184025,
+                "output_build_ms": 0.005936999514233321
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 91.94127700175159
+          },
+          {
+            "step_id": "step-258",
+            "activation_tick": 258,
+            "commit_tick": 264,
+            "sample_ticks": [
+              258
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 54152.423233765,
+            "received_monotonic_s": 54152.426261273,
+            "commit_monotonic_s": 54152.518196614,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0.015434001397807151,
+            "request_write_ms": 0.009497998689766973,
+            "round_trip_ms": 3.027507998922374,
+            "response_decode_ms": 0.06648599810432643,
+            "worker_decode_ms": 0.10566600394668058,
+            "runtime_python_ms": 0.3585520025808364,
+            "worker_encode_previous_ms": 0.03205599932698533,
+            "worker_encode_previous_step_id": "step-252",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0.04511600127443671,
+                "update_ms": 0.295626996376086,
+                "output_build_ms": 0.007123999239411205
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 91.93534099904355
+          },
+          {
+            "step_id": "step-264",
+            "activation_tick": 264,
+            "commit_tick": 270,
+            "sample_ticks": [
+              264
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 54152.523413427,
+            "received_monotonic_s": 54152.526540665,
+            "commit_monotonic_s": 54152.61818394,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0.02018299710471183,
+            "request_write_ms": 0.007123002433218062,
+            "round_trip_ms": 3.1272380001610145,
+            "response_decode_ms": 0.10804100020322949,
+            "worker_decode_ms": 0.10922799992840737,
+            "runtime_python_ms": 0.3490529998089187,
+            "worker_encode_previous_ms": 0.03680500230984762,
+            "worker_encode_previous_step_id": "step-258",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0.04392900154925883,
+                "update_ms": 0.28731599741149694,
+                "output_build_ms": 0.005936002708040178
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 91.643275001843
+          },
+          {
+            "step_id": "step-270",
+            "activation_tick": 270,
+            "commit_tick": 276,
+            "sample_ticks": [
+              270
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 54152.623654826,
+            "received_monotonic_s": 54152.626798686,
+            "commit_monotonic_s": 54152.718196198,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0.022558000637218356,
+            "request_write_ms": 0.00831099896458909,
+            "round_trip_ms": 3.1438599980901927,
+            "response_decode_ms": 0.10329200449632481,
+            "worker_decode_ms": 0.09141900227405131,
+            "runtime_python_ms": 0.34430500090820715,
+            "worker_encode_previous_ms": 0.03680499503389001,
+            "worker_encode_previous_step_id": "step-264",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0.04155400529270992,
+                "update_ms": 0.28612899768631905,
+                "output_build_ms": 0.005935995432082564
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 91.39751200564206
+          },
+          {
+            "step_id": "step-276",
+            "activation_tick": 276,
+            "commit_tick": 282,
+            "sample_ticks": [
+              276
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 54152.723585163,
+            "received_monotonic_s": 54152.72666135,
+            "commit_monotonic_s": 54152.81819421,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0.017808997654356062,
+            "request_write_ms": 0.008310002158395946,
+            "round_trip_ms": 3.0761870002606884,
+            "response_decode_ms": 0.09023100574268028,
+            "worker_decode_ms": 0.10447900422150269,
+            "runtime_python_ms": 0.35973999911220744,
+            "worker_encode_previous_ms": 0.028494003345258534,
+            "worker_encode_previous_step_id": "step-270",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0.04511600127443671,
+                "update_ms": 0.295626996376086,
+                "output_build_ms": 0.005936002708040178
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 91.53285999491345
+          },
+          {
+            "step_id": "step-282",
+            "activation_tick": 282,
+            "commit_tick": 288,
+            "sample_ticks": [
+              282
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 54152.823363532,
+            "received_monotonic_s": 54152.826526388,
+            "commit_monotonic_s": 54152.91818391,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0.017808997654356062,
+            "request_write_ms": 0.010684998414944857,
+            "round_trip_ms": 3.1628560027456842,
+            "response_decode_ms": 0.09379300172440708,
+            "worker_decode_ms": 0.09379400580655783,
+            "runtime_python_ms": 0.3573639987735078,
+            "worker_encode_previous_ms": 0.02730700362008065,
+            "worker_encode_previous_step_id": "step-276",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0.047490997530985624,
+                "update_ms": 0.29206500039435923,
+                "output_build_ms": 0.005936002708040178
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 91.65752199623967
+          },
+          {
+            "step_id": "step-288",
+            "activation_tick": 288,
+            "commit_tick": 294,
+            "sample_ticks": [
+              288
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 54152.923404285,
+            "received_monotonic_s": 54152.926428231,
+            "commit_monotonic_s": 54153.018187858,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0.018995997379533947,
+            "request_write_ms": 0.007123002433218062,
+            "round_trip_ms": 3.0239460029406473,
+            "response_decode_ms": 0.06648699491051957,
+            "worker_decode_ms": 0.09498000144958496,
+            "runtime_python_ms": 0.33955599792534485,
+            "worker_encode_previous_ms": 0.02730700362008065,
+            "worker_encode_previous_step_id": "step-282",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0.047490997530985624,
+                "update_ms": 0.27425600274000317,
+                "output_build_ms": 0.007123999239411205
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 91.75962699373486
+          },
+          {
+            "step_id": "step-294",
+            "activation_tick": 294,
+            "commit_tick": 300,
+            "sample_ticks": [
+              294
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 54153.023608879,
+            "received_monotonic_s": 54153.026765799,
+            "commit_monotonic_s": 54153.118179937,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0.02018299710471183,
+            "request_write_ms": 0.008311006240546703,
+            "round_trip_ms": 3.156920000037644,
+            "response_decode_ms": 0.07004800136201084,
+            "worker_decode_ms": 0.10685300367185846,
+            "runtime_python_ms": 0.3680500012706034,
+            "worker_encode_previous_ms": 0.035617995308712125,
+            "worker_encode_previous_step_id": "step-288",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0.04986499698134139,
+                "update_ms": 0.29918899963377044,
+                "output_build_ms": 0.007123002433218062
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 91.41413800534792
+          },
+          {
+            "step_id": "step-300",
+            "activation_tick": 300,
+            "commit_tick": 306,
+            "sample_ticks": [
+              300
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 54153.123657947,
+            "received_monotonic_s": 54153.127346759,
+            "commit_monotonic_s": 54153.218206449,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0.03561699850251898,
+            "request_write_ms": 0.010686002497095615,
+            "round_trip_ms": 3.6888120012008585,
+            "response_decode_ms": 0.09972999396268278,
+            "worker_decode_ms": 0.08904399874154478,
+            "runtime_python_ms": 0.32055899646366015,
+            "worker_encode_previous_ms": 0.03680500230984762,
+            "worker_encode_previous_step_id": "step-294",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0.03799199475906789,
+                "update_ms": 0.26475900085642934,
+                "output_build_ms": 0.005936002708040178
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 90.85968999715988
+          },
+          {
+            "step_id": "step-306",
+            "activation_tick": 306,
+            "commit_tick": 312,
+            "sample_ticks": [
+              306
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 54153.224092875,
+            "received_monotonic_s": 54153.227468251,
+            "commit_monotonic_s": 54153.318211589,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0.02018299710471183,
+            "request_write_ms": 0.010684998414944857,
+            "round_trip_ms": 3.375375999894459,
+            "response_decode_ms": 0.07717200060142204,
+            "worker_decode_ms": 0.08785700629232451,
+            "runtime_python_ms": 0.3039379953406751,
+            "worker_encode_previous_ms": 0.03680499503389001,
+            "worker_encode_previous_step_id": "step-300",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0.04155400529270992,
+                "update_ms": 0.24457499966956675,
+                "output_build_ms": 0.005935995432082564
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 90.74333799799206
+          },
+          {
+            "step_id": "step-312",
+            "activation_tick": 312,
+            "commit_tick": 318,
+            "sample_ticks": [
+              312
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 54153.323570873,
+            "received_monotonic_s": 54153.326831085,
+            "commit_monotonic_s": 54153.418190611,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0.020184001186862588,
+            "request_write_ms": 0.009497998689766973,
+            "round_trip_ms": 3.260212004533969,
+            "response_decode_ms": 0.0997300012386404,
+            "worker_decode_ms": 0.10922799992840737,
+            "runtime_python_ms": 0.3953569976147264,
+            "worker_encode_previous_ms": 0.03680500230984762,
+            "worker_encode_previous_step_id": "step-306",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0.053425996156875044,
+                "update_ms": 0.3169979972881265,
+                "output_build_ms": 0.008311006240546703
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 91.3595259989961
+          },
+          {
+            "step_id": "step-318",
+            "activation_tick": 318,
+            "commit_tick": 324,
+            "sample_ticks": [
+              318
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 54153.42364725,
+            "received_monotonic_s": 54153.426728185,
+            "commit_monotonic_s": 54153.518201688,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0.018995997379533947,
+            "request_write_ms": 0.00831099896458909,
+            "round_trip_ms": 3.0809349991614,
+            "response_decode_ms": 0.09379300172440708,
+            "worker_decode_ms": 0.08548299956601113,
+            "runtime_python_ms": 0.3086869983235374,
+            "worker_encode_previous_ms": 0.04392900154925883,
+            "worker_encode_previous_step_id": "step-312",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0.04274099774193019,
+                "update_ms": 0.2493249994586222,
+                "output_build_ms": 0.005936002708040178
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 91.47350300190737
+          },
+          {
+            "step_id": "step-324",
+            "activation_tick": 324,
+            "commit_tick": 330,
+            "sample_ticks": [
+              324
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 54153.523559784,
+            "received_monotonic_s": 54153.526698895,
+            "commit_monotonic_s": 54153.618221076,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0.017808997654356062,
+            "request_write_ms": 0.009497998689766973,
+            "round_trip_ms": 3.139111002383288,
+            "response_decode_ms": 0.07242300489451736,
+            "worker_decode_ms": 0.10566599667072296,
+            "runtime_python_ms": 0.46896699495846406,
+            "worker_encode_previous_ms": 0.027306996344123036,
+            "worker_encode_previous_step_id": "step-318",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0.0451159939984791,
+                "update_ms": 0.4001060005975887,
+                "output_build_ms": 0.00831099896458909
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 91.52218099916354
+          },
+          {
+            "step_id": "step-330",
+            "activation_tick": 330,
+            "commit_tick": 336,
+            "sample_ticks": [
+              330
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 54153.623858178,
+            "received_monotonic_s": 54153.62710058,
+            "commit_monotonic_s": 54153.718521844,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0.02374500036239624,
+            "request_write_ms": 0.009497998689766973,
+            "round_trip_ms": 3.242402002797462,
+            "response_decode_ms": 0.07479800115106627,
+            "worker_decode_ms": 0.13653500354848802,
+            "runtime_python_ms": 0.39298299816437066,
+            "worker_encode_previous_ms": 0.05105200398247689,
+            "worker_encode_previous_step_id": "step-324",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0.053425996156875044,
+                "update_ms": 0.318185004289262,
+                "output_build_ms": 0.007123999239411205
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 91.42126399819972
+          },
+          {
+            "step_id": "step-336",
+            "activation_tick": 336,
+            "commit_tick": 342,
+            "sample_ticks": [
+              336
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 54153.724246803,
+            "received_monotonic_s": 54153.727435779,
+            "commit_monotonic_s": 54153.818175556,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0.01899600465549156,
+            "request_write_ms": 0.009497998689766973,
+            "round_trip_ms": 3.1889759993646294,
+            "response_decode_ms": 0.09616799798095599,
+            "worker_decode_ms": 0.08192100358428434,
+            "runtime_python_ms": 0.30275099561549723,
+            "worker_encode_previous_ms": 0.0415539980167523,
+            "worker_encode_previous_step_id": "step-330",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0.04274099774193019,
+                "update_ms": 0.24220100021921098,
+                "output_build_ms": 0.005936002708040178
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 90.73977699881652
+          },
+          {
+            "step_id": "step-342",
+            "activation_tick": 342,
+            "commit_tick": 348,
+            "sample_ticks": [
+              342
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 54153.824046548,
+            "received_monotonic_s": 54153.827027754,
+            "commit_monotonic_s": 54153.918205629,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0.022558000637218356,
+            "request_write_ms": 0.009497998689766973,
+            "round_trip_ms": 2.9812060020049103,
+            "response_decode_ms": 0.08666999929118901,
+            "worker_decode_ms": 0.13416100409813225,
+            "runtime_python_ms": 0.364487998012919,
+            "worker_encode_previous_ms": 0.03561800258466974,
+            "worker_encode_previous_step_id": "step-336",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0.047490997530985624,
+                "update_ms": 0.29562700365204364,
+                "output_build_ms": 0.00831099896458909
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 91.17787500144914
+          },
+          {
+            "step_id": "step-348",
+            "activation_tick": 348,
+            "commit_tick": 354,
+            "sample_ticks": [
+              348
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 54153.923981641,
+            "received_monotonic_s": 54153.926985404,
+            "commit_monotonic_s": 54154.018200085,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0.027306996344123036,
+            "request_write_ms": 0.008311006240546703,
+            "round_trip_ms": 3.0037630058359355,
+            "response_decode_ms": 0.07360999734373763,
+            "worker_decode_ms": 0.10804100020322949,
+            "runtime_python_ms": 0.35736500285565853,
+            "worker_encode_previous_ms": 0.02849399606930092,
+            "worker_encode_previous_step_id": "step-342",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0.048677000449970365,
+                "update_ms": 0.28969100094400346,
+                "output_build_ms": 0.005936002708040178
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 91.21468100056518
+          },
+          {
+            "step_id": "step-354",
+            "activation_tick": 354,
+            "commit_tick": 360,
+            "sample_ticks": [
+              354
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 54154.0241435,
+            "received_monotonic_s": 54154.027343161,
+            "commit_monotonic_s": 54154.118174361,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0.021371000912040472,
+            "request_write_ms": 0.013059994671493769,
+            "round_trip_ms": 3.1996609977795742,
+            "response_decode_ms": 0.09735499770613387,
+            "worker_decode_ms": 0.1258490010513924,
+            "runtime_python_ms": 0.39416999788954854,
+            "worker_encode_previous_ms": 0.04511600127443671,
+            "worker_encode_previous_step_id": "step-348",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0.052239003707654774,
+                "update_ms": 0.3181849970133044,
+                "output_build_ms": 0.007123999239411205
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 90.83120000286726
+          },
+          {
+            "step_id": "step-360",
+            "activation_tick": 360,
+            "commit_tick": 366,
+            "sample_ticks": [
+              360
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 54154.123781782,
+            "received_monotonic_s": 54154.126846096,
+            "commit_monotonic_s": 54154.218189006,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0.017808997654356062,
+            "request_write_ms": 0.00831099896458909,
+            "round_trip_ms": 3.064313998038415,
+            "response_decode_ms": 0.0771710037952289,
+            "worker_decode_ms": 0.11872599861817434,
+            "runtime_python_ms": 0.39416999788954854,
+            "worker_encode_previous_ms": 0.035617995308712125,
+            "worker_encode_previous_step_id": "step-354",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0.056987999414559454,
+                "update_ms": 0.3181849970133044,
+                "output_build_ms": 0.007123999239411205
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 91.34291000373196
+          },
+          {
+            "step_id": "step-366",
+            "activation_tick": 366,
+            "commit_tick": 372,
+            "sample_ticks": [
+              366
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 54154.224436359,
+            "received_monotonic_s": 54154.227556474,
+            "commit_monotonic_s": 54154.318196527,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0.017808997654356062,
+            "request_write_ms": 0.009498005965724587,
+            "round_trip_ms": 3.1201149977277964,
+            "response_decode_ms": 0.09735500498209149,
+            "worker_decode_ms": 0.1032919972203672,
+            "runtime_python_ms": 0.3716120045282878,
+            "worker_encode_previous_ms": 0.039179998566396534,
+            "worker_encode_previous_step_id": "step-360",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0.04511600127443671,
+                "update_ms": 0.30631299887318164,
+                "output_build_ms": 0.007123002433218062
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 90.64005300024292
+          },
+          {
+            "step_id": "step-372",
+            "activation_tick": 372,
+            "commit_tick": 378,
+            "sample_ticks": [
+              372
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 54154.324050898,
+            "received_monotonic_s": 54154.32730636,
+            "commit_monotonic_s": 54154.418196925,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0.020184001186862588,
+            "request_write_ms": 0.010684998414944857,
+            "round_trip_ms": 3.255461997468956,
+            "response_decode_ms": 0.10210399341303855,
+            "worker_decode_ms": 0.14722000196343288,
+            "runtime_python_ms": 0.3834839953924529,
+            "worker_encode_previous_ms": 0.04392900154925883,
+            "worker_encode_previous_step_id": "step-366",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0.05580099968938157,
+                "update_ms": 0.30750000587431714,
+                "output_build_ms": 0.007122995157260448
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 90.89056499942672
+          },
+          {
+            "step_id": "step-378",
+            "activation_tick": 378,
+            "commit_tick": 384,
+            "sample_ticks": [
+              378
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 54154.424255504,
+            "received_monotonic_s": 54154.427141729,
+            "commit_monotonic_s": 54154.518187824,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0.017808997654356062,
+            "request_write_ms": 0.008311006240546703,
+            "round_trip_ms": 2.886225003749132,
+            "response_decode_ms": 0.09972899715648964,
+            "worker_decode_ms": 0.10210400068899617,
+            "runtime_python_ms": 0.3098740053246729,
+            "worker_encode_previous_ms": 0.03443000605329871,
+            "worker_encode_previous_step_id": "step-372",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0.04036700556753203,
+                "update_ms": 0.25169899890897796,
+                "output_build_ms": 0.005935995432082564
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 91.04609499627259
+          },
+          {
+            "step_id": "step-384",
+            "activation_tick": 384,
+            "commit_tick": 390,
+            "sample_ticks": [
+              384
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 54154.524150236,
+            "received_monotonic_s": 54154.527183681,
+            "commit_monotonic_s": 54154.618176349,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0.018995997379533947,
+            "request_write_ms": 0.00831099896458909,
+            "round_trip_ms": 3.0334449984366074,
+            "response_decode_ms": 0.09735500498209149,
+            "worker_decode_ms": 0.10566599667072296,
+            "runtime_python_ms": 0.3621139985625632,
+            "worker_encode_previous_ms": 0.026120003894902766,
+            "worker_encode_previous_step_id": "step-378",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0.048677000449970365,
+                "update_ms": 0.29681500018341467,
+                "output_build_ms": 0.004749002982862294
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 90.99266800330952
+          },
+          {
+            "step_id": "step-390",
+            "activation_tick": 390,
+            "commit_tick": 396,
+            "sample_ticks": [
+              390
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 54154.625242911,
+            "received_monotonic_s": 54154.629037389,
+            "commit_monotonic_s": 54154.718207616,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0.022558000637218356,
+            "request_write_ms": 0.009497998689766973,
+            "round_trip_ms": 3.7944779978715815,
+            "response_decode_ms": 0.09379299444844946,
+            "worker_decode_ms": 0.09498000144958496,
+            "runtime_python_ms": 0.3134360013063997,
+            "worker_encode_previous_ms": 0.02730700362008065,
+            "worker_encode_previous_step_id": "step-384",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0.03799200203502551,
+                "update_ms": 0.25644799461588264,
+                "output_build_ms": 0.007123999239411205
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 89.17022700188681
+          },
+          {
+            "step_id": "step-396",
+            "activation_tick": 396,
+            "commit_tick": 402,
+            "sample_ticks": [
+              396
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 54154.726175307,
+            "received_monotonic_s": 54154.730524234,
+            "commit_monotonic_s": 54154.818198515,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0.02611999661894515,
+            "request_write_ms": 0.009498005965724587,
+            "round_trip_ms": 4.348927002865821,
+            "response_decode_ms": 0.11753899889299646,
+            "worker_decode_ms": 0.10447800013935193,
+            "runtime_python_ms": 0.33955599792534485,
+            "worker_encode_previous_ms": 0.03680500230984762,
+            "worker_encode_previous_step_id": "step-390",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0.046303000999614596,
+                "update_ms": 0.27306899573886767,
+                "output_build_ms": 0.007124006515368819
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 87.67428099963581
+          },
+          {
+            "step_id": "step-402",
+            "activation_tick": 402,
+            "commit_tick": 408,
+            "sample_ticks": [
+              402
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 54154.827278667,
+            "received_monotonic_s": 54154.831197807,
+            "commit_monotonic_s": 54154.918189415,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0.02730700362008065,
+            "request_write_ms": 0.009497998689766973,
+            "round_trip_ms": 3.919139999197796,
+            "response_decode_ms": 0.11397700291126966,
+            "worker_decode_ms": 0.11872600589413196,
+            "runtime_python_ms": 0.37873499968554825,
+            "worker_encode_previous_ms": 0.034431002859491855,
+            "worker_encode_previous_step_id": "step-396",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0.05224000051384792,
+                "update_ms": 0.3063119947910309,
+                "output_build_ms": 0.005936002708040178
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 86.99160800460959
+          },
+          {
+            "step_id": "step-408",
+            "activation_tick": 408,
+            "commit_tick": 414,
+            "sample_ticks": [
+              408
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 54154.926914577,
+            "received_monotonic_s": 54154.930896641,
+            "commit_monotonic_s": 54155.018187438,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0.02730700362008065,
+            "request_write_ms": 0.010684998414944857,
+            "round_trip_ms": 3.9820640013203956,
+            "response_decode_ms": 0.11516400263644755,
+            "worker_decode_ms": 0.10210500477114692,
+            "runtime_python_ms": 0.34311800118302926,
+            "worker_encode_previous_ms": 0.04392900154925883,
+            "worker_encode_previous_step_id": "step-402",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0.046303000999614596,
+                "update_ms": 0.27781799872172996,
+                "output_build_ms": 0.005936999514233321
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 87.2907969969674
+          },
+          {
+            "step_id": "step-414",
+            "activation_tick": 414,
+            "commit_tick": 420,
+            "sample_ticks": [
+              414
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 54155.026823555,
+            "received_monotonic_s": 54155.031336324,
+            "commit_monotonic_s": 54155.118194964,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0.035617995308712125,
+            "request_write_ms": 0.011872005416080356,
+            "round_trip_ms": 4.512768995482475,
+            "response_decode_ms": 0.14722000196343288,
+            "worker_decode_ms": 0.13178600056562573,
+            "runtime_python_ms": 0.38585899892495945,
+            "worker_encode_previous_ms": 0.03680499503389001,
+            "worker_encode_previous_step_id": "step-408",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0.0534270002390258,
+                "update_ms": 0.3098739980487153,
+                "output_build_ms": 0.008311006240546703
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 86.85864000290167
+          },
+          {
+            "step_id": "step-420",
+            "activation_tick": 420,
+            "commit_tick": 426,
+            "sample_ticks": [
+              420
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 54155.1274164,
+            "received_monotonic_s": 54155.131722586,
+            "commit_monotonic_s": 54155.218166873,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0.024932996893767267,
+            "request_write_ms": 0.009497998689766973,
+            "round_trip_ms": 4.306185997847933,
+            "response_decode_ms": 0.14722000196343288,
+            "worker_decode_ms": 0.11278999591013417,
+            "runtime_python_ms": 0.34311800118302926,
+            "worker_encode_previous_ms": 0.04274099774193019,
+            "worker_encode_previous_step_id": "step-414",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0.049865004257299006,
+                "update_ms": 0.27544299518922344,
+                "output_build_ms": 0.005936999514233321
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 86.44428700063145
+          },
+          {
+            "step_id": "step-426",
+            "activation_tick": 426,
+            "commit_tick": 432,
+            "sample_ticks": [
+              426
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 54155.226810114,
+            "received_monotonic_s": 54155.231111552,
+            "commit_monotonic_s": 54155.318214767,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0.03680500230984762,
+            "request_write_ms": 0.011871998140122741,
+            "round_trip_ms": 4.301437998947222,
+            "response_decode_ms": 0.09379300172440708,
+            "worker_decode_ms": 0.11635099508566782,
+            "runtime_python_ms": 0.38111000321805477,
+            "worker_encode_previous_ms": 0.03799200203502551,
+            "worker_encode_previous_step_id": "step-420",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0.04867800453212112,
+                "update_ms": 0.3134360013063997,
+                "output_build_ms": 0.007122995157260448
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 87.10321500257123
+          },
+          {
+            "step_id": "step-432",
+            "activation_tick": 432,
+            "commit_tick": 438,
+            "sample_ticks": [
+              432
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 54155.32688769,
+            "received_monotonic_s": 54155.330948113,
+            "commit_monotonic_s": 54155.349171343,
+            "status": "CANCELLED",
+            "failure_location": "worker_close",
+            "request_encode_ms": 0.026120003894902766,
+            "request_write_ms": 0.011871998140122741,
+            "round_trip_ms": 4.0604230016469955,
+            "response_decode_ms": 0.10566600394668058,
+            "worker_decode_ms": 0.11635199916781858,
+            "runtime_python_ms": 0.3383690054761246,
+            "worker_encode_previous_ms": 0.043928994273301214,
+            "worker_encode_previous_step_id": "step-426",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0.04274099774193019,
+                "update_ms": 0.2778190028038807,
+                "output_build_ms": 0.007122995157260448
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 18.223229999421164
+          }
+        ],
+        "active": null
+      },
+      "exception_failure": {
+        "revision": "b2f4ed214fad6463df0fb537b5f6d8b53d46d19bc2f58032b0cbfe2bc8fbd11a",
+        "failure": {
+          "frame_index": 0,
+          "tick": 222,
+          "code": "MODULE_ERROR"
+        },
+        "logs": [
+          {
+            "stream": "output",
+            "text": "Traceback (most recent call last):\n",
+            "sequence": 0
+          },
+          {
+            "stream": "output",
+            "text": "  File \"runtime/module_runner.py\", line 70, in step\n",
+            "sequence": 1
+          },
+          {
+            "stream": "output",
+            "text": "    self.module.update(Inputs(samples), context)\n",
+            "sequence": 2
+          },
+          {
+            "stream": "output",
+            "text": "    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+            "sequence": 3
+          },
+          {
+            "stream": "output",
+            "text": "  File \"campaign_robot.py\", line 43, in update\n",
+            "sequence": 4
+          },
+          {
+            "stream": "output",
+            "text": "    estimate: TargetEstimate | None = (points[0] if points else None) if self.tracker is None else self.tracker.update(points, ctx.dt_seconds)\n",
+            "sequence": 5
+          },
+          {
+            "stream": "output",
+            "text": "                                                                                                   ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^\n",
+            "sequence": 6
+          },
+          {
+            "stream": "output",
+            "text": "  File \"perception/tracker.py\", line 3, in update\n",
+            "sequence": 7
+          },
+          {
+            "stream": "output",
+            "text": "    raise ValueError(\"engineering-filter-debug\")\n",
+            "sequence": 8
+          },
+          {
+            "stream": "output",
+            "text": "ValueError: engineering-filter-debug\n",
+            "sequence": 9
+          }
+        ],
+        "timing": {
+          "backend": "native",
+          "budget_ms": 20,
+          "observational_only": true,
+          "window_capacity": 512,
+          "total_batches": 1,
+          "window_batches": 1,
+          "timeouts": 0,
+          "timeout_rate": 0,
+          "costs": {
+            "round_trip_ms": {
+              "count": 1,
+              "p50_ms": 9.566932996676769,
+              "p95_ms": 9.566932996676769,
+              "p99_ms": 9.566932996676769,
+              "max_ms": 9.566932996676769
+            },
+            "request_encode_ms": {
+              "count": 1,
+              "p50_ms": 0.02374500036239624,
+              "p95_ms": 0.02374500036239624,
+              "p99_ms": 0.02374500036239624,
+              "max_ms": 0.02374500036239624
+            },
+            "request_write_ms": {
+              "count": 1,
+              "p50_ms": 0.009498995495960116,
+              "p95_ms": 0.009498995495960116,
+              "p99_ms": 0.009498995495960116,
+              "max_ms": 0.009498995495960116
+            },
+            "response_decode_ms": {
+              "count": 1,
+              "p50_ms": 0.06054999539628625,
+              "p95_ms": 0.06054999539628625,
+              "p99_ms": 0.06054999539628625,
+              "max_ms": 0.06054999539628625
+            },
+            "gate_wait_ms": {
+              "count": 1,
+              "p50_ms": 90.43708500394132,
+              "p95_ms": 90.43708500394132,
+              "p99_ms": 90.43708500394132,
+              "max_ms": 90.43708500394132
+            },
+            "runtime_python_ms": {
+              "count": 1,
+              "p50_ms": 5.84725099906791,
+              "p95_ms": 5.84725099906791,
+              "p99_ms": 5.84725099906791,
+              "max_ms": 5.84725099906791
+            },
+            "worker_decode_ms": {
+              "count": 1,
+              "p50_ms": 0.11041499965358526,
+              "p95_ms": 0.11041499965358526,
+              "p99_ms": 0.11041499965358526,
+              "max_ms": 0.11041499965358526
+            },
+            "worker_encode_previous_ms": {
+              "count": 0,
+              "p50_ms": null,
+              "p95_ms": null,
+              "p99_ms": null,
+              "max_ms": null
+            },
+            "bridge_round_trip_ms": {
+              "count": 0,
+              "p50_ms": null,
+              "p95_ms": null,
+              "p99_ms": null,
+              "max_ms": null
+            },
+            "elapsed_to_failure_ms": {
+              "count": 0,
+              "p50_ms": null,
+              "p95_ms": null,
+              "p99_ms": null,
+              "max_ms": null
+            }
+          },
+          "modules": {
+            "perception": {
+              "input_decode_ms": {
+                "count": 1,
+                "p50_ms": 0.058176003221888095,
+                "p95_ms": 0.058176003221888095,
+                "p99_ms": 0.058176003221888095,
+                "max_ms": 0.058176003221888095
+              },
+              "update_ms": {
+                "count": 1,
+                "p50_ms": 5.774827994173393,
+                "p95_ms": 5.774827994173393,
+                "p99_ms": 5.774827994173393,
+                "max_ms": 5.774827994173393
+              },
+              "output_build_ms": {
+                "count": 1,
+                "p50_ms": 0,
+                "p95_ms": 0,
+                "p99_ms": 0,
+                "max_ms": 0
+              }
+            }
+          },
+          "recent": [
+            {
+              "step_id": "step-222",
+              "activation_tick": 222,
+              "commit_tick": 228,
+              "sample_ticks": [
+                222
+              ],
+              "modules": [
+                "perception"
+              ],
+              "started_monotonic_s": 54164.619547618,
+              "received_monotonic_s": 54164.629114551,
+              "commit_monotonic_s": 54164.719551636,
+              "status": "MODULE_ERROR",
+              "failure_location": "module_update",
+              "request_encode_ms": 0.02374500036239624,
+              "request_write_ms": 0.009498995495960116,
+              "round_trip_ms": 9.566932996676769,
+              "response_decode_ms": 0.06054999539628625,
+              "worker_decode_ms": 0.11041499965358526,
+              "runtime_python_ms": 5.84725099906791,
+              "module_costs": [
+                {
+                  "module_id": "perception",
+                  "input_decode_ms": 0.058176003221888095,
+                  "update_ms": 5.774827994173393,
+                  "output_build_ms": 0
+                }
+              ],
+              "module_failures": [
+                "perception"
+              ],
+              "gate_wait_ms": 90.43708500394132
+            }
+          ],
+          "active": null
+        }
+      },
+      "wall_deadline_failure": {
+        "revision": "297ff3a011390471a31625cf2db5caa758362a929e54607740e3f6ebb76fba0d",
+        "failure": {
+          "frame_index": 0,
+          "tick": 222,
+          "code": "RESOURCE_LIMIT"
+        },
+        "timing": {
+          "backend": "native",
+          "budget_ms": 20,
+          "observational_only": true,
+          "window_capacity": 512,
+          "total_batches": 1,
+          "window_batches": 1,
+          "timeouts": 1,
+          "timeout_rate": 1,
+          "costs": {
+            "round_trip_ms": {
+              "count": 0,
+              "p50_ms": null,
+              "p95_ms": null,
+              "p99_ms": null,
+              "max_ms": null
+            },
+            "request_encode_ms": {
+              "count": 1,
+              "p50_ms": 0.02611899981275201,
+              "p95_ms": 0.02611899981275201,
+              "p99_ms": 0.02611899981275201,
+              "max_ms": 0.02611899981275201
+            },
+            "request_write_ms": {
+              "count": 1,
+              "p50_ms": 0.009498005965724587,
+              "p95_ms": 0.009498005965724587,
+              "p99_ms": 0.009498005965724587,
+              "max_ms": 0.009498005965724587
+            },
+            "response_decode_ms": {
+              "count": 0,
+              "p50_ms": null,
+              "p95_ms": null,
+              "p99_ms": null,
+              "max_ms": null
+            },
+            "gate_wait_ms": {
+              "count": 0,
+              "p50_ms": null,
+              "p95_ms": null,
+              "p99_ms": null,
+              "max_ms": null
+            },
+            "runtime_python_ms": {
+              "count": 0,
+              "p50_ms": null,
+              "p95_ms": null,
+              "p99_ms": null,
+              "max_ms": null
+            },
+            "worker_decode_ms": {
+              "count": 0,
+              "p50_ms": null,
+              "p95_ms": null,
+              "p99_ms": null,
+              "max_ms": null
+            },
+            "worker_encode_previous_ms": {
+              "count": 0,
+              "p50_ms": null,
+              "p95_ms": null,
+              "p99_ms": null,
+              "max_ms": null
+            },
+            "bridge_round_trip_ms": {
+              "count": 0,
+              "p50_ms": null,
+              "p95_ms": null,
+              "p99_ms": null,
+              "max_ms": null
+            },
+            "elapsed_to_failure_ms": {
+              "count": 1,
+              "p50_ms": 20.089620004000608,
+              "p95_ms": 20.089620004000608,
+              "p99_ms": 20.089620004000608,
+              "max_ms": 20.089620004000608
+            }
+          },
+          "modules": {},
+          "recent": [
+            {
+              "step_id": "step-222",
+              "activation_tick": 222,
+              "commit_tick": 228,
+              "sample_ticks": [
+                222
+              ],
+              "modules": [
+                "perception"
+              ],
+              "started_monotonic_s": 54172.880691645,
+              "received_monotonic_s": null,
+              "commit_monotonic_s": 54172.900781265,
+              "status": "RESOURCE_LIMIT",
+              "failure_location": "wall_deadline",
+              "request_encode_ms": 0.02611899981275201,
+              "request_write_ms": 0.009498005965724587,
+              "elapsed_to_failure_ms": 20.089620004000608
+            }
+          ],
+          "active": null
+        }
+      },
+      "private_reference_not_exported": true,
+      "backup_restore": true,
+      "old_sources_and_progress_preserved": true,
+      "cache_report": ".m1-cache/engineering-quality-20261104/browser/native/bbe32961b13f4dbb91b21be77b9a6d28/result.json",
+      "both_versions_completed": true
+    },
+    "browser": {
+      "passed": true,
+      "comparison": [
+        {
+          "revision": "d2704c6ccac10556c2f9c945b19752a2ab7a9d58e63bf6c1c7107eb32ce848e3",
+          "rmse_m": 0.2673470050314412,
+          "scored_samples": 37,
+          "input_sha256": "b686f8118af00285064f5be191211421ae224885cef8d4bec1ec6272e8f788bd",
+          "status": "Completed"
+        },
+        {
+          "revision": "052cb1e0f6889d31f884e10931bf07d5a6f12d3052973d095e26ce1e48003434",
+          "rmse_m": 0.2831087806559837,
+          "scored_samples": 37,
+          "input_sha256": "b686f8118af00285064f5be191211421ae224885cef8d4bec1ec6272e8f788bd",
+          "status": "Completed"
+        }
+      ],
+      "record_metadata": {
+        "seed": 0,
+        "recording_start_tick": 309,
+        "deployment_tick": 300,
+        "configuration_sha256": "38eab0e75657328692ad19ff60f4c9654e7152eab892405bdf911fecd26a0b81",
+        "environment": {
+          "python": "3.13.2 (main, Sep 15 2026, 22:35:08) [Clang 21.0.0git (https:/github.com/llvm/llvm-project 2f05451198e2f222ec66cec489",
+          "platform": "emscripten",
+          "machine": "wasm32",
+          "core_sha256": "521f3c962a42afb78229ff92d87945702bb7ff8c5bbe01f9ce8493c88534b2c9",
+          "runtime_packages": {
+            "numpy": "2.2.5"
+          }
+        }
+      },
+      "timing": {
+        "backend": "pyodide",
+        "budget_ms": 20,
+        "observational_only": true,
+        "window_capacity": 512,
+        "total_batches": 40,
+        "window_batches": 40,
+        "timeouts": 0,
+        "timeout_rate": 0,
+        "costs": {
+          "round_trip_ms": {
+            "count": 40,
+            "p50_ms": 9.999999999999787,
+            "p95_ms": 11.000000000001009,
+            "p99_ms": 12.000000000000455,
+            "max_ms": 12.000000000000455
+          },
+          "request_encode_ms": {
+            "count": 40,
+            "p50_ms": 0,
+            "p95_ms": 0,
+            "p99_ms": 1.0000000000012221,
+            "max_ms": 1.0000000000012221
+          },
+          "request_write_ms": {
+            "count": 40,
+            "p50_ms": 0,
+            "p95_ms": 0.9999999999994458,
+            "p99_ms": 1.0000000000012221,
+            "max_ms": 1.0000000000012221
+          },
+          "response_decode_ms": {
+            "count": 40,
+            "p50_ms": 0,
+            "p95_ms": 0,
+            "p99_ms": 0.9999999999994458,
+            "max_ms": 0.9999999999994458
+          },
+          "gate_wait_ms": {
+            "count": 40,
+            "p50_ms": 75.99999999999874,
+            "p95_ms": 77.00000000000173,
+            "p99_ms": 82.00000000000074,
+            "max_ms": 82.00000000000074
+          },
+          "runtime_python_ms": {
+            "count": 40,
+            "p50_ms": 0,
+            "p95_ms": 1.000000000000334,
+            "p99_ms": 2.9999999999998916,
+            "max_ms": 2.9999999999998916
+          },
+          "worker_decode_ms": {
+            "count": 40,
+            "p50_ms": 0,
+            "p95_ms": 1.000000000000334,
+            "p99_ms": 1.000000000000334,
+            "max_ms": 1.000000000000334
+          },
+          "worker_encode_previous_ms": {
+            "count": 39,
+            "p50_ms": 0,
+            "p95_ms": 0.9999999999994458,
+            "p99_ms": 1.000000000000334,
+            "max_ms": 1.000000000000334
+          },
+          "bridge_round_trip_ms": {
+            "count": 40,
+            "p50_ms": 2,
+            "p95_ms": 3,
+            "p99_ms": 5,
+            "max_ms": 5
+          },
+          "elapsed_to_failure_ms": {
+            "count": 0,
+            "p50_ms": null,
+            "p95_ms": null,
+            "p99_ms": null,
+            "max_ms": null
+          }
+        },
+        "modules": {
+          "perception": {
+            "input_decode_ms": {
+              "count": 40,
+              "p50_ms": 0,
+              "p95_ms": 1.000000000000334,
+              "p99_ms": 1.000000000000334,
+              "max_ms": 1.000000000000334
+            },
+            "update_ms": {
+              "count": 40,
+              "p50_ms": 0,
+              "p95_ms": 1.000000000000334,
+              "p99_ms": 2.9999999999998916,
+              "max_ms": 2.9999999999998916
+            },
+            "output_build_ms": {
+              "count": 40,
+              "p50_ms": 0,
+              "p95_ms": 0,
+              "p99_ms": 0,
+              "max_ms": 0
+            }
+          }
+        },
+        "recent": [
+          {
+            "step_id": "step-348",
+            "activation_tick": 348,
+            "commit_tick": 354,
+            "sample_ticks": [
+              348
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 9.514,
+            "received_monotonic_s": 9.524,
+            "commit_monotonic_s": 9.6,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0,
+            "request_write_ms": 0,
+            "round_trip_ms": 9.999999999999787,
+            "response_decode_ms": 0,
+            "bridge_round_trip_ms": 2,
+            "worker_decode_ms": 0,
+            "runtime_python_ms": 0,
+            "worker_encode_previous_ms": 0,
+            "worker_encode_previous_step_id": "step-342",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0,
+                "update_ms": 0,
+                "output_build_ms": 0
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 76.00000000000051
+          },
+          {
+            "step_id": "step-354",
+            "activation_tick": 354,
+            "commit_tick": 360,
+            "sample_ticks": [
+              354
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 9.614,
+            "received_monotonic_s": 9.624,
+            "commit_monotonic_s": 9.701,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0,
+            "request_write_ms": 0,
+            "round_trip_ms": 9.999999999999787,
+            "response_decode_ms": 0,
+            "bridge_round_trip_ms": 2,
+            "worker_decode_ms": 0,
+            "runtime_python_ms": 0,
+            "worker_encode_previous_ms": 0,
+            "worker_encode_previous_step_id": "step-348",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0,
+                "update_ms": 0,
+                "output_build_ms": 0
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 76.99999999999996
+          },
+          {
+            "step_id": "step-360",
+            "activation_tick": 360,
+            "commit_tick": 366,
+            "sample_ticks": [
+              360
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 9.714,
+            "received_monotonic_s": 9.725,
+            "commit_monotonic_s": 9.8,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0,
+            "request_write_ms": 0.9999999999994458,
+            "round_trip_ms": 10.999999999999233,
+            "response_decode_ms": 0,
+            "bridge_round_trip_ms": 1,
+            "worker_decode_ms": 1.000000000000334,
+            "runtime_python_ms": 0,
+            "worker_encode_previous_ms": 0,
+            "worker_encode_previous_step_id": "step-354",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0,
+                "update_ms": 0,
+                "output_build_ms": 0
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 75.00000000000107
+          },
+          {
+            "step_id": "step-366",
+            "activation_tick": 366,
+            "commit_tick": 372,
+            "sample_ticks": [
+              366
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 9.813,
+            "received_monotonic_s": 9.823,
+            "commit_monotonic_s": 9.9,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0,
+            "request_write_ms": 0,
+            "round_trip_ms": 9.999999999999787,
+            "response_decode_ms": 0,
+            "bridge_round_trip_ms": 2,
+            "worker_decode_ms": 0,
+            "runtime_python_ms": 0,
+            "worker_encode_previous_ms": 0,
+            "worker_encode_previous_step_id": "step-360",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0,
+                "update_ms": 0,
+                "output_build_ms": 0
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 76.99999999999996
+          },
+          {
+            "step_id": "step-372",
+            "activation_tick": 372,
+            "commit_tick": 378,
+            "sample_ticks": [
+              372
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 9.915,
+            "received_monotonic_s": 9.924,
+            "commit_monotonic_s": 10,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0,
+            "request_write_ms": 0,
+            "round_trip_ms": 9.000000000000341,
+            "response_decode_ms": 0,
+            "bridge_round_trip_ms": 2,
+            "worker_decode_ms": 0,
+            "runtime_python_ms": 0.9999999999998899,
+            "worker_encode_previous_ms": 0,
+            "worker_encode_previous_step_id": "step-366",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0,
+                "update_ms": 0.9999999999998899,
+                "output_build_ms": 0
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 76.00000000000051
+          },
+          {
+            "step_id": "step-378",
+            "activation_tick": 378,
+            "commit_tick": 384,
+            "sample_ticks": [
+              378
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 10.015,
+            "received_monotonic_s": 10.024,
+            "commit_monotonic_s": 10.1,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0,
+            "request_write_ms": 0,
+            "round_trip_ms": 8.999999999998565,
+            "response_decode_ms": 0,
+            "bridge_round_trip_ms": 2,
+            "worker_decode_ms": 0,
+            "runtime_python_ms": 0,
+            "worker_encode_previous_ms": 0,
+            "worker_encode_previous_step_id": "step-372",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0,
+                "update_ms": 0,
+                "output_build_ms": 0
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 76.00000000000051
+          },
+          {
+            "step_id": "step-384",
+            "activation_tick": 384,
+            "commit_tick": 390,
+            "sample_ticks": [
+              384
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 10.115,
+            "received_monotonic_s": 10.127,
+            "commit_monotonic_s": 10.201,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0,
+            "request_write_ms": 0,
+            "round_trip_ms": 12.000000000000455,
+            "response_decode_ms": 0,
+            "bridge_round_trip_ms": 2,
+            "worker_decode_ms": 1.000000000000334,
+            "runtime_python_ms": 0,
+            "worker_encode_previous_ms": 0,
+            "worker_encode_previous_step_id": "step-378",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0,
+                "update_ms": 0,
+                "output_build_ms": 0
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 73.99999999999984
+          },
+          {
+            "step_id": "step-390",
+            "activation_tick": 390,
+            "commit_tick": 396,
+            "sample_ticks": [
+              390
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 10.215,
+            "received_monotonic_s": 10.225,
+            "commit_monotonic_s": 10.3,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0,
+            "request_write_ms": 0,
+            "round_trip_ms": 9.999999999999787,
+            "response_decode_ms": 0,
+            "bridge_round_trip_ms": 2,
+            "worker_decode_ms": 0,
+            "runtime_python_ms": 1.000000000000334,
+            "worker_encode_previous_ms": 0,
+            "worker_encode_previous_step_id": "step-384",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0,
+                "update_ms": 1.000000000000334,
+                "output_build_ms": 0
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 75.00000000000107
+          },
+          {
+            "step_id": "step-396",
+            "activation_tick": 396,
+            "commit_tick": 402,
+            "sample_ticks": [
+              396
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 10.315,
+            "received_monotonic_s": 10.324,
+            "commit_monotonic_s": 10.399,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0,
+            "request_write_ms": 0,
+            "round_trip_ms": 9.000000000000341,
+            "response_decode_ms": 0,
+            "bridge_round_trip_ms": 3,
+            "worker_decode_ms": 0,
+            "runtime_python_ms": 1.000000000000334,
+            "worker_encode_previous_ms": 0,
+            "worker_encode_previous_step_id": "step-390",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 1.000000000000334,
+                "update_ms": 0,
+                "output_build_ms": 0
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 74.99999999999929
+          },
+          {
+            "step_id": "step-402",
+            "activation_tick": 402,
+            "commit_tick": 408,
+            "sample_ticks": [
+              402
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 10.414,
+            "received_monotonic_s": 10.423,
+            "commit_monotonic_s": 10.5,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0,
+            "request_write_ms": 0,
+            "round_trip_ms": 9.000000000000341,
+            "response_decode_ms": 0,
+            "bridge_round_trip_ms": 2,
+            "worker_decode_ms": 0.9999999999998899,
+            "runtime_python_ms": 0,
+            "worker_encode_previous_ms": 0,
+            "worker_encode_previous_step_id": "step-396",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0,
+                "update_ms": 0,
+                "output_build_ms": 0
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 76.99999999999996
+          },
+          {
+            "step_id": "step-408",
+            "activation_tick": 408,
+            "commit_tick": 414,
+            "sample_ticks": [
+              408
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 10.514,
+            "received_monotonic_s": 10.524,
+            "commit_monotonic_s": 10.599,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 1.0000000000012221,
+            "request_write_ms": 0,
+            "round_trip_ms": 9.999999999999787,
+            "response_decode_ms": 0,
+            "bridge_round_trip_ms": 2,
+            "worker_decode_ms": 0.9999999999998899,
+            "runtime_python_ms": 0.9999999999998899,
+            "worker_encode_previous_ms": 0,
+            "worker_encode_previous_step_id": "step-402",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0,
+                "update_ms": 0.9999999999998899,
+                "output_build_ms": 0
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 75.00000000000107
+          },
+          {
+            "step_id": "step-414",
+            "activation_tick": 414,
+            "commit_tick": 420,
+            "sample_ticks": [
+              414
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 10.614,
+            "received_monotonic_s": 10.624,
+            "commit_monotonic_s": 10.7,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0,
+            "request_write_ms": 0,
+            "round_trip_ms": 9.999999999999787,
+            "response_decode_ms": 0,
+            "bridge_round_trip_ms": 1,
+            "worker_decode_ms": 0,
+            "runtime_python_ms": 1.000000000000334,
+            "worker_encode_previous_ms": 0,
+            "worker_encode_previous_step_id": "step-408",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 1.000000000000334,
+                "update_ms": 0,
+                "output_build_ms": 0
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 75.99999999999874
+          },
+          {
+            "step_id": "step-420",
+            "activation_tick": 420,
+            "commit_tick": 426,
+            "sample_ticks": [
+              420
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 10.714,
+            "received_monotonic_s": 10.725,
+            "commit_monotonic_s": 10.799,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0,
+            "request_write_ms": 0,
+            "round_trip_ms": 10.999999999999233,
+            "response_decode_ms": 0.9999999999994458,
+            "bridge_round_trip_ms": 3,
+            "worker_decode_ms": 0,
+            "runtime_python_ms": 0.9999999999998899,
+            "worker_encode_previous_ms": 0,
+            "worker_encode_previous_step_id": "step-414",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0,
+                "update_ms": 0.9999999999998899,
+                "output_build_ms": 0
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 73.99999999999984
+          },
+          {
+            "step_id": "step-426",
+            "activation_tick": 426,
+            "commit_tick": 432,
+            "sample_ticks": [
+              426
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 10.813,
+            "received_monotonic_s": 10.823,
+            "commit_monotonic_s": 10.899,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0,
+            "request_write_ms": 0,
+            "round_trip_ms": 9.999999999999787,
+            "response_decode_ms": 0,
+            "bridge_round_trip_ms": 2,
+            "worker_decode_ms": 0,
+            "runtime_python_ms": 0.9999999999998899,
+            "worker_encode_previous_ms": 0,
+            "worker_encode_previous_step_id": "step-420",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0,
+                "update_ms": 0.9999999999998899,
+                "output_build_ms": 0
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 75.99999999999874
+          },
+          {
+            "step_id": "step-432",
+            "activation_tick": 432,
+            "commit_tick": 438,
+            "sample_ticks": [
+              432
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 10.913,
+            "received_monotonic_s": 10.924,
+            "commit_monotonic_s": 10.999,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0,
+            "request_write_ms": 0,
+            "round_trip_ms": 10.999999999999233,
+            "response_decode_ms": 0,
+            "bridge_round_trip_ms": 1,
+            "worker_decode_ms": 0,
+            "runtime_python_ms": 0,
+            "worker_encode_previous_ms": 0,
+            "worker_encode_previous_step_id": "step-426",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0,
+                "update_ms": 0,
+                "output_build_ms": 0
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 75.00000000000107
+          },
+          {
+            "step_id": "step-438",
+            "activation_tick": 438,
+            "commit_tick": 444,
+            "sample_ticks": [
+              438
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 11.014,
+            "received_monotonic_s": 11.023,
+            "commit_monotonic_s": 11.099,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0,
+            "request_write_ms": 0,
+            "round_trip_ms": 9.000000000000341,
+            "response_decode_ms": 0,
+            "bridge_round_trip_ms": 2,
+            "worker_decode_ms": 0,
+            "runtime_python_ms": 1.000000000000334,
+            "worker_encode_previous_ms": 0,
+            "worker_encode_previous_step_id": "step-432",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0,
+                "update_ms": 1.000000000000334,
+                "output_build_ms": 0
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 76.00000000000051
+          },
+          {
+            "step_id": "step-444",
+            "activation_tick": 444,
+            "commit_tick": 450,
+            "sample_ticks": [
+              444
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 11.114,
+            "received_monotonic_s": 11.123,
+            "commit_monotonic_s": 11.2,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0,
+            "request_write_ms": 0,
+            "round_trip_ms": 8.999999999998565,
+            "response_decode_ms": 0,
+            "bridge_round_trip_ms": 2,
+            "worker_decode_ms": 0,
+            "runtime_python_ms": 0.9999999999994458,
+            "worker_encode_previous_ms": 0,
+            "worker_encode_previous_step_id": "step-438",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0,
+                "update_ms": 0.9999999999994458,
+                "output_build_ms": 0
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 76.99999999999996
+          },
+          {
+            "step_id": "step-450",
+            "activation_tick": 450,
+            "commit_tick": 456,
+            "sample_ticks": [
+              450
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 11.215,
+            "received_monotonic_s": 11.225,
+            "commit_monotonic_s": 11.299,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0,
+            "request_write_ms": 0,
+            "round_trip_ms": 9.999999999999787,
+            "response_decode_ms": 0,
+            "bridge_round_trip_ms": 1,
+            "worker_decode_ms": 0,
+            "runtime_python_ms": 0,
+            "worker_encode_previous_ms": 0,
+            "worker_encode_previous_step_id": "step-444",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0,
+                "update_ms": 0,
+                "output_build_ms": 0
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 73.99999999999984
+          },
+          {
+            "step_id": "step-456",
+            "activation_tick": 456,
+            "commit_tick": 462,
+            "sample_ticks": [
+              456
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 11.314,
+            "received_monotonic_s": 11.324,
+            "commit_monotonic_s": 11.401,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0,
+            "request_write_ms": 0,
+            "round_trip_ms": 9.999999999999787,
+            "response_decode_ms": 0,
+            "bridge_round_trip_ms": 1,
+            "worker_decode_ms": 0,
+            "runtime_python_ms": 0.9999999999994458,
+            "worker_encode_previous_ms": 0,
+            "worker_encode_previous_step_id": "step-450",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0,
+                "update_ms": 0.9999999999994458,
+                "output_build_ms": 0
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 76.99999999999996
+          },
+          {
+            "step_id": "step-462",
+            "activation_tick": 462,
+            "commit_tick": 468,
+            "sample_ticks": [
+              462
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 11.416,
+            "received_monotonic_s": 11.425,
+            "commit_monotonic_s": 11.499,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0,
+            "request_write_ms": 0,
+            "round_trip_ms": 9.000000000000341,
+            "response_decode_ms": 0,
+            "bridge_round_trip_ms": 2,
+            "worker_decode_ms": 0,
+            "runtime_python_ms": 0.9999999999994458,
+            "worker_encode_previous_ms": 0,
+            "worker_encode_previous_step_id": "step-456",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0,
+                "update_ms": 0.9999999999994458,
+                "output_build_ms": 0
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 73.99999999999984
+          },
+          {
+            "step_id": "step-468",
+            "activation_tick": 468,
+            "commit_tick": 474,
+            "sample_ticks": [
+              468
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 11.514,
+            "received_monotonic_s": 11.524,
+            "commit_monotonic_s": 11.6,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 1.0000000000012221,
+            "request_write_ms": 0,
+            "round_trip_ms": 9.999999999999787,
+            "response_decode_ms": 0,
+            "bridge_round_trip_ms": 2,
+            "worker_decode_ms": 0,
+            "runtime_python_ms": 1.000000000000334,
+            "worker_encode_previous_ms": 0,
+            "worker_encode_previous_step_id": "step-462",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 1.000000000000334,
+                "update_ms": 0,
+                "output_build_ms": 0
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 76.00000000000051
+          },
+          {
+            "step_id": "step-474",
+            "activation_tick": 474,
+            "commit_tick": 480,
+            "sample_ticks": [
+              474
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 11.615,
+            "received_monotonic_s": 11.625,
+            "commit_monotonic_s": 11.699,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0,
+            "request_write_ms": 0,
+            "round_trip_ms": 9.999999999999787,
+            "response_decode_ms": 0,
+            "bridge_round_trip_ms": 2,
+            "worker_decode_ms": 0,
+            "runtime_python_ms": 0,
+            "worker_encode_previous_ms": 0,
+            "worker_encode_previous_step_id": "step-468",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0,
+                "update_ms": 0,
+                "output_build_ms": 0
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 73.99999999999984
+          },
+          {
+            "step_id": "step-480",
+            "activation_tick": 480,
+            "commit_tick": 486,
+            "sample_ticks": [
+              480
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 11.714,
+            "received_monotonic_s": 11.725,
+            "commit_monotonic_s": 11.799,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0,
+            "request_write_ms": 0,
+            "round_trip_ms": 10.999999999999233,
+            "response_decode_ms": 0,
+            "bridge_round_trip_ms": 2,
+            "worker_decode_ms": 1.000000000000334,
+            "runtime_python_ms": 0,
+            "worker_encode_previous_ms": 0,
+            "worker_encode_previous_step_id": "step-474",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0,
+                "update_ms": 0,
+                "output_build_ms": 0
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 73.99999999999984
+          },
+          {
+            "step_id": "step-486",
+            "activation_tick": 486,
+            "commit_tick": 492,
+            "sample_ticks": [
+              486
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 11.815,
+            "received_monotonic_s": 11.824,
+            "commit_monotonic_s": 11.901,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0,
+            "request_write_ms": 0,
+            "round_trip_ms": 9.000000000000341,
+            "response_decode_ms": 0,
+            "bridge_round_trip_ms": 2,
+            "worker_decode_ms": 0,
+            "runtime_python_ms": 0,
+            "worker_encode_previous_ms": 0,
+            "worker_encode_previous_step_id": "step-480",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0,
+                "update_ms": 0,
+                "output_build_ms": 0
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 76.99999999999996
+          },
+          {
+            "step_id": "step-492",
+            "activation_tick": 492,
+            "commit_tick": 498,
+            "sample_ticks": [
+              492
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 11.916,
+            "received_monotonic_s": 11.926,
+            "commit_monotonic_s": 12.001,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0,
+            "request_write_ms": 0,
+            "round_trip_ms": 9.999999999999787,
+            "response_decode_ms": 0,
+            "bridge_round_trip_ms": 1,
+            "worker_decode_ms": 0,
+            "runtime_python_ms": 0,
+            "worker_encode_previous_ms": 0,
+            "worker_encode_previous_step_id": "step-486",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0,
+                "update_ms": 0,
+                "output_build_ms": 0
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 74.99999999999929
+          },
+          {
+            "step_id": "step-498",
+            "activation_tick": 498,
+            "commit_tick": 504,
+            "sample_ticks": [
+              498
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 12.016,
+            "received_monotonic_s": 12.026,
+            "commit_monotonic_s": 12.1,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0,
+            "request_write_ms": 0,
+            "round_trip_ms": 9.999999999999787,
+            "response_decode_ms": 0,
+            "bridge_round_trip_ms": 2,
+            "worker_decode_ms": 0,
+            "runtime_python_ms": 0,
+            "worker_encode_previous_ms": 0,
+            "worker_encode_previous_step_id": "step-492",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0,
+                "update_ms": 0,
+                "output_build_ms": 0
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 73.99999999999984
+          },
+          {
+            "step_id": "step-504",
+            "activation_tick": 504,
+            "commit_tick": 510,
+            "sample_ticks": [
+              504
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 12.115,
+            "received_monotonic_s": 12.125,
+            "commit_monotonic_s": 12.199,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0,
+            "request_write_ms": 0,
+            "round_trip_ms": 9.999999999999787,
+            "response_decode_ms": 0,
+            "bridge_round_trip_ms": 1,
+            "worker_decode_ms": 0,
+            "runtime_python_ms": 0,
+            "worker_encode_previous_ms": 0,
+            "worker_encode_previous_step_id": "step-498",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0,
+                "update_ms": 0,
+                "output_build_ms": 0
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 73.99999999999984
+          },
+          {
+            "step_id": "step-510",
+            "activation_tick": 510,
+            "commit_tick": 516,
+            "sample_ticks": [
+              510
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 12.214,
+            "received_monotonic_s": 12.225,
+            "commit_monotonic_s": 12.3,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0,
+            "request_write_ms": 0,
+            "round_trip_ms": 10.999999999999233,
+            "response_decode_ms": 0,
+            "bridge_round_trip_ms": 3,
+            "worker_decode_ms": 0,
+            "runtime_python_ms": 0,
+            "worker_encode_previous_ms": 0,
+            "worker_encode_previous_step_id": "step-504",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0,
+                "update_ms": 0,
+                "output_build_ms": 0
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 75.00000000000107
+          },
+          {
+            "step_id": "step-516",
+            "activation_tick": 516,
+            "commit_tick": 522,
+            "sample_ticks": [
+              516
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 12.315,
+            "received_monotonic_s": 12.325,
+            "commit_monotonic_s": 12.401,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0,
+            "request_write_ms": 0,
+            "round_trip_ms": 9.999999999999787,
+            "response_decode_ms": 0,
+            "bridge_round_trip_ms": 2,
+            "worker_decode_ms": 0,
+            "runtime_python_ms": 0,
+            "worker_encode_previous_ms": 0.9999999999994458,
+            "worker_encode_previous_step_id": "step-510",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0,
+                "update_ms": 0,
+                "output_build_ms": 0
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 76.00000000000051
+          },
+          {
+            "step_id": "step-522",
+            "activation_tick": 522,
+            "commit_tick": 528,
+            "sample_ticks": [
+              522
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 12.415,
+            "received_monotonic_s": 12.426,
+            "commit_monotonic_s": 12.499,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0,
+            "request_write_ms": 1.0000000000012221,
+            "round_trip_ms": 11.000000000001009,
+            "response_decode_ms": 0,
+            "bridge_round_trip_ms": 2,
+            "worker_decode_ms": 0,
+            "runtime_python_ms": 1.000000000000334,
+            "worker_encode_previous_ms": 0,
+            "worker_encode_previous_step_id": "step-516",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0,
+                "update_ms": 1.000000000000334,
+                "output_build_ms": 0
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 73.0000000000004
+          },
+          {
+            "step_id": "step-528",
+            "activation_tick": 528,
+            "commit_tick": 534,
+            "sample_ticks": [
+              528
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 12.514,
+            "received_monotonic_s": 12.525,
+            "commit_monotonic_s": 12.601,
+            "status": "committed",
+            "failure_location": null,
+            "request_encode_ms": 0,
+            "request_write_ms": 0,
+            "round_trip_ms": 11.000000000001009,
+            "response_decode_ms": 0,
+            "bridge_round_trip_ms": 2,
+            "worker_decode_ms": 0,
+            "runtime_python_ms": 0,
+            "worker_encode_previous_ms": 0,
+            "worker_encode_previous_step_id": "step-522",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0,
+                "update_ms": 0,
+                "output_build_ms": 0
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 76.00000000000051
+          },
+          {
+            "step_id": "step-534",
+            "activation_tick": 534,
+            "commit_tick": 540,
+            "sample_ticks": [
+              534
+            ],
+            "modules": [
+              "perception"
+            ],
+            "started_monotonic_s": 12.616,
+            "received_monotonic_s": 12.626,
+            "commit_monotonic_s": 12.626,
+            "status": "CANCELLED",
+            "failure_location": "worker_close",
+            "request_encode_ms": 0,
+            "request_write_ms": 0,
+            "round_trip_ms": 9.999999999999787,
+            "response_decode_ms": 0,
+            "bridge_round_trip_ms": 2,
+            "worker_decode_ms": 0,
+            "runtime_python_ms": 1.000000000000334,
+            "worker_encode_previous_ms": 1.000000000000334,
+            "worker_encode_previous_step_id": "step-528",
+            "module_costs": [
+              {
+                "module_id": "perception",
+                "input_decode_ms": 0,
+                "update_ms": 1.000000000000334,
+                "output_build_ms": 0
+              }
+            ],
+            "module_failures": [],
+            "gate_wait_ms": 0
+          }
+        ],
+        "active": null
+      },
+      "exception_failure": {
+        "revision": "b2f4ed214fad6463df0fb537b5f6d8b53d46d19bc2f58032b0cbfe2bc8fbd11a",
+        "failure": {
+          "frame_index": 0,
+          "tick": 312,
+          "code": "MODULE_ERROR"
+        },
+        "logs": [
+          {
+            "stream": "output",
+            "text": "Loading numpy\n",
+            "sequence": 0
+          },
+          {
+            "stream": "output",
+            "text": "Loaded numpy\n",
+            "sequence": 1
+          },
+          {
+            "stream": "output",
+            "text": "Traceback (most recent call last):\n",
+            "sequence": 2
+          },
+          {
+            "stream": "output",
+            "text": "  File \"runtime/module_runner.py\", line 70, in step\n",
+            "sequence": 3
+          },
+          {
+            "stream": "output",
+            "text": "    self.module.update(Inputs(samples), context)\n",
+            "sequence": 4
+          },
+          {
+            "stream": "output",
+            "text": "    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+            "sequence": 5
+          },
+          {
+            "stream": "output",
+            "text": "  File \"campaign_robot.py\", line 43, in update\n",
+            "sequence": 6
+          },
+          {
+            "stream": "output",
+            "text": "    estimate: TargetEstimate | None = (points[0] if points else None) if self.tracker is None else self.tracker.update(points, ctx.dt_seconds)\n",
+            "sequence": 7
+          },
+          {
+            "stream": "output",
+            "text": "                                                                                                   ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^\n",
+            "sequence": 8
+          },
+          {
+            "stream": "output",
+            "text": "  File \"perception/tracker.py\", line 3, in update\n",
+            "sequence": 9
+          },
+          {
+            "stream": "output",
+            "text": "    raise ValueError(\"engineering-filter-debug\")\n",
+            "sequence": 10
+          },
+          {
+            "stream": "output",
+            "text": "ValueError: engineering-filter-debug\n",
+            "sequence": 11
+          }
+        ],
+        "timing": {
+          "backend": "pyodide",
+          "budget_ms": 20,
+          "observational_only": true,
+          "window_capacity": 512,
+          "total_batches": 1,
+          "window_batches": 1,
+          "timeouts": 0,
+          "timeout_rate": 0,
+          "costs": {
+            "round_trip_ms": {
+              "count": 1,
+              "p50_ms": 9.000000000000341,
+              "p95_ms": 9.000000000000341,
+              "p99_ms": 9.000000000000341,
+              "max_ms": 9.000000000000341
+            },
+            "request_encode_ms": {
+              "count": 1,
+              "p50_ms": 0,
+              "p95_ms": 0,
+              "p99_ms": 0,
+              "max_ms": 0
+            },
+            "request_write_ms": {
+              "count": 1,
+              "p50_ms": 0,
+              "p95_ms": 0,
+              "p99_ms": 0,
+              "max_ms": 0
+            },
+            "response_decode_ms": {
+              "count": 1,
+              "p50_ms": 0,
+              "p95_ms": 0,
+              "p99_ms": 0,
+              "max_ms": 0
+            },
+            "gate_wait_ms": {
+              "count": 1,
+              "p50_ms": 90.99999999999753,
+              "p95_ms": 90.99999999999753,
+              "p99_ms": 90.99999999999753,
+              "max_ms": 90.99999999999753
+            },
+            "runtime_python_ms": {
+              "count": 1,
+              "p50_ms": 4.999999999999893,
+              "p95_ms": 4.999999999999893,
+              "p99_ms": 4.999999999999893,
+              "max_ms": 4.999999999999893
+            },
+            "worker_decode_ms": {
+              "count": 1,
+              "p50_ms": 0,
+              "p95_ms": 0,
+              "p99_ms": 0,
+              "max_ms": 0
+            },
+            "worker_encode_previous_ms": {
+              "count": 0,
+              "p50_ms": null,
+              "p95_ms": null,
+              "p99_ms": null,
+              "max_ms": null
+            },
+            "bridge_round_trip_ms": {
+              "count": 1,
+              "p50_ms": 5,
+              "p95_ms": 5,
+              "p99_ms": 5,
+              "max_ms": 5
+            },
+            "elapsed_to_failure_ms": {
+              "count": 0,
+              "p50_ms": null,
+              "p95_ms": null,
+              "p99_ms": null,
+              "max_ms": null
+            }
+          },
+          "modules": {
+            "perception": {
+              "input_decode_ms": {
+                "count": 1,
+                "p50_ms": 0.9999999999998899,
+                "p95_ms": 0.9999999999998899,
+                "p99_ms": 0.9999999999998899,
+                "max_ms": 0.9999999999998899
+              },
+              "update_ms": {
+                "count": 1,
+                "p50_ms": 4.0000000000000036,
+                "p95_ms": 4.0000000000000036,
+                "p99_ms": 4.0000000000000036,
+                "max_ms": 4.0000000000000036
+              },
+              "output_build_ms": {
+                "count": 1,
+                "p50_ms": 0,
+                "p95_ms": 0,
+                "p99_ms": 0,
+                "max_ms": 0
+              }
+            }
+          },
+          "recent": [
+            {
+              "step_id": "step-312",
+              "activation_tick": 312,
+              "commit_tick": 318,
+              "sample_ticks": [
+                312
+              ],
+              "modules": [
+                "perception"
+              ],
+              "started_monotonic_s": 26.684,
+              "received_monotonic_s": 26.693,
+              "commit_monotonic_s": 26.784,
+              "status": "MODULE_ERROR",
+              "failure_location": "module_update",
+              "request_encode_ms": 0,
+              "request_write_ms": 0,
+              "round_trip_ms": 9.000000000000341,
+              "response_decode_ms": 0,
+              "bridge_round_trip_ms": 5,
+              "worker_decode_ms": 0,
+              "runtime_python_ms": 4.999999999999893,
+              "module_costs": [
+                {
+                  "module_id": "perception",
+                  "input_decode_ms": 0.9999999999998899,
+                  "update_ms": 4.0000000000000036,
+                  "output_build_ms": 0
+                }
+              ],
+              "module_failures": [
+                "perception"
+              ],
+              "gate_wait_ms": 90.99999999999753
+            }
+          ],
+          "active": null
+        }
+      },
+      "wall_deadline_failure": {
+        "revision": "297ff3a011390471a31625cf2db5caa758362a929e54607740e3f6ebb76fba0d",
+        "failure": {
+          "frame_index": 0,
+          "tick": 312,
+          "code": "RESOURCE_LIMIT"
+        },
+        "timing": {
+          "backend": "pyodide",
+          "budget_ms": 20,
+          "observational_only": true,
+          "window_capacity": 512,
+          "total_batches": 1,
+          "window_batches": 1,
+          "timeouts": 1,
+          "timeout_rate": 1,
+          "costs": {
+            "round_trip_ms": {
+              "count": 0,
+              "p50_ms": null,
+              "p95_ms": null,
+              "p99_ms": null,
+              "max_ms": null
+            },
+            "request_encode_ms": {
+              "count": 1,
+              "p50_ms": 0,
+              "p95_ms": 0,
+              "p99_ms": 0,
+              "max_ms": 0
+            },
+            "request_write_ms": {
+              "count": 1,
+              "p50_ms": 0,
+              "p95_ms": 0,
+              "p99_ms": 0,
+              "max_ms": 0
+            },
+            "response_decode_ms": {
+              "count": 0,
+              "p50_ms": null,
+              "p95_ms": null,
+              "p99_ms": null,
+              "max_ms": null
+            },
+            "gate_wait_ms": {
+              "count": 0,
+              "p50_ms": null,
+              "p95_ms": null,
+              "p99_ms": null,
+              "max_ms": null
+            },
+            "runtime_python_ms": {
+              "count": 0,
+              "p50_ms": null,
+              "p95_ms": null,
+              "p99_ms": null,
+              "max_ms": null
+            },
+            "worker_decode_ms": {
+              "count": 0,
+              "p50_ms": null,
+              "p95_ms": null,
+              "p99_ms": null,
+              "max_ms": null
+            },
+            "worker_encode_previous_ms": {
+              "count": 0,
+              "p50_ms": null,
+              "p95_ms": null,
+              "p99_ms": null,
+              "max_ms": null
+            },
+            "bridge_round_trip_ms": {
+              "count": 0,
+              "p50_ms": null,
+              "p95_ms": null,
+              "p99_ms": null,
+              "max_ms": null
+            },
+            "elapsed_to_failure_ms": {
+              "count": 1,
+              "p50_ms": 20.999999999999908,
+              "p95_ms": 20.999999999999908,
+              "p99_ms": 20.999999999999908,
+              "max_ms": 20.999999999999908
+            }
+          },
+          "modules": {},
+          "recent": [
+            {
+              "step_id": "step-312",
+              "activation_tick": 312,
+              "commit_tick": 318,
+              "sample_ticks": [
+                312
+              ],
+              "modules": [
+                "perception"
+              ],
+              "started_monotonic_s": 6.748,
+              "received_monotonic_s": null,
+              "commit_monotonic_s": 6.769,
+              "status": "RESOURCE_LIMIT",
+              "failure_location": "wall_deadline",
+              "request_encode_ms": 0,
+              "request_write_ms": 0,
+              "elapsed_to_failure_ms": 20.999999999999908
+            }
+          ],
+          "active": null
+        }
+      },
+      "private_reference_not_exported": true,
+      "backup_restore": true,
+      "old_sources_and_progress_preserved": true,
+      "cache_report": ".m1-cache/engineering-quality-20261104/browser/browser/25e50a425ea7425b8dc1ab72efb5831a/result.json",
+      "both_versions_completed": true
+    }
+  },
+  "observed_transient_failure": {
+    "revision": "052cb1e0f6889d31f884e10931bf07d5a6f12d3052973d095e26ce1e48003434",
+    "status": "Failed",
+    "scored_samples": 24,
+    "failure": {
+      "frame_index": 24,
+      "tick": 462,
+      "code": "RESOURCE_LIMIT"
+    },
+    "timing": {
+      "backend": "pyodide",
+      "budget_ms": 20,
+      "observational_only": true,
+      "window_capacity": 512,
+      "total_batches": 25,
+      "window_batches": 25,
+      "timeouts": 1,
+      "timeout_rate": 0.04,
+      "costs": {
+        "round_trip_ms": {
+          "count": 24,
+          "p50_ms": 13.999999999999346,
+          "p95_ms": 16.99999999999946,
+          "p99_ms": 18.000000000000682,
+          "max_ms": 18.000000000000682
+        },
+        "request_encode_ms": {
+          "count": 25,
+          "p50_ms": 0,
+          "p95_ms": 0.9999999999976694,
+          "p99_ms": 1.0000000000012221,
+          "max_ms": 1.0000000000012221
+        },
+        "request_write_ms": {
+          "count": 25,
+          "p50_ms": 0,
+          "p95_ms": 1.0000000000012221,
+          "p99_ms": 1.0000000000012221,
+          "max_ms": 1.0000000000012221
+        },
+        "response_decode_ms": {
+          "count": 24,
+          "p50_ms": 0,
+          "p95_ms": 0,
+          "p99_ms": 0,
+          "max_ms": 0
+        },
+        "gate_wait_ms": {
+          "count": 24,
+          "p50_ms": 82.00000000000074,
+          "p95_ms": 85.00000000000085,
+          "p99_ms": 85.99999999999852,
+          "max_ms": 85.99999999999852
+        },
+        "runtime_python_ms": {
+          "count": 24,
+          "p50_ms": 0,
+          "p95_ms": 1.000000000000334,
+          "p99_ms": 4.0000000000000036,
+          "max_ms": 4.0000000000000036
+        },
+        "worker_decode_ms": {
+          "count": 24,
+          "p50_ms": 0,
+          "p95_ms": 0.9999999999998899,
+          "p99_ms": 0.9999999999998899,
+          "max_ms": 0.9999999999998899
+        },
+        "worker_encode_previous_ms": {
+          "count": 23,
+          "p50_ms": 0,
+          "p95_ms": 0,
+          "p99_ms": 0,
+          "max_ms": 0
+        },
+        "bridge_round_trip_ms": {
+          "count": 24,
+          "p50_ms": 2,
+          "p95_ms": 3,
+          "p99_ms": 5,
+          "max_ms": 5
+        },
+        "elapsed_to_failure_ms": {
+          "count": 1,
+          "p50_ms": 21.000000000000796,
+          "p95_ms": 21.000000000000796,
+          "p99_ms": 21.000000000000796,
+          "max_ms": 21.000000000000796
+        }
+      },
+      "modules": {
+        "perception": {
+          "input_decode_ms": {
+            "count": 24,
+            "p50_ms": 0,
+            "p95_ms": 0,
+            "p99_ms": 0,
+            "max_ms": 0
+          },
+          "update_ms": {
+            "count": 24,
+            "p50_ms": 0,
+            "p95_ms": 1.000000000000334,
+            "p99_ms": 4.0000000000000036,
+            "max_ms": 4.0000000000000036
+          },
+          "output_build_ms": {
+            "count": 24,
+            "p50_ms": 0,
+            "p95_ms": 0,
+            "p99_ms": 0,
+            "max_ms": 0
+          }
+        }
+      },
+      "recent": [
+        {
+          "step_id": "step-318",
+          "activation_tick": 318,
+          "commit_tick": 324,
+          "sample_ticks": [
+            318
+          ],
+          "modules": [
+            "perception"
+          ],
+          "started_monotonic_s": 20.385,
+          "received_monotonic_s": 20.4,
+          "commit_monotonic_s": 20.485,
+          "status": "replay_validated",
+          "failure_location": null,
+          "request_encode_ms": 0,
+          "request_write_ms": 0,
+          "round_trip_ms": 14.999999999997016,
+          "response_decode_ms": 0,
+          "bridge_round_trip_ms": 5,
+          "worker_decode_ms": 0,
+          "runtime_python_ms": 4.0000000000000036,
+          "module_costs": [
+            {
+              "module_id": "perception",
+              "input_decode_ms": 0,
+              "update_ms": 4.0000000000000036,
+              "output_build_ms": 0
+            }
+          ],
+          "module_failures": [],
+          "gate_wait_ms": 85.00000000000085
+        },
+        {
+          "step_id": "step-324",
+          "activation_tick": 324,
+          "commit_tick": 330,
+          "sample_ticks": [
+            324
+          ],
+          "modules": [
+            "perception"
+          ],
+          "started_monotonic_s": 20.489,
+          "received_monotonic_s": 20.503,
+          "commit_monotonic_s": 20.585,
+          "status": "replay_validated",
+          "failure_location": null,
+          "request_encode_ms": 0,
+          "request_write_ms": 0,
+          "round_trip_ms": 13.999999999999346,
+          "response_decode_ms": 0,
+          "bridge_round_trip_ms": 2,
+          "worker_decode_ms": 0,
+          "runtime_python_ms": 1.000000000000112,
+          "worker_encode_previous_ms": 0,
+          "worker_encode_previous_step_id": "step-318",
+          "module_costs": [
+            {
+              "module_id": "perception",
+              "input_decode_ms": 0,
+              "update_ms": 1.000000000000112,
+              "output_build_ms": 0
+            }
+          ],
+          "module_failures": [],
+          "gate_wait_ms": 82.00000000000074
+        },
+        {
+          "step_id": "step-330",
+          "activation_tick": 330,
+          "commit_tick": 336,
+          "sample_ticks": [
+            330
+          ],
+          "modules": [
+            "perception"
+          ],
+          "started_monotonic_s": 20.588,
+          "received_monotonic_s": 20.603,
+          "commit_monotonic_s": 20.685,
+          "status": "replay_validated",
+          "failure_location": null,
+          "request_encode_ms": 0,
+          "request_write_ms": 0,
+          "round_trip_ms": 15.000000000000568,
+          "response_decode_ms": 0,
+          "bridge_round_trip_ms": 2,
+          "worker_decode_ms": 0,
+          "runtime_python_ms": 1.000000000000112,
+          "worker_encode_previous_ms": 0,
+          "worker_encode_previous_step_id": "step-324",
+          "module_costs": [
+            {
+              "module_id": "perception",
+              "input_decode_ms": 0,
+              "update_ms": 1.000000000000112,
+              "output_build_ms": 0
+            }
+          ],
+          "module_failures": [],
+          "gate_wait_ms": 81.99999999999719
+        },
+        {
+          "step_id": "step-336",
+          "activation_tick": 336,
+          "commit_tick": 342,
+          "sample_ticks": [
+            336
+          ],
+          "modules": [
+            "perception"
+          ],
+          "started_monotonic_s": 20.689,
+          "received_monotonic_s": 20.702,
+          "commit_monotonic_s": 20.788,
+          "status": "replay_validated",
+          "failure_location": null,
+          "request_encode_ms": 0,
+          "request_write_ms": 0,
+          "round_trip_ms": 13.000000000001677,
+          "response_decode_ms": 0,
+          "bridge_round_trip_ms": 2,
+          "worker_decode_ms": 0.9999999999998899,
+          "runtime_python_ms": 0,
+          "worker_encode_previous_ms": 0,
+          "worker_encode_previous_step_id": "step-330",
+          "module_costs": [
+            {
+              "module_id": "perception",
+              "input_decode_ms": 0,
+              "update_ms": 0,
+              "output_build_ms": 0
+            }
+          ],
+          "module_failures": [],
+          "gate_wait_ms": 85.99999999999852
+        },
+        {
+          "step_id": "step-342",
+          "activation_tick": 342,
+          "commit_tick": 348,
+          "sample_ticks": [
+            342
+          ],
+          "modules": [
+            "perception"
+          ],
+          "started_monotonic_s": 20.792,
+          "received_monotonic_s": 20.806,
+          "commit_monotonic_s": 20.886,
+          "status": "replay_validated",
+          "failure_location": null,
+          "request_encode_ms": 0,
+          "request_write_ms": 0,
+          "round_trip_ms": 13.999999999999346,
+          "response_decode_ms": 0,
+          "bridge_round_trip_ms": 1,
+          "worker_decode_ms": 0,
+          "runtime_python_ms": 0,
+          "worker_encode_previous_ms": 0,
+          "worker_encode_previous_step_id": "step-336",
+          "module_costs": [
+            {
+              "module_id": "perception",
+              "input_decode_ms": 0,
+              "update_ms": 0,
+              "output_build_ms": 0
+            }
+          ],
+          "module_failures": [],
+          "gate_wait_ms": 79.9999999999983
+        },
+        {
+          "step_id": "step-348",
+          "activation_tick": 348,
+          "commit_tick": 354,
+          "sample_ticks": [
+            348
+          ],
+          "modules": [
+            "perception"
+          ],
+          "started_monotonic_s": 20.889,
+          "received_monotonic_s": 20.904,
+          "commit_monotonic_s": 20.985,
+          "status": "replay_validated",
+          "failure_location": null,
+          "request_encode_ms": 0,
+          "request_write_ms": 0,
+          "round_trip_ms": 15.000000000000568,
+          "response_decode_ms": 0,
+          "bridge_round_trip_ms": 2,
+          "worker_decode_ms": 0,
+          "runtime_python_ms": 0.9999999999998899,
+          "worker_encode_previous_ms": 0,
+          "worker_encode_previous_step_id": "step-342",
+          "module_costs": [
+            {
+              "module_id": "perception",
+              "input_decode_ms": 0,
+              "update_ms": 0.9999999999998899,
+              "output_build_ms": 0
+            }
+          ],
+          "module_failures": [],
+          "gate_wait_ms": 80.99999999999952
+        },
+        {
+          "step_id": "step-354",
+          "activation_tick": 354,
+          "commit_tick": 360,
+          "sample_ticks": [
+            354
+          ],
+          "modules": [
+            "perception"
+          ],
+          "started_monotonic_s": 20.988,
+          "received_monotonic_s": 21.005,
+          "commit_monotonic_s": 21.086,
+          "status": "replay_validated",
+          "failure_location": null,
+          "request_encode_ms": 0,
+          "request_write_ms": 0,
+          "round_trip_ms": 16.99999999999946,
+          "response_decode_ms": 0,
+          "bridge_round_trip_ms": 2,
+          "worker_decode_ms": 0,
+          "runtime_python_ms": 0,
+          "worker_encode_previous_ms": 0,
+          "worker_encode_previous_step_id": "step-348",
+          "module_costs": [
+            {
+              "module_id": "perception",
+              "input_decode_ms": 0,
+              "update_ms": 0,
+              "output_build_ms": 0
+            }
+          ],
+          "module_failures": [],
+          "gate_wait_ms": 80.99999999999952
+        },
+        {
+          "step_id": "step-360",
+          "activation_tick": 360,
+          "commit_tick": 366,
+          "sample_ticks": [
+            360
+          ],
+          "modules": [
+            "perception"
+          ],
+          "started_monotonic_s": 21.089,
+          "received_monotonic_s": 21.103,
+          "commit_monotonic_s": 21.186,
+          "status": "replay_validated",
+          "failure_location": null,
+          "request_encode_ms": 0,
+          "request_write_ms": 0,
+          "round_trip_ms": 14.000000000002899,
+          "response_decode_ms": 0,
+          "bridge_round_trip_ms": 3,
+          "worker_decode_ms": 0,
+          "runtime_python_ms": 0.9999999999998899,
+          "worker_encode_previous_ms": 0,
+          "worker_encode_previous_step_id": "step-354",
+          "module_costs": [
+            {
+              "module_id": "perception",
+              "input_decode_ms": 0,
+              "update_ms": 0.9999999999998899,
+              "output_build_ms": 0
+            }
+          ],
+          "module_failures": [],
+          "gate_wait_ms": 82.99999999999841
+        },
+        {
+          "step_id": "step-366",
+          "activation_tick": 366,
+          "commit_tick": 372,
+          "sample_ticks": [
+            366
+          ],
+          "modules": [
+            "perception"
+          ],
+          "started_monotonic_s": 21.189,
+          "received_monotonic_s": 21.205,
+          "commit_monotonic_s": 21.286,
+          "status": "replay_validated",
+          "failure_location": null,
+          "request_encode_ms": 0,
+          "request_write_ms": 0,
+          "round_trip_ms": 15.999999999998238,
+          "response_decode_ms": 0,
+          "bridge_round_trip_ms": 2,
+          "worker_decode_ms": 0.9999999999998899,
+          "runtime_python_ms": 0,
+          "worker_encode_previous_ms": 0,
+          "worker_encode_previous_step_id": "step-360",
+          "module_costs": [
+            {
+              "module_id": "perception",
+              "input_decode_ms": 0,
+              "update_ms": 0,
+              "output_build_ms": 0
+            }
+          ],
+          "module_failures": [],
+          "gate_wait_ms": 81.00000000000307
+        },
+        {
+          "step_id": "step-372",
+          "activation_tick": 372,
+          "commit_tick": 378,
+          "sample_ticks": [
+            372
+          ],
+          "modules": [
+            "perception"
+          ],
+          "started_monotonic_s": 21.289,
+          "received_monotonic_s": 21.303,
+          "commit_monotonic_s": 21.385,
+          "status": "replay_validated",
+          "failure_location": null,
+          "request_encode_ms": 0.9999999999976694,
+          "request_write_ms": 0,
+          "round_trip_ms": 13.999999999999346,
+          "response_decode_ms": 0,
+          "bridge_round_trip_ms": 2,
+          "worker_decode_ms": 0.9999999999998899,
+          "runtime_python_ms": 0,
+          "worker_encode_previous_ms": 0,
+          "worker_encode_previous_step_id": "step-366",
+          "module_costs": [
+            {
+              "module_id": "perception",
+              "input_decode_ms": 0,
+              "update_ms": 0,
+              "output_build_ms": 0
+            }
+          ],
+          "module_failures": [],
+          "gate_wait_ms": 82.00000000000074
+        },
+        {
+          "step_id": "step-378",
+          "activation_tick": 378,
+          "commit_tick": 384,
+          "sample_ticks": [
+            378
+          ],
+          "modules": [
+            "perception"
+          ],
+          "started_monotonic_s": 21.389,
+          "received_monotonic_s": 21.403,
+          "commit_monotonic_s": 21.485,
+          "status": "replay_validated",
+          "failure_location": null,
+          "request_encode_ms": 0,
+          "request_write_ms": 0,
+          "round_trip_ms": 13.999999999999346,
+          "response_decode_ms": 0,
+          "bridge_round_trip_ms": 2,
+          "worker_decode_ms": 0,
+          "runtime_python_ms": 0,
+          "worker_encode_previous_ms": 0,
+          "worker_encode_previous_step_id": "step-372",
+          "module_costs": [
+            {
+              "module_id": "perception",
+              "input_decode_ms": 0,
+              "update_ms": 0,
+              "output_build_ms": 0
+            }
+          ],
+          "module_failures": [],
+          "gate_wait_ms": 82.00000000000074
+        },
+        {
+          "step_id": "step-384",
+          "activation_tick": 384,
+          "commit_tick": 390,
+          "sample_ticks": [
+            384
+          ],
+          "modules": [
+            "perception"
+          ],
+          "started_monotonic_s": 21.489,
+          "received_monotonic_s": 21.507,
+          "commit_monotonic_s": 21.585,
+          "status": "replay_validated",
+          "failure_location": null,
+          "request_encode_ms": 0,
+          "request_write_ms": 0,
+          "round_trip_ms": 18.000000000000682,
+          "response_decode_ms": 0,
+          "bridge_round_trip_ms": 3,
+          "worker_decode_ms": 0,
+          "runtime_python_ms": 0.9999999999998899,
+          "worker_encode_previous_ms": 0,
+          "worker_encode_previous_step_id": "step-378",
+          "module_costs": [
+            {
+              "module_id": "perception",
+              "input_decode_ms": 0,
+              "update_ms": 0.9999999999998899,
+              "output_build_ms": 0
+            }
+          ],
+          "module_failures": [],
+          "gate_wait_ms": 77.9999999999994
+        },
+        {
+          "step_id": "step-390",
+          "activation_tick": 390,
+          "commit_tick": 396,
+          "sample_ticks": [
+            390
+          ],
+          "modules": [
+            "perception"
+          ],
+          "started_monotonic_s": 21.589,
+          "received_monotonic_s": 21.603,
+          "commit_monotonic_s": 21.685,
+          "status": "replay_validated",
+          "failure_location": null,
+          "request_encode_ms": 0,
+          "request_write_ms": 0,
+          "round_trip_ms": 14.000000000002899,
+          "response_decode_ms": 0,
+          "bridge_round_trip_ms": 2,
+          "worker_decode_ms": 0,
+          "runtime_python_ms": 0,
+          "worker_encode_previous_ms": 0,
+          "worker_encode_previous_step_id": "step-384",
+          "module_costs": [
+            {
+              "module_id": "perception",
+              "input_decode_ms": 0,
+              "update_ms": 0,
+              "output_build_ms": 0
+            }
+          ],
+          "module_failures": [],
+          "gate_wait_ms": 81.99999999999719
+        },
+        {
+          "step_id": "step-396",
+          "activation_tick": 396,
+          "commit_tick": 402,
+          "sample_ticks": [
+            396
+          ],
+          "modules": [
+            "perception"
+          ],
+          "started_monotonic_s": 21.688,
+          "received_monotonic_s": 21.702,
+          "commit_monotonic_s": 21.785,
+          "status": "replay_validated",
+          "failure_location": null,
+          "request_encode_ms": 1.0000000000012221,
+          "request_write_ms": 0,
+          "round_trip_ms": 14.000000000002899,
+          "response_decode_ms": 0,
+          "bridge_round_trip_ms": 2,
+          "worker_decode_ms": 0.9999999999998899,
+          "runtime_python_ms": 0,
+          "worker_encode_previous_ms": 0,
+          "worker_encode_previous_step_id": "step-390",
+          "module_costs": [
+            {
+              "module_id": "perception",
+              "input_decode_ms": 0,
+              "update_ms": 0,
+              "output_build_ms": 0
+            }
+          ],
+          "module_failures": [],
+          "gate_wait_ms": 82.99999999999841
+        },
+        {
+          "step_id": "step-402",
+          "activation_tick": 402,
+          "commit_tick": 408,
+          "sample_ticks": [
+            402
+          ],
+          "modules": [
+            "perception"
+          ],
+          "started_monotonic_s": 21.789,
+          "received_monotonic_s": 21.802,
+          "commit_monotonic_s": 21.886,
+          "status": "replay_validated",
+          "failure_location": null,
+          "request_encode_ms": 0,
+          "request_write_ms": 0,
+          "round_trip_ms": 12.999999999998124,
+          "response_decode_ms": 0,
+          "bridge_round_trip_ms": 2,
+          "worker_decode_ms": 0,
+          "runtime_python_ms": 0,
+          "worker_encode_previous_ms": 0,
+          "worker_encode_previous_step_id": "step-396",
+          "module_costs": [
+            {
+              "module_id": "perception",
+              "input_decode_ms": 0,
+              "update_ms": 0,
+              "output_build_ms": 0
+            }
+          ],
+          "module_failures": [],
+          "gate_wait_ms": 83.99999999999963
+        },
+        {
+          "step_id": "step-408",
+          "activation_tick": 408,
+          "commit_tick": 414,
+          "sample_ticks": [
+            408
+          ],
+          "modules": [
+            "perception"
+          ],
+          "started_monotonic_s": 21.89,
+          "received_monotonic_s": 21.907,
+          "commit_monotonic_s": 21.986,
+          "status": "replay_validated",
+          "failure_location": null,
+          "request_encode_ms": 0,
+          "request_write_ms": 0,
+          "round_trip_ms": 16.99999999999946,
+          "response_decode_ms": 0,
+          "bridge_round_trip_ms": 2,
+          "worker_decode_ms": 0.9999999999998899,
+          "runtime_python_ms": 0,
+          "worker_encode_previous_ms": 0,
+          "worker_encode_previous_step_id": "step-402",
+          "module_costs": [
+            {
+              "module_id": "perception",
+              "input_decode_ms": 0,
+              "update_ms": 0,
+              "output_build_ms": 0
+            }
+          ],
+          "module_failures": [],
+          "gate_wait_ms": 79.00000000000063
+        },
+        {
+          "step_id": "step-414",
+          "activation_tick": 414,
+          "commit_tick": 420,
+          "sample_ticks": [
+            414
+          ],
+          "modules": [
+            "perception"
+          ],
+          "started_monotonic_s": 21.989,
+          "received_monotonic_s": 22.003,
+          "commit_monotonic_s": 22.086,
+          "status": "replay_validated",
+          "failure_location": null,
+          "request_encode_ms": 0,
+          "request_write_ms": 0,
+          "round_trip_ms": 13.999999999999346,
+          "response_decode_ms": 0,
+          "bridge_round_trip_ms": 2,
+          "worker_decode_ms": 0,
+          "runtime_python_ms": 0,
+          "worker_encode_previous_ms": 0,
+          "worker_encode_previous_step_id": "step-408",
+          "module_costs": [
+            {
+              "module_id": "perception",
+              "input_decode_ms": 0,
+              "update_ms": 0,
+              "output_build_ms": 0
+            }
+          ],
+          "module_failures": [],
+          "gate_wait_ms": 82.99999999999841
+        },
+        {
+          "step_id": "step-420",
+          "activation_tick": 420,
+          "commit_tick": 426,
+          "sample_ticks": [
+            420
+          ],
+          "modules": [
+            "perception"
+          ],
+          "started_monotonic_s": 22.089,
+          "received_monotonic_s": 22.102,
+          "commit_monotonic_s": 22.187,
+          "status": "replay_validated",
+          "failure_location": null,
+          "request_encode_ms": 0,
+          "request_write_ms": 0,
+          "round_trip_ms": 13.000000000001677,
+          "response_decode_ms": 0,
+          "bridge_round_trip_ms": 1,
+          "worker_decode_ms": 0.9999999999998899,
+          "runtime_python_ms": 0,
+          "worker_encode_previous_ms": 0,
+          "worker_encode_previous_step_id": "step-414",
+          "module_costs": [
+            {
+              "module_id": "perception",
+              "input_decode_ms": 0,
+              "update_ms": 0,
+              "output_build_ms": 0
+            }
+          ],
+          "module_failures": [],
+          "gate_wait_ms": 85.00000000000085
+        },
+        {
+          "step_id": "step-426",
+          "activation_tick": 426,
+          "commit_tick": 432,
+          "sample_ticks": [
+            426
+          ],
+          "modules": [
+            "perception"
+          ],
+          "started_monotonic_s": 22.19,
+          "received_monotonic_s": 22.204,
+          "commit_monotonic_s": 22.288,
+          "status": "replay_validated",
+          "failure_location": null,
+          "request_encode_ms": 0,
+          "request_write_ms": 0,
+          "round_trip_ms": 13.999999999999346,
+          "response_decode_ms": 0,
+          "bridge_round_trip_ms": 1,
+          "worker_decode_ms": 0,
+          "runtime_python_ms": 0.9999999999998899,
+          "worker_encode_previous_ms": 0,
+          "worker_encode_previous_step_id": "step-420",
+          "module_costs": [
+            {
+              "module_id": "perception",
+              "input_decode_ms": 0,
+              "update_ms": 0.9999999999998899,
+              "output_build_ms": 0
+            }
+          ],
+          "module_failures": [],
+          "gate_wait_ms": 83.99999999999963
+        },
+        {
+          "step_id": "step-432",
+          "activation_tick": 432,
+          "commit_tick": 438,
+          "sample_ticks": [
+            432
+          ],
+          "modules": [
+            "perception"
+          ],
+          "started_monotonic_s": 22.291,
+          "received_monotonic_s": 22.306,
+          "commit_monotonic_s": 22.385,
+          "status": "replay_validated",
+          "failure_location": null,
+          "request_encode_ms": 0,
+          "request_write_ms": 0,
+          "round_trip_ms": 15.000000000000568,
+          "response_decode_ms": 0,
+          "bridge_round_trip_ms": 2,
+          "worker_decode_ms": 0,
+          "runtime_python_ms": 0.9999999999998899,
+          "worker_encode_previous_ms": 0,
+          "worker_encode_previous_step_id": "step-426",
+          "module_costs": [
+            {
+              "module_id": "perception",
+              "input_decode_ms": 0,
+              "update_ms": 0,
+              "output_build_ms": 0
+            }
+          ],
+          "module_failures": [],
+          "gate_wait_ms": 79.00000000000063
+        },
+        {
+          "step_id": "step-438",
+          "activation_tick": 438,
+          "commit_tick": 444,
+          "sample_ticks": [
+            438
+          ],
+          "modules": [
+            "perception"
+          ],
+          "started_monotonic_s": 22.389,
+          "received_monotonic_s": 22.402,
+          "commit_monotonic_s": 22.487,
+          "status": "replay_validated",
+          "failure_location": null,
+          "request_encode_ms": 0,
+          "request_write_ms": 0,
+          "round_trip_ms": 13.000000000001677,
+          "response_decode_ms": 0,
+          "bridge_round_trip_ms": 2,
+          "worker_decode_ms": 0,
+          "runtime_python_ms": 1.000000000000334,
+          "worker_encode_previous_ms": 0,
+          "worker_encode_previous_step_id": "step-432",
+          "module_costs": [
+            {
+              "module_id": "perception",
+              "input_decode_ms": 0,
+              "update_ms": 1.000000000000334,
+              "output_build_ms": 0
+            }
+          ],
+          "module_failures": [],
+          "gate_wait_ms": 84.9999999999973
+        },
+        {
+          "step_id": "step-444",
+          "activation_tick": 444,
+          "commit_tick": 450,
+          "sample_ticks": [
+            444
+          ],
+          "modules": [
+            "perception"
+          ],
+          "started_monotonic_s": 22.49,
+          "received_monotonic_s": 22.503,
+          "commit_monotonic_s": 22.586,
+          "status": "replay_validated",
+          "failure_location": null,
+          "request_encode_ms": 0,
+          "request_write_ms": 1.0000000000012221,
+          "round_trip_ms": 13.000000000001677,
+          "response_decode_ms": 0,
+          "bridge_round_trip_ms": 2,
+          "worker_decode_ms": 0,
+          "runtime_python_ms": 0,
+          "worker_encode_previous_ms": 0,
+          "worker_encode_previous_step_id": "step-438",
+          "module_costs": [
+            {
+              "module_id": "perception",
+              "input_decode_ms": 0,
+              "update_ms": 0,
+              "output_build_ms": 0
+            }
+          ],
+          "module_failures": [],
+          "gate_wait_ms": 82.99999999999841
+        },
+        {
+          "step_id": "step-450",
+          "activation_tick": 450,
+          "commit_tick": 456,
+          "sample_ticks": [
+            450
+          ],
+          "modules": [
+            "perception"
+          ],
+          "started_monotonic_s": 22.589,
+          "received_monotonic_s": 22.603,
+          "commit_monotonic_s": 22.685,
+          "status": "replay_validated",
+          "failure_location": null,
+          "request_encode_ms": 0,
+          "request_write_ms": 0,
+          "round_trip_ms": 14.000000000002899,
+          "response_decode_ms": 0,
+          "bridge_round_trip_ms": 1,
+          "worker_decode_ms": 0,
+          "runtime_python_ms": 0,
+          "worker_encode_previous_ms": 0,
+          "worker_encode_previous_step_id": "step-444",
+          "module_costs": [
+            {
+              "module_id": "perception",
+              "input_decode_ms": 0,
+              "update_ms": 0,
+              "output_build_ms": 0
+            }
+          ],
+          "module_failures": [],
+          "gate_wait_ms": 81.99999999999719
+        },
+        {
+          "step_id": "step-456",
+          "activation_tick": 456,
+          "commit_tick": 462,
+          "sample_ticks": [
+            456
+          ],
+          "modules": [
+            "perception"
+          ],
+          "started_monotonic_s": 22.689,
+          "received_monotonic_s": 22.702,
+          "commit_monotonic_s": 22.787,
+          "status": "replay_validated",
+          "failure_location": null,
+          "request_encode_ms": 0,
+          "request_write_ms": 0,
+          "round_trip_ms": 13.000000000001677,
+          "response_decode_ms": 0,
+          "bridge_round_trip_ms": 3,
+          "worker_decode_ms": 0,
+          "runtime_python_ms": 0,
+          "worker_encode_previous_ms": 0,
+          "worker_encode_previous_step_id": "step-450",
+          "module_costs": [
+            {
+              "module_id": "perception",
+              "input_decode_ms": 0,
+              "update_ms": 0,
+              "output_build_ms": 0
+            }
+          ],
+          "module_failures": [],
+          "gate_wait_ms": 84.9999999999973
+        },
+        {
+          "step_id": "step-462",
+          "activation_tick": 462,
+          "commit_tick": 468,
+          "sample_ticks": [
+            462
+          ],
+          "modules": [
+            "perception"
+          ],
+          "started_monotonic_s": 22.79,
+          "received_monotonic_s": null,
+          "commit_monotonic_s": 22.811,
+          "status": "RESOURCE_LIMIT",
+          "failure_location": "receive_validation",
+          "request_encode_ms": 0,
+          "request_write_ms": 1.0000000000012221,
+          "elapsed_to_failure_ms": 21.000000000000796
+        }
+      ],
+      "active": null
+    },
+    "cache_report": ".m1-cache/engineering-quality-20261104/browser/browser/9021fb33d5c948c989ee46c0b10a365f/result.json",
+    "interpretation": "Wall-deadline failure preserved; individual worker/bridge costs do not identify the sole cause of Authority total latency."
+  }
+}

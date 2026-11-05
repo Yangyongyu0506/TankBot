@@ -1,0 +1,37 @@
+{
+  "step_id": "step-6",
+  "results": [
+    {
+      "module_id": "perception",
+      "status": "completed",
+      "error_code": null
+    }
+  ],
+  "outputs": [],
+  "telemetry": {
+    "modules": [
+      {
+        "module_id": "perception",
+        "input_decode_ms": 0.05,
+        "update_ms": 0.4,
+        "output_build_ms": 0.08
+      }
+    ],
+    "diagnostics": [
+      {
+        "module_id": "perception",
+        "name": "innovation",
+        "values": [
+          0.1,
+          -0.2
+        ]
+      }
+    ],
+    "transport": {
+      "worker_decode_ms": 0.03,
+      "runtime_python_ms": 0.6,
+      "worker_encode_previous_ms": 0.04,
+      "worker_encode_previous_step_id": "step-0"
+    }
+  }
+}

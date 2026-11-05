@@ -1,3 +1,4 @@
+import {renderTiming} from "./timing-ui.js";
 // Player stdout/errors only. The source identity and bounded retention come from Authority.
 export function groupLogEntries(entries){
   const groups=[];
@@ -83,6 +84,7 @@ export function mountRuntimeLogs(browser,profile){
       const result=await response.json();if(!response.ok)throw Error(result.error??"读取日志失败");
       if(runId!==result.run_id){runId=result.run_id;clearedThrough=0;}
       state=result.logs??state;for(const view of views)render(view);
+      renderTiming($("runtime-timing-content"),result.timing);
       const errors=state.entries.some(entry=>entry.sequence>=clearedThrough&&entry.stream==="error");
       $("tab-logs").classList.toggle("has-error",errors);$("tab-logs").title=errors?"程序或测试有错误，点击查看日志":"查看玩家程序输出与错误";
     }catch{for(const view of views){view.key="";view.status.textContent="暂时无法读取日志，正在重试…";}}

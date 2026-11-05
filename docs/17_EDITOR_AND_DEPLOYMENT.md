@@ -131,3 +131,7 @@ M4 新增独立的 Campaign 单模块 profile：标准输入是授权系统自�
 后续 [ADR-0040](adr/0040-stable-campaign-workspace.md) 修正默认 Campaign 身份：旧实现按启动关卡的 control_sources 选库，导致从 C0 开始游玩和直接启动 C1/C2 打开不同项目。新稳定目录首次打开时检查同 seed 的旧 profile；唯一包含非模板 Python 实现的项目优先，完整复制其历史与归档，原目录不动。多份已编辑项目时明确报 WORKSPACE_SELECTION_REQUIRED 并列出可用路径，不按时间戳猜测或覆盖同名代码。已有稳定项目总是优先；缺 HEAD 不生成新模板掩盖旧历史。升级须重启旧服务。
 
 验证：`tests/test_workspace_storage.py` 的 13 项迁移/持久化检查，以及既有 Workspace 保存、CAS、失败部署和回滚回归；当前结果见 [验收](reports/WORKSPACE_IDENTITY_VALIDATION.md)。无需改变 Game Core、玩家导入权限或 View Policy。
+
+## 工程诊断与完整项目备份增量
+
+测试快照仍是语法/接口/样例和短输入检查，不因新增算法实验台而变为完整比赛。日志面板另显示有界批次/模块/编解码/等待提交的耗时分位数；Worker数值不构成强制CPU配额，预算和门不变。F2项目维护与同输入滤波对照的当前接口见 [38](38_ENGINEERING_AND_ALGORITHM_LAB.md)。新维护操作继续使用原control-token、revision CAS、文件锁和原子HEAD。

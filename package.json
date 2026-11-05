@@ -4,7 +4,9 @@
   "version": "0.1.0",
   "scripts": {
     "build": "node tools/build_editor.mjs",
-    "test": "node tests/test_rendering.mjs"
+    "test": "node tools/test_frontend.mjs",
+    "test:wasm": "node tools/test_frontend.mjs --wasm",
+    "test:browser": "python3 tools/test_browser.py"
   },
   "dependencies": {
     "@codemirror/commands": "6.11.1",

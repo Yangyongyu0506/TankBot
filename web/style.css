@@ -135,3 +135,19 @@ footer{margin:0 24px;padding:0;align-items:center;gap:12px;min-width:0;overflow:
 .level-detail-content{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain}.level-detail-actions{flex-shrink:0;padding-top:10px;border-top:1px solid #2d4338}.level-detail-actions #start-selected-level{margin-top:0}#level-tree-error:empty{display:none}
 
 .level-detail-actions #level-lock-reason{font-size:12px;line-height:1.6;max-height:4.8em;overflow:auto;margin:0 0 8px}
+
+/* Engineering tools keep scrolling inside their dialogs. */
+#experiment-dialog,#storage-dialog{width:min(1200px,96vw);max-height:94vh;overflow:auto;padding:24px;border:1px solid #406653;background:#0c1819;color:#d8e7e3;border-radius:12px}
+#experiment-dialog::backdrop,#storage-dialog::backdrop{background:#020909ce}
+.experiment-results{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+.experiment-results section{min-width:0;border:1px solid #28473e;border-radius:8px;padding:12px}
+.experiment-results figure{margin:14px 0}.experiment-results svg{display:block;width:100%;background:#0b2021}.experiment-results svg text{font:10px monospace;fill:#b7ccc5}
+.experiment-results pre,#runtime-timing-content pre,#storage-preview{max-height:240px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px}
+.experiment-error{color:#ffb5b5}#runtime-timing-content table{width:100%;font-size:11px}#runtime-timing-content td{padding:3px;border-bottom:1px solid #28473e}
+#experiment-message{min-height:24px;color:#efcc81}#experiment-dialog .workspace-toolbar label{max-width:100%}
+@media(max-width:850px){.experiment-results{grid-template-columns:1fr}}
+.storage-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}.storage-summary p{border:1px solid #28473e;padding:10px}.storage-list{max-height:220px;overflow:auto;display:grid;gap:8px}.storage-list label{display:flex;align-items:center;gap:8px}#storage-recovery>div{padding:10px;border-bottom:1px solid #28473e}#storage-keep{width:90px}
+#experiment-dialog button,#storage-dialog button{font:inherit;padding:8px 12px;border:1px solid #426f5d;border-radius:5px;background:#16372c;color:#c9efde;cursor:pointer}
+#experiment-dialog button:disabled,#storage-dialog button:disabled{opacity:.45;cursor:default}
+#experiment-dialog select,#storage-dialog input[type=number]{font:inherit;padding:7px;background:#10251f;color:#d7ebe3;border:1px solid #426f5d;border-radius:4px;max-width:100%}
+#experiment-dialog .workspace-toolbar,#storage-dialog .workspace-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:12px 0}

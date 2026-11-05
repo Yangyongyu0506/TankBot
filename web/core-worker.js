@@ -89,6 +89,11 @@ self.onmessage=async({data})=>{
         py.runPython("_value=json.loads(_command)\nassert isinstance(_value,dict) and set(_value)=={'module_id'}\nauthority.select_pose_source(_value['module_id'])\n_reply={'selected_source':authority.selector.source_id}");
         self.postMessage({kind:"response",id:data.id,ok:true,value:evaluate("_reply")});return;
       }
+      if(data.path.startsWith("/api/experiment/")){
+        py.globals.set("_experiment_operation",data.path.split("/").at(-1));
+        py.runPython("from tankbot_host.management import experiment_command\n_reply=experiment_command(authority,_experiment_operation,json.loads(_command))");
+        self.postMessage({kind:"response",id:data.id,ok:true,value:evaluate("_reply")});return;
+      }
       if(data.path.startsWith("/api/deployment")){
         if(data.path==="/api/deployment")py.runPython("_reply=authority.deployment.status()");
         else {

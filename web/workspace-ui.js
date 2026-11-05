@@ -1,3 +1,4 @@
+import {mountStorage} from "/storage-ui.js";
 // Workspace changes are explicit revisions; renderer and input controls do not own player code.
 import {mountLearning} from "/learning-ui.js";
 import {sourceLocation} from "/runtime-logs.js";
@@ -177,9 +178,12 @@ export async function mountWorkspace(browser){
         pendingDeploymentId=null;
         if(status.last.status==="Active"&&!status.attempt_status)$("workspace-dialog").close();
       }
+      const references=[...new Set([...status.history.map(item=>item.revision),status.active?.revision,status.last?.revision].filter(Boolean))];
+      await http("protect",{revisions:references});
       refresh();
     }catch(error){message(error.message);}
     setTimeout(poll,initial.limits.poll_ms);
   }
+  mountStorage({request:http,beforeOpen:save,onRestored:()=>location.reload()});
   root.dataset.ready="true";poll();
 }

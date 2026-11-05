@@ -10,7 +10,7 @@ import copy
 import tempfile
 import codecs
 from .logs import RuntimeLogs
-from tankbot_protocol.wire import send, receive
+from tankbot_protocol.wire import send, receive, encode
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -33,6 +33,8 @@ class Supervisor:
         self.logs = RuntimeLogs(config["runtime"]["max_log_bytes"])
         self.workspace_path = init["workspace"]
         self.budget = config["runtime"]["batch_budget_ms"] / 1000
+        from .runtime_timing import RuntimeTiming
+        self.timing = RuntimeTiming(self.budget*1000, "native")
         self.condition = threading.Condition()
         self.active = None
         self.result = None
@@ -94,7 +96,8 @@ class Supervisor:
     def _read(self):
         try:
             while True:
-                value = receive(self.proc.stdout, self.limit)
+                decode = {}
+                value = receive(self.proc.stdout, self.limit, timing=decode)
                 received = time.monotonic()
                 with self.condition:
                     if self.closed:
@@ -108,12 +111,14 @@ class Supervisor:
                         self.fault = "RESOURCE_LIMIT"
                         self._kill()
                         return
+                    self.timing.received(value, received, **decode)
                     self.result = (value, received)
                     self.condition.notify_all()
         except (EOFError, ValueError, OSError, RecursionError):
             with self.condition:
                 if not self.closed:
                     self.fault = self.fault or "MODULE_ERROR"
+                    self.timing.finish(self.fault,"response_decode_or_transport")
                     self.condition.notify_all()
 
     def _read_logs(self):
@@ -158,6 +163,7 @@ class Supervisor:
                     self.condition.wait(remaining)
                 else:
                     self.fault = "RESOURCE_LIMIT"
+                    self.timing.finish(self.fault, "wall_deadline")
                     self._kill()
                     self.condition.notify_all()
                     return
@@ -170,7 +176,14 @@ class Supervisor:
             self.active = request["request_id"]
             self.expires = self.started+self.budget
             self.result = None
-            send(self.proc.stdin, request, self.limit)
+            self.timing.begin(request, self.started)
+            encode_started = time.monotonic()
+            encoded = encode(request, self.limit)
+            encoded_at = time.monotonic()
+            self.proc.stdin.write(encoded)
+            self.proc.stdin.flush()
+            sent_at = time.monotonic()
+            self.timing.sent(request_encode_ms=(encoded_at-encode_started)*1000, request_write_ms=(sent_at-encoded_at)*1000)
             self.condition.notify_all()
             return True
 
@@ -186,11 +199,13 @@ class Supervisor:
             result = self.result
             if self.fault or result is None or result[1] > self.expires:
                 self.fault = self.fault or "MISSED_DEADLINE"
+                self.timing.finish(self.fault, "commit_gate" if self.fault == "MISSED_DEADLINE" else "wall_deadline")
                 self._kill()
                 self.active = None
                 self.condition.notify_all()
                 return None
             self.batch_times_ms.append((result[1]-self.started)*1000)
+            self.timing.finish()
             self.result, self.active = None, None
             self.condition.notify_all()
             return result[0]
@@ -198,6 +213,7 @@ class Supervisor:
     def close(self):
         with self.condition:
             self.closed = True
+            self.timing.finish(self.fault or "CANCELLED", "worker_close")
             self._kill()
             self.condition.notify_all()
         self.proc.wait(timeout=5)

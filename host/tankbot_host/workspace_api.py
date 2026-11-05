@@ -24,6 +24,9 @@ class WorkspaceAPI:
     def __init__(self, config, seed=None, directory=None):
         self.config = config
         self.store = open_store(config, seed, directory)
+        from .workspace_maintenance import WorkspaceMaintenance
+        self.maintenance = WorkspaceMaintenance(self.store)
+        with self.store.transaction():self.maintenance._recover_pending()
         if config.get("campaign", {}).get("active_level"):
             self.unlock(config)
 
@@ -51,6 +54,40 @@ class WorkspaceAPI:
         return self.get()
 
     def post(self, operation, value):
+        tools={"storage":set(),"revisions":set(),"pin":{"revision","target_revision","enabled"},
+               "backup_export":set(),"backup_create":set(),"backup_preview":{"backup","revision"},
+               "backup_apply":{"plan_id","revision"},"backup_cleanup_plan":{"revision","backup_ids"},
+               "backup_cleanup_apply":{"plan_id","revision"},"cleanup_plan":{"revision","keep_recent","archives"},
+               "cleanup_apply":{"plan_id","revision"},"recovery_restore":{"id","revision"},"recovery_purge":{"id","revision"},
+               "experiment_save":{"package"},"experiment_list":set(),"experiment_load":{"id"},"protect":{"revisions"}}
+        if operation in tools:
+            if not isinstance(value,dict) or set(value)!=tools[operation]:raise ValueError("INVALID_STORAGE_REQUEST")
+            m=self.maintenance
+            if operation=="storage":return m.inventory()
+            if operation=="revisions":return m.revisions()
+            if operation=="pin":return m.pin(value["revision"],value["target_revision"],value["enabled"])
+            if operation=="backup_create":return m.backup()
+            if operation=="backup_export":
+                backup=m.backup();return m._backup(backup["backup_id"])
+            if operation=="backup_preview":return m.preview_restore(value["backup"],value["revision"])
+            if operation=="backup_apply":return m.apply_restore(value["plan_id"],value["revision"])
+            if operation=="backup_cleanup_plan":return m.backup_cleanup_plan(value["revision"],value["backup_ids"])
+            if operation=="backup_cleanup_apply":return m.backup_cleanup_apply(value["plan_id"],value["revision"])
+            if operation=="cleanup_plan":return m.cleanup_plan(value["revision"],value["keep_recent"],value["archives"])
+            if operation=="cleanup_apply":return m.cleanup_apply(value["plan_id"],value["revision"])
+            if operation=="recovery_restore":return m.restore_cleanup(value["id"],value["revision"])
+            if operation=="recovery_purge":return m.purge_recovery(value["id"],value["revision"])
+            if operation=="experiment_list":return m.experiment_list()
+            if operation=="experiment_load":return m.experiment_load(value["id"])
+            if operation=="experiment_save":
+                from tankbot_protocol.validation import Validator
+                return m.experiment_save(value["package"],Validator(self.config,"workspace"))
+            if operation=="protect":
+                revisions=value["revisions"]
+                if not isinstance(revisions,list) or len(revisions)>self.maintenance.limits['max_pins']:raise ValueError("INVALID_PROTECTED_REVISIONS")
+                for revision in revisions:self.store.read(revision)
+                self.store.protected_revisions=set(revisions)
+                return {"protected":sorted(self.store.protected_revisions)}
         if operation == "save":
             return self.store.edit(value["revision"], value["changes"])
         if operation == "upgrade":

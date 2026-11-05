@@ -87,6 +87,7 @@ def catalog(config):
                 "chapter_id":value.get("chapter_id"),"control_sources":copy.deepcopy(value.get("control_sources")),"armor_mode":value.get("armor_mode",False),"ui":copy.deepcopy(value["tutorial"]["lesson"]["ui"]),"visualization":copy.deepcopy(value["visualization"]),"allowed_layers":copy.deepcopy(value["permissions"]["visualization"]["allowed_layers"])}
         item.update(prerequisites=copy.deepcopy(value["metadata"]["prerequisites"]),
                     order=value["metadata"]["order"],description=value["metadata"]["description"])
+        if value["evaluation"].get("experiment"):item["experiment"]=copy.deepcopy(value["evaluation"]["experiment"])
         route=value["rules"].get("waypoint_route")
         if route and "waypoints" in item["allowed_layers"]:
             item["navigation"]={key:copy.deepcopy(route[key]) for key in ("points_m","position_tolerance_m","stop_duration_ticks")}

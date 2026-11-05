@@ -34,6 +34,7 @@ class GraphRunner:
                 runner.context = context
             self.reset_done = True
         results, outputs = [], []
+        telemetry = {"modules": [], "diagnostics": []}
         for call in request["payload"]["modules"]:
             mid = call["module_id"]
             child = copy.deepcopy(request)
@@ -41,9 +42,10 @@ class GraphRunner:
             result = self.runners[mid].step(child)["payload"]
             results.extend(result["results"])
             outputs.extend(result["outputs"])
+            for key in telemetry:telemetry[key].extend(result.get("telemetry", {}).get(key, []))
         tick = request["payload"]["activation_tick"]
         response = envelope("runtime_step_result@1","/runtime/step",{
-            "step_id":request["request_id"],"results":results,"outputs":outputs},tick=tick,
+            "step_id":request["request_id"],"results":results,"outputs":outputs,"telemetry":telemetry},tick=tick,
             hz=self.init["physics_hz"],run_id=self.init["run_id"],publisher_id="runtime",sequence=self.sequence,
             message_type="service_response",request_id=request["request_id"])
         self.sequence += 1

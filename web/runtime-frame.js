@@ -21,7 +21,7 @@ window.addEventListener("message",event=>{
         const state={worker:new Worker("/robot-worker.js"),active:false,booting:true,timer:null,started:0,logBytes:0,logLines:0,logNotice:false};
         const emit=v=>port.postMessage({...v,worker_id});
         state.stop=()=>{clearTimeout(state.timer);state.worker.terminate();workers.delete(worker_id);};
-        state.fault=(code,detail="")=>{state.stop();emit({op:"fault",code,detail:String(detail).slice(0,256)});};
+        state.fault=(code,detail="",location="runtime_bridge")=>{state.stop();emit({op:"fault",code,detail:String(detail).slice(0,256),location});};
         workers.set(worker_id,state);
         state.worker.onerror=e=>state.fault("MODULE_ERROR",e.message);
         state.worker.onmessage=({data:result})=>{
@@ -35,7 +35,7 @@ window.addEventListener("message",event=>{
           }
           if(result?.op==="progress"&&state.booting){emit({op:"progress",phase:result.phase});return;}
           if(result?.op==="fault"){state.fault("MODULE_ERROR",result.detail);return;}
-          if(result?.op==="ready"&&state.booting){state.booting=false;clearTimeout(state.timer);emit({op:"ready",security:result.security,memory_bytes:result.memory_bytes,unit_tests:result.unit_tests});return;}
+          if(result?.op==="ready"&&state.booting){state.booting=false;clearTimeout(state.timer);emit({op:"ready",security:result.security,memory_bytes:result.memory_bytes,unit_tests:result.unit_tests,runtime_packages:result.runtime_packages});return;}
           if(!state.active||result?.op!=="result"||typeof result.raw!=="string"||new TextEncoder().encode(result.raw).length>value.limit){state.fault("RESOURCE_LIMIT");return;}
           state.active=false;clearTimeout(state.timer);emit({op:"result",raw:result.raw,elapsed_ms:performance.now()-state.started});
         };
@@ -46,7 +46,7 @@ window.addEventListener("message",event=>{
         if(!old||old.active||old.booting)throw Error("Runtime not ready");
         old.active=true;old.started=performance.now();
         old.logBytes=0;old.logLines=0;old.logNotice=false;
-        old.timer=setTimeout(()=>old.fault("RESOURCE_LIMIT"),old.budget);
+        old.timer=setTimeout(()=>old.fault("RESOURCE_LIMIT","Batch wall deadline","wall_deadline"),old.budget);
         old.worker.postMessage({op,raw:JSON.stringify(value)});
       }else throw Error("Unknown operation");
     }catch(error){

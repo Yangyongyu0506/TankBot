@@ -3,6 +3,9 @@ import contextlib
 import importlib
 import sys
 import traceback
+import time
+from tankbot.messages import decode_message
+from tankbot.diagnostics import diagnostic_scope
 from importlib.metadata import PackageNotFoundError, version
 from dataclasses import asdict
 from tankbot import Module, ModuleContext, Inputs, Sample, Pose2D, RadarData, ArmorDetections, ImuData, JointState, WeaponState, FireCommand, TargetEstimate, TargetPoseEstimate, TargetPoints, GpsFixData, PositionFix2D, WaypointGoal, PolarTargetEstimate, Twist, Vector3, TurretAcceleration, TurretVelocity
@@ -28,6 +31,10 @@ class ModuleRunner:
         self.init = init
         self.sequence = 0
         config = init["config"]
+        if "experiment_seed" in init:
+            import random
+            import numpy as np
+            random.seed(init["experiment_seed"]);np.random.seed(init["experiment_seed"])
         self.contract = contract = init["contract"]
         start_tick = init.get("start_tick", 0)
         context = ModuleContext(start_tick, 0.0, start_tick, config)
@@ -44,11 +51,8 @@ class ModuleRunner:
                 module.reset(context, init.get("reset_reason", "new_run"))
 
     def step(self, request):
+        decode_started = time.perf_counter()
         init, contract, config = self.init, self.contract, self.init["config"]
-        converters = {"position_fix2d@1":PositionFix2D,"imu@1": ImuData, "radar@1": RadarData, "armor_detections@1":ArmorDetections,"pose2d@1": Pose2D,"target_estimate@1":TargetEstimate,"target_pose_estimate@1":TargetPoseEstimate,"target_points@1":TargetPoints,"gps_fix@1":GpsFixData,"target_polar_estimate@1":PolarTargetEstimate,"turret_acceleration@1":TurretAcceleration,"turret_velocity@1":TurretVelocity,
-                      "waypoint_goal@1":WaypointGoal,
-                      "twist@1":lambda **p:Twist(Vector3(**p["linear"]),Vector3(**p["angular"])),
-                      "joint_state@1": lambda **p: JointState(**{k: tuple(v) for k, v in p.items()}), "weapon_state@1": WeaponState}
         p = request["payload"]
         tick = p["activation_tick"]
         context = ModuleContext(tick, p["modules"][0]["dt_ticks"] / init["physics_hz"], p["output_commit_tick"], config)
@@ -57,11 +61,14 @@ class ModuleRunner:
             candidates = [m for m in p["inputs"] if m["channel"] == channel]
             if candidates:
                 m = max(candidates, key=lambda x: (x["simulation_tick"], x["sequence_number"]))
-                samples[port] = Sample(converters[m["schema"]](**m["payload"]), m["simulation_tick"], m["frame_id"], m["sequence_number"])
+                samples[port] = Sample(decode_message(m["schema"], m["payload"]), m["simulation_tick"], m["frame_id"], m["sequence_number"])
         outputs = []
+        update_started = time.perf_counter()
+        update_finished = update_started
         try:
-            with contextlib.redirect_stdout(sys.stderr):
+            with contextlib.redirect_stdout(sys.stderr), diagnostic_scope(context):
                 self.module.update(Inputs(samples), context)
+            update_finished = time.perf_counter()
             for port, schema, payload, frame, sample_tick in context._outputs:
                 if port not in init["output_channels"] or contract["outputs"][port]["schema"] != schema:
                     raise ValueError("Undeclared output port/type")
@@ -85,7 +92,12 @@ class ModuleRunner:
             traceback.print_exc(file=sys.stderr)
             outputs = []
             status, error = "failed", "MODULE_ERROR"
-        result = {"step_id": p["step_id"], "results": [{"module_id": contract["module_id"], "status": status, "error_code": error}], "outputs": outputs}
+        finished = time.perf_counter()
+        if update_finished == update_started:update_finished = finished
+        telemetry = {"modules": [{"module_id": contract["module_id"], "input_decode_ms": (update_started-decode_started)*1000,
+                                  "update_ms": (update_finished-update_started)*1000, "output_build_ms": (finished-update_finished)*1000}],
+                     "diagnostics": [{"module_id": contract["module_id"], **item} for item in context._diagnostics]}
+        result = {"telemetry": telemetry, "step_id": p["step_id"], "results": [{"module_id": contract["module_id"], "status": status, "error_code": error}], "outputs": outputs}
         response = envelope("runtime_step_result@1", "/runtime/step", result, tick=tick,
                             hz=init["physics_hz"], run_id=init["run_id"], publisher_id="runtime",
                             sequence=self.sequence, message_type="service_response", request_id=p["step_id"])

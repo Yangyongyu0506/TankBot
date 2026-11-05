@@ -185,6 +185,8 @@ class GraphExecution:
         validator.validate(header, now=a.tick, source_tick=tick, grants={("runtime","/runtime/step","runtime_step_result@1",None)})
         p = header["payload"]
         expected = [m["module_id"] for m in request["payload"]["modules"]]
+        from .experiments import check_diagnostics,diagnostic_policy
+        check_diagnostics(response,diagnostic_policy(a),expected)
         if response["request_id"] != request["request_id"] or p["step_id"] != request["request_id"] or response["simulation_tick"] != tick or [r["module_id"] for r in p["results"]] != expected:
             raise Rejected("INVALID_GRAPH_RESPONSE")
         publishers = {m["publisher_id"]:mid for mid,m in self.graph["modules"].items()}

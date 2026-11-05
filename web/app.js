@@ -1,3 +1,4 @@
+import {mountExperiments} from "/experiment-ui.js";
 import {SceneTimeline, FollowCamera, drawChassis, drawTurret, drawTarget, drawArmor} from "/rendering.js";
 import {mountWorkspace, setupWorkspaceDialog} from "/workspace-ui.js";
 import {connectBrowser} from "/browser-client.js";
@@ -87,7 +88,7 @@ function sampleGamepad(now){
   let frame,error="";
   try{
     if(joy.enabled&&typeof navigator.getGamepads!=="function")throw Error("浏览器不支持手柄 API");
-    frame=joy.sample(joy.enabled?navigator.getGamepads():[],{motionAllowed:canDrive(),uiAllowed:visibleFocused()&&!$("map-dialog").open&&!$("settings-dialog").open&&!$("control-dialog")?.open&&!$("level-tree-dialog")?.open});
+    frame=joy.sample(joy.enabled?navigator.getGamepads():[],{motionAllowed:canDrive(),uiAllowed:visibleFocused()&&!document.querySelector("dialog[open]:not(#workspace-dialog)")});
   }catch{
     joy.suspend(true);frame={...neutralControls(),devices:[],device:null,status:"unavailable"};
     error=isSecureContext?"浏览器未开放手柄访问；请检查浏览器设置。":"手柄需要 HTTPS 或 localhost；请使用安全地址。";
@@ -342,6 +343,7 @@ try {
   camera = new FollowCamera(profile.rendering.camera_origin_m);
   visualization=mountVisualization(profile,settings);
   mountRuntimeLogs(browser,profile);
+  mountExperiments(browser,profile,releaseControls);
   statsSince = performance.now();
   const omni = profile.chassis === "omnidirectional";
   joy=new GamepadDriver(profile.view.gamepad,profile.chassis);

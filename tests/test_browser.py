@@ -40,6 +40,10 @@ class BrowserTests(unittest.TestCase):
                 with patch("browser_authority.time.monotonic",return_value=1):
                     sup.submit({"request_id":"step-6"});sup.receive(raw,elapsed)
                     self.assertIsNone(sup.finish());self.assertEqual(sup.fault,"RESOURCE_LIMIT")
+                    timing=sup.timing.public()
+                    self.assertEqual(timing['recent'][-1]['failure_location'],
+                                     'wall_deadline' if elapsed>20 else 'receive_validation')
+                    if elapsed>20:self.assertEqual(timing['costs']['bridge_round_trip_ms']['p99_ms'],elapsed)
 
     @unittest.skipUnless((ROOT/"build/browser/authority-bundle.json").exists(),"Run tools/prepare_browser.py for launcher HTTP checks")
     def test_runtime_origin_never_serves_authority_workspace_or_private_config(self):

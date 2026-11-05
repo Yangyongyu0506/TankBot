@@ -4140,6 +4140,26 @@
           "target": "patrol_enemy"
         },
         "evaluation": {
+          "experiment": {
+            "type": "target_filter_replay",
+            "description": "部署后录制授权的自身位姿和Radar，停止录制并结束尝试，再比较两个保存版本。可查看估计、协方差、累计/分段误差及异常。此结果不代替完整击杀通关；导出不含敌车真值。",
+            "input_channels": [
+              "/robot/localization/pose",
+              "/robot/sensors/radar"
+            ],
+            "output_schema": "target_estimate@1",
+            "metric": "rmse_m",
+            "error_feedback": [
+              "sample_error_m",
+              "cumulative_rmse_m",
+              "segment_rmse_m"
+            ],
+            "diagnostics": {
+              "innovation": 2,
+              "innovation_covariance": 4,
+              "nis": 1
+            }
+          },
           "type": "terminal_diagnostics",
           "publish_on": "terminal",
           "live_feedback": {

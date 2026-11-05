@@ -606,6 +606,9 @@
           },
           "minItems": 0,
           "maxItems": 128
+        },
+        "telemetry": {
+          "$ref": "#/$defs/runtime_telemetry"
         }
       },
       "required": [
@@ -1870,6 +1873,111 @@
       "required": [
         "goal_index",
         "position_m"
+      ],
+      "additionalProperties": false
+    },
+    "runtime_telemetry": {
+      "type": "object",
+      "properties": {
+        "modules": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "type": "object",
+            "properties": {
+              "module_id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]{0,47}$"
+              },
+              "input_decode_ms": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1000000
+              },
+              "update_ms": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1000000
+              },
+              "output_build_ms": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1000000
+              }
+            },
+            "required": [
+              "module_id",
+              "input_decode_ms",
+              "update_ms",
+              "output_build_ms"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "diagnostics": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "type": "object",
+            "properties": {
+              "module_id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]{0,47}$"
+              },
+              "name": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]{0,47}$"
+              },
+              "values": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 9,
+                "items": {
+                  "type": "number"
+                }
+              }
+            },
+            "required": [
+              "module_id",
+              "name",
+              "values"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "transport": {
+          "type": "object",
+          "properties": {
+            "worker_decode_ms": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1000000
+            },
+            "runtime_python_ms": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1000000
+            },
+            "worker_encode_previous_ms": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1000000
+            },
+            "worker_encode_previous_step_id": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          "required": [
+            "worker_decode_ms",
+            "runtime_python_ms"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "modules",
+        "diagnostics"
       ],
       "additionalProperties": false
     }

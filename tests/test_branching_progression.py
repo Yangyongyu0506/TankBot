@@ -113,6 +113,7 @@ class BranchingProgressionTests(unittest.TestCase):
         for path in (ROOT/'levels').glob('*.yaml'):
             value=yaml.safe_load(path.read_text());lid=value['metadata']['id'];value['metadata'].pop('prerequisites')
             if lid not in frozen:continue
+            value['evaluation'].pop('experiment',None)  # New lab capability is independent of frozen gameplay.
             seen.add(lid)
             hints=value['tutorial'].pop('hints')
             self.assertEqual([hint for hint in hints if not hint.startswith('可选补充练习：')],frozen[lid]['hints'])

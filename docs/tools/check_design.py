@@ -40,6 +40,10 @@ def strict_json(text):
 
 
 def schema_for(value):
+    if "backup_version" in value:return "workspace-backup.schema.json", None
+    if "record_version" in value:return "experiment.schema.json", None
+    if "experiment_version" in value:return "experiment-package.schema.json", None
+    if "lab" in value and "timing" in value and "storage" in value:return "engineering.schema.json", None
     if "message_type" in value:
         return "envelope.schema.json", None
     if "geometry_version" in value:

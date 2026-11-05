@@ -1,0 +1,25 @@
+version: '1.0'
+# 工程工具配额；不改变游戏物理、20 ms预算或正式关卡评分。
+lab:
+  max_batches: 120
+  max_record_bytes: 131072
+  max_saved_records: 16
+  max_comparisons: 2
+  segment_ticks: 120
+  diagnostic_max_events: 8
+  diagnostic_max_values: 9
+  poll_ms: 500
+timing:
+  max_batches: 512
+  max_public_samples: 32
+storage:
+  max_backup_bytes: 33554432
+  max_backup_files: 4096
+  max_cleanup_plans: 8
+  keep_recent_revisions: 20
+  warning_bytes: 16777216
+  max_pins: 64
+ui:
+  series_colors: ['#78ddb0', '#74b9ff', '#e7bf72', '#df8f9f']
+  plot_width: 640
+  plot_height: 150

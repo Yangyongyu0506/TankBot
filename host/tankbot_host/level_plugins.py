@@ -412,6 +412,19 @@ def _validate(value, filename, config, validator):
                 fail("evaluation.live_feedback.reference_metric","reference metric must match a configured comparison publisher")
             if entry["reference_metric"] not in value["permissions"]["visualization"].get("allowed_metrics",[]):
                 fail("evaluation.live_feedback.reference_metric","comparison metric visualization is not authorized")
+    experiment=evaluation.get("experiment")
+    if experiment:
+        from .engineering import settings
+        max_values=settings()["lab"]["diagnostic_max_values"]
+        for name,size in experiment["diagnostics"].items():
+            if size>max_values:fail(f"evaluation.experiment.diagnostics.{name}","diagnostic exceeds engineering max_values")
+        if (runtime["mode"]!="single" or grants["actuators"] or references
+                or grants["outputs"]!=[experiment["output_schema"]]
+                or not set(experiment["input_channels"])<=set(grants["inputs"])):
+            fail("evaluation.experiment","filter replay requires one module, existing input grants, target outputs and no actuator grants")
+        if (experiment["metric"] not in value["permissions"]["visualization"].get("allowed_metrics",[])
+                or "target_estimates" not in value["permissions"]["visualization"]["allowed_layers"]):
+            fail("evaluation.experiment","experiment results need explicit estimate and metric visualization grants")
     if value["evaluation"].get("source")=="player_pose":
         if "pose2d@1" not in grants["outputs"] or runtime["manifest"]["pose_source"]["mode"]!="player":
             fail("evaluation.source","pose evaluation requires an authorized player pose publisher selected for display")

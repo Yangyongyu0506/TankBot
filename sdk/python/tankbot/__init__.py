@@ -347,11 +347,24 @@ class ModuleContext:
         self.config: Mapping[str, Any] = freeze(config)
         self._outputs: list[tuple[str, str, dict[str, Any], str, int]] = []
         self._commands: list[tuple[str, str]] = []
+        self._diagnostics: list[dict[str, Any]] = []
+
+    def diagnostic(self, name: str, value: Any) -> None:
+        policy = self.config.get("diagnostic_policy", {})
+        channels = policy.get("channels", {})
+        if name not in channels:
+            raise PermissionError("未授权算法诊断：" + str(name))
+        if len(self._diagnostics) >= policy["max_events"]:
+            raise ValueError("算法诊断超过本批次数量上限")
+        array = np.asarray(value)
+        if array.dtype.kind not in "fiu" or array.size != channels[name] or not np.isfinite(array).all():
+            raise ValueError("诊断值须为有限实数，元素数量必须与授权一致")
+        self._diagnostics.append({"name": name, "values": array.astype(np.float64).ravel().tolist()})
 
     def publish(self, port: str, value: Any, *, frame_id: str,
                 simulation_tick: int | None = None) -> None:
-        types: dict[type, str] = {Pose2D: "pose2d@1", TargetEstimate: "target_estimate@1", TargetPoseEstimate:"target_pose_estimate@1", TargetPoints:"target_points@1", PolarTargetEstimate:"target_polar_estimate@1", Twist: "twist@1", TurretVelocity: "turret_velocity@1", TurretAcceleration:"turret_acceleration@1"}
-        types[WheelVoltage] = "wheel_voltage@1"
+        from .messages import OUTPUT_SCHEMAS
+        types = OUTPUT_SCHEMAS
         if type(value) not in types:
             raise TypeError("Unsupported output value")
         payload: dict[str, Any] = asdict(value)
@@ -383,3 +396,6 @@ class Module:
 
     def teardown(self, ctx: ModuleContext) -> None:
         pass
+
+# Optional diagnostics do not alter the Module lifecycle or algorithm signatures.
+from .diagnostics import diagnostic

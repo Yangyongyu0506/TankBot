@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tankbot.example/schemas/v1/experiment-package.schema.json",
+  "type": "object",
+  "properties": {
+    "experiment_version": {
+      "const": "1.0"
+    },
+    "record": {
+      "$ref": "experiment.schema.json"
+    },
+    "comparisons": {
+      "type": "array",
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "maxProperties": 16
+      }
+    },
+    "evaluation_reference_exported": {
+      "const": false
+    },
+    "reimport_scoring": {
+      "type": "string",
+      "maxLength": 512
+    }
+  },
+  "required": [
+    "experiment_version",
+    "record",
+    "comparisons",
+    "evaluation_reference_exported",
+    "reimport_scoring"
+  ],
+  "additionalProperties": false
+}

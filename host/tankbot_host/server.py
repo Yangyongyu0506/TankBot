@@ -1,3 +1,4 @@
+from .management import UI_RESOURCES,experiment_command
 """Loopback development server with a narrow, authorized HTTP adapter."""
 import copy
 import json
@@ -101,6 +102,9 @@ class LocalServer:
                     except (ValueError,Rejected):
                         self.reply(400,b'{"error":"INVALID_CURSOR"}');return
                     self.reply(200, json.dumps(value).encode())
+                elif path == "/api/experiment":
+                    with owner.lock:value=owner.authority.lab.status()
+                    self.reply(200,json.dumps(value,allow_nan=False).encode())
                 elif path == "/api/deployment":
                     with owner.lock:
                         value = owner.authority.deployment.status()
@@ -116,7 +120,7 @@ class LocalServer:
                         else:
                             value = copy.deepcopy(owner.authority.view)
                     self.reply(200, json.dumps(value, allow_nan=False).encode())
-                elif path in ("/", "/index.html", "/app.js", "/rendering.js", "/browser-client.js", "/style.css", "/workspace-ui.js", "/file-tree.js", "/workspace-dialog.js", "/campaign-ui.js", "/level-tree.js", "/live-metrics.js", "/control-feedback.js", "/learning-ui.js", "/gamepad.js", "/settings-ui.js", "/keyboard.js", "/visualization.js", "/localization-view.js", "/navigation-view.js", "/runtime-logs.js", "/robot-graph.js", "/map-preview.js"):
+                elif path == "/" or path[1:] in UI_RESOURCES:
                     file = ROOT / "web" / ("index.html" if path == "/" else path[1:])
                     kind = {".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css"}[file.suffix]
                     self.reply(200, file.read_bytes(), kind)
@@ -129,21 +133,31 @@ class LocalServer:
                 if not self.valid_host() or self.headers.get("Origin") not in origins or self.headers.get("X-TankBot-Control") != owner.token:
                     self.reply(403, b'{}')
                     return
-                if self.path not in ("/api/settings", "/api/cmd_vel", "/api/turret_cmd_vel", "/api/fire", "/api/campaign/start", "/api/campaign/finish", "/api/pose_source") and not self.path.startswith(("/api/workspace/", "/api/deployment/")):
+                if self.path not in ("/api/settings", "/api/cmd_vel", "/api/turret_cmd_vel", "/api/fire", "/api/campaign/start", "/api/campaign/finish", "/api/pose_source") and not self.path.startswith(("/api/workspace/", "/api/deployment/", "/api/experiment/")):
                     self.reply(404, b'{}')
                     return
                 try:
                     size = int(self.headers.get("Content-Length", "0"))
-                    if self.headers.get("Content-Type") != "application/json" or not 0 < size <= config["runtime"]["max_message_bytes"]:
+                    from .engineering import settings as engineering_settings
+                    request_limit=engineering_settings()["storage"]["max_backup_bytes"] if self.path=="/api/workspace/backup_preview" else config["runtime"]["max_message_bytes"]
+                    if self.headers.get("Content-Type") != "application/json" or not 0 < size <= request_limit:
                         raise ValueError("Invalid frame size/type")
                     self.connection.settimeout(config["runtime"]["startup_timeout_s"])
                     value = strict_loads(self.rfile.read(size))
                     if self.path.startswith("/api/workspace/"):
-                        result = owner.workspace.post(self.path.rsplit("/", 1)[1], value)
+                        with owner.lock:
+                            owner.workspace.store.protected_revisions={item["revision"] for item in owner.authority.deployment.artifacts.values()}
+                            result = owner.workspace.post(self.path.rsplit("/", 1)[1], value)
                         self.reply(200, json.dumps(result).encode())
                         return
                     with owner.lock:
-                        if self.path == "/api/settings":
+                        if self.path.startswith("/api/experiment/"):
+                            operation=self.path.rsplit("/",1)[1]
+                            if operation=="compare":
+                                if not isinstance(value,dict) or set(value)!={"revision"}:raise ValueError("INVALID_EXPERIMENT_REQUEST")
+                                value={"snapshot":owner.workspace.store.read(value["revision"])}
+                            result=experiment_command(owner.authority,operation,value)
+                        elif self.path == "/api/settings":
                             if owner.application is None:
                                 raise ValueError("SETTINGS_UNAVAILABLE")
                             owner.save_progress()

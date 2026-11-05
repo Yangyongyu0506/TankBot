@@ -2,6 +2,7 @@
 import json
 import math
 import struct
+import time
 
 
 def strict_loads(data):
@@ -61,11 +62,15 @@ def read_exact(stream, size):
     return bytes(chunks)
 
 
-def receive(stream, limit):
+def receive(stream, limit, timing=None):
     size = struct.unpack("!I", read_exact(stream, 4))[0]
     if size > limit:
         raise ValueError("RESOURCE_LIMIT")
-    return strict_loads(read_exact(stream, size))
+    raw = read_exact(stream, size)
+    started = time.monotonic()
+    value = strict_loads(raw)
+    if timing is not None:timing["response_decode_ms"] = (time.monotonic()-started)*1000
+    return value
 
 
 def send(stream, value, limit):

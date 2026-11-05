@@ -18,7 +18,8 @@ def environment(config, core_sha256, runtime_packages=None):
     paths += list((ROOT / "runtime").glob("*.py"))
     paths += list((ROOT / "host/tankbot_host").glob("*.py"))
     paths += list((ROOT / "protocol/tankbot_protocol").glob("*.py"))
-    paths += [ROOT / "requirements.txt", ROOT / "config/browser-assets.lock.json", ROOT / "config/player-dependencies.yaml", ROOT / "config/game.yaml"]
+    paths += [ROOT / "requirements.txt", ROOT / "config/browser-assets.lock.json", ROOT / "config/player-dependencies.yaml", ROOT / "config/game.yaml", ROOT / "config/engineering.yaml"]
+    paths += list((ROOT / "templates").rglob("*.py"))
     return digest({"config": config, "core_sha256": core_sha256, "python": sys.version, "platform": sys.platform,
                    "runtime_packages": runtime_packages or {},
                    "sources": {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(paths)}})
@@ -111,7 +112,9 @@ class DeploymentManager:
                               "attempt_status": self.authority.campaign.status if self.authority.campaign else None,
                               "graph": self.authority.graph.public() if self.authority.graph else None,
                               "runtime_fault": self.authority.worker.fault or ("MODULE_ERROR" if self.authority._faulted else None),
-                              "runtime_diagnostic": python_diagnostic(runtime_entries,files), "logs": logs})
+                              "runtime_diagnostic": python_diagnostic(runtime_entries,files), "logs": logs,
+                              "timing": worker.timing.public() if hasattr(worker,"timing") else None,
+                              "job_timing": self.job["worker"].timing.public() if self.job and hasattr(self.job["worker"],"timing") else None})
 
     def start(self, kind, snapshot=None, sha256=None):
         if self.authority.campaign is not None and self.authority.campaign.status != "active":
@@ -119,6 +122,7 @@ class DeploymentManager:
         if self.job is not None:
             raise ValueError("DEPLOYMENT_BUSY")
         a = self.authority
+        if a.lab.job:raise ValueError("EXPERIMENT_BUSY")
         if kind in ("test", "deploy"):
             try:
                 artifact = inspect_snapshot(snapshot, a)
@@ -302,6 +306,7 @@ class DeploymentManager:
             for key in list(table):
                 if key[0] in ("runtime", old_publisher):
                     del table[key]
+        a.lab.stop("deployment_changed")
         self.active = {"deployment_id": job["id"], "sha256": job["sha256"], "revision": job["artifact"]["revision"], "activated_tick": a.tick}
         if a.campaign is not None and a.campaign.definition["timer_start"] == "first_deployment":
             a.campaign.start(a.tick)

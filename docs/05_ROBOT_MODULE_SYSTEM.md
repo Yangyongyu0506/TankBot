@@ -153,3 +153,7 @@ C1 只需实现坐标转换函数，C2 实现保存状态的 `Tracker.update(mea
 课程依赖现按 [23](23_PLAYER_CODE_AND_LIBRARIES.md) 白名单检查：外部包仅 NumPy，另有指定基础标准库和项目模块。SDK 数值矩阵优先 ndarray；self.estimate 等状态不自动持久化。print/traceback 反馈和项目行号定位见 [24](24_RUNTIME_LOGS.md)。
 
 C3/C4 的 PolarTracker 输入与 C2 一致使用类型化观测元组：`measurements: tuple[PolarTargetEstimate, ...]`，读取 `.range_m`、`.bearing_rad`；空帧为 `()`。同类对象作为返回值时表示玩家估计，作为输入时仅保存原始带噪观测。`own_pose`、内部状态和协方差仍使用 NumPy；C5 装甲矩阵接口不变。具体签名与旧接口迁移见 [28](28_WEAPONS_PROGRESSIVE_ESTIMATION.md)。
+
+## 可选内部诊断
+
+不改变算法签名或强制某种滤波器。模块update期间可以调用tankbot.diagnostic(name,value)，或ModuleContext.diagnostic；名称、元素数量和本批事件上限须由关卡显式授权，有限NumPy数组按行展开。越权/超量/非有限值报错，Authority复核；观测不进入执行器，也不影响固定提交/预算。首版仅在C2实验开放，详见 [38](38_ENGINEERING_AND_ALGORITHM_LAB.md)。

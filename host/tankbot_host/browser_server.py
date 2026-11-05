@@ -1,3 +1,4 @@
+from .management import UI_RESOURCES,CORE_RESOURCES,ROBOT_RESOURCES
 """Two-origin, fixed-resource local browser launcher. No Python game execution on the server."""
 import json
 import secrets
@@ -39,11 +40,11 @@ class BrowserServer:
         if workspace is not None and config.get("campaign", {}).get("active_level"):
             sources.update(read_sources(workspace, config["workspace"]))
         meta=json.loads((ROOT/"config/browser-assets.lock.json").read_text())
-        runtime_files={"/"+name:ROOT/"web"/name for name in ("runtime-frame.html","runtime-frame.js","robot-worker.js","python-bootstrap.js")}
+        runtime_files={"/"+name:ROOT/"web"/name for name in ROBOT_RESOURCES}
         runtime_files["/player-bundle.json"]=assets/"player-bundle.json"
         shared={"/pyodide/"+name:assets/"pyodide"/name for name in meta["files"]}
         runtime_files.update(shared)
-        ui_files={"/"+name:ROOT/"web"/name for name in ("index.html","app.js","style.css","rendering.js","browser-client.js","core-worker.js","wasm-core.js","python-loader.js","python-bootstrap.js","workspace-ui.js","file-tree.js","workspace-dialog.js","campaign-ui.js","level-tree.js","live-metrics.js","control-feedback.js","learning-ui.js","gamepad.js","settings-ui.js","keyboard.js","visualization.js","localization-view.js","navigation-view.js","runtime-logs.js","robot-graph.js","map-preview.js")}
+        ui_files={"/"+name:ROOT/"web"/name for name in (*UI_RESOURCES,*CORE_RESOURCES)}
         ui_files["/THIRD_PARTY_NOTICES.txt"] = ROOT/"build/web/THIRD_PARTY_NOTICES.txt"
         ui_files["/editor-bundle.js"] = ROOT/"build/web/editor-bundle.js"
         ui_files.update(shared)
@@ -64,7 +65,9 @@ class BrowserServer:
                         self.send_error(403); return
                     try:
                         size = int(self.headers.get("Content-Length", "0"))
-                        if self.headers.get("Content-Type") != "application/json" or not 0 < size <= config["runtime"]["max_message_bytes"] or not (self.path.startswith("/api/workspace/") or self.path in ("/api/campaign/start", "/api/settings", "/api/session/start", "/api/progress/complete")):
+                        from .engineering import settings as engineering_settings
+                        request_limit=engineering_settings()["storage"]["max_backup_bytes"] if self.path=="/api/workspace/backup_preview" else config["runtime"]["max_message_bytes"]
+                        if self.headers.get("Content-Type") != "application/json" or not 0 < size <= request_limit or not (self.path.startswith("/api/workspace/") or self.path in ("/api/campaign/start", "/api/settings", "/api/session/start", "/api/progress/complete")):
                             raise ValueError("INVALID_REQUEST")
                         self.connection.settimeout(config["runtime"]["startup_timeout_s"])
                         value = strict_loads(self.rfile.read(size))

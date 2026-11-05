@@ -122,3 +122,7 @@ Staging 失败保留旧部署；激活后失败进入安全控制，不能自动
 ## M5 当前增量
 
 M5 已扩展多模块 Manifest、整图测试与回滚，见 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)。C3/C4 模板版本 2.0.0；跨关只补缺失文件，升级计划仅含系统 wrapper、Manifest、Contract 和指定系统测试。既有 perception/ 与 weapons/ 算法不进入替换计划，旧 revision 可恢复。
+
+## 当前项目维护实现
+
+当前Store提供完整项目备份、容量分类、固定revision和预览式历史保留。沿用文件锁/CAS；清理先备份并写恢复日志，再移动不可变对象，中断回滚，显式清空前验证备份。恢复先预览源码差异并备份当前HEAD，再导入历史，最后原子发布；不自动覆盖算法。旧迁移保留备份/固定项/恢复区，接口及限制见 [38](38_ENGINEERING_AND_ALGORITHM_LAB.md)。

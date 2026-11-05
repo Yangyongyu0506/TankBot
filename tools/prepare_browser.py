@@ -61,15 +61,16 @@ def main():
         list(pool.map(verify, lock["files"].items()))
     common = list((ROOT/"protocol/tankbot_protocol").glob("*.py"))
     common = [p for p in common if p.name in ("__init__.py","message.py","wire.py")]
-    common += list((ROOT/"sdk/python/tankbot").glob("*.py")) + [ROOT/"runtime/module_runner.py", ROOT/"runtime/graph_runner.py", ROOT/"runtime/source_loader.py"]
+    common += list((ROOT/"sdk/python/tankbot").glob("*.py")) + [ROOT/"runtime/module_runner.py", ROOT/"runtime/graph_runner.py", ROOT/"runtime/source_loader.py", ROOT/"runtime/runtime_metrics.py"]
     # Player bundle contains SDK/runner only. Workspace sources are a separate deployment snapshot.
     (DEST/"player-bundle.json").write_text(json.dumps(bundle(common)))
     trusted = common + list((ROOT/"host/tankbot_host").glob("*.py"))
     trusted += list((ROOT/"protocol/tankbot_protocol").glob("*.py")) + [ROOT/"runtime/browser_authority.py"]
     trusted += list((ROOT/"docs/schemas").glob("*.schema.json"))
     trusted += list((ROOT/"docs/examples").glob("*.json"))
-    trusted += [ROOT/"requirements.txt", ROOT/"config/browser-assets.lock.json", ROOT/"config/player-dependencies.yaml", ROOT/"config/game.yaml"]
+    trusted += [ROOT/"requirements.txt", ROOT/"config/browser-assets.lock.json", ROOT/"config/player-dependencies.yaml", ROOT/"config/game.yaml", ROOT/"config/engineering.yaml"]
     trusted += list((ROOT/"config/chassis").glob("*.yaml"))
+    trusted += list((ROOT/"templates").rglob("*.py"))
     from python_env import relaunch_if_needed
     relaunch_if_needed(Path(__file__).resolve(), offline=args.offline)
     import sys
@@ -77,6 +78,7 @@ def main():
     from tankbot_host.configuration import load_yaml
     trusted_bundle = bundle(trusted)
     trusted_bundle["config/player-dependencies.json"] = json.dumps(load_yaml(ROOT/"config/player-dependencies.yaml"))
+    trusted_bundle["config/engineering.json"] = json.dumps(load_yaml(ROOT/"config/engineering.yaml"))
     (DEST/"authority-bundle.json").write_text(json.dumps(trusted_bundle))
     print(f"Browser bundles ready; pinned Pyodide {lock['version']}, {sum(f['bytes'] for f in lock['files'].values())} artifact bytes")
 

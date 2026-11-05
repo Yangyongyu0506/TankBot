@@ -2,7 +2,7 @@
 
 ## 目的与状态
 
-本目录提供 `TankBot Protocol 1.0`、Module Contract、Workspace、受信 View Policy、ControllerProfile 及 M1 SimulationProfile 的结构定义。M1 Host/SDK 已使用其中的周期轮组/IMU/位姿接口；其他 Schema 仍是后续设计。Dialect 为 JSON Schema Draft 2020-12；`$id` 中的 `tankbot.example` 是命名占位，不是下载或运行端点。验证工具必须将本地 Schema 注册后离线解析 `$ref`。
+本目录提供 `TankBot Protocol 1.0`、Module Contract、Workspace、受信 View Policy、ControllerProfile 及 M1 SimulationProfile 的结构定义。Host/SDK已使用协议、模块图、关卡、设置/进度、编辑部署及工程实验/备份子集；未实现的服务/scan等不得因Schema存在而宣称已支持。下文分阶段增量说明保留演进顺序，当前范围以领域规范和最新验收为准。Dialect 为 JSON Schema Draft 2020-12；`$id` 中的 `tankbot.example` 是命名占位，不是下载或运行端点。验证工具必须将本地 Schema 注册后离线解析 `$ref`。
 
 | 文件 | 职责 |
 | --- | --- |
@@ -97,3 +97,7 @@ Navigation 增量：level 的 evaluation.source 可选 player_pose，live_feedba
 [progress.schema.json](progress.schema.json)保留版本1和四个字段，关卡ID按与metadata.id相同的格式约束，不枚举固定关卡列表。已知ID、前置闭包、稳定序列化顺序与current_level合法性由ApplicationState依据目录验证；非连续完成集合合法。level.schema.json中order只负责展示，prerequisites要求全部完成并由加载器检查未知/循环引用。非连续完成存档示例见 [branch-progress.json](../examples/branch-progress.json)，当前树见 [36](../36_BRANCHING_PROGRESSION.md)。
 
 Navigation C3增量：`waypoint_goal@1`的payload在payloads.schema.json中定义，Envelope固定Topic/map帧；[正例](../examples/waypoint-goal-message.json)不含测量或真值。level.schema.json声明waypoint_route、waypoints_complete、参考发布白名单和任务样式；有限坐标、模型/频率、前置权限和发布者冲突由领域层验证。waypoints是向后兼容的可选设置字段，缺失时只在内存补false；显示与程序订阅分别授权。见 [37](../37_NAVIGATION_WAYPOINT_CONTROL.md)。
+
+engineering.schema.json约束公共工程配额；experiment.schema.json约束有界授权输入记录，experiment-package.schema.json封装比较及失败导出。域校验另检查Topic、时间、配置上下文、源码和评分权限；私有参考不进入这些文件。runtime_step_result增加可选telemetry，不改变原执行/提交合同。工作区备份与恢复由Store验证摘要、路径/引用、总量和CAS；当前实现和限制见 [38](../38_ENGINEERING_AND_ALGORITHM_LAB.md)。
+
+engineering-settings.json、runtime-telemetry.json及workspace-backup.json是公共结构样例；experiment-empty-record.json和experiment-empty-package.json是空记录的结构夹具，不能直接运行比较。真实回放还要求非空输入、当前课程授权和兼容上下文。备份Schema允许结构上限，实际数量/字节配额由engineering.yaml及Store执行。

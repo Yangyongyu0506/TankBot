@@ -66,3 +66,7 @@ flowchart LR
 验收：两种 Runtime 的 print/测试输出可见，运行异常含文件/行号且能定位；来源筛选、清空显示、修复后重新部署正常；UTF-8、大输出裁剪、失败候选保留日志，页面不滚动。报告见 [玩家 Runtime 验收](reports/PLAYER_RUNTIME_VALIDATION.md)。其他平台的路径清理、日志洪泛压力与持久日志导出仍待验证。
 
 原生 Python 风格的测试输出、具体异常摘要及连续调用栈的增量验收见 [Python 测试日志报告](reports/PYTHON_TEST_LOG_VALIDATION.md)。
+
+## 耗时与失败复现
+
+日志页增加批次和模块的p50/p95/p99、超时率、采样/激活/接收/提交时刻与失败位置。通信往返包含尚不能独立识别的排队/调度时间；前批输出编码明确附原step_id，不伪装为当前编码或CPU时间。C2实验可保存输入、源码版本与完整异常栈，导出不含评估真值。详见 [38](38_ENGINEERING_AND_ALGORITHM_LAB.md)。

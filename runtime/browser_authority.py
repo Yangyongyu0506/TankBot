@@ -39,6 +39,8 @@ class BrowserSupervisor:
         self.limit = config["runtime"]["max_message_bytes"]
         self.logs = RuntimeLogs(config["runtime"]["max_log_bytes"])
         self.budget = config["runtime"]["batch_budget_ms"]/1000
+        from tankbot_host.runtime_timing import RuntimeTiming
+        self.timing=RuntimeTiming(self.budget*1000,"pyodide")
         self.batch_times_ms = deque(maxlen=config["runtime"]["history_limit_ticks"])
         self.fault = None
         self.active = self.result = None
@@ -50,7 +52,11 @@ class BrowserSupervisor:
 
     def send(self, op, value):
         from js import runtime_send
-        runtime_send(json.dumps({"op":op,"value":value,"worker_id":self.worker_id}, allow_nan=False))
+        started=time.monotonic()
+        raw=json.dumps({"op":op,"value":value,"worker_id":self.worker_id}, allow_nan=False)
+        encoded=time.monotonic()
+        runtime_send(raw)
+        return (encoded-started)*1000,(time.monotonic()-encoded)*1000
 
     def poll_ready(self):
         return self.ready
@@ -61,21 +67,33 @@ class BrowserSupervisor:
         self.active = request["request_id"]
         self.started = time.monotonic()
         self.result = None
-        self.send("step", request)
+        self.timing.begin(request,self.started)
+        encoded,written=self.send("step", request)
+        self.timing.sent(request_encode_ms=encoded,request_write_ms=written)
         return True
 
-    def receive(self, raw, elapsed_ms):
+    def receive(self, raw, elapsed_ms, transport=None):
         try:
             if self.closed or self.active is None or self.result is not None:
                 raise ValueError("Unsolicited runtime output")
-            if elapsed_ms > self.budget*1000 or time.monotonic()-self.started > self.budget:
-                raise ValueError("Deadline")
+            received=time.monotonic()
+            if elapsed_ms > self.budget*1000 or received-self.started > self.budget:
+                # Preserve the late arrival as evidence, without accepting its output.
+                self.timing.received({},received,bridge_round_trip_ms=elapsed_ms)
+                self.fault="RESOURCE_LIMIT"
+                self.timing.finish(self.fault,"wall_deadline")
+                self.close()
+                return
             if not isinstance(raw,str) or len(raw.encode()) > self.limit:
                 raise ValueError("Size")
+            decoded=time.monotonic()
             self.result = strict_loads(raw)
+            received=time.monotonic()
+            self.timing.received(self.result,received,response_decode_ms=(received-decoded)*1000,bridge_round_trip_ms=elapsed_ms,**(transport or {}))
             self.batch_times_ms.append(elapsed_ms)
         except (ValueError, TypeError, RecursionError):
             self.fault = "RESOURCE_LIMIT"
+            self.timing.finish(self.fault,"receive_validation")
             self.close()
 
     def finish(self, *, controlled=False):
@@ -84,13 +102,16 @@ class BrowserSupervisor:
         self.active = self.result = None
         if self.fault or result is None:
             self.fault = self.fault or "MISSED_DEADLINE"
+            self.timing.finish(self.fault,"commit_gate")
             self.close()
             return None
+        self.timing.finish()
         return result
 
     def close(self):
         if not self.closed:
             self.closed = True
+            self.timing.finish(self.fault or "CANCELLED","worker_close")
             self.send("close", {})
             self.workers.pop(self.worker_id, None)
 
@@ -103,7 +124,7 @@ def runtime_event(event):
         worker.ready = True
         worker.startup_result = {"ready": True, "unit_tests": event.get("unit_tests", 0), "runtime_packages": event.get("runtime_packages", {})}
     elif event["op"] == "result":
-        worker.receive(event["raw"], event["elapsed_ms"])
+        worker.receive(event["raw"], event["elapsed_ms"], event.get("transport"))
     elif event["op"] == "log":
         import re
         text = str(event.get("text", ""))[:2048]
@@ -111,6 +132,7 @@ def runtime_event(event):
         worker.logs.append(text, stream="output")
     elif event["op"] == "fault":
         worker.fault = event.get("code", "MODULE_ERROR")
+        worker.timing.finish(worker.fault,event.get("location","runtime_bridge"))
         worker.detail = event.get("detail", "")
         worker.close()
 
