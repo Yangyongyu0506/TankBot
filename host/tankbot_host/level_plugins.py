@@ -118,6 +118,32 @@ def _validate(value, filename, config, validator):
     sensor_topics = {"/robot/localization/pose":"pose2d@1"}
     sequence=value["objectives"].get("command_sequence")
     route=value["objectives"].get("waypoint_route")
+    tracking=value["objectives"].get("path_tracking")
+    if tracking:
+        import math
+        path="objectives.path_tracking"
+        if sequence or route or drive!="wheel_voltage" or value["objectives"]["timer_start"]!="first_control_commit":
+            fail(path,"continuous tracking needs one reference source, wheel voltage and first-control timing")
+        if task_inputs := value["permissions"]["data_access"].get("task_inputs"):
+            if task_inputs!=["path_reference"]:fail("permissions.data_access.task_inputs","unsupported static task input")
+        else:fail("permissions.data_access.task_inputs","full path reference must be explicitly authorized")
+        g=tracking["generation"]
+        numbers=[n for n in g.values() if type(n) in (int,float)]
+        numbers += [n for n in tracking.values() if type(n) in (int,float)]
+        if any(not math.isfinite(n) for n in numbers):fail(path,"all generation and task numbers must be finite")
+        if (g["planning_margin_m"]<g["safety_margin_m"] or g["min_length_m"]>g["max_length_m"]
+                or g["min_endpoint_distance_m"]>g["max_length_m"] or g["smoothing_radius_m"]<g["min_turn_radius_m"]
+                or g["smoothing_step_m"]>g["sample_spacing_m"]):fail(path+".generation","inconsistent geometry bounds")
+        tracking_limits=tracking["control_limits"];drive_limits=config["chassis_profiles"][player["model"]]["motion_limits"]
+        if (tracking["reference_speed_mps"]>tracking_limits["max_vx_mps"] or tracking_limits["max_vx_mps"]>drive_limits["max_vx_mps"]
+                or tracking_limits["max_wz_radps"]>drive_limits["max_wz_radps"]
+                or g["min_turn_radius_m"]<tracking_limits["max_vx_mps"]/tracking_limits["max_wz_radps"]):fail(path+".control_limits","unusable drive/curve limits")
+        if tracking["stop_duration_ticks"]>value["objectives"]["time_limit_s"]*clock["physics_hz"]:
+            fail(path+".stop_duration_ticks","settling must fit within time limit")
+        if not {"tracking_rmse_limit_m","max_deviation_m"}<=value["objectives"]["parameters"].keys():
+            fail("objectives.parameters","tracking score limits must be declared")
+    elif value["permissions"]["data_access"].get("task_inputs"):
+        fail("permissions.data_access.task_inputs","static path input requires a continuous tracking task")
     if route:
         import math
         if sequence:fail("objectives.waypoint_route","a motion task must have only one reference source")
@@ -145,7 +171,7 @@ def _validate(value, filename, config, validator):
             fail("objectives.command_sequence","sequence requires wheel voltage, first-control commit start and a matching time limit")
         if "min_path_length_m" not in value["objectives"]["parameters"]:
             fail("objectives.parameters","command sequence requires an actual path threshold")
-    elif not route and value["objectives"]["timer_start"]=="first_control_commit":fail("objectives.timer_start","first_control_commit requires a motion task")
+    elif not route and not tracking and value["objectives"]["timer_start"]=="first_control_commit":fail("objectives.timer_start","first_control_commit requires a motion task")
     sensor_ids = []
     instance_ids=set();streams=set()
     if len(player["sensors"])>limits["max_sensors"]:fail("robots[0].sensors","component count exceeds max_sensors")
@@ -204,13 +230,13 @@ def _validate(value, filename, config, validator):
         if not set(vis[name])<=set(layers):fail("visualization."+name,"display state exceeds visualization permission")
     if set(vis["sources"])!=set(layers):fail("visualization.sources","each allowed layer needs exactly one source")
     for layer,source in vis["sources"].items():
-        expected="task_reference" if layer=="waypoints" else "authorized_truth" if layer in ("truth_targets","projectiles") else "map" if layer=="map" else "selected_pose" if layer in ("robot","trail","frames","pose_covariance") else "player_pose_candidates" if layer=="pose_estimates" else "player_estimate" if layer=="target_estimates" else "local_observation"
+        expected="task_reference" if layer in ("waypoints","path","checkpoints") else "authorized_truth" if layer in ("truth_targets","projectiles") else "map" if layer=="map" else "selected_pose" if layer in ("robot","trail","frames","pose_covariance") else "player_pose_candidates" if layer=="pose_estimates" else "player_estimate" if layer=="target_estimates" else "local_observation"
         if source!=expected:fail("visualization.sources."+layer,"source is not supported by this visualization component")
     policy=value["permissions"]["visualization"]["view_policy"]
     feedback=vis.get("control_feedback")
     if feedback:
         from .control_feedback import SIGNALS
-        if not (sequence or route) or drive!="wheel_voltage" or "wheel_encoder" not in sensor_ids:
+        if not (sequence or route or tracking) or drive!="wheel_voltage" or "wheel_encoder" not in sensor_ids:
             fail("visualization.control_feedback","control plots require a wheel-voltage motion task and wheel encoder")
         if "encoders" not in layers or "/robot/sensors/joint_states" not in policy["local_observation_channels"]:
             fail("visualization.control_feedback","encoder visualization is not authorized")
@@ -230,6 +256,10 @@ def _validate(value, filename, config, validator):
         fail("visualization.waypoints","waypoint visualization requires a route")
     if "waypoints" in layers and "waypoints" not in vis:
         fail("visualization.waypoints","waypoint display needs an explicit style")
+    if set(layers)&{"path","checkpoints"} or "path_tracking" in vis:
+        if not tracking or "path_tracking" not in vis:fail("visualization.path_tracking","path/checkpoints need a task and explicit style")
+    task_feedback=value["permissions"]["visualization"].get("task_feedback")
+    if task_feedback and not tracking:fail("permissions.visualization.task_feedback","tracking feedback requires a task")
     if "projectiles" in layers and not policy["world_effects"]:fail("permissions.visualization.allowed_layers","projectile truth is not authorized")
     if set(layers)&{"truth_robot","velocities","colliders"}:fail("permissions.visualization.allowed_layers","these components require the separate developer grant")
     if any(ch not in sensor_topics for ch in policy["local_observation_channels"]):fail("permissions.visualization.view_policy.local_observation_channels","undeclared sensor Topic")
@@ -350,6 +380,22 @@ def _validate(value, filename, config, validator):
         pose_source=next((c["from"] for c in connections if c["to"]==mid+".pose"),None)
         if pose_source is None or not pose_source.startswith("/robot/estimates/") or writers.get(pose_source)!="pose2d@1":
             fail("communication.runtime.manifest.connections","navigation must read a declared player pose candidate")
+    if tracking:
+        if references!={tracking["command_topic"]:"twist@1"}:
+            fail("permissions.data_access.references","continuous tracking requires exactly one body Twist reference grant")
+        navigators=[(mid,c) for mid,c in runtime["contracts"].items() if c["entry_point"]=="navigation.path_module:PathTrackingModule"]
+        if len(navigators)!=1:fail("communication.runtime.contracts","tracking requires one registered path adapter")
+        mid,contract=navigators[0]
+        if (set(contract["inputs"])!={"pose"} or contract["inputs"]["pose"]["schema"]!="pose2d@1"
+                or contract["inputs"]["pose"]["required"] or contract["outputs"]!={"command":{"schema":"twist@1"}}):
+            fail("communication.runtime.contracts."+mid,"path adapter needs optional player pose and one Twist reference")
+        connections=runtime["manifest"]["connections"]
+        pose_source=next((c["from"] for c in connections if c["to"]==mid+".pose"),None)
+        estimator=value["evaluation"].get("module_id")
+        if (pose_source!=f"/robot/estimates/{estimator}/pose" or writers.get(pose_source)!="pose2d@1"
+                or runtime["contracts"].get(estimator,{}).get("entry_point")!="localization.ekf_module:EkfLocalizationModule"
+                or {"from":mid+".command","to":tracking["command_topic"]} not in connections):
+            fail("communication.runtime.manifest.connections","tracking must use its declared player EKF and body reference")
     for mid,contract in runtime["contracts"].items():
         for direction in ("input","output"):
             for port in contract[direction+"s"]:
@@ -505,7 +551,7 @@ def _compile(value, walls, config):
     if "target_pose_estimate@1" in grants["outputs"]:caps.append("estimate.target_pose.publish")
     definition={"title":meta["name"],"problem":d["tutorial"]["problem"],"hints":d["tutorial"]["hints"],
         "chapter_id":meta["chapter"]["chapter_id"],"capabilities":caps,"target":({"target_id":target["id"],"pose":target["initial_pose"],**target_parameters} if target else None),
-        "objective":{**d["objectives"]["parameters"],"kind":"waypoint_route" if "waypoint_route" in d["objectives"] else "command_sequence" if "command_sequence" in d["objectives"] else "checklist" if d["objectives"]["success"]["type"]=="all" else "destroy_target"},
+        "objective":{**d["objectives"]["parameters"],"kind":"path_tracking" if "path_tracking" in d["objectives"] else "waypoint_route" if "waypoint_route" in d["objectives"] else "command_sequence" if "command_sequence" in d["objectives"] else "checklist" if d["objectives"]["success"]["type"]=="all" else "destroy_target"},
         "time_limit_s":d["objectives"]["time_limit_s"],"timer_start":d["objectives"]["timer_start"],
         "player_health":"same_as_target" if p["health"]==target_parameters.get("health") and p["health"] else None,
         "control_sources":p["control_sources"],"robot_profile":runtime["profile_id"],"armor_mode":bool(target_parameters.get("armor")),

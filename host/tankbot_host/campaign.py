@@ -46,6 +46,8 @@ def configure(config, level_id):
     if level_id not in config.get("campaign",{}).get("levels",{}):
         raise ValueError("UNKNOWN_LEVEL")
     c=copy.deepcopy(config)
+    c.pop("navigation_path",None)
+    c.pop("observe_wall_contacts",None)
     campaign=c["campaign"];campaign["active_level"]=level_id
     level=campaign["levels"][level_id]
     c["view_mode"]="campaign"
@@ -93,6 +95,16 @@ def catalog(config):
             item["navigation"]={key:copy.deepcopy(route[key]) for key in ("points_m","position_tolerance_m","stop_duration_ticks")}
             if value["permissions"]["public_initial_pose"]:
                 item["navigation"]["initial_xy_m"]=list(value["scene"]["initial_pose"][:2])
+        reference=config.get("navigation_path") if key==active(config) else None
+        tracking=value["rules"].get("path_tracking")
+        if reference and tracking:
+            public={"path_id":reference["path_id"],"position_tolerance_m":tracking["position_tolerance_m"],
+                    "checkpoint_radius_m":tracking["checkpoint_radius_m"],"stop_duration_ticks":tracking["stop_duration_ticks"]}
+            if "path" in item["allowed_layers"]:
+                public.update(points_m=copy.deepcopy(reference["points_m"]),length_m=reference["length_m"])
+            if "checkpoints" in item["allowed_layers"]:
+                public["checkpoints_m"]=copy.deepcopy(reference["checkpoints_m"])
+            if "path" in item["allowed_layers"] or "checkpoints" in item["allowed_layers"]:item["path_tracking"]=public
         item["problem"] = item["problem"].format(time_limit_s=value["time_limit_s"], max_hp=(value["target"] or {}).get("health", {}).get("max_hp"))
         feedback=value["evaluation"].get("live_feedback")
         entries=feedback if isinstance(feedback,list) else [feedback] if feedback else []
@@ -195,11 +207,18 @@ class CampaignSession:
         from .navigation_task import WaypointRoute
         route = self.definition["rules"].get("waypoint_route")
         self.navigation = WaypointRoute(route) if route else None
+        tracking = self.definition["rules"].get("path_tracking")
+        if tracking:
+            from .path_generation import prepare_path
+            from .path_tracking import PathTracking
+            reference = prepare_path(config)
+            self.navigation = PathTracking(tracking,reference.to_dict(),self.definition["rules"]["parameters"],config["clock"]["physics_hz"])
         self.motion_task = bool(self.sequence or self.navigation)
 
     def start(self, tick, private=None):
         if self.status == "active" and self.started_tick is None:
             self.started_tick = tick
+            if self.navigation and getattr(self.navigation,"kind",None)=="path_tracking":self.navigation.start(tick)
             if private is not None:self.path_origin_m=private.get("motion_metrics",{}).get("path_length_m",0.0)
 
     def command(self, tick):
@@ -230,7 +249,8 @@ class CampaignSession:
                 "waypoints_complete":bool(self.navigation and self.navigation.complete),
                 "controller_faulted":self.controller_faulted,
                 "origin_distance_m":self.origin_distance_m,"path_length_m":self.path_length_m,
-                **{key:value if value is not None else math.inf for key,value in self.diagnostics.report().items()}}
+                **{key:value if value is not None else math.inf for key,value in self.diagnostics.report().items()},
+                **(self.navigation.facts() if self.navigation and getattr(self.navigation,"kind",None)=="path_tracking" else {})}
 
     def outcome(self, private, tick):
         if self.status != "active" or (self.started_tick is None and not (self.motion_task and self.deployment_armed)):
@@ -291,7 +311,9 @@ class CampaignSession:
             self.path_length_m=private["motion_metrics"]["path_length_m"]-self.path_origin_m
             self.origin_distance_m=math.hypot(p[0]-origin[0],p[1]-origin[1])
         if self.navigation and self.started_tick is not None:
-            self.navigation.observe(p, private["truth_velocity"], self.started_tick+self.elapsed_ticks)
+            if getattr(self.navigation,"kind",None)=="path_tracking":
+                self.navigation.observe(p,private["truth_velocity"],self.started_tick+self.elapsed_ticks,private["wall_contact"])
+            else:self.navigation.observe(p, private["truth_velocity"], self.started_tick+self.elapsed_ticks)
         facts=self.facts(private)
         if target:facts["target_alive"]=target["alive"]
         return evaluate(self.definition["rules"]["success"],facts,{**parameters,"limit_ticks":self.limit_ticks})
@@ -310,7 +332,10 @@ class CampaignSession:
         if self.definition["evaluation"].get("reference_module_id"):
             self.result["reference_samples"]=self.reference_diagnostics.counts.get("rmse_m",0)
         if self.sequence:self.result.update(origin_distance_m=self.origin_distance_m,path_length_m=self.path_length_m)
-        if self.navigation:self.result.update(waypoints_reached=self.navigation.reached_count, waypoint_count=len(self.navigation.spec["points_m"]), settled_ticks=self.navigation.settled_ticks)
+        if self.navigation:
+            if getattr(self.navigation,"kind",None)=="path_tracking":
+                self.result.update(**self.navigation.report(),path_id=self.navigation.reference["path_id"],checkpoints_reached=self.navigation.reached_count,checkpoint_count=len(self.navigation.checkpoints),settled_ticks=self.navigation.settled_ticks)
+            else:self.result.update(waypoints_reached=self.navigation.reached_count, waypoint_count=len(self.navigation.spec["points_m"]), settled_ticks=self.navigation.settled_ticks)
         return self.public()
 
     def public(self):
@@ -338,7 +363,20 @@ class CampaignSession:
             state["motion"]["sequence_ticks"]=self.sequence_ticks
             command=self.command((self.started_tick or 0)+self.elapsed_ticks)
             state["motion"].update(command_vx_mps=command["linear"]["x"],command_wz_radps=command["angular"]["z"])
-        if self.navigation and "waypoints" in self.definition["permissions"]["visualization"]["allowed_layers"]:
+        tracking=bool(self.navigation and getattr(self.navigation,"kind",None)=="path_tracking")
+        task_feedback=self.definition["permissions"]["visualization"].get("task_feedback",{})
+        if tracking:
+            live=task_feedback.get("live",[])
+            public=self.navigation.public() if "checkpoints" in live else {}
+            if "goal_distance_m" in live:public["goal_distance_m"]=self.navigation.goal_distance_m
+            if public:state["path_tracking"]=public
+            if state["result"]:
+                for key in self.navigation.report():
+                    if key not in task_feedback.get("terminal",[]):state["result"].pop(key,None)
+                if "checkpoints" not in live:
+                    for key in ("checkpoints_reached","checkpoint_count","settled_ticks"):
+                        state["result"].pop(key,None)
+        if self.navigation and not tracking and "waypoints" in self.definition["permissions"]["visualization"]["allowed_layers"]:
             state["navigation"] = self.navigation.public()
         feedback=self.definition["evaluation"].get("live_feedback")
         entries=feedback if isinstance(feedback,list) else [feedback] if feedback else []

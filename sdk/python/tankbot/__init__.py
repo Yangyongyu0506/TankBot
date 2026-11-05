@@ -399,3 +399,4 @@ class Module:
 
 # Optional diagnostics do not alter the Module lifecycle or algorithm signatures.
 from .diagnostics import diagnostic
+from .paths import readonly_path

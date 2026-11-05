@@ -61,7 +61,19 @@ try{
     assert.equal(result.ok,true);assert.equal(result.data.turret_state,null);
     assert.ok(result.data.motion_metrics.path_length_m>=0);
   }
+  const contacts=structuredClone(navigation);
+  Object.assign(contacts.scene,contacts.campaign.levels["navigation.c4"].scene);
+  contacts.observe_wall_contacts=true;
+  assert.equal((await exchange({op:"init",config:contacts,chassis:"differential"})).data.wall_contact,false);
+  let touched=false;
+  for(let tick=0;tick<900;tick++){
+    const result=await exchange({op:"step",wheel_voltage_target:tick%6===0?{
+      left_voltage_v:12,right_voltage_v:12,source_tick:tick}:null});
+    assert.equal(result.ok,true);assert.equal(typeof result.data.wall_contact,"boolean");
+    touched ||= result.data.wall_contact;
+  }
+  assert.ok(touched,"private contact latch observes a real warehouse obstacle in both cores");
   assert.equal(JSON.parse(wasm.call({op:"invalid"})).ok,false);
   assert.equal(wasm.exports.tankbot_input(1024*1024+1),0);
-  console.log("PASS: shared JSON ABI, 2 × 600 weapon + 1800 campaign + 600 acceleration/armor + 600 spinning-omni + 600 wheel-voltage native/WASM snapshots, invalid operation and buffer limit");
+  console.log("PASS: shared JSON ABI, 2 × 600 weapon + 1800 campaign + 600 acceleration/armor + 600 spinning-omni + 600 wheel-voltage + 900 warehouse/contact native/WASM snapshots, invalid operation and buffer limit");
 }finally{child.stdin.end();}

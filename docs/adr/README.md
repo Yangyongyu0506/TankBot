@@ -58,6 +58,8 @@ ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评
 | [0050](0050-estimated-pose-waypoint-control.md) | 玩家EKF反馈、航点闭环与轮电压速度参考；原生/浏览器闭环通过 | Accepted |
 | [0051](0051-engineering-experiments-and-retention.md) | 授权滤波实验、耗时观测与可恢复项目保留 | Accepted |
 
+| [0052](0052-generated-continuous-path-tracking.md) | 自动安全路径、只读完整参考、真实轨迹裁判与独立任务反馈 | Accepted |
+
 ## 变更流程与完成条件
 
 新决策使用递增四位编号和英文描述文件名；记录 Context、Decision、Alternatives、Consequences、Status，并给验证或接受条件。修改核心权威、信息边界、调度或公共接口前先定位相关 ADR。重大变更新增替代 ADR，并同步链接、领域规范、Schema、夹具和测试计划；不得只把旧决定悄悄改成另一种含义。

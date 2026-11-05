@@ -240,7 +240,7 @@ class Authority:
         if self.campaign and self.campaign.sequence:
             channel=self.campaign.sequence["topic"]
             self._sensors[channel]=self._message("twist@1",channel,self.campaign.command(self.tick),frame="base_link",publisher="command_sequence")
-        if self.campaign and self.campaign.navigation:
+        if self.campaign and self.campaign.navigation and self.campaign.navigation.spec.get("goal_topic"):
             route = self.campaign.navigation
             if self.tick % route.spec["period_ticks"] == 0:
                 channel = route.spec["goal_topic"]
@@ -534,7 +534,10 @@ class Authority:
         limits = self.campaign.navigation.spec["control_limits"] if self.campaign.navigation else self.config["motion_limits"]
         bounded = copy.deepcopy(message)
         p = bounded["payload"]
-        p["linear"]["x"] = max(-limits["max_vx_mps"], min(limits["max_vx_mps"], p["linear"]["x"]))
+        minimum=limits.get("min_vx_mps",-limits["max_vx_mps"])
+        if "min_vx_mps" in limits and p["linear"]["x"]<minimum:
+            raise Rejected("UNSUPPORTED_MOTION")
+        p["linear"]["x"] = max(minimum, min(limits["max_vx_mps"], p["linear"]["x"]))
         p["angular"]["z"] = max(-limits["max_wz_radps"], min(limits["max_wz_radps"], p["angular"]["z"]))
         return bounded
 

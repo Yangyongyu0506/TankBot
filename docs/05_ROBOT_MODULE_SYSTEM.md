@@ -157,3 +157,9 @@ C3/C4 的 PolarTracker 输入与 C2 一致使用类型化观测元组：`measure
 ## 可选内部诊断
 
 不改变算法签名或强制某种滤波器。模块update期间可以调用tankbot.diagnostic(name,value)，或ModuleContext.diagnostic；名称、元素数量和本批事件上限须由关卡显式授权，有限NumPy数组按行展开。越权/超量/非有限值报错，Authority复核；观测不进入执行器，也不影响固定提交/预算。首版仅在C2实验开放，详见 [38](38_ENGINEERING_AND_ALGORITHM_LAB.md)。
+
+## Navigation连续追踪合同
+
+`PathFollower.update(estimated_pose: NDArray[np.float64], path_xy: NDArray[np.float64], dt: float) -> Twist`用于Navigation C4。estimated_pose是只读map系(3,) `[x,y,yaw]`，path_xy是只读map系(N,2)米制坐标；使用SDK `readonly_path(points)`构造后，不能重新打开写权限。缺少、过期或错误帧的玩家位姿时，受管适配器输出零参考。
+
+PathTrackingModule只订阅玩家EKF候选，公开路径一次经受权启动配置提供，不每批复制或引入新中间件。四模块仍按既有冻结输入和6tick提交，Twist先进入原轮控制器，Authority独立拒绝负vx及非平面输入。旧WaypointController/Goal和其他课程接口保留；合同样例见 [path-follower-contract.json](examples/path-follower-contract.json)，完整教材见 [40](40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)。

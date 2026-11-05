@@ -377,6 +377,8 @@ try {
     workspaceDialog.updateAttempt(state);
     visualization.navigation.update(profile.run_id,state?.navigation);
     canvas.dataset.waypoints=JSON.stringify(state?.navigation??null);
+    visualization.pathTracking.update(profile.run_id,state?.path_tracking);
+    canvas.dataset.pathTracking=JSON.stringify(state?.path_tracking??null);
     const ended=Boolean(state&&state.status!=="active");
     campaignWaiting=Boolean(state?.phase==="preparing"&&state?.timing.start_on==="first_deployment");
     if(ended&&!campaignEnded){campaignEnded=true;releaseControls();}

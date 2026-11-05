@@ -42,7 +42,9 @@ class AttemptRulesTests(unittest.TestCase):
     def test_yaml_is_canonical_and_ambiguous_configuration_is_rejected(self):
         config = load_config(ROOT/"config/game.yaml")
         self.assertEqual(config, json.loads((ROOT/"core/tests/fixtures/default-profile.json").read_text()))
-        self.assertEqual([d["time_limit_s"] for d in config["campaign"]["levels"].values()], [60,60,120,120,120,180,24,24,24,120])
+        self.assertEqual({lid:d['time_limit_s'] for lid,d in config['campaign']['levels'].items()},
+            {'c0':60,'c1':60,'c2':120,'c3':120,'c4':120,'c5':180,
+             'navigation.c0':24,'navigation.c1':24,'navigation.c2':24,'navigation.c3':120,'navigation.c4':120})
         self.assertEqual(config["campaign"]["lessons"]["c1"]["functions"][0]["name"], "radar_to_map")
         with tempfile.TemporaryDirectory() as directory:
             p = Path(directory)/"invalid.yaml"

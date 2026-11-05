@@ -1,0 +1,27 @@
+{
+  "contract_version": "1.0",
+  "module_id": "path_tracking",
+  "entry_point": "navigation.path_module:PathTrackingModule",
+  "inputs": {
+    "pose": {
+      "schema": "pose2d@1",
+      "required": false,
+      "max_age_ticks": 12
+    }
+  },
+  "outputs": {
+    "command": {
+      "schema": "twist@1"
+    }
+  },
+  "execution": {
+    "mode": "periodic",
+    "period_ticks": 6,
+    "deadline_ticks": 6,
+    "budget_ms": 3
+  },
+  "dependencies": [
+    "ekf"
+  ],
+  "state_version": "1"
+}

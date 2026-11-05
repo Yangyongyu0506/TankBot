@@ -195,6 +195,13 @@ def learning_bundle(config: dict[str, Any]) -> dict[str, Any]:
                 public.update(waypoints=copy.deepcopy(route["points_m"]),navigation_control_limits=copy.deepcopy(route["control_limits"]),
                     navigation_position_tolerance_m=route["position_tolerance_m"],
                     navigation_stop_conditions={key:route[key] for key in ("stop_linear_speed_mps","stop_yaw_rate_radps","stop_duration_ticks")})
+            tracking=definition["rules"].get("path_tracking")
+            if tracking and "path_reference" in definition["permissions"]["data_access"].get("task_inputs",[]):
+                from .path_generation import prepare_path
+                reference=prepare_path(config).to_dict()
+                public.update(path_reference={key:reference[key] for key in ("path_id","frame_id","seed","length_m","input_sha256","parameters")},
+                              path_tracking_rules={**{key:tracking[key] for key in ("reference_speed_mps","control_limits","checkpoint_spacing_m","checkpoint_radius_m","position_tolerance_m","stop_linear_speed_mps","stop_yaw_rate_radps","stop_duration_ticks")},
+                                                   **{key:definition["rules"]["parameters"][key] for key in ("tracking_rmse_limit_m","max_deviation_m")}})
             lesson["calibration"]={key:public[value["source"]] if "source" in value else value["text"] for key,value in lesson["calibration"].items()}
     else:
         lesson.update(execution="本关无需编程；关闭代码编辑器后使用键盘驾驶。",completion="可查阅类型、修改算法，并保存、测试和部署。",common_errors=["编辑器打开时，驾驶按键用于编辑代码；关闭后才能控制坦克。"])

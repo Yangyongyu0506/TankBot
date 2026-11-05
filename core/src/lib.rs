@@ -93,6 +93,7 @@ pub struct Config {
     pub motion_limits: Value,
     pub weapons: WeaponsConfig,
     pub wheel_drive: Option<WheelDriveConfig>,
+    pub observe_wall_contacts: Option<bool>,
 }
 
 #[derive(Clone, Deserialize)]
@@ -163,11 +164,16 @@ pub struct PrivateSnapshot {
     pub player_alive: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub motion_metrics: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub wall_contact: Option<bool>,
 }
 
 pub struct GameCore {
     world: PhysicsWorld,
     tank: RigidBodyHandle,
+    tank_collider: ColliderHandle,
+    wall_colliders: Vec<ColliderHandle>,
+    wall_contact: bool,
     config: Config,
     chassis: Chassis,
     tick: u64,
@@ -287,7 +293,7 @@ impl GameCore {
         ))
         .friction(f)
         .restitution(e);
-        let (tank, _) = world.insert(rb, shape);
+        let (tank, tank_collider) = world.insert(rb, shape);
         let turret = if config.weapons.enabled {
             if config.weapons.mass_accounting != "fixed_chassis_mass" {
                 return Err("Unsupported weapon mass accounting".into());
@@ -301,15 +307,18 @@ impl GameCore {
         } else {
             None
         };
+        let mut wall_colliders = Vec::new();
         for w in &config.scene.walls {
             if w.size.iter().any(|x| !x.is_finite() || *x <= 0.0) {
                 return Err("Invalid wall size".into());
             }
-            world.colliders.insert(
-                ColliderBuilder::cuboid(w.size[0] / 2.0, w.size[1] / 2.0)
-                    .translation(Vector::new(w.center[0], w.center[1]))
-                    .friction(f)
-                    .restitution(e),
+            wall_colliders.push(
+                world.colliders.insert(
+                    ColliderBuilder::cuboid(w.size[0] / 2.0, w.size[1] / 2.0)
+                        .translation(Vector::new(w.center[0], w.center[1]))
+                        .friction(f)
+                        .restitution(e),
+                ),
             );
         }
         let mut enemies = BTreeMap::new();
@@ -391,6 +400,9 @@ impl GameCore {
         let mut core = Self {
             world,
             tank,
+            tank_collider,
+            wall_colliders,
+            wall_contact: false,
             config,
             chassis,
             tick: 0,
@@ -511,6 +523,7 @@ impl GameCore {
             .queue(request, self.tick)
     }
     pub fn step(&mut self) -> Result<(), String> {
+        self.wall_contact = false;
         if self.destroyed_player_pose.is_some() {
             if let Some(c) = &mut self.cannon {
                 c.events.clear();
@@ -597,6 +610,17 @@ impl GameCore {
                 );
             }
             self.world.step();
+            if self.config.observe_wall_contacts.unwrap_or(false) {
+                self.wall_contact |= self
+                    .world
+                    .narrow_phase
+                    .contact_pairs_with(self.tank_collider)
+                    .any(|pair| {
+                        pair.has_any_active_contact()
+                            && (self.wall_colliders.contains(&pair.collider1)
+                                || self.wall_colliders.contains(&pair.collider2))
+                    });
+            }
             let end = self.player_pose();
             if self.config.wheel_drive.is_some() {
                 self.path_length_m += (end.translation - old_pose.translation).length();
@@ -775,6 +799,7 @@ impl GameCore {
             player_hp: self.player_hp(),
             player_alive: self.destroyed_player_pose.is_none(),
             motion_metrics: self.config.wheel_drive.as_ref().map(|_|json!({"path_length_m":self.path_length_m})),
+            wall_contact: self.config.observe_wall_contacts.unwrap_or(false).then_some(self.wall_contact),
             turret_state: self.turret.as_ref().map(|t|json!({"relative_angle_rad":t.relative_angle,
                 "relative_rate_radps":self.world.bodies[t.body].angvel()-self.world.bodies[self.tank].angvel(),
                 "position":[self.world.bodies[t.body].translation().x,self.world.bodies[t.body].translation().y],

@@ -8,6 +8,7 @@ import math
 import re
 from pathlib import Path
 import sys
+import tempfile
 import threading
 import time
 import unittest
@@ -326,7 +327,8 @@ class M1Tests(unittest.TestCase):
     def test_http_gateway_only_and_csrf_rejection(self):
         c = copy.deepcopy(self.config);c["host"]["port"] = 0
         a = self.authority(c)
-        server = LocalServer(a)
+        directory=tempfile.TemporaryDirectory();self.addCleanup(directory.cleanup)
+        server = LocalServer(a,workspace_store=Path(directory.name))
         thread = threading.Thread(target=server.http.serve_forever, daemon=True);thread.start()
         self.addCleanup(server.http.server_close)
         self.addCleanup(server.http.shutdown)

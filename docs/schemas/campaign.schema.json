@@ -421,7 +421,8 @@
                 "destroy_target",
                 "checklist",
                 "command_sequence",
-                "waypoint_route"
+                "waypoint_route",
+                "path_tracking"
               ]
             },
             "max_origin_distance_m": {
@@ -439,6 +440,14 @@
             "max_yaw_rmse_rad": {
               "type": "number",
               "minimum": 0
+            },
+            "max_deviation_m": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "tracking_rmse_limit_m": {
+              "type": "number",
+              "exclusiveMinimum": 0
             }
           },
           "required": [

@@ -460,6 +460,15 @@
                 }
               },
               "additionalProperties": false
+            },
+            "task_inputs": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "path_reference"
+                ]
+              }
             }
           },
           "required": [
@@ -511,6 +520,38 @@
                 ]
               },
               "uniqueItems": true
+            },
+            "task_feedback": {
+              "type": "object",
+              "properties": {
+                "live": {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {
+                    "enum": [
+                      "goal_distance_m",
+                      "checkpoints"
+                    ]
+                  }
+                },
+                "terminal": {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {
+                    "enum": [
+                      "tracking_rmse_m",
+                      "max_deviation_m",
+                      "scored_duration_s",
+                      "tracking_samples"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "live",
+                "terminal"
+              ],
+              "additionalProperties": false
             }
           },
           "required": [
@@ -738,6 +779,57 @@
             "font_size_px"
           ],
           "additionalProperties": false
+        },
+        "path_tracking": {
+          "type": "object",
+          "properties": {
+            "route_color": {
+              "type": "string"
+            },
+            "current_color": {
+              "type": "string"
+            },
+            "pending_color": {
+              "type": "string"
+            },
+            "reached_color": {
+              "type": "string"
+            },
+            "tolerance_color": {
+              "type": "string"
+            },
+            "line_width_px": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "marker_radius_px": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "font_size_px": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "start_color": {
+              "type": "string"
+            },
+            "end_color": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "route_color",
+            "current_color",
+            "pending_color",
+            "reached_color",
+            "tolerance_color",
+            "line_width_px",
+            "marker_radius_px",
+            "font_size_px",
+            "start_color",
+            "end_color"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
@@ -785,6 +877,14 @@
             "max_yaw_rmse_rad": {
               "type": "number",
               "minimum": 0
+            },
+            "tracking_rmse_limit_m": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "max_deviation_m": {
+              "type": "number",
+              "exclusiveMinimum": 0
             }
           },
           "required": [
@@ -1025,6 +1125,9 @@
             "stop_duration_ticks",
             "control_limits"
           ]
+        },
+        "path_tracking": {
+          "$ref": "path-tracking.schema.json#/$defs/task"
         }
       },
       "required": [
@@ -1325,7 +1428,9 @@
                           "waypoints",
                           "navigation_control_limits",
                           "navigation_position_tolerance_m",
-                          "navigation_stop_conditions"
+                          "navigation_stop_conditions",
+                          "path_reference",
+                          "path_tracking_rules"
                         ]
                       }
                     },
@@ -1502,7 +1607,9 @@
               "ekf_localization",
               "ekf_localization_adapter",
               "waypoint_controller",
-              "waypoint_navigation_adapter"
+              "waypoint_navigation_adapter",
+              "path_follower",
+              "path_tracking_adapter"
             ]
           }
         },
@@ -1845,7 +1952,12 @@
                 "controller_faulted",
                 "rmse_m",
                 "yaw_rmse_rad",
-                "waypoints_complete"
+                "waypoints_complete",
+                "path_complete",
+                "path_collision",
+                "path_deviation_exceeded",
+                "tracking_rmse_m",
+                "max_deviation_m"
               ]
             },
             "operator": {
@@ -1874,7 +1986,9 @@
                 "max_origin_distance_m",
                 "min_path_length_m",
                 "max_position_rmse_m",
-                "max_yaw_rmse_rad"
+                "max_yaw_rmse_rad",
+                "tracking_rmse_limit_m",
+                "max_deviation_m"
               ]
             }
           },

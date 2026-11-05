@@ -2232,6 +2232,13 @@
                       }
                     },
                     "additionalProperties": false
+                  },
+                  "task_inputs": {
+                    "type": "array",
+                    "items": {
+                      "const": "path_reference"
+                    },
+                    "uniqueItems": true
                   }
                 },
                 "additionalProperties": false
@@ -2369,6 +2376,12 @@
     },
     "wheel_drive": {
       "$ref": "chassis-profile.schema.json#/properties/motor"
+    },
+    "navigation_path": {
+      "$ref": "path-tracking.schema.json"
+    },
+    "observe_wall_contacts": {
+      "type": "boolean"
     }
   },
   "required": [

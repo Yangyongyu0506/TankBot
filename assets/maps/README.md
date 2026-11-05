@@ -9,10 +9,10 @@
 | [open_training.yaml](open_training.yaml) | 12×8 m | C0 Hello Robot、C1–C5 Weapons 共用；仅四面边界墙 |
 | [open_large.yaml](open_large.yaml) | 20×14 m | 更大的空旷场地；未绑定关卡 |
 | [navigation_slalom.yaml](navigation_slalom.yaml) | 16×12 m | 三道交替连接上下边界的隔墙，形成连续绕行通道；未绑定关卡 |
-| [navigation_warehouse.yaml](navigation_warehouse.yaml) | 24×18 m | 六组货架，保留中央、纵向及外围通道；未绑定关卡 |
+| [navigation_warehouse.yaml](navigation_warehouse.yaml) | 24×18 m | 六组货架，保留中央、纵向及外围通道；Navigation C4 |
 | [training_legacy.yaml](training_legacy.yaml) | 12×8 m | 原公共地图，含 x=2 的内部隔墙；自由试验场及原物理回归 |
 
-导航地图只是可加载资产，不代表已实现导航课程、规划器或地图热切换。新关卡需要自行指定安全初态、目标及权限；例如绕行地图原点落在墙内，不能机械复用教学关卡零位姿，可选择左侧空地 (-6,-4)。仓储地图原点位于中央通道。
+仓储地图已用于连续追踪课程，其他预留布局仍只是可加载资产；这不代表已实现玩家规划器或地图热切换。新关卡需要自行指定安全初态、目标及权限；例如绕行地图原点落在墙内，不能机械复用教学关卡零位姿，可选择左侧空地 (-6,-4)。仓储地图原点位于中央通道。
 
 ## 引用与格式
 
@@ -40,3 +40,5 @@ path: maps/open_training.yaml
 使用 `python3 tools/tankbot.py --list-maps` 查看可用地图，`python3 tools/tankbot.py serve --level c0 --map open_large` 覆盖关卡绑定；browser/headless 同样支持。覆盖在重试与切关时保留，省略参数重启服务恢复默认。自定义地图仅作练习，不写正式完成记录或解锁后续关卡。
 
 顶部「地图预览」提供全景、刻度、外包尺寸及坐标方向；开发者可浏览全部地图，玩家只查看本关授权地图。选择预览不改变当前仿真，关闭使用 Esc 或 ×。初态与墙重叠时启动会明确拒绝，尤其注意绕行地图的原点墙。详细接口与限制见 [31](../../docs/31_MAP_OVERRIDE_AND_PREVIEW.md)。
+
+Navigation C4正式引用 `maps/navigation_warehouse.yaml`，零初态保持不变。裁判从同一份已解析墙体按seed生成安全绕障路径；路线、终点和中间控制点不存入地图资产。其余 Navigation C0–C3继续使用空旷场地；地图覆盖仍是练习，不能计正式进度。参数与保守车体通道见 [连续路径设计](../../docs/40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)。

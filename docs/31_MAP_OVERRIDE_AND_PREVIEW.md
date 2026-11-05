@@ -53,3 +53,7 @@ ApplicationState 在注册尝试时将 practice 绑定到服务端 ticket；完�
 - 实测视口为 1280×814 与 500×654，无页面滚动和弹窗越界；未将 Firefox 最小窗口宽度约束下的 500 px 实测描述为 390 px 设备验证。
 - 原始报告与截图在本机 `.m1-cache/map-preview/native-ui.json`、`browser-ui.json` 及同目录 PNG；工具为 `tools/browser_maps.py`。全部使用隔离的临时存档和工作区。
 - 文档、Schema 夹具、生成 profile 检查及 git diff --check 通过。浏览器资源包已更新；本轮没有重新验证 Windows/macOS 或真实移动设备。
+
+## 自动路径课程的覆盖约束
+
+Navigation C4覆盖地图仍为练习，但必须满足其完整车体、路线长度、端距及明显绕障的既定生成约束。空旷地图无法提供被障碍阻断的直达路线，会有界报PATH_GENERATION_FAILED；不暗中移除绕障要求或提供固定替代路径。仓储资产可按相同通用覆盖接口使用。重试复用已解析路径，切图须重新解析；详见 [40](40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)。

@@ -20,7 +20,7 @@ def configure_course_runtime(authority,init,workspace):
     if any(sensor.type=="gps" for sensor in authority.scene.sensors):
         from .navigation import localization_parameters
         init["config"]["localization_parameters"]=localization_parameters(config)
-    if authority.campaign.navigation:
+    if authority.campaign.definition["rules"].get("waypoint_route"):
         route = authority.campaign.navigation.spec
         contract = next(c for c in authority.campaign.definition["runtime"]["contracts"].values()
                         if c["entry_point"] == "navigation.waypoint_module:WaypointNavigationModule")
@@ -28,6 +28,21 @@ def configure_course_runtime(authority,init,workspace):
             "position_tolerance_m": route["position_tolerance_m"],
             "control_limits": copy.deepcopy(route["control_limits"]),
             "pose_max_age_ticks": contract["inputs"]["pose"]["max_age_ticks"],
+        }
+    if authority.campaign.definition["rules"].get("path_tracking"):
+        route=authority.campaign.navigation
+        grants=authority.campaign.definition["permissions"]["data_access"]
+        if "path_reference" not in grants.get("task_inputs",[]):
+            raise ValueError("UNAUTHORIZED_PATH_REFERENCE")
+        contract=next(c for c in authority.campaign.definition["runtime"]["contracts"].values()
+                      if c["entry_point"]=="navigation.path_module:PathTrackingModule")
+        reference=route.reference
+        init["config"]["path_tracking_parameters"]={
+            "reference":{key:copy.deepcopy(reference[key]) for key in ("path_id","points_m","frame_id","seed","parameters","input_sha256")},
+            "control_limits":copy.deepcopy(route.spec["control_limits"]),
+            "reference_speed_mps":route.spec["reference_speed_mps"],
+            "position_tolerance_m":route.spec["position_tolerance_m"],
+            "pose_max_age_ticks":contract["inputs"]["pose"]["max_age_ticks"],
         }
     if authority.graph_profile() and authority.radar.noise is not None:
         noise = authority.radar.noise

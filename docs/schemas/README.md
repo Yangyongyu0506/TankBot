@@ -101,3 +101,9 @@ Navigation C3增量：`waypoint_goal@1`的payload在payloads.schema.json中定�
 engineering.schema.json约束公共工程配额；experiment.schema.json约束有界授权输入记录，experiment-package.schema.json封装比较及失败导出。域校验另检查Topic、时间、配置上下文、源码和评分权限；私有参考不进入这些文件。runtime_step_result增加可选telemetry，不改变原执行/提交合同。工作区备份与恢复由Store验证摘要、路径/引用、总量和CAS；当前实现和限制见 [38](../38_ENGINEERING_AND_ALGORITHM_LAB.md)。
 
 engineering-settings.json、runtime-telemetry.json及workspace-backup.json是公共结构样例；experiment-empty-record.json和experiment-empty-package.json是空记录的结构夹具，不能直接运行比较。真实回放还要求非空输入、当前课程授权和兼容上下文。备份Schema允许结构上限，实际数量/字节配额由engineering.yaml及Store执行。
+
+## 连续路径追踪增量
+
+[path-tracking.schema.json](path-tracking.schema.json)定义generator、task与reference：有界搜索/平滑参数、只读数组的JSON表示、身份与生成指标。level.schema通过objectives.path_tracking引用task；simulation-profile可选navigation_path携带已解析reference。旧课程无新增必填字段。
+
+结构以外，领域层校验初态/完整车体通道、重采样间距、长度、自交、可执行转弯、摘要/检查点一致、EKF连接和轮电压授权。task_inputs只开放path_reference；task_feedback区分live/terminal，path/checkpoints各自授权，旧设置缺项只在内存补false。公开模块合同见 [示例](../examples/path-follower-contract.json)，职责及默认参数依据见 [40](../40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)。

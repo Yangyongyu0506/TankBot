@@ -1,0 +1,7 @@
+# Verification-only tuning. Never loaded into player templates or formal course configuration.
+lookahead_m: 0.45
+heading_gain_per_s: 1.8
+turn_in_place_threshold_rad: 0.65
+terminal_position_gain_per_s: 0.8
+stop_radius_m: 0.12
+curvature_speed_scale_m: 0.25

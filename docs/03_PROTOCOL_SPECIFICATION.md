@@ -236,3 +236,9 @@ Navigation 的 /robot/cmd_vel 仍为相同 Twist，不过由受信 twist_sequenc
 runtime_step_result@1.payload可携带telemetry，包含有界modules（module_id、input_decode_ms、update_ms、output_build_ms）和diagnostics（module_id、授权name、有限values）。可选transport记录当前Worker JSON解码和Python总耗时，以及带原step_id的前批编码耗时。旧消息省略telemetry仍合法，输出、请求ID、激活/提交tick和权限语义不变。
 
 这些是可伪造的观测数据，不作为CPU配额或扩大截止的依据；宿主仍独立记录/执行墙钟与固定门。算法内部诊断须由关卡明确授权并在Authority重新校验，不能发布真值或修改物理。接口、误差反馈和导出边界见 [38](38_ENGINEERING_AND_ALGORITHM_LAB.md)。
+
+## 连续路径静态参考增量
+
+Navigation C4不新增Topic或替换现有Envelope。`permissions.data_access.task_inputs: [path_reference]`显式授权启动配置 `path_tracking_parameters.reference`；其中 `frame_id/points_m/path_id/seed/input_sha256/parameters` 描述公开静态路径，不含真实运动状态。参考解析后固定，部署和短测复用相同身份；重试以同一定义建立新run_id。
+
+SDK通过readonly_path将points_m变为不可写的float64 (N,2)；`PathFollower.update`只收到该数组、玩家EKF位姿和dt，输出仍为twist@1，经Authority参考限幅与轮电压链提交。公开任务反馈不自动变成程序订阅权限；接口及参数见 [40](40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)。

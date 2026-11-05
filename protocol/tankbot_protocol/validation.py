@@ -1,8 +1,9 @@
 """Authority-side structural and semantic validation; no truth-based pose correction."""
 from pathlib import Path
 import math
-from jsonschema import Draft202012Validator
+from jsonschema import Draft202012Validator, validators
 from referencing import Registry, Resource
+from referencing.jsonschema import DRAFT202012
 from .wire import strict_loads
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -17,11 +18,42 @@ class Rejected(ValueError):
         self.code = code
 
 
+def _discriminated_all_of(validator, clauses, instance, schema):
+    """Skip only provably false, else-free schema-tag conditionals.
+
+    Envelope contains one such clause per message type, including recursively
+    nested view messages. Keep every other JSON Schema check unchanged.
+    """
+    for index, clause in enumerate(clauses):
+        if isinstance(instance,dict) and 'schema' in instance and isinstance(clause,dict) and set(clause)=={'if','then'}:
+            condition=clause['if']
+            if isinstance(condition,dict) and set(condition)=={'properties'}:
+                properties=condition['properties']
+                if isinstance(properties,dict) and set(properties)=={'schema'}:
+                    tag=properties['schema']
+                    if isinstance(tag,dict) and set(tag)=={'const'} and instance['schema']!=tag['const']:
+                        continue
+        yield from validator.descend(instance,clause,schema_path=index)
+
+
+_StructuralValidator = validators.extend(Draft202012Validator, {'allOf':_discriminated_all_of})
+
+
 class Validator:
     def __init__(self, config, run_id):
         schemas = [strict_loads(p.read_bytes()) for p in (ROOT / "docs/schemas").glob("*.schema.json")]
-        registry = Registry().with_resources((s["$id"], Resource.from_contents(s)) for s in schemas)
+        # All local resources declare 2020-12. Carry that dialect explicitly so
+        # following a recursive $ref does not replace our equivalent dispatch
+        # with the library's slower default class. No validation keyword changes.
+        def resource(schema):
+            if schema.get('$schema') == Draft202012Validator.META_SCHEMA['$id']:
+                return Resource.from_contents({k:v for k,v in schema.items() if k!='$schema'},default_specification=DRAFT202012)
+            return Resource.from_contents(schema)
+        registry = Registry().with_resources((s["$id"], resource(s)) for s in schemas)
         self.schemas = {s["$id"].rsplit("/", 1)[1]: Draft202012Validator(s, registry=registry) for s in schemas}
+        # Keep the original schema documents available to configuration loaders.
+        envelope_schema=self.schemas['envelope.schema.json'].schema
+        self._envelope_validator=_StructuralValidator(resource(envelope_schema).contents,registry=registry)
         self.config, self.run_id, self.sequences, self.target_ticks = config, run_id, {}, {}
 
     def structure(self, value, schema="envelope.schema.json"):
@@ -38,7 +70,8 @@ class Validator:
                 for x in v:
                     finite(x, depth + 1)
         finite(value)
-        if not self.schemas[schema].is_valid(value):
+        validator=self._envelope_validator if schema=='envelope.schema.json' else self.schemas[schema]
+        if not validator.is_valid(value):
             raise Rejected("INVALID_SCHEMA")
 
     def validate(self, msg, *, now, grants, source_tick=None, consume=True):

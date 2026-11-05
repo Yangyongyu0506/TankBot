@@ -2,7 +2,7 @@
 
 ## 阅读方式与规范状态
 
-文档基线：`engineering-lab-1.0`，更新日期：2026-11-05。已完成 M1/M1b、M2 本机浏览器/Transport、M3 编辑部署和 M4 C0–C2 教学闭环验收：实现与限制见 [运行入口](../README.md)、[M4 验证报告](reports/M4_VALIDATION.md)；模型由用户逐项确认，见 [13](13_PHYSICS_MODEL_DECISIONS.md)、[18](18_CAMPAIGN_DESIGN.md)。M5 已实现模块图、角加速度与装甲；现按用户要求调整为 C3 极坐标滤波、C4 中心预测与自瞄、C5 小陀螺自瞄，当前边界及验收见 [28](28_WEAPONS_PROGRESSIVE_ESTIMATION.md)、[新课程报告](reports/WEAPONS_REDESIGN_VALIDATION.md)。关卡使用独立 YAML 插件，现有 C0–C5 与 Navigation C0/C1/C2/C3 十关，见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)。Navigation 已实现双轮电压控制、控制曲线、理想里程计、GPS/EKF定位和航点位置闭环；IMU融合、建图、规划与 Arena 尚未实现。进度现为公共c0后同时开放Weapons与Navigation，两条主线可交替推进；当前规则与实测见 [36](36_BRANCHING_PROGRESSION.md)、[双主线验收](reports/BRANCHING_PROGRESSION_VALIDATION.md)。
+文档基线：`continuous-path-1.0`，更新日期：2026-11-05。已完成 M1/M1b、M2 本机浏览器/Transport、M3 编辑部署和 M4 C0–C2 教学闭环验收：实现与限制见 [运行入口](../README.md)、[M4 验证报告](reports/M4_VALIDATION.md)；模型由用户逐项确认，见 [13](13_PHYSICS_MODEL_DECISIONS.md)、[18](18_CAMPAIGN_DESIGN.md)。M5 已实现模块图、角加速度与装甲；现按用户要求调整为 C3 极坐标滤波、C4 中心预测与自瞄、C5 小陀螺自瞄，当前边界及验收见 [28](28_WEAPONS_PROGRESSIVE_ESTIMATION.md)、[新课程报告](reports/WEAPONS_REDESIGN_VALIDATION.md)。关卡使用独立 YAML 插件，现有 C0–C5 与 Navigation C0–C4 十一关，见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)。Navigation 已实现双轮电压控制、控制曲线、理想里程计、GPS/EKF定位、航点位置闭环和仓储连续路径追踪；IMU融合、建图、规划与 Arena 尚未实现。进度现为公共c0后同时开放Weapons与Navigation，两条主线可交替推进；当前规则与实测见 [36](36_BRANCHING_PROGRESSION.md)、[双主线验收](reports/BRANCHING_PROGRESSION_VALIDATION.md)。
 
 工程增量已交付统一检查、Weapons C2授权滤波实验、原生/Pyodide耗时诊断与可恢复工程保留；实际证据与限制见 [验收](reports/ENGINEERING_QUALITY_VALIDATION_20261105.md)。这是Algorithm Lab的单关试点，控制器成对重跑和其他课程实验尚未实现。
 
@@ -17,7 +17,9 @@
 | [38 工程与算法实验台](38_ENGINEERING_AND_ALGORITHM_LAB.md) | 统一检查、C2授权回放对照、耗时诊断与可恢复项目保留 |
 | [工程验收](reports/ENGINEERING_QUALITY_VALIDATION_20261105.md) | 统一回归、原生/Pyodide实际实验/恢复、截止证据与范围 |
 | [评估跟进](reports/PROJECT_REVIEW_FOLLOWUP_20261105.md) | 对2026-11-04历史评估逐项落实、Serena职责核查和待办 |
-| [39 后续导航课程提案](39_NAVIGATION_COURSE_PROPOSALS.md) | Planned：连续路径、已知地图规划、局部避障和独立定位/建图扩展 |
+| [40 连续路径追踪](40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md) | Navigation C4：自动安全路径、只读数组、顺序检查点与真实轨迹评分 |
+| [连续路径验收](reports/NAVIGATION_PATH_TRACKING_VALIDATION.md) | 多seed生成/闭环、规则与权限、源码保留、原生/Pyodide流程及截止风险 |
+| [39 后续导航课程提案](39_NAVIGATION_COURSE_PROPOSALS.md) | 连续路径已由40实施；其余规划、避障、定位/建图扩展仍为Planned |
 | [37 航点位置闭环](37_NAVIGATION_WAYPOINT_CONTROL.md) | Navigation C3：公开路线、玩家估计反馈、轮电压参考与到点/停稳规则 |
 | [航点闭环验收](reports/NAVIGATION_WAYPOINT_CONTROL_VALIDATION.md) | 四航点、停稳、参考授权、源码保留及原生/浏览器实际编辑部署通关 |
 | [36 双主线进度树](36_BRANCHING_PROGRESSION.md) | 公共c0、独立主线、声明式前置、可见关卡树与旧存档/工程兼容 |

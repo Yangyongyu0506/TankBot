@@ -71,6 +71,8 @@ flowchart LR
 
 Navigation C3 新增可选的 `layers.waypoints`，只显示获授权的公开路线、目标容差圈与离散任务进度，不包含真实车体或速度。旧设置缺少该字段仍可读取，在内存中补默认值；显示权限、初始状态与用户切换继续由关卡YAML限制，详见 [37](37_NAVIGATION_WAYPOINT_CONTROL.md)。
 
+Navigation C4另有可选 `layers.path/checkpoints`，分别显示完整公开路径/起终点和顺序检查点；旧设置缺项只在内存补false，不写回或重置文件。显示上限与默认/可切换状态来自YAML，任务距终点标量及终局追踪误差由独立task_feedback授权，不加入玩家输入。见 [40](40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)。
+
 消息查看器可选择现有授权 Topic 并隐藏/显示原始内容；开发者另可选私有物理 DTO、候选位姿、选中位姿、目标估计、Runtime 与最近 100 条审计。没有数据时不伪造传感器。新增消息类型需添加对应可视化适配，尚无通用 RViz 插件生态。
 
 `GET /api/developer` 在玩家模式下由原生宿主拒绝，浏览器同名 Worker RPC 也检查开发者 grant；开发者 DTO 不加入协议的 PlayerViewSnapshot 或 SDK。关闭模式重建 Authority/Worker，销毁旧 DOM/缓存；同服务其他标签页检测模式变更后关闭旧 Worker 并刷新。浏览器设备所有者边界仍按 [16](16_BROWSER_RUNTIME.md)，不是远程安全隔离。

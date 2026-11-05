@@ -2,7 +2,7 @@
 
 ## 目的、范围与要求
 
-让玩家任选目标感知/自瞄或底盘/自身定位主线，保留各自主线真实的知识和代码依赖。原进度重构只修改当时九关的选择界面与解锁；后续用户授权增加Navigation C3，当前共十关，见 [37](37_NAVIGATION_WAYPOINT_CONTROL.md)。用户已确认依赖，实施状态见 [ADR-0049](adr/0049-branching-course-progression.md)。
+让玩家任选目标感知/自瞄或底盘/自身定位主线，保留各自主线真实的知识和代码依赖。原进度重构只修改当时九关的选择界面与解锁；后续用户授权增加Navigation C3/C4，当前共十一关，见 [37](37_NAVIGATION_WAYPOINT_CONTROL.md)、[40](40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)。用户已确认依赖，实施状态见 [ADR-0049](adr/0049-branching-course-progression.md)。
 
 ```mermaid
 flowchart TD
@@ -15,6 +15,7 @@ flowchart TD
     N0 --> N1[Navigation C1 里程计]
     N1 --> N2[Navigation C2 GPS/EKF]
     N2 --> N3[Navigation C3 航点位置闭环]
+    N3 --> N4[Navigation C4 连续路径追踪]
 ```
 
 实线均为必须通关的前置。公共入口保留Hello Robot章节与c0存储身份；Weapons和Navigation原章节ID、文件名及metadata.order不变。跨主线建议只进入现有关卡tutorial.hints，不影响解锁，也不复制算法。

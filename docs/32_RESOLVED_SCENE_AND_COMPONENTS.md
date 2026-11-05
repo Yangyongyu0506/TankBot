@@ -90,3 +90,9 @@ Authority 可直接接受 ResolvedScene；旧调用方传 dict 时先走同一 r
 后续 Navigation 首关已在相同 ResolvedScene/实例架构下增加可选轮电机组件；明确选择 wheel_voltage 时启用，旧六关仍使用原伺服。轮参数集中在完整差速模型，不变更世界求解器。此项属于本篇原重构后的独立功能开发，详见 [33](33_NAVIGATION_MOTION_CONTROL.md)。
 
 Navigation C2 又增加中心自GPS和带误差编码器，仍通过同一 SensorInstance/SensorScheduler 生命周期。wheel_encoder 无 parameters 时保留 Rust 理想后端；声明误差时 Python 后端仅在受信侧改变测量值，不改变物理。GPS与编码器使用各自命名随机流，所有消费模块共享采样结果；GPS为2 Hz，具体误差、缓存、角度积分约定和权限见 [35](35_NAVIGATION_GPS_LOCALIZATION.md)。
+
+## ResolvedPath增量
+
+ResolvedScene可选path_reference保存不可变ResolvedPath(identity, definition_json)。解引用/校验地图、底盘及初态之后、创建物理世界之前完成有界生成；私有兼容DTO通过navigation_path携带已冻结结果。浏览器验证输入摘要、完整参考摘要、线段安全、指标与检查点，不重新采样路径。canonical摘要允许JSON往返对0.0/0的表示规范化，不量化物理坐标。
+
+SceneResolver对相同关卡定义复用路径，重试新建世界；configure切换关卡清除上一关静态参考及接触观测开关，避免状态污染。路径参数来自本关YAML，无预存答案或按ID选择的生成分支；详见 [40](40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)。

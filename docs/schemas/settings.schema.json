@@ -134,6 +134,12 @@
         },
         "waypoints": {
           "type": "boolean"
+        },
+        "path": {
+          "type": "boolean"
+        },
+        "checkpoints": {
+          "type": "boolean"
         }
       },
       "required": [

@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import socket
 import sys
+import tempfile
 import threading
 import types
 import unittest
@@ -18,6 +19,19 @@ from browser_authority import BrowserSupervisor
 
 
 class BrowserTests(unittest.TestCase):
+    def test_browser_exact_wall_boundary_has_no_float_subtraction_false_timeout(self):
+        config=load_config(ROOT/'config/game.yaml')
+        for received,bridge,accepted in ((46.014,20,True),(46.014001,20,False),(46.014,20.001,False)):
+            with self.subTest(received=received,bridge=bridge),patch.dict(sys.modules,{'js':types.SimpleNamespace(runtime_send=lambda raw:None)}):
+                sup=BrowserSupervisor(config,{})
+                with patch('browser_authority.time.monotonic',return_value=45.994):
+                    sup.submit({'request_id':'boundary'})
+                with patch('browser_authority.time.monotonic',return_value=received):
+                    sup.receive('{"result":1}',bridge)
+                    self.assertEqual(sup.finish(),{'result':1} if accepted else None)
+                self.assertEqual(sup.fault,None if accepted else 'RESOURCE_LIMIT')
+                sup.close()
+
     def test_browser_supervisor_commits_only_buffered_timely_result(self):
         config=load_config(ROOT/"config/game.yaml");sent=[]
         with patch.dict(sys.modules,{"js":types.SimpleNamespace(runtime_send=lambda raw:sent.append(json.loads(raw)))}):
@@ -56,7 +70,8 @@ class BrowserTests(unittest.TestCase):
         finally:
             for lease in leases:lease.close()
         config["host"]["port"],config["browser"]["runtime_port"]=ports
-        launcher=BrowserServer(config)
+        directory=tempfile.TemporaryDirectory();self.addCleanup(directory.cleanup)
+        launcher=BrowserServer(config,workspace_store=Path(directory.name))
         threads=[threading.Thread(target=s.serve_forever,daemon=True) for s in (launcher.ui,launcher.runtime)]
         for t in threads:t.start()
         def request(port,path):

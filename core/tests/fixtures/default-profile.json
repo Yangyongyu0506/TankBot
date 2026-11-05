@@ -1691,6 +1691,248 @@
           "navigation/waypoint_module.py",
           "contracts/waypoint_navigation.json"
         ]
+      },
+      "differential-path-tracking-v1": {
+        "template_version": "1.0.0",
+        "manifest": {
+          "manifest_version": "1.0",
+          "sdk_version": "0.1.0",
+          "protocol_version": "1.0",
+          "project_id": "navigation-path-tracking",
+          "entry_point": "navigation_robot:WheelControlModule",
+          "modules": [
+            {
+              "module_id": "wheel_control",
+              "contract": "contracts/wheel_control.json",
+              "config": {}
+            },
+            {
+              "module_id": "odometry",
+              "contract": "contracts/odometry.json",
+              "config": {}
+            },
+            {
+              "module_id": "ekf",
+              "contract": "contracts/ekf.json",
+              "config": {
+                "initial_covariance": [
+                  [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0,
+                    0.0
+                  ]
+                ]
+              }
+            },
+            {
+              "module_id": "path_tracking",
+              "contract": "contracts/path_tracking.json",
+              "config": {}
+            }
+          ],
+          "connections": [
+            {
+              "from": "/robot/cmd_vel",
+              "to": "wheel_control.command"
+            },
+            {
+              "from": "/robot/sensors/joint_states",
+              "to": "wheel_control.wheels"
+            },
+            {
+              "from": "wheel_control.voltage",
+              "to": "/robot/wheels/cmd_voltage"
+            },
+            {
+              "from": "/robot/sensors/joint_states",
+              "to": "odometry.wheels"
+            },
+            {
+              "from": "odometry.pose",
+              "to": "/robot/estimates/odometry/pose"
+            },
+            {
+              "from": "/robot/sensors/joint_states",
+              "to": "ekf.wheels"
+            },
+            {
+              "from": "/robot/sensors/gps/fix",
+              "to": "ekf.gps"
+            },
+            {
+              "from": "ekf.pose",
+              "to": "/robot/estimates/ekf/pose"
+            },
+            {
+              "from": "/robot/estimates/ekf/pose",
+              "to": "path_tracking.pose"
+            },
+            {
+              "from": "path_tracking.command",
+              "to": "/robot/cmd_vel"
+            }
+          ],
+          "dependencies": [],
+          "pose_source": {
+            "mode": "player",
+            "module_id": "ekf",
+            "fallback": "none"
+          }
+        },
+        "contracts": {
+          "wheel_control": {
+            "contract_version": "1.0",
+            "module_id": "wheel_control",
+            "entry_point": "navigation_robot:WheelControlModule",
+            "inputs": {
+              "command": {
+                "schema": "twist@1",
+                "required": true,
+                "max_age_ticks": 12
+              },
+              "wheels": {
+                "schema": "joint_state@1",
+                "required": true,
+                "max_age_ticks": 12
+              }
+            },
+            "outputs": {
+              "voltage": {
+                "schema": "wheel_voltage@1"
+              }
+            },
+            "execution": {
+              "mode": "periodic",
+              "period_ticks": 6,
+              "deadline_ticks": 6,
+              "budget_ms": 6
+            },
+            "dependencies": [],
+            "state_version": "1"
+          },
+          "odometry": {
+            "contract_version": "1.0",
+            "module_id": "odometry",
+            "entry_point": "localization.odometry_module:WheelOdometryModule",
+            "inputs": {
+              "wheels": {
+                "schema": "joint_state@1",
+                "required": true,
+                "max_age_ticks": 12
+              }
+            },
+            "outputs": {
+              "pose": {
+                "schema": "pose2d@1"
+              }
+            },
+            "execution": {
+              "mode": "periodic",
+              "period_ticks": 6,
+              "deadline_ticks": 6,
+              "budget_ms": 3
+            },
+            "dependencies": [],
+            "state_version": "1"
+          },
+          "ekf": {
+            "contract_version": "1.0",
+            "module_id": "ekf",
+            "entry_point": "localization.ekf_module:EkfLocalizationModule",
+            "inputs": {
+              "wheels": {
+                "schema": "joint_state@1",
+                "required": true,
+                "max_age_ticks": 12
+              },
+              "gps": {
+                "schema": "position_fix2d@1",
+                "required": false,
+                "max_age_ticks": 12
+              }
+            },
+            "outputs": {
+              "pose": {
+                "schema": "pose2d@1"
+              }
+            },
+            "execution": {
+              "mode": "periodic",
+              "period_ticks": 6,
+              "deadline_ticks": 6,
+              "budget_ms": 8
+            },
+            "dependencies": [],
+            "state_version": "1"
+          },
+          "path_tracking": {
+            "contract_version": "1.0",
+            "module_id": "path_tracking",
+            "entry_point": "navigation.path_module:PathTrackingModule",
+            "inputs": {
+              "pose": {
+                "schema": "pose2d@1",
+                "required": false,
+                "max_age_ticks": 12
+              }
+            },
+            "outputs": {
+              "command": {
+                "schema": "twist@1"
+              }
+            },
+            "execution": {
+              "mode": "periodic",
+              "period_ticks": 6,
+              "deadline_ticks": 6,
+              "budget_ms": 3
+            },
+            "dependencies": [
+              "ekf"
+            ],
+            "state_version": "1"
+          }
+        },
+        "grants": {
+          "inputs": {
+            "/robot/sensors/joint_states": "joint_state@1",
+            "/robot/sensors/gps/fix": "position_fix2d@1"
+          },
+          "outputs": [
+            "pose2d@1"
+          ],
+          "actuators": {
+            "/robot/wheels/cmd_voltage": "wheel_voltage@1"
+          },
+          "references": {
+            "/robot/cmd_vel": "twist@1"
+          },
+          "task_inputs": [
+            "path_reference"
+          ]
+        },
+        "target_source": "wheel_control",
+        "managed_files": [
+          "navigation_robot.py",
+          "tankbot.json",
+          "contracts/wheel_control.json",
+          "localization/odometry_module.py",
+          "contracts/odometry.json",
+          "localization/ekf_module.py",
+          "contracts/ekf.json",
+          "navigation/path_module.py",
+          "contracts/path_tracking.json"
+        ]
       }
     },
     "max_batch_outputs": 128,
@@ -10160,6 +10402,1083 @@
             "navigation.c2"
           ]
         }
+      },
+      "navigation.c4": {
+        "title": "Navigation C4 · 连续路径追踪",
+        "problem": "让机器人连续追踪仓储中的完整公开路径，通过所有顺序检查点并在终点停稳；{time_limit_s}秒内完成，不能人工驾驶。",
+        "hints": [
+          "复用轮控制器、里程计和EKF，只需修改 navigation/path_follower.py。路径由裁判生成，不需要实现规划器。",
+          "path_xy是只读float64 (N,2)地图系数组，path_xy[i]为一个[x,y]米制坐标；整条路径一次公开，不在每批重新生成。",
+          "连续追踪不等于逐点停车。可寻找最近线段、累计弧长和前视点，再把角度误差转为车体系Twist；算法自由选择。",
+          "参考速度0.4m/s，前进上限0.5m/s，角速度±1.5rad/s；可以减速或原地转向，禁止发出负前进参考。",
+          "每1m检查点只验证按序经过，不要求中途停车；距终点显示可在正确绕行时增大，不是完成百分比。",
+          "不要忽略EKF→追踪→轮控的固定提交延迟。提前减速、角度环绕和终点制动都需要考虑。",
+          "裁判按真实质心到完整折线的点到线段距离逐tick评分；画面与控制来自自己的EKF。定位错误不会被真值纠正。"
+        ],
+        "chapter_id": "navigation",
+        "capabilities": [
+          "control.robot.wheel_voltage",
+          "module.graph.manage"
+        ],
+        "target": null,
+        "objective": {
+          "movement_m": 0.0,
+          "turn_rad": 0.0,
+          "required_hits": 0,
+          "required_estimates": 0,
+          "tracking_rmse_limit_m": 0.2,
+          "max_deviation_m": 0.5,
+          "kind": "path_tracking"
+        },
+        "time_limit_s": 120,
+        "timer_start": "first_control_commit",
+        "player_health": null,
+        "control_sources": {
+          "chassis": "robot",
+          "turret": "disabled",
+          "weapon": "disabled"
+        },
+        "robot_profile": "differential-path-tracking-v1",
+        "armor_mode": false,
+        "weapons_enabled": false,
+        "drive": "wheel_voltage",
+        "radar_profile": null,
+        "scene": {
+          "default_chassis": "differential",
+          "initial_pose": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "initial_velocity": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "player_health": null,
+          "walls": [
+            {
+              "center": [
+                12.1,
+                0.0
+              ],
+              "size": [
+                0.2,
+                18.4
+              ]
+            },
+            {
+              "center": [
+                -12.1,
+                0.0
+              ],
+              "size": [
+                0.2,
+                18.4
+              ]
+            },
+            {
+              "center": [
+                0.0,
+                9.1
+              ],
+              "size": [
+                24,
+                0.2
+              ]
+            },
+            {
+              "center": [
+                0.0,
+                -9.1
+              ],
+              "size": [
+                24,
+                0.2
+              ]
+            },
+            {
+              "center": [
+                -7.0,
+                -4.0
+              ],
+              "size": [
+                2.0,
+                4.0
+              ]
+            },
+            {
+              "center": [
+                -7.0,
+                4.0
+              ],
+              "size": [
+                2.0,
+                4.0
+              ]
+            },
+            {
+              "center": [
+                0.0,
+                -4.0
+              ],
+              "size": [
+                2.0,
+                4.0
+              ]
+            },
+            {
+              "center": [
+                0.0,
+                4.0
+              ],
+              "size": [
+                2.0,
+                4.0
+              ]
+            },
+            {
+              "center": [
+                7.0,
+                -4.0
+              ],
+              "size": [
+                2.0,
+                4.0
+              ]
+            },
+            {
+              "center": [
+                7.0,
+                4.0
+              ],
+              "size": [
+                2.0,
+                4.0
+              ]
+            }
+          ],
+          "public_initial_pose": true,
+          "public_map": true
+        },
+        "world_simulation": {
+          "physics_hz": 60,
+          "substeps": 4,
+          "sensor_hz": 30,
+          "algorithm_hz": 10
+        },
+        "radar": null,
+        "runtime": {
+          "template_version": "1.0.0",
+          "mode": "graph",
+          "profile_id": "differential-path-tracking-v1",
+          "processing": "modules",
+          "logical_module": {
+            "module_id": "wheel_control",
+            "entry_point": "navigation_robot:WheelControlModule"
+          },
+          "target_source": "wheel_control",
+          "managed_files": [
+            "navigation_robot.py",
+            "tankbot.json",
+            "contracts/wheel_control.json",
+            "localization/odometry_module.py",
+            "contracts/odometry.json",
+            "localization/ekf_module.py",
+            "contracts/ekf.json",
+            "navigation/path_module.py",
+            "contracts/path_tracking.json"
+          ],
+          "manifest": {
+            "manifest_version": "1.0",
+            "sdk_version": "0.1.0",
+            "protocol_version": "1.0",
+            "project_id": "navigation-path-tracking",
+            "entry_point": "navigation_robot:WheelControlModule",
+            "modules": [
+              {
+                "module_id": "wheel_control",
+                "contract": "contracts/wheel_control.json",
+                "config": {}
+              },
+              {
+                "module_id": "odometry",
+                "contract": "contracts/odometry.json",
+                "config": {}
+              },
+              {
+                "module_id": "ekf",
+                "contract": "contracts/ekf.json",
+                "config": {
+                  "initial_covariance": [
+                    [
+                      0.0,
+                      0.0,
+                      0.0
+                    ],
+                    [
+                      0.0,
+                      0.0,
+                      0.0
+                    ],
+                    [
+                      0.0,
+                      0.0,
+                      0.0
+                    ]
+                  ]
+                }
+              },
+              {
+                "module_id": "path_tracking",
+                "contract": "contracts/path_tracking.json",
+                "config": {}
+              }
+            ],
+            "connections": [
+              {
+                "from": "/robot/cmd_vel",
+                "to": "wheel_control.command"
+              },
+              {
+                "from": "/robot/sensors/joint_states",
+                "to": "wheel_control.wheels"
+              },
+              {
+                "from": "wheel_control.voltage",
+                "to": "/robot/wheels/cmd_voltage"
+              },
+              {
+                "from": "/robot/sensors/joint_states",
+                "to": "odometry.wheels"
+              },
+              {
+                "from": "odometry.pose",
+                "to": "/robot/estimates/odometry/pose"
+              },
+              {
+                "from": "/robot/sensors/joint_states",
+                "to": "ekf.wheels"
+              },
+              {
+                "from": "/robot/sensors/gps/fix",
+                "to": "ekf.gps"
+              },
+              {
+                "from": "ekf.pose",
+                "to": "/robot/estimates/ekf/pose"
+              },
+              {
+                "from": "/robot/estimates/ekf/pose",
+                "to": "path_tracking.pose"
+              },
+              {
+                "from": "path_tracking.command",
+                "to": "/robot/cmd_vel"
+              }
+            ],
+            "dependencies": [],
+            "pose_source": {
+              "mode": "player",
+              "module_id": "ekf",
+              "fallback": "none"
+            }
+          },
+          "contracts": {
+            "wheel_control": {
+              "contract_version": "1.0",
+              "module_id": "wheel_control",
+              "entry_point": "navigation_robot:WheelControlModule",
+              "inputs": {
+                "command": {
+                  "schema": "twist@1",
+                  "required": true,
+                  "max_age_ticks": 12
+                },
+                "wheels": {
+                  "schema": "joint_state@1",
+                  "required": true,
+                  "max_age_ticks": 12
+                }
+              },
+              "outputs": {
+                "voltage": {
+                  "schema": "wheel_voltage@1"
+                }
+              },
+              "execution": {
+                "mode": "periodic",
+                "period_ticks": 6,
+                "deadline_ticks": 6,
+                "budget_ms": 6
+              },
+              "dependencies": [],
+              "state_version": "1"
+            },
+            "odometry": {
+              "contract_version": "1.0",
+              "module_id": "odometry",
+              "entry_point": "localization.odometry_module:WheelOdometryModule",
+              "inputs": {
+                "wheels": {
+                  "schema": "joint_state@1",
+                  "required": true,
+                  "max_age_ticks": 12
+                }
+              },
+              "outputs": {
+                "pose": {
+                  "schema": "pose2d@1"
+                }
+              },
+              "execution": {
+                "mode": "periodic",
+                "period_ticks": 6,
+                "deadline_ticks": 6,
+                "budget_ms": 3
+              },
+              "dependencies": [],
+              "state_version": "1"
+            },
+            "ekf": {
+              "contract_version": "1.0",
+              "module_id": "ekf",
+              "entry_point": "localization.ekf_module:EkfLocalizationModule",
+              "inputs": {
+                "wheels": {
+                  "schema": "joint_state@1",
+                  "required": true,
+                  "max_age_ticks": 12
+                },
+                "gps": {
+                  "schema": "position_fix2d@1",
+                  "required": false,
+                  "max_age_ticks": 12
+                }
+              },
+              "outputs": {
+                "pose": {
+                  "schema": "pose2d@1"
+                }
+              },
+              "execution": {
+                "mode": "periodic",
+                "period_ticks": 6,
+                "deadline_ticks": 6,
+                "budget_ms": 8
+              },
+              "dependencies": [],
+              "state_version": "1"
+            },
+            "path_tracking": {
+              "contract_version": "1.0",
+              "module_id": "path_tracking",
+              "entry_point": "navigation.path_module:PathTrackingModule",
+              "inputs": {
+                "pose": {
+                  "schema": "pose2d@1",
+                  "required": false,
+                  "max_age_ticks": 12
+                }
+              },
+              "outputs": {
+                "command": {
+                  "schema": "twist@1"
+                }
+              },
+              "execution": {
+                "mode": "periodic",
+                "period_ticks": 6,
+                "deadline_ticks": 6,
+                "budget_ms": 3
+              },
+              "dependencies": [
+                "ekf"
+              ],
+              "state_version": "1"
+            }
+          },
+          "grants": {
+            "inputs": {
+              "/robot/sensors/joint_states": "joint_state@1",
+              "/robot/sensors/gps/fix": "position_fix2d@1"
+            },
+            "outputs": [
+              "pose2d@1"
+            ],
+            "actuators": {
+              "/robot/wheels/cmd_voltage": "wheel_voltage@1"
+            },
+            "references": {
+              "/robot/cmd_vel": "twist@1"
+            },
+            "task_inputs": [
+              "path_reference"
+            ]
+          }
+        },
+        "sensors": [
+          {
+            "id": "wheel_encoder",
+            "robot_id": "player",
+            "type": "wheel_encoder",
+            "period_ticks": 2,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": {
+              "id": "navigation-encoder",
+              "seed_mode": "named"
+            },
+            "topic": "/robot/sensors/joint_states",
+            "schema": "joint_state@1",
+            "frame_id": "base_link",
+            "parameters": {
+              "velocity_stddev_radps": 0.2,
+              "gain_error_min": -0.03,
+              "gain_error_max": 0.03,
+              "position_model": "integrated_rate_noise"
+            },
+            "update_hz": 30
+          },
+          {
+            "id": "gps",
+            "robot_id": "player",
+            "type": "gps",
+            "period_ticks": 30,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": {
+              "id": "navigation-gps",
+              "seed_mode": "named"
+            },
+            "topic": "/robot/sensors/gps/fix",
+            "schema": "position_fix2d@1",
+            "frame_id": "map",
+            "parameters": {
+              "noise": {
+                "position_stddev_m": 0.2,
+                "bias_m": [
+                  0.0,
+                  0.0
+                ],
+                "drop_probability": 0.0
+              },
+              "latency_ticks": 0,
+              "wall_occlusion": false
+            },
+            "update_hz": 2
+          }
+        ],
+        "rules": {
+          "target": null,
+          "time_limit_s": 120,
+          "timer_start": "first_control_commit",
+          "parameters": {
+            "movement_m": 0.0,
+            "turn_rad": 0.0,
+            "required_hits": 0,
+            "required_estimates": 0,
+            "tracking_rmse_limit_m": 0.2,
+            "max_deviation_m": 0.5
+          },
+          "progress": {
+            "moved": {
+              "type": "displacement",
+              "parameter": "movement_m",
+              "sticky": true
+            },
+            "turned": {
+              "type": "heading_change",
+              "parameter": "turn_rad",
+              "sticky": true
+            }
+          },
+          "success": {
+            "type": "all",
+            "conditions": [
+              {
+                "type": "compare",
+                "metric": "path_complete",
+                "operator": "==",
+                "value": true
+              },
+              {
+                "type": "compare",
+                "metric": "tracking_rmse_m",
+                "operator": "<=",
+                "parameter": "tracking_rmse_limit_m"
+              },
+              {
+                "type": "compare",
+                "metric": "path_collision",
+                "operator": "==",
+                "value": false
+              },
+              {
+                "type": "compare",
+                "metric": "max_deviation_m",
+                "operator": "<=",
+                "parameter": "max_deviation_m"
+              },
+              {
+                "type": "compare",
+                "metric": "elapsed_ticks",
+                "operator": "<=",
+                "parameter": "limit_ticks"
+              }
+            ]
+          },
+          "outcomes": [
+            {
+              "reason": "collision",
+              "result": "failure",
+              "when": {
+                "type": "compare",
+                "metric": "path_collision",
+                "operator": "==",
+                "value": true
+              }
+            },
+            {
+              "reason": "controller_error",
+              "result": "failure",
+              "when": {
+                "type": "compare",
+                "metric": "controller_faulted",
+                "operator": "==",
+                "value": true
+              }
+            },
+            {
+              "reason": "path_deviation",
+              "result": "failure",
+              "when": {
+                "type": "compare",
+                "metric": "path_deviation_exceeded",
+                "operator": "==",
+                "value": true
+              }
+            },
+            {
+              "reason": "objective_completed",
+              "result": "success",
+              "when": {
+                "type": "compare",
+                "metric": "objective_complete",
+                "operator": "==",
+                "value": true
+              }
+            },
+            {
+              "reason": "tracking_error",
+              "result": "failure",
+              "when": {
+                "type": "all",
+                "conditions": [
+                  {
+                    "type": "compare",
+                    "metric": "path_complete",
+                    "operator": "==",
+                    "value": true
+                  },
+                  {
+                    "type": "compare",
+                    "metric": "elapsed_ticks",
+                    "operator": "<=",
+                    "parameter": "limit_ticks"
+                  }
+                ]
+              }
+            },
+            {
+              "reason": "timeout",
+              "result": "failure",
+              "when": {
+                "type": "compare",
+                "metric": "elapsed_ticks",
+                "operator": ">=",
+                "parameter": "limit_ticks"
+              }
+            }
+          ],
+          "path_tracking": {
+            "type": "continuous_path",
+            "command_topic": "/robot/cmd_vel",
+            "generation": {
+              "type": "warehouse_search_round_v1",
+              "grid_resolution_m": 0.2,
+              "planning_margin_m": 0.3,
+              "safety_margin_m": 0.15,
+              "smoothing_radius_m": 1.0,
+              "smoothing_step_m": 0.025,
+              "min_turn_radius_m": 0.7,
+              "max_turn_angle_rad": 0.35,
+              "min_total_turn_rad": 1.2,
+              "min_detour_m": 0.6,
+              "require_blocked_chord": true,
+              "sample_spacing_m": 0.1,
+              "min_length_m": 12.0,
+              "max_length_m": 18.0,
+              "min_endpoint_distance_m": 5.0,
+              "max_attempts": 64,
+              "max_grid_nodes": 20000,
+              "max_search_expansions": 20000,
+              "max_path_points": 256,
+              "numeric_tolerance_m": 1e-08,
+              "max_smoothing_points": 8192
+            },
+            "reference_speed_mps": 0.4,
+            "checkpoint_spacing_m": 1.0,
+            "checkpoint_radius_m": 0.5,
+            "position_tolerance_m": 0.35,
+            "stop_linear_speed_mps": 0.05,
+            "stop_yaw_rate_radps": 0.1,
+            "stop_duration_ticks": 30,
+            "control_limits": {
+              "min_vx_mps": 0.0,
+              "max_vx_mps": 0.5,
+              "max_wz_radps": 1.5
+            }
+          }
+        },
+        "evaluation": {
+          "type": "terminal_diagnostics",
+          "publish_on": "terminal",
+          "source": "player_pose",
+          "metrics": [
+            {
+              "id": "rmse_m",
+              "type": "position_rmse"
+            },
+            {
+              "id": "yaw_rmse_rad",
+              "type": "yaw_rmse"
+            }
+          ],
+          "live_feedback": [
+            {
+              "metric": "rmse_m",
+              "title": "位置 RMSE 对比",
+              "label": "EKF",
+              "unit": "m",
+              "precision": 3,
+              "history_points": 300,
+              "description": "定位误差按同采样tick评价，用于理解EKF。连续追踪误差只在终局公布；正式任务根据真实质心到完整折线的距离评分。",
+              "reference_metric": "reference_rmse_m",
+              "reference_label": "纯里程计",
+              "reference_color": "#74b9ff"
+            },
+            {
+              "metric": "yaw_rmse_rad",
+              "title": "朝向 RMSE 对比",
+              "label": "EKF",
+              "unit": "rad",
+              "precision": 3,
+              "history_points": 300,
+              "description": "定位误差按同采样tick评价，用于理解EKF。连续追踪误差只在终局公布；正式任务根据真实质心到完整折线的距离评分。",
+              "reference_metric": "reference_yaw_rmse_rad",
+              "reference_label": "纯里程计",
+              "reference_color": "#74b9ff"
+            }
+          ],
+          "module_id": "ekf",
+          "reference_module_id": "odometry"
+        },
+        "randomization": {
+          "seed": 0,
+          "reset_on": "new_run",
+          "generator": "python_random_v1"
+        },
+        "permissions": {
+          "data_access": {
+            "inputs": {
+              "/robot/sensors/joint_states": "joint_state@1",
+              "/robot/sensors/gps/fix": "position_fix2d@1"
+            },
+            "outputs": [
+              "pose2d@1"
+            ],
+            "actuators": {
+              "/robot/wheels/cmd_voltage": "wheel_voltage@1"
+            },
+            "references": {
+              "/robot/cmd_vel": "twist@1"
+            },
+            "task_inputs": [
+              "path_reference"
+            ]
+          },
+          "public_initial_pose": true,
+          "public_map": true,
+          "visualization": {
+            "allowed_layers": [
+              "robot",
+              "trail",
+              "map",
+              "encoders",
+              "frames",
+              "gps",
+              "pose_estimates",
+              "pose_covariance",
+              "path",
+              "checkpoints"
+            ],
+            "allowed_metrics": [
+              "rmse_m",
+              "yaw_rmse_rad",
+              "reference_rmse_m",
+              "reference_yaw_rmse_rad"
+            ],
+            "allowed_control_signals": [
+              "command_vx_mps",
+              "encoder_vx_mps",
+              "command_wz_radps",
+              "encoder_wz_radps",
+              "left_wheel_radps",
+              "right_wheel_radps",
+              "left_voltage_v",
+              "right_voltage_v"
+            ],
+            "view_policy": {
+              "policy_id": "navigation-gps-localization",
+              "system_pose_allowed": false,
+              "player_pose_allowed": true,
+              "allowed_pose_frames": [
+                "map"
+              ],
+              "public_map": "navigation-warehouse",
+              "local_observation_channels": [
+                "/robot/sensors/joint_states",
+                "/robot/sensors/gps/fix"
+              ],
+              "true_enemy_objects": false,
+              "world_effects": false,
+              "camera_source": "selected_pose_or_manual",
+              "pose_fresh_ticks": 12,
+              "pose_hide_after_ticks": 60,
+              "robot_topics_allowed": false,
+              "target_estimates_allowed": false,
+              "pose_estimate_channels": [
+                "/robot/estimates/odometry/pose",
+                "/robot/estimates/ekf/pose"
+              ]
+            },
+            "task_feedback": {
+              "live": [
+                "goal_distance_m",
+                "checkpoints"
+              ],
+              "terminal": [
+                "tracking_rmse_m",
+                "max_deviation_m",
+                "scored_duration_s",
+                "tracking_samples"
+              ]
+            }
+          }
+        },
+        "visualization": {
+          "trail_points": 1800,
+          "initial_enabled": [
+            "robot",
+            "trail",
+            "map",
+            "encoders",
+            "frames",
+            "gps",
+            "pose_estimates",
+            "pose_covariance",
+            "path",
+            "checkpoints"
+          ],
+          "user_toggleable": [
+            "trail",
+            "encoders",
+            "frames",
+            "gps",
+            "pose_estimates",
+            "pose_covariance",
+            "path",
+            "checkpoints"
+          ],
+          "sources": {
+            "robot": "selected_pose",
+            "trail": "selected_pose",
+            "map": "map",
+            "encoders": "local_observation",
+            "frames": "selected_pose",
+            "gps": "local_observation",
+            "pose_estimates": "player_pose_candidates",
+            "pose_covariance": "selected_pose",
+            "path": "task_reference",
+            "checkpoints": "task_reference"
+          },
+          "preserve_user_settings": false,
+          "control_feedback": {
+            "title": "轮驱动调试",
+            "description": "参考来自连续路径追踪器，反馈来自同一带噪编码器；四模块仍通过前批固定提交连接。检查点只验证顺序，不要求中途停车。",
+            "period_ticks": 18,
+            "history_points": 512,
+            "precision": 3,
+            "charts": [
+              {
+                "id": "forward_speed",
+                "title": "前进速度",
+                "unit": "m/s",
+                "signals": [
+                  {
+                    "signal": "command_vx_mps",
+                    "label": "目标",
+                    "color": "#f4cf7e"
+                  },
+                  {
+                    "signal": "encoder_vx_mps",
+                    "label": "编码器反馈",
+                    "color": "#8fe3b5"
+                  }
+                ]
+              },
+              {
+                "id": "yaw_rate",
+                "title": "转向角速度",
+                "unit": "rad/s",
+                "signals": [
+                  {
+                    "signal": "command_wz_radps",
+                    "label": "目标",
+                    "color": "#f4cf7e"
+                  },
+                  {
+                    "signal": "encoder_wz_radps",
+                    "label": "编码器反馈",
+                    "color": "#8fe3b5"
+                  }
+                ]
+              },
+              {
+                "id": "wheel_rates",
+                "title": "两轮角速度",
+                "unit": "rad/s",
+                "signals": [
+                  {
+                    "signal": "left_wheel_radps",
+                    "label": "左轮",
+                    "color": "#91bcff"
+                  },
+                  {
+                    "signal": "right_wheel_radps",
+                    "label": "右轮",
+                    "color": "#e9a2da"
+                  }
+                ]
+              },
+              {
+                "id": "motor_voltage",
+                "title": "两轮执行电压",
+                "unit": "V",
+                "signals": [
+                  {
+                    "signal": "left_voltage_v",
+                    "label": "左轮",
+                    "color": "#91bcff"
+                  },
+                  {
+                    "signal": "right_voltage_v",
+                    "label": "右轮",
+                    "color": "#e9a2da"
+                  }
+                ]
+              }
+            ]
+          },
+          "gps_history_points": 100,
+          "pose_labels": {
+            "odometry": "纯里程计",
+            "ekf": "EKF"
+          },
+          "path_tracking": {
+            "route_color": "#487e72",
+            "current_color": "#f4cf7e",
+            "pending_color": "#9bb9c8",
+            "reached_color": "#8fe3b5",
+            "tolerance_color": "#f4cf7e33",
+            "line_width_px": 2.0,
+            "marker_radius_px": 5.0,
+            "font_size_px": 12.0,
+            "start_color": "#91bcff",
+            "end_color": "#f0aa87"
+          }
+        },
+        "tutorial": {
+          "problem": "让机器人连续追踪仓储中的完整公开路径，通过所有顺序检查点并在终点停稳；{time_limit_s}秒内完成，不能人工驾驶。",
+          "hints": [
+            "复用轮控制器、里程计和EKF，只需修改 navigation/path_follower.py。路径由裁判生成，不需要实现规划器。",
+            "path_xy是只读float64 (N,2)地图系数组，path_xy[i]为一个[x,y]米制坐标；整条路径一次公开，不在每批重新生成。",
+            "连续追踪不等于逐点停车。可寻找最近线段、累计弧长和前视点，再把角度误差转为车体系Twist；算法自由选择。",
+            "参考速度0.4m/s，前进上限0.5m/s，角速度±1.5rad/s；可以减速或原地转向，禁止发出负前进参考。",
+            "每1m检查点只验证按序经过，不要求中途停车；距终点显示可在正确绕行时增大，不是完成百分比。",
+            "不要忽略EKF→追踪→轮控的固定提交延迟。提前减速、角度环绕和终点制动都需要考虑。",
+            "裁判按真实质心到完整折线的点到线段距离逐tick评分；画面与控制来自自己的EKF。定位错误不会被真值纠正。"
+          ],
+          "testing": {
+            "checks": [
+              "Python语法/导入、四模块Contract、EKF输入、Twist参考与轮电压权限。",
+              "公开路径数组形状、只读性、Twist数值/平面分量及非负前进参考。",
+              "固定{test_batches}批短输入，不驱动正式物理、不推进检查点或累计正式评分。"
+            ],
+            "meaning": "测试通过仅说明接口和短输入执行通过；不代表路径追踪合格。正式部署后才按120秒、碰撞、偏离、全程误差和终点连续停稳验收。"
+          },
+          "lesson": {
+            "title": "Navigation C4 · 连续路径追踪",
+            "summary": "让机器人连续追踪仓储中的完整公开路径，通过所有顺序检查点并在终点停稳；{time_limit_s}秒内完成，不能人工驾驶。",
+            "steps": [
+              "复用轮控制器、里程计和EKF，只需修改 navigation/path_follower.py。路径由裁判生成，不需要实现规划器。",
+              "path_xy是只读float64 (N,2)地图系数组，path_xy[i]为一个[x,y]米制坐标；整条路径一次公开，不在每批重新生成。",
+              "连续追踪不等于逐点停车。可寻找最近线段、累计弧长和前视点，再把角度误差转为车体系Twist；算法自由选择。",
+              "参考速度0.4m/s，前进上限0.5m/s，角速度±1.5rad/s；可以减速或原地转向，禁止发出负前进参考。",
+              "每1m检查点只验证按序经过，不要求中途停车；距终点显示可在正确绕行时增大，不是完成百分比。",
+              "不要忽略EKF→追踪→轮控的固定提交延迟。提前减速、角度环绕和终点制动都需要考虑。",
+              "裁判按真实质心到完整折线的点到线段距离逐tick评分；画面与控制来自自己的EKF。定位错误不会被真值纠正。",
+              "保存→测试→部署；结束尝试或重试后可以重新编辑，源码与历史保留。"
+            ],
+            "files": [
+              {
+                "path": "navigation/path_follower.py",
+                "role": "本关玩家连续路径追踪器；整个文件持久保留"
+              },
+              {
+                "path": "control/wheel_controller.py",
+                "role": "完整复用C0轮电压控制器"
+              },
+              {
+                "path": "localization/odometry.py",
+                "role": "完整复用C1纯里程计对照"
+              },
+              {
+                "path": "localization/ekf.py",
+                "role": "完整复用C2定位，作为导航输入"
+              },
+              {
+                "path": "navigation/path_module.py",
+                "role": "系统管理：一次读取路径、EKF校验、输出检查与Twist参考发布"
+              }
+            ],
+            "edit_files": [
+              "navigation/path_follower.py"
+            ],
+            "functions": [
+              {
+                "path": "navigation/path_follower.py",
+                "name": "update"
+              }
+            ],
+            "default_type": "Twist",
+            "aliases": {
+              "estimated_pose": "ndarray",
+              "dt": "float",
+              "Twist": "Twist",
+              "Vector3": "Vector3",
+              "path_xy": "ndarray"
+            },
+            "execution": "物理60Hz/4子步、编码器30Hz、GPS2Hz，四个算法各 {algorithm_hz} Hz，每批6tick提交，总20ms墙钟。路径生成在可信准备阶段，不占玩家预算。",
+            "completion": "首次正式轮控制生效后{time_limit_s}仿真秒内完成；全程追踪RMSE≤{tracking_rmse_limit_m}m，最大偏离≤{max_deviation_m}m，不碰墙；所有检查点通过，距终点≤0.35m并以平移≤0.05m/s、角速度≤0.10rad/s连续停稳0.5秒。到达并停稳当刻结算，不等待稀释误差。",
+            "common_errors": [
+              "把0.10m输出间距当作内部搜索栅格；玩家无需搜索地图。",
+              "对每一个采样点停车，而不是连续追踪路径。",
+              "只找最近waypoint而忽略最近线段、前视距离或路径弧长。",
+              "直接使用地图系速度，或角度跨±π时没有归一化。",
+              "试图倒车、输出非平面分量、NaN/Inf或错误返回类型。",
+              "忽略固定提交延迟，转弯不减速、终点制动过晚。",
+              "误把画面里的EKF轨迹当作裁判真实轨迹，或跳过整段路径。"
+            ],
+            "type_notes": {},
+            "calibration": {
+              "wheel_radius_m": {
+                "source": "wheel_radius_m"
+              },
+              "wheel_separation_m": {
+                "source": "differential_track_m"
+              },
+              "body_mass_kg": {
+                "source": "body_mass_kg"
+              },
+              "body_yaw_inertia_kg_m2": {
+                "source": "body_yaw_inertia_kg_m2"
+              },
+              "drag_x_n_s_per_m": {
+                "source": "drag_x_n_s_per_m"
+              },
+              "drag_yaw_nm_s": {
+                "source": "drag_yaw_nm_s"
+              },
+              "motor": {
+                "source": "wheel_motor"
+              },
+              "path_reference": {
+                "source": "path_reference"
+              },
+              "tracking_rules": {
+                "source": "path_tracking_rules"
+              }
+            },
+            "ui": {
+              "state_heading": "SELF POSE / CONTINUOUS PATH",
+              "legend_pose": "选中估计（默认 EKF）",
+              "view_note": "完整路径和检查点可独立切换。车体与相机跟随EKF；距终点是授权UI反馈，真实追踪误差仅终局显示。",
+              "mode_label": "Navigation · 连续路径追踪",
+              "freshness_message": "估计位姿 · 固定提交延迟 · 世界坐标方向固定",
+              "progress_layout": "path_tracking",
+              "default_file": "navigation/path_follower.py"
+            }
+          }
+        },
+        "scaffolding": {
+          "workspace_scope": "navigation",
+          "components": [
+            "wheel_controller",
+            "wheel_control_adapter",
+            "wheel_odometry",
+            "wheel_odometry_adapter",
+            "ekf_localization",
+            "ekf_localization_adapter",
+            "path_follower",
+            "path_tracking_adapter"
+          ],
+          "documentation": {}
+        },
+        "metadata": {
+          "id": "navigation.c4",
+          "name": "Navigation C4 · 连续路径追踪",
+          "description": "在仓储场地追踪裁判自动生成的公开路径，连续绕障，通过顺序检查点并在终点停稳。",
+          "chapter": {
+            "chapter_id": "navigation",
+            "title": "Navigation",
+            "description": "只保留底盘，从轮驱动与运动控制逐步学习导航。"
+          },
+          "order": 10,
+          "version": "1.0.0",
+          "learning_objectives": [
+            "使用玩家EKF连续追踪完整公开路径，理解前视、横向误差、弯道减速、终点制动和固定提交延迟。"
+          ],
+          "recommended_algorithms": [
+            "Path tracking (algorithm choice is open)"
+          ],
+          "prerequisites": [
+            "navigation.c3"
+          ]
+        }
       }
     },
     "lessons": {
@@ -11482,6 +12801,109 @@
           "progress_layout": "waypoint_route",
           "default_file": "navigation/waypoint_controller.py"
         }
+      },
+      "navigation.c4": {
+        "title": "Navigation C4 · 连续路径追踪",
+        "summary": "让机器人连续追踪仓储中的完整公开路径，通过所有顺序检查点并在终点停稳；{time_limit_s}秒内完成，不能人工驾驶。",
+        "steps": [
+          "复用轮控制器、里程计和EKF，只需修改 navigation/path_follower.py。路径由裁判生成，不需要实现规划器。",
+          "path_xy是只读float64 (N,2)地图系数组，path_xy[i]为一个[x,y]米制坐标；整条路径一次公开，不在每批重新生成。",
+          "连续追踪不等于逐点停车。可寻找最近线段、累计弧长和前视点，再把角度误差转为车体系Twist；算法自由选择。",
+          "参考速度0.4m/s，前进上限0.5m/s，角速度±1.5rad/s；可以减速或原地转向，禁止发出负前进参考。",
+          "每1m检查点只验证按序经过，不要求中途停车；距终点显示可在正确绕行时增大，不是完成百分比。",
+          "不要忽略EKF→追踪→轮控的固定提交延迟。提前减速、角度环绕和终点制动都需要考虑。",
+          "裁判按真实质心到完整折线的点到线段距离逐tick评分；画面与控制来自自己的EKF。定位错误不会被真值纠正。",
+          "保存→测试→部署；结束尝试或重试后可以重新编辑，源码与历史保留。"
+        ],
+        "files": [
+          {
+            "path": "navigation/path_follower.py",
+            "role": "本关玩家连续路径追踪器；整个文件持久保留"
+          },
+          {
+            "path": "control/wheel_controller.py",
+            "role": "完整复用C0轮电压控制器"
+          },
+          {
+            "path": "localization/odometry.py",
+            "role": "完整复用C1纯里程计对照"
+          },
+          {
+            "path": "localization/ekf.py",
+            "role": "完整复用C2定位，作为导航输入"
+          },
+          {
+            "path": "navigation/path_module.py",
+            "role": "系统管理：一次读取路径、EKF校验、输出检查与Twist参考发布"
+          }
+        ],
+        "edit_files": [
+          "navigation/path_follower.py"
+        ],
+        "functions": [
+          {
+            "path": "navigation/path_follower.py",
+            "name": "update"
+          }
+        ],
+        "default_type": "Twist",
+        "aliases": {
+          "estimated_pose": "ndarray",
+          "dt": "float",
+          "Twist": "Twist",
+          "Vector3": "Vector3",
+          "path_xy": "ndarray"
+        },
+        "execution": "物理60Hz/4子步、编码器30Hz、GPS2Hz，四个算法各 {algorithm_hz} Hz，每批6tick提交，总20ms墙钟。路径生成在可信准备阶段，不占玩家预算。",
+        "completion": "首次正式轮控制生效后{time_limit_s}仿真秒内完成；全程追踪RMSE≤{tracking_rmse_limit_m}m，最大偏离≤{max_deviation_m}m，不碰墙；所有检查点通过，距终点≤0.35m并以平移≤0.05m/s、角速度≤0.10rad/s连续停稳0.5秒。到达并停稳当刻结算，不等待稀释误差。",
+        "common_errors": [
+          "把0.10m输出间距当作内部搜索栅格；玩家无需搜索地图。",
+          "对每一个采样点停车，而不是连续追踪路径。",
+          "只找最近waypoint而忽略最近线段、前视距离或路径弧长。",
+          "直接使用地图系速度，或角度跨±π时没有归一化。",
+          "试图倒车、输出非平面分量、NaN/Inf或错误返回类型。",
+          "忽略固定提交延迟，转弯不减速、终点制动过晚。",
+          "误把画面里的EKF轨迹当作裁判真实轨迹，或跳过整段路径。"
+        ],
+        "type_notes": {},
+        "calibration": {
+          "wheel_radius_m": {
+            "source": "wheel_radius_m"
+          },
+          "wheel_separation_m": {
+            "source": "differential_track_m"
+          },
+          "body_mass_kg": {
+            "source": "body_mass_kg"
+          },
+          "body_yaw_inertia_kg_m2": {
+            "source": "body_yaw_inertia_kg_m2"
+          },
+          "drag_x_n_s_per_m": {
+            "source": "drag_x_n_s_per_m"
+          },
+          "drag_yaw_nm_s": {
+            "source": "drag_yaw_nm_s"
+          },
+          "motor": {
+            "source": "wheel_motor"
+          },
+          "path_reference": {
+            "source": "path_reference"
+          },
+          "tracking_rules": {
+            "source": "path_tracking_rules"
+          }
+        },
+        "ui": {
+          "state_heading": "SELF POSE / CONTINUOUS PATH",
+          "legend_pose": "选中估计（默认 EKF）",
+          "view_note": "完整路径和检查点可独立切换。车体与相机跟随EKF；距终点是授权UI反馈，真实追踪误差仅终局显示。",
+          "mode_label": "Navigation · 连续路径追踪",
+          "freshness_message": "估计位姿 · 固定提交延迟 · 世界坐标方向固定",
+          "progress_layout": "path_tracking",
+          "default_file": "navigation/path_follower.py"
+        }
       }
     },
     "chapters": [
@@ -11513,7 +12935,8 @@
           "navigation.c0",
           "navigation.c1",
           "navigation.c2",
-          "navigation.c3"
+          "navigation.c3",
+          "navigation.c4"
         ]
       }
     ],

@@ -133,3 +133,9 @@ C2 的实时累计 RMSE 是上段终局发布规则的显式教学例外。allow
 ## Navigation 里程计与授权曲线增量
 
 新增 navigation.c1 YAML 复用原电机与控制器组件；wheel_odometry 生成玩家文件，wheel_odometry_adapter 负责时间与发布。evaluation.source=player_pose 选择自身候选评分，rmse_m/yaw_rmse_rad 作为声明式规则事实，live_feedback 支持分别授权的多个指标。control_feedback 使用固定语义信号注册表、独立显示 grant 与有界记录，不是可执行图表表达式；不修改原 Topic/Envelope，也不按关卡 ID 选择行为。详见 [34](34_NAVIGATION_ODOMETRY_AND_FEEDBACK.md)。
+
+## 连续路径组件（2026-11-05）
+
+当前新增Navigation C4，正式目录共十一关。新任务只引用仓储地图资产，在可信场景准备阶段按YAML声明的生成器/参数/seed得到已解析完整路径；旧课程继续各自原地图和规则。`path_follower/path_tracking_adapter`组合既有EKF与轮电压模块，`continuous_path`裁判供通用规则使用，不按关卡ID初始化或评分。
+
+静态程序输入task_inputs与任务UI反馈task_feedback独立授权，路径/检查点图层分别控制；Schema、只读数组、终局规则和组件编写入口见 [40](40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)、[levels指南](../levels/README.md)。早期五关审计与验收报告保留原时间范围，不改写为本轮结果。

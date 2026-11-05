@@ -18,7 +18,7 @@ ACTIONS = ("forward", "backward", "left", "right", "turn_left", "turn_right",
 KEY_CODE = r"Key[A-Z]|Digit[0-9]|Arrow(?:Up|Down|Left|Right)|Space|F(?:[1-9]|1[0-2])|Numpad[0-9]"
 LEGACY_LAYERS = ("map", "robot", "trail", "target_estimates", "radar", "imu", "encoders", "turret",
           "truth_robot", "truth_targets", "projectiles", "frames", "velocities", "colliders")
-LAYERS = (*LEGACY_LAYERS, "gps", "pose_estimates", "pose_covariance", "waypoints")
+LAYERS = (*LEGACY_LAYERS, "gps", "pose_estimates", "pose_covariance", "waypoints", "path", "checkpoints")
 
 
 def validate_settings(value):

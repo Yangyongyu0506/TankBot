@@ -3,6 +3,7 @@ import copy
 import math
 from pathlib import Path
 import sys
+import tempfile
 import unittest
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -208,7 +209,8 @@ class WeaponTests(unittest.TestCase):
         import http.client,json,threading
         from tankbot_host.server import LocalServer
         c=copy.deepcopy(self.config);c["host"]["port"]=0
-        a=self.authority(c);server=LocalServer(a)
+        directory=tempfile.TemporaryDirectory();self.addCleanup(directory.cleanup)
+        a=self.authority(c);server=LocalServer(a,workspace_store=Path(directory.name))
         thread=threading.Thread(target=server.http.serve_forever,daemon=True);thread.start()
         self.addCleanup(server.http.server_close);self.addCleanup(server.http.shutdown)
         connection=http.client.HTTPConnection("127.0.0.1",server.http.server_port);self.addCleanup(connection.close)

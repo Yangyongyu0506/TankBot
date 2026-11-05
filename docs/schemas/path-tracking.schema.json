@@ -1,0 +1,306 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tankbot.example/schemas/v1/path-tracking.schema.json",
+  "$ref": "#/$defs/reference",
+  "$defs": {
+    "generator": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "warehouse_search_round_v1"
+        },
+        "grid_resolution_m": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100
+        },
+        "planning_margin_m": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100
+        },
+        "safety_margin_m": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100
+        },
+        "smoothing_radius_m": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100
+        },
+        "smoothing_step_m": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100
+        },
+        "min_turn_radius_m": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100
+        },
+        "max_turn_angle_rad": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100
+        },
+        "min_total_turn_rad": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100
+        },
+        "min_detour_m": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100
+        },
+        "sample_spacing_m": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100
+        },
+        "min_length_m": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100
+        },
+        "max_length_m": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100
+        },
+        "min_endpoint_distance_m": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100
+        },
+        "numeric_tolerance_m": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100
+        },
+        "require_blocked_chord": {
+          "type": "boolean"
+        },
+        "max_attempts": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1024
+        },
+        "max_grid_nodes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        },
+        "max_search_expansions": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        },
+        "max_path_points": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 2048
+        },
+        "max_smoothing_points": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 65536
+        }
+      },
+      "required": [
+        "type",
+        "grid_resolution_m",
+        "planning_margin_m",
+        "safety_margin_m",
+        "smoothing_radius_m",
+        "smoothing_step_m",
+        "min_turn_radius_m",
+        "max_turn_angle_rad",
+        "min_total_turn_rad",
+        "min_detour_m",
+        "sample_spacing_m",
+        "min_length_m",
+        "max_length_m",
+        "min_endpoint_distance_m",
+        "numeric_tolerance_m",
+        "require_blocked_chord",
+        "max_attempts",
+        "max_grid_nodes",
+        "max_search_expansions",
+        "max_path_points",
+        "max_smoothing_points"
+      ],
+      "additionalProperties": false
+    },
+    "task": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "continuous_path"
+        },
+        "command_topic": {
+          "const": "/robot/cmd_vel"
+        },
+        "generation": {
+          "$ref": "#/$defs/generator"
+        },
+        "reference_speed_mps": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "checkpoint_spacing_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "checkpoint_radius_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "position_tolerance_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "stop_linear_speed_mps": {
+          "type": "number",
+          "minimum": 0
+        },
+        "stop_yaw_rate_radps": {
+          "type": "number",
+          "minimum": 0
+        },
+        "stop_duration_ticks": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        },
+        "control_limits": {
+          "type": "object",
+          "properties": {
+            "min_vx_mps": {
+              "const": 0.0
+            },
+            "max_vx_mps": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "max_wz_radps": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          },
+          "required": [
+            "min_vx_mps",
+            "max_vx_mps",
+            "max_wz_radps"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "command_topic",
+        "generation",
+        "reference_speed_mps",
+        "checkpoint_spacing_m",
+        "checkpoint_radius_m",
+        "position_tolerance_m",
+        "stop_linear_speed_mps",
+        "stop_yaw_rate_radps",
+        "stop_duration_ticks",
+        "control_limits"
+      ],
+      "additionalProperties": false
+    },
+    "reference": {
+      "type": "object",
+      "properties": {
+        "reference_version": {
+          "const": "1.0"
+        },
+        "frame_id": {
+          "const": "map"
+        },
+        "points_m": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2048,
+          "items": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "checkpoints_m": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2048,
+          "items": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "parameters": {
+          "$ref": "#/$defs/generator"
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "input_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "path_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "length_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "endpoint_distance_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "total_turn_rad": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "clearance_radius_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "attempts": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1024
+        }
+      },
+      "required": [
+        "reference_version",
+        "frame_id",
+        "points_m",
+        "checkpoints_m",
+        "parameters",
+        "seed",
+        "input_sha256",
+        "path_id",
+        "length_m",
+        "endpoint_distance_m",
+        "total_turn_rad",
+        "clearance_radius_m",
+        "attempts"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

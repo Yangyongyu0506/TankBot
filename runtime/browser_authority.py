@@ -77,7 +77,9 @@ class BrowserSupervisor:
             if self.closed or self.active is None or self.result is not None:
                 raise ValueError("Unsolicited runtime output")
             received=time.monotonic()
-            if elapsed_ms > self.budget*1000 or received-self.started > self.budget:
+            # Compare absolute deadlines: subtracting quantized browser timestamps
+            # can turn exactly 20 ms into 20.000000000003 ms. No extra grace time.
+            if elapsed_ms > self.budget*1000 or received > self.started+self.budget:
                 # Preserve the late arrival as evidence, without accepting its output.
                 self.timing.received({},received,bridge_round_trip_ms=elapsed_ms)
                 self.fault="RESOURCE_LIMIT"

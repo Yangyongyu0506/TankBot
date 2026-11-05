@@ -14,6 +14,8 @@ COMPONENTS = {
     "ekf_localization_adapter":{"localization/ekf_module.py":navigation.EKF_ADAPTER},
     "waypoint_controller":{"navigation/__init__.py":"","navigation/waypoint_controller.py":navigation.WAYPOINT_CONTROLLER},
     "waypoint_navigation_adapter":{"navigation/waypoint_module.py":navigation.WAYPOINT_ADAPTER},
+    "path_follower":{"navigation/__init__.py":"","navigation/path_follower.py":navigation.PATH_FOLLOWER},
+    "path_tracking_adapter":{"navigation/path_module.py":navigation.PATH_ADAPTER},
     "armor_tracker":{"perception/__init__.py":"","perception/armor_tracker.py":curriculum.ARMOR_TRACKER},
     "armor_tracking_adapter":{"robot_modules/__init__.py":"","robot_modules/armor_observations.py":curriculum.ARMOR_ADAPTER},
     "armor_contract_tests":{"tests/test_armor_contract.py":curriculum.ARMOR_TEST},

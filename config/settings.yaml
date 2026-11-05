@@ -33,3 +33,5 @@ layers:
   pose_estimates: false
   pose_covariance: false
   waypoints: false
+  path: false
+  checkpoints: false

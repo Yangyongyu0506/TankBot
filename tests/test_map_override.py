@@ -44,9 +44,16 @@ class MapOverrideTests(unittest.TestCase):
             changed=configure(c,lid)
             self.assertEqual(changed['scene']['walls'],c['map_override']['walls'])
             self.assertEqual(changed['campaign']['levels'],original['campaign']['levels'])
+            if 'path_tracking' in changed['campaign']['levels'][lid]['rules']:
+                # Empty practice maps cannot satisfy the explicit obstacle-detour
+                # constraint. Refuse boundedly rather than changing the course.
+                from tankbot_host.path_generation import PathGenerationError
+                with self.assertRaisesRegex(PathGenerationError,'PATH_GENERATION_FAILED'):
+                    Authority(changed,controlled=True)
+                changed=set_override(configure(self.base,lid),'navigation_warehouse')
             a=Authority(changed,controlled=True)
             try:
-                self.assertEqual(a.public_profile()['walls'],c['map_override']['walls'])
+                self.assertEqual(a.public_profile()['walls'],changed['map_override']['walls'])
                 self.assertTrue(a.public_profile()['custom_map_practice'])
             finally:a.close()
         self.assertEqual(self.base,original)
