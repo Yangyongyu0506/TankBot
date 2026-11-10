@@ -1,0 +1,17 @@
+schema_version: '1.0'
+# 声明准入不是可信CPU配额。原生30ms/浏览器40ms为实测后的实验性默认；见docs/41。
+module_declared_budget_cap_ms: 20
+defaults:
+  native: native_local_v1
+  pyodide: browser_pyodide_v1
+profiles:
+  native_local_v1:
+    profile_version: '1.0'
+    backend: native
+    batch_wall_deadline_ms: 30
+    status: experimental
+  browser_pyodide_v1:
+    profile_version: '1.0'
+    backend: pyodide
+    batch_wall_deadline_ms: 40
+    status: experimental

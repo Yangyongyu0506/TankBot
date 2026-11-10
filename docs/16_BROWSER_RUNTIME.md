@@ -75,3 +75,9 @@ M3 在此基础上升为 `1.5`，增加 workspace 限额；UI origin 提供带 H
 ## 玩家反馈与数学库增量
 
 SDK 数值矩阵使用 NumPy，可信 Authority 和玩家 Worker 都加载已锁定的 NumPy 包。课程白名单在静态检查与玩家 loader 执行，不扩大传感器 grants，见 [23](23_PLAYER_CODE_AND_LIBRARIES.md)。玩家输出经受限 op: log 旁路、worker 身份检查和有界缓冲后进入管理状态；没有把日志写入物理快照或开放 Runtime 网络权限，见 [24](24_RUNTIME_LOGS.md)。
+
+## 2026-11-06 执行 profile 修订
+
+当前 BrowserSupervisor 由可信工厂选择 pyodide profile，并与本次尝试的测试、部署和实验 Worker 共用冻结参数。声明准入总上限与往返墙钟独立；旧配置互斥兼容、公开摘要和测量依据见 [41](41_RUNTIME_EXECUTION_PROFILES.md) 与 [ADR-0053](adr/0053-backend-runtime-execution-profiles.md)。前文 M2 的20ms测量保留其历史适用范围。
+
+Authority 的整数单调时钟从开始编码计至完整响应解码完成，解析跨界同样拒绝。iframe 只在自己的时钟域执行局部终止，并在结果事件内显式复核，避免延迟的timer放行迟到结果；elapsed_ms只用于诊断。关闭/重建时按worker_id隔离，旧ready/fault不能启动或终止新Authority。早到结果仍在activation+6tick门才可生效；追赶、后台降频或定时器延迟不延长门。模块遥测不是CPU配额，浏览器仍无逐模块硬隔离。

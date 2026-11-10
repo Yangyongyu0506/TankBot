@@ -37,16 +37,27 @@ window.addEventListener("message",event=>{
           if(result?.op==="fault"){state.fault("MODULE_ERROR",result.detail);return;}
           if(result?.op==="ready"&&state.booting){state.booting=false;clearTimeout(state.timer);emit({op:"ready",security:result.security,memory_bytes:result.memory_bytes,unit_tests:result.unit_tests,runtime_packages:result.runtime_packages});return;}
           if(!state.active||result?.op!=="result"||typeof result.raw!=="string"||new TextEncoder().encode(result.raw).length>value.limit){state.fault("RESOURCE_LIMIT");return;}
-          state.active=false;clearTimeout(state.timer);emit({op:"result",raw:result.raw,elapsed_ms:performance.now()-state.started});
+          // A queued result may run before a delayed timer. Check this clock domain
+          // explicitly; the Authority separately checks its full encode/decode window.
+          const receivedNs=Math.round(performance.now()*1e6);
+          if(receivedNs>state.deadlineNs){state.fault("RESOURCE_LIMIT","Late runtime response","wall_deadline");return;}
+          state.active=false;clearTimeout(state.timer);emit({op:"result",raw:result.raw,elapsed_ms:(receivedNs-state.startedNs)/1e6});
         };
         state.timer=setTimeout(()=>state.fault("RESOURCE_LIMIT","Startup deadline"),value.startup_timeout_s*1000);
         state.worker.postMessage({op,value:{...value,ui_origin:uiOrigin},sources:value.sources});
         state.budget=value.budget_ms;
+        state.budgetNs=value.batch_wall_deadline_ns;
       }else if(op==="step"){
         if(!old||old.active||old.booting)throw Error("Runtime not ready");
-        old.active=true;old.started=performance.now();
+        old.active=true;old.startedNs=Math.round(performance.now()*1e6);old.deadlineNs=old.startedNs+old.budgetNs;
         old.logBytes=0;old.logLines=0;old.logNotice=false;
-        old.timer=setTimeout(()=>old.fault("RESOURCE_LIMIT","Batch wall deadline","wall_deadline"),old.budget);
+        const checkDeadline=()=>{
+          if(workers.get(worker_id)!==old||!old.active)return;
+          const remaining=old.deadlineNs-Math.round(performance.now()*1e6);
+          if(remaining<0)old.fault("RESOURCE_LIMIT","Batch wall deadline","wall_deadline");
+          else old.timer=setTimeout(checkDeadline,remaining/1e6);
+        };
+        old.timer=setTimeout(checkDeadline,old.budget);
         old.worker.postMessage({op,raw:JSON.stringify(value)});
       }else throw Error("Unknown operation");
     }catch(error){

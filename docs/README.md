@@ -18,6 +18,8 @@
 | [工程验收](reports/ENGINEERING_QUALITY_VALIDATION_20261105.md) | 统一回归、原生/Pyodide实际实验/恢复、截止证据与范围 |
 | [评估跟进](reports/PROJECT_REVIEW_FOLLOWUP_20261105.md) | 对2026-11-04历史评估逐项落实、Serena职责核查和待办 |
 | [40 连续路径追踪](40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md) | Navigation C4：自动安全路径、只读数组、顺序检查点与真实轨迹评分 |
+| [41 Runtime运行profile](41_RUNTIME_EXECUTION_PROFILES.md) | 后端冻结profile、声明准入与完整往返截止、流式基准和兼容合同 |
+| [Runtime profile验收](reports/RUNTIME_EXECUTION_PROFILES_VALIDATION_20261107.md) | 最终候选看门狗矩阵、截断/尝试统计与30/40ms实验性默认 |
 | [连续路径验收](reports/NAVIGATION_PATH_TRACKING_VALIDATION.md) | 多seed生成/闭环、规则与权限、源码保留、原生/Pyodide流程及截止风险 |
 | [39 后续导航课程提案](39_NAVIGATION_COURSE_PROPOSALS.md) | 连续路径已由40实施；其余规划、避障、定位/建图扩展仍为Planned |
 | [37 航点位置闭环](37_NAVIGATION_WAYPOINT_CONTROL.md) | Navigation C3：公开路线、玩家估计反馈、轮电压参考与到点/停稳规则 |

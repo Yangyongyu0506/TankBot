@@ -109,7 +109,8 @@ def main():
         if args.mode=='browser':evidence['health']=script("return JSON.parse(document.getElementById('arena').dataset.runtimeHealth||'{}');")
         assert result['passed'],result
         timing=runtime['timing']
-        assert timing['budget_ms']==20 and timing['timeouts']==0
+        assert timing['budget_ms']==timing['execution_profile']['batch_wall_deadline_ms'] and timing['timeouts']==0
+        assert timing['execution_profile']['module_declared_budget_cap_ms']==20
         assert all(row['commit_tick']-row['activation_tick']==6 for row in timing['recent'])
         assert result['path_id']==identity
         assert result['checkpoints_reached']==result['checkpoint_count']

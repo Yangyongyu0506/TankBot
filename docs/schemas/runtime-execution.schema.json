@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tankbot.example/schemas/v1/runtime-execution.schema.json",
+  "title": "可信Runtime运行profile目录",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "module_declared_budget_cap_ms": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 1000
+    },
+    "defaults": {
+      "type": "object",
+      "properties": {
+        "native": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$"
+        },
+        "pyodide": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$"
+        }
+      },
+      "required": [
+        "native",
+        "pyodide"
+      ],
+      "additionalProperties": false
+    },
+    "profiles": {
+      "type": "object",
+      "minProperties": 2,
+      "maxProperties": 32,
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_]{0,63}$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "profile_version": {
+            "const": "1.0"
+          },
+          "backend": {
+            "enum": [
+              "native",
+              "pyodide"
+            ]
+          },
+          "batch_wall_deadline_ms": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          },
+          "status": {
+            "enum": [
+              "experimental",
+              "validated_local"
+            ]
+          }
+        },
+        "required": [
+          "profile_version",
+          "backend",
+          "batch_wall_deadline_ms",
+          "status"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "module_declared_budget_cap_ms",
+    "defaults",
+    "profiles"
+  ],
+  "additionalProperties": false
+}

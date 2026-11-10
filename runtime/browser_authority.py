@@ -7,6 +7,7 @@ import uuid
 from tankbot_protocol.wire import strict_loads
 from tankbot_host.authority import Authority, load_config, core_configuration
 from tankbot_host.logs import RuntimeLogs
+from tankbot_host.execution_profiles import select_execution_profile
 
 
 class WasmCore:
@@ -29,8 +30,12 @@ class WasmCore:
 
 class BrowserSupervisor:
     workers = {}
+    runtime_backend = "pyodide"
 
-    def __init__(self, config, init, *, deferred=False):
+    def __init__(self, config, init, *, deferred=False, execution_profile=None):
+        self.execution_profile = execution_profile or select_execution_profile(config, self.runtime_backend)
+        if self.execution_profile.backend != self.runtime_backend:
+            raise ValueError("RUNTIME_PROFILE_BACKEND")
         self.worker_id = uuid.uuid4().hex
         self.workers[self.worker_id] = self
         self.ready = False
@@ -38,25 +43,29 @@ class BrowserSupervisor:
         self.detail = None
         self.limit = config["runtime"]["max_message_bytes"]
         self.logs = RuntimeLogs(config["runtime"]["max_log_bytes"])
-        self.budget = config["runtime"]["batch_budget_ms"]/1000
+        self.budget = self.execution_profile.batch_wall_deadline_ms/1000
+        self.budget_ns = self.execution_profile.wall_deadline_ns
         from tankbot_host.runtime_timing import RuntimeTiming
-        self.timing=RuntimeTiming(self.budget*1000,"pyodide")
+        self.timing=RuntimeTiming(self.execution_profile.batch_wall_deadline_ms,self.runtime_backend,
+                                  profile=self.execution_profile.public())
         self.batch_times_ms = deque(maxlen=config["runtime"]["history_limit_ticks"])
         self.fault = None
         self.active = self.result = None
+        self.expires_ns = None
         self.closed = False
         self.send("init", {"init":init,"limit":self.limit,"budget_ms":self.budget*1000,
+                           "batch_wall_deadline_ns":self.budget_ns,
                            "max_log_bytes": config["runtime"]["max_log_bytes"],
                            "probe":config["browser"]["probe_enabled"],
                            "startup_timeout_s":config["browser"]["startup_timeout_s"]})
 
     def send(self, op, value):
         from js import runtime_send
-        started=time.monotonic()
+        started=time.monotonic_ns()
         raw=json.dumps({"op":op,"value":value,"worker_id":self.worker_id}, allow_nan=False)
-        encoded=time.monotonic()
+        encoded=time.monotonic_ns()
         runtime_send(raw)
-        return (encoded-started)*1000,(time.monotonic()-encoded)*1000
+        return (encoded-started)/1_000_000,(time.monotonic_ns()-encoded)/1_000_000
 
     def poll_ready(self):
         return self.ready
@@ -65,9 +74,10 @@ class BrowserSupervisor:
         if self.closed or self.fault or self.active:
             return False
         self.active = request["request_id"]
-        self.started = time.monotonic()
+        self.started_ns = time.monotonic_ns()
+        self.expires_ns = self.started_ns+self.budget_ns
         self.result = None
-        self.timing.begin(request,self.started)
+        self.timing.begin(request,started_ns=self.started_ns)
         encoded,written=self.send("step", request)
         self.timing.sent(request_encode_ms=encoded,request_write_ms=written)
         return True
@@ -76,23 +86,31 @@ class BrowserSupervisor:
         try:
             if self.closed or self.active is None or self.result is not None:
                 raise ValueError("Unsolicited runtime output")
-            received=time.monotonic()
-            # Compare absolute deadlines: subtracting quantized browser timestamps
-            # can turn exactly 20 ms into 20.000000000003 ms. No extra grace time.
-            if elapsed_ms > self.budget*1000 or received > self.started+self.budget:
+            arrived=time.monotonic_ns()
+            if arrived > self.expires_ns:
                 # Preserve the late arrival as evidence, without accepting its output.
-                self.timing.received({},received,bridge_round_trip_ms=elapsed_ms)
+                self.timing.sent(response_arrival_ms=(arrived-self.started_ns)/1_000_000,
+                                 bridge_round_trip_ms=elapsed_ms)
                 self.fault="RESOURCE_LIMIT"
                 self.timing.finish(self.fault,"wall_deadline")
                 self.close()
                 return
             if not isinstance(raw,str) or len(raw.encode()) > self.limit:
                 raise ValueError("Size")
-            decoded=time.monotonic()
-            self.result = strict_loads(raw)
-            received=time.monotonic()
-            self.timing.received(self.result,received,response_decode_ms=(received-decoded)*1000,bridge_round_trip_ms=elapsed_ms,**(transport or {}))
-            self.batch_times_ms.append(elapsed_ms)
+            decoded=time.monotonic_ns()
+            result = strict_loads(raw)
+            received=time.monotonic_ns()
+            self.timing.received(result,received_ns=received,response_decode_ms=(received-decoded)/1_000_000,
+                                 response_decode_started_monotonic_ns=decoded,bridge_round_trip_ms=elapsed_ms)
+            # The Authority clock is final. A delayed bridge watchdog cannot grant time,
+            # and parsing a large response cannot straddle the deadline unnoticed.
+            if received > self.expires_ns:
+                self.fault="RESOURCE_LIMIT"
+                self.timing.finish(self.fault,"response_decode_deadline")
+                self.close()
+                return
+            self.result = result
+            self.batch_times_ms.append((received-self.started_ns)/1_000_000)
         except (ValueError, TypeError, RecursionError):
             self.fault = "RESOURCE_LIMIT"
             self.timing.finish(self.fault,"receive_validation")
@@ -103,11 +121,12 @@ class BrowserSupervisor:
         result = self.result
         self.active = self.result = None
         if self.fault or result is None:
-            self.fault = self.fault or "MISSED_DEADLINE"
-            self.timing.finish(self.fault,"commit_gate")
+            expired=self.expires_ns is not None and time.monotonic_ns()>self.expires_ns
+            if self.fault is None:self.fault="RESOURCE_LIMIT" if expired else "MISSED_DEADLINE"
+            self.timing.finish(self.fault,"wall_deadline" if self.fault=="RESOURCE_LIMIT" else "commit_gate",at_gate=True)
             self.close()
             return None
-        self.timing.finish()
+        self.timing.finish(at_gate=True)
         return result
 
     def close(self):
@@ -139,10 +158,10 @@ def runtime_event(event):
         worker.close()
 
 
-def start(sources=None):
+def start(sources=None, *, startup_is_deployment=False):
     from tankbot_host.deployment import DeploymentManager
     authority = Authority(load_config("/tankbot/config/m1.json"), startup_sources=sources,
-                          core_factory=WasmCore, worker_factory=BrowserSupervisor, startup_is_deployment=False)
+                          core_factory=WasmCore, worker_factory=BrowserSupervisor, startup_is_deployment=startup_is_deployment)
     authority.deployment = DeploymentManager(authority)
     return authority
 

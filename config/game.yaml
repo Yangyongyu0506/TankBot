@@ -36,7 +36,7 @@ scene:
   player_health: null
 runtime:
   commit_delay_ticks: 6
-  batch_budget_ms: 20
+  profiles_file: config/runtime-profiles.yaml
   startup_timeout_s: 5.0
   max_message_bytes: 262144
   max_failures: 3

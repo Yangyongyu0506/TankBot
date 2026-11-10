@@ -67,9 +67,11 @@ def receive(stream, limit, timing=None):
     if size > limit:
         raise ValueError("RESOURCE_LIMIT")
     raw = read_exact(stream, size)
-    started = time.monotonic()
+    started = time.monotonic_ns()
     value = strict_loads(raw)
-    if timing is not None:timing["response_decode_ms"] = (time.monotonic()-started)*1000
+    if timing is not None:
+        timing["response_decode_started_monotonic_ns"] = started
+        timing["response_decode_ms"] = (time.monotonic_ns()-started)/1_000_000
     return value
 
 

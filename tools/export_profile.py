@@ -18,14 +18,18 @@ def main():
     relaunch_if_needed(Path(__file__).resolve(), offline=args.offline)
     sys.path[:0]=[str(ROOT/p) for p in ("host","protocol","sdk/python")]
     from tankbot_host.authority import load_config
-    path = ROOT / "core/tests/fixtures/default-profile.json"
-    data = json.dumps(load_config(ROOT / "config/game.yaml"), ensure_ascii=False, indent=2) + "\n"
-    if args.check:
-        if not path.exists() or path.read_text(encoding="utf-8") != data:
-            raise SystemExit("Generated profile is stale; run python3 tools/export_profile.py")
-    else:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(data, encoding="utf-8")
+    config=load_config(ROOT / "config/game.yaml")
+    artifacts={ROOT / "core/tests/fixtures/default-profile.json":config}
+    if "profiles" in config["runtime"]:
+        artifacts[ROOT / "docs/examples/runtime-execution-profiles.json"]=config["runtime"]["profiles"]
+    for path,value in artifacts.items():
+        data = json.dumps(value, ensure_ascii=False, indent=2) + "\n"
+        if args.check:
+            if not path.exists() or path.read_text(encoding="utf-8") != data:
+                raise SystemExit("Generated profile is stale: "+str(path.relative_to(ROOT))+"; run python3 tools/export_profile.py")
+        else:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(data, encoding="utf-8")
 
 
 if __name__ == "__main__":

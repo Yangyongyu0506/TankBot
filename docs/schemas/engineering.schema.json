@@ -146,11 +146,17 @@
           "type": "integer",
           "minimum": 1,
           "maximum": 64
+        },
+        "max_journal_events": {
+          "type": "integer",
+          "minimum": 16,
+          "maximum": 4096
         }
       },
       "required": [
         "max_batches",
-        "max_public_samples"
+        "max_public_samples",
+        "max_journal_events"
       ],
       "additionalProperties": false
     }

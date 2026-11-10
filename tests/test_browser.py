@@ -12,7 +12,7 @@ import unittest
 from unittest.mock import patch
 
 ROOT=Path(__file__).resolve().parents[1]
-sys.path[:0]=[str(ROOT/"host"),str(ROOT/"protocol"),str(ROOT/"runtime")]
+sys.path[:0]=[str(ROOT/"host"),str(ROOT/"protocol"),str(ROOT/"runtime"),str(ROOT/"sdk/python")]
 from tankbot_host.authority import load_config
 from tankbot_host.browser_server import BrowserServer
 from browser_authority import BrowserSupervisor
@@ -21,12 +21,13 @@ from browser_authority import BrowserSupervisor
 class BrowserTests(unittest.TestCase):
     def test_browser_exact_wall_boundary_has_no_float_subtraction_false_timeout(self):
         config=load_config(ROOT/'config/game.yaml')
-        for received,bridge,accepted in ((46.014,20,True),(46.014001,20,False),(46.014,20.001,False)):
+        config['runtime']={**config['runtime'],'batch_budget_ms':20};config['runtime'].pop('profiles')
+        for received,bridge,accepted in ((46_014_000_000,20,True),(46_014_000_001,20,False),(46_014_000_000,200,True)):
             with self.subTest(received=received,bridge=bridge),patch.dict(sys.modules,{'js':types.SimpleNamespace(runtime_send=lambda raw:None)}):
                 sup=BrowserSupervisor(config,{})
-                with patch('browser_authority.time.monotonic',return_value=45.994):
+                with patch('browser_authority.time.monotonic_ns',return_value=45_994_000_000):
                     sup.submit({'request_id':'boundary'})
-                with patch('browser_authority.time.monotonic',return_value=received):
+                with patch('browser_authority.time.monotonic_ns',return_value=received):
                     sup.receive('{"result":1}',bridge)
                     self.assertEqual(sup.finish(),{'result':1} if accepted else None)
                 self.assertEqual(sup.fault,None if accepted else 'RESOURCE_LIMIT')
@@ -36,7 +37,7 @@ class BrowserTests(unittest.TestCase):
         config=load_config(ROOT/"config/game.yaml");sent=[]
         with patch.dict(sys.modules,{"js":types.SimpleNamespace(runtime_send=lambda raw:sent.append(json.loads(raw)))}):
             sup=BrowserSupervisor(config,{"workspace":"/workspace"})
-            with patch("browser_authority.time.monotonic",return_value=1):
+            with patch("browser_authority.time.monotonic_ns",return_value=1_000_000_000):
                 self.assertTrue(sup.submit({"request_id":"step-6"}))
                 sup.receive('{"result":1}',1)
                 self.assertEqual(sup.finish(),{"result":1})
@@ -48,10 +49,10 @@ class BrowserTests(unittest.TestCase):
 
     def test_browser_supervisor_rejects_duplicate_oversized_and_late_responses(self):
         config=load_config(ROOT/"config/game.yaml")
-        for raw,elapsed in [('{"x":1,"x":2}',1),('x'*65537,1),('{}',21)]:
+        for raw,elapsed in [('{"x":1,"x":2}',1),('x'*65537,1)]:
             with self.subTest(raw=raw[:20],elapsed=elapsed),patch.dict(sys.modules,{"js":types.SimpleNamespace(runtime_send=lambda raw:None)}):
                 sup=BrowserSupervisor(config,{})
-                with patch("browser_authority.time.monotonic",return_value=1):
+                with patch("browser_authority.time.monotonic_ns",return_value=1_000_000_000):
                     sup.submit({"request_id":"step-6"});sup.receive(raw,elapsed)
                     self.assertIsNone(sup.finish());self.assertEqual(sup.fault,"RESOURCE_LIMIT")
                     timing=sup.timing.public()

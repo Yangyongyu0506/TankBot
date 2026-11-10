@@ -80,7 +80,8 @@ def main():
         runtime=request('/api/deployment',{},True) if args.mode=='browser' else request('/api/deployment')
         timing=runtime['timing'];assert timing['backend']==('native' if args.mode=='native' else 'pyodide')
         assert timing['costs']['round_trip_ms']['count']>0 and timing['modules']['perception']['update_ms']['count']>0
-        assert timing['budget_ms']==20
+        assert timing['budget_ms']==timing['execution_profile']['batch_wall_deadline_ms']
+        assert timing['execution_profile']['module_declared_budget_cap_ms']==20
         evidence['timing']=timing
         healthy=reports[0]['revision']
         click('close-experiment');click('open-workspace')

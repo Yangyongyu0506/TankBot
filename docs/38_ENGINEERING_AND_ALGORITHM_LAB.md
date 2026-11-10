@@ -4,7 +4,7 @@
 
 依据2026-11-04评估和当前源码，按以下验证边界推进：统一检查入口→Weapons C2固定输入实验→原生/Pyodide耗时诊断→项目备份/保留→局部职责提取→当前文档及未来课程建议。评估原文保留于 [原报告](reports/PROJECT_REVIEW_20261104.md)，本轮结果独立记录，不把历史实测当作新证据。
 
-不新增关卡或物理。十关稳定ID、通关条件、20ms墙钟预算、6tick提交、看门狗和玩家源码保留规则不变。新增工程配额集中于 [engineering.yaml](../config/engineering.yaml)，经过 [Schema](schemas/engineering.schema.json) 校验；课程授权仍来自YAML。架构取舍见 [ADR-0051](adr/0051-engineering-experiments-and-retention.md)。
+本文首轮交付不新增关卡或物理；当时十关、20ms墙钟、6tick提交及玩家源码保持。后续Navigation C4已增加为十一关；当前墙钟与声明准入的独立profile修订见 [41](41_RUNTIME_EXECUTION_PROFILES.md)，本文实验权限和源码保留合同继续有效。新增工程配额集中于 [engineering.yaml](../config/engineering.yaml)，经过 [Schema](schemas/engineering.schema.json) 校验；课程授权仍来自YAML。架构取舍见 [ADR-0051](adr/0051-engineering-experiments-and-retention.md)。
 
 ## 本地和CI检查合同
 
@@ -60,7 +60,7 @@ RuntimeTiming在现有Supervisor与浏览器Adapter上增量观测。每批记�
 
 输出编码无法把自身最终耗时放进同一已编码消息，因此报告前一批编码耗时，并附前批step_id；UI明确标“前批”。浏览器桥接与Authority总往返是不同计时范围，不能互减或假定跨Worker绝对时钟同步。通信/排队/调度的剩余时间没有被可靠分开的部分明确保留为往返，不伪造独立CPU耗时。
 
-有界窗口提供p50/p95/p99、超时率和最近失败位置。Worker内部数值属于可伪造的诊断；宿主墙钟仍执行现有预算。探针在协议校验之前读取响应，遇到非法telemetry只忽略该诊断字段，正式校验照常拒绝，不能导致读线程崩溃。观测不扩大20ms，不改变失败处理或错过门后的拒绝，也不把update墙钟当CPU配额。实验标记为replay_validated，不冒充物理committed；回放等待门使用独立计数器。先依据实测决定是否优化，不在本轮更换编码或重写Authority。
+有界窗口提供p50/p95/p99/p99.9/max、超时率和最近失败位置，并公开冻结profile。可消费的有界逐批事件流供长测落盘，丢失计数显式报告，不用窗口冒充完整样本。Worker内部数值属于可伪造的诊断；宿主墙钟仍执行现有预算。探针在协议校验之前读取响应，遇到非法telemetry只忽略该诊断字段，正式校验照常拒绝，不能导致读线程崩溃。观测不改变冻结profile或失败处理，不放行错过门的结果，也不把update墙钟当CPU配额。实验标记为replay_validated，不冒充物理committed；回放等待门使用独立计数器。先依据实测决定是否优化，不在本轮更换编码或重写Authority。
 
 ## 项目备份、保留与恢复
 

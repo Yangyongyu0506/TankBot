@@ -40,7 +40,7 @@ Pyodide 可访问 JS 桥，删除 `import js`、过滤 builtins 或 AST 扫描�
 
 ## 初始预算与故障策略
 
-候选 profile：每机器人 1 个 worker、内存 256 MiB、进程/线程上限 16、可写数据 16 MiB、每墙钟秒日志 32 KiB、整机器人单次激活批次墙钟上限 20 ms。模块请求预算之和须经过 Host 准入并低于该硬限额；不能把共享 worker 的内部模块当成独立安全主体。Runtime 初始化可有独立 5 s 上限；Pyodide 引擎自身内存占用需单独测量，浏览器无法可靠实现与 cgroups 等价的硬内存限额，所以不能机械照搬 256 MiB 声明。
+候选 profile：每机器人 1 个 worker、内存 256 MiB、进程/线程上限 16、可写数据 16 MiB、每墙钟秒日志 32 KiB、内存等数值仍是服务器资源隔离候选。当前本机整批墙钟与模块声明总上限分别由 [runtime-profiles.yaml](../config/runtime-profiles.yaml) 定义，详见 [41](41_RUNTIME_EXECUTION_PROFILES.md)。模块请求预算之和须经过 Host 的独立声明准入；不能把共享 worker 的内部模块当成独立安全主体。Runtime 初始化可有独立 5 s 上限；Pyodide 引擎自身内存占用需单独测量，浏览器无法可靠实现与 cgroups 等价的硬内存限额，所以不能机械照搬 256 MiB 声明。
 
 | 故障 | Supervisor 动作 | 游戏后果 |
 | --- | --- | --- |
@@ -74,7 +74,7 @@ M1 为明确授权的**本人可信代码开发 profile**：原生 Rust Core 的
 
 ## M2 实测浏览器 profile
 
-双 origin / 双 Worker 已在 Linux Firefox 验证，Authority/玩家解释器不共享堆；Runtime 资源路由不提供配置、Core 或宿主源码。真实 Python JS 桥测试确认宿主句柄/文件不存在、UI/外网连接与嵌套 Worker 被阻止、fork 不可用；死循环强制终止后 Core 和 UI 继续。资源预算仍在 config/game.yaml：浏览器初始化 45 s，批次 20 ms，原生初始化仍为 5 s。
+双 origin / 双 Worker 已在 Linux Firefox 验证，Authority/玩家解释器不共享堆；Runtime 资源路由不提供配置、Core 或宿主源码。真实 Python JS 桥测试确认宿主句柄/文件不存在、UI/外网连接与嵌套 Worker 被阻止、fork 不可用；死循环强制终止后 Core 和 UI 继续。该轮验证使用浏览器初始化45s、批次20ms、原生初始化5s。当前启动上限仍在config/game.yaml；整批截止由独立后端profile冻结，旧batch_budget_ms仅在旧配置模式中同时表示准入/墙钟，混用新模式拒绝，见 [41](41_RUNTIME_EXECUTION_PROFILES.md)。
 
 CSP 允许 Runtime origin 的固定只读资源请求，MEMFS 可写；浏览器无硬内存/磁盘/CPU 配额，未进行破坏性 OOM 压力测试，不保证抗所有 DoS。尚无第三方服务器代码执行或 Arena；ADR-0013 整体仍 Proposed，局部实现选择与成本由 ADR-0020 接受。详细攻击结果、来源与数据边界见 [16](16_BROWSER_RUNTIME.md) 和 [M2 报告](reports/M2_VALIDATION.md)。
 

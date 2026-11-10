@@ -23,3 +23,7 @@
 ## Consequences
 
 需要同步配置Schema、启动参考/SDK只读数组、任务事实、模板升级、独立图层、教材和测试；旧源码及接口保留。保守通道可能拒绝窄路，失败必须有界报错。当前细节见 [40](../40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)。原生受控seed0/1/2/7、Pyodide实际页面seed0/7、时序/权限/迁移与真实编辑部署通关均有证据，范围为本机Linux/Firefox；完整回归及失败记录见 [验收](../reports/NAVIGATION_PATH_TRACKING_VALIDATION.md)。不宣称硬实时或其他平台支持。
+
+## 2026-11-06 局部修订入口
+
+本机运行profile的声明准入、整批墙钟及完整解码截止已由 [ADR-0053](0053-backend-runtime-execution-profiles.md) 局部修订；其状态与实际证据按新ADR核对。本文已有固定tick、权限、算法接口、物理和课程评分约束保持。历史20ms验收不能用来推定新profile的可靠性。

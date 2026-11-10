@@ -18,7 +18,7 @@ def environment(config, core_sha256, runtime_packages=None):
     paths += list((ROOT / "runtime").glob("*.py"))
     paths += list((ROOT / "host/tankbot_host").glob("*.py"))
     paths += list((ROOT / "protocol/tankbot_protocol").glob("*.py"))
-    paths += [ROOT / "requirements.txt", ROOT / "config/browser-assets.lock.json", ROOT / "config/player-dependencies.yaml", ROOT / "config/game.yaml", ROOT / "config/engineering.yaml"]
+    paths += [ROOT / "requirements.txt", ROOT / "config/browser-assets.lock.json", ROOT / "config/player-dependencies.yaml", ROOT / "config/game.yaml", ROOT / "config/engineering.yaml", ROOT / "config/runtime-profiles.yaml"]
     paths += list((ROOT / "templates").rglob("*.py"))
     return digest({"config": config, "core_sha256": core_sha256, "python": sys.version, "platform": sys.platform,
                    "runtime_packages": runtime_packages or {},
@@ -154,7 +154,7 @@ class DeploymentManager:
             init["graph"] = bind_publishers(artifact["graph"],job_id)
         else:
             init.pop("graph",None)
-        worker = a.worker_factory(a.config, init, deferred=True)
+        worker = a.create_worker(init, deferred=True)
         worker.deployment_id = job_id
         worker.revision = artifact["revision"]
         if kind=="test":

@@ -117,3 +117,7 @@ M6d 已新增 navigation.c3：复用三项既有算法，以玩家EKF反馈产�
 本轮按已确认规则新增navigation.c4，前置navigation.c3，复用既有四模块基础。完整地图仅引用仓储资产，可信准备阶段自动生成12–18m路线、平滑并按0.10m重采样与逐线段安全复验；PathFollower只读公开路径和玩家EKF。Authority独立限速并拒绝倒车，裁判逐tick使用真实质心到完整折线的距离，累计时间加权RMSE和顺序检查点，碰撞/控制故障/偏离优先。终点连续停稳后立即结算，不更改20ms/6tick或物理模型。接口与参数依据见 [40](40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)，实际平台、结果及截止风险见 [验收](reports/NAVIGATION_PATH_TRACKING_VALIDATION.md)。
 
 下一课程建议为已知地图全局规划；本轮不创建规划、局部scan或SLAM关卡。
+
+## 运行profile与截止加固（2026-11-06）
+
+本轮独立于后续课程：先拆分声明准入与整批墙钟、冻结后端profile和新旧配置兼容，再统一两后端完整解码后的整数截止；最后以逐批流式记录执行候选/诊断/宿主负载矩阵。物理、算法dt、6tick门、课程评分与玩家工程不变。实现合同见 [41](41_RUNTIME_EXECUTION_PROFILES.md)；历史M1–Navigation C4的20ms描述表示当期验收配置，不能替代当前profile。可靠性结论必须附实际样本和尝试级不确定性，不由一次零失败或p99推断。

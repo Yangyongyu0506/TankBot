@@ -68,7 +68,7 @@ def main():
     trusted += list((ROOT/"protocol/tankbot_protocol").glob("*.py")) + [ROOT/"runtime/browser_authority.py"]
     trusted += list((ROOT/"docs/schemas").glob("*.schema.json"))
     trusted += list((ROOT/"docs/examples").glob("*.json"))
-    trusted += [ROOT/"requirements.txt", ROOT/"config/browser-assets.lock.json", ROOT/"config/player-dependencies.yaml", ROOT/"config/game.yaml", ROOT/"config/engineering.yaml"]
+    trusted += [ROOT/"requirements.txt", ROOT/"config/browser-assets.lock.json", ROOT/"config/player-dependencies.yaml", ROOT/"config/game.yaml", ROOT/"config/engineering.yaml", ROOT/"config/runtime-profiles.yaml"]
     trusted += list((ROOT/"config/chassis").glob("*.yaml"))
     trusted += list((ROOT/"templates").rglob("*.py"))
     from python_env import relaunch_if_needed

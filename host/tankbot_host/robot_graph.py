@@ -42,7 +42,7 @@ def inspect_graph(files, manifest, authority):
         if any(port["schema"] == "fire_command@1" for port in contract["inputs"].values()):
             raise ValueError("NON_TOPIC_INPUT: read weapon_state feedback instead of subscribing to fire commands")
         modules[mid] = {"contract":contract,"config":copy.deepcopy(item["config"]),"input_channels":{},"output_channels":{}}
-    if sum(m["contract"]["execution"]["budget_ms"] for m in modules.values()) > a.config["runtime"]["batch_budget_ms"]:
+    if sum(m["contract"]["execution"]["budget_ms"] for m in modules.values()) > a.runtime_profile.module_declared_budget_cap_ms:
         raise ValueError("GRAPH_BUDGET_EXCEEDED")
     order = setup_order(modules)
     if manifest["entry_point"] not in {m["contract"]["entry_point"] for m in modules.values()}:

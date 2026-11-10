@@ -19,7 +19,7 @@ class EngineeringContractTests(unittest.TestCase):
     def setUpClass(cls):cls.validator=Validator(load_config(ROOT/'config/game.yaml'),'contracts')
 
     def test_examples_and_old_runtime_results_have_valid_formal_schemas(self):
-        for name,schema in [('engineering-settings','engineering'),('workspace-backup','workspace-backup'),('experiment-empty-record','experiment'),('experiment-empty-package','experiment-package')]:
+        for name,schema in [('engineering-settings','engineering'),('workspace-backup','workspace-backup'),('experiment-empty-record','experiment'),('experiment-empty-package','experiment-package'),('runtime-execution-profiles','runtime-execution')]:
             with self.subTest(name=name):self.validator.structure(json.loads((ROOT/'docs/examples'/ (name+'.json')).read_text()),schema+'.schema.json')
         sample=json.loads((ROOT/'docs/examples/runtime-telemetry.json').read_text())
         self.assertTrue(self.validator.schemas['payloads.schema.json'].evolve(schema={'$ref':'#/$defs/runtime_step_result'}).is_valid(sample))

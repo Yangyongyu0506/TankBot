@@ -1,5 +1,8 @@
 """Authority-owned initial module grant; Manifest cannot widen this profile."""
 
+from .execution_profiles import admission_cap
+
+
 def module_profile(config):
     level=config.get("campaign",{}).get("active_level")
     if level:
@@ -20,7 +23,7 @@ def module_profile(config):
                      "inputs": {"wheels": {"schema": "joint_state@1", "required": True, "max_age_ticks": config["runtime"]["input_max_age_ticks"]},
                                 "imu": {"schema": "imu@1", "required": False, "max_age_ticks": config["runtime"]["input_max_age_ticks"]}},
                      "outputs": {"pose": {"schema": "pose2d@1"}},
-                     "execution": {"mode": "periodic", "period_ticks": period, "deadline_ticks": delay, "budget_ms": config["runtime"]["batch_budget_ms"]},
+                     "execution": {"mode": "periodic", "period_ticks": period, "deadline_ticks": delay, "budget_ms": admission_cap(config)},
                      "dependencies": [], "state_version": "1"}
     if config["weapons"]["enabled"]:
         for port, schema in (("turret", "joint_state@1"), ("weapon", "weapon_state@1")):

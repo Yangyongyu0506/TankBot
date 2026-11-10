@@ -167,7 +167,7 @@ class DeploymentTests(WorkspaceFixture, unittest.TestCase):
         changed['revision'] = digest({'files': changed['files'], 'ledger': changed['ledger']})
         with self.assertRaises(ValueError): inspect_snapshot(changed, self.authority)
         self.manager.start('test', snapshot);self.assertEqual(self.finish()['status'], 'Ready')
-        self.authority.config['runtime']['batch_budget_ms'] += 1
+        self.authority.config['runtime']['max_message_bytes'] += 1
         with self.assertRaises(ValueError): self.manager.start('deploy', snapshot)
 
     def test_unit_test_failure_and_failed_staging_keep_previous_runtime(self):

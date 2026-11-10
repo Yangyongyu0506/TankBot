@@ -1,5 +1,5 @@
 version: '1.0'
-# 工程工具配额；不改变游戏物理、20 ms预算或正式关卡评分。
+# 工程工具配额；执行时限见 runtime-profiles.yaml，不改变物理或评分。
 lab:
   max_batches: 120
   max_record_bytes: 131072
@@ -12,6 +12,7 @@ lab:
 timing:
   max_batches: 512
   max_public_samples: 32
+  max_journal_events: 512
 storage:
   max_backup_bytes: 33554432
   max_backup_files: 4096

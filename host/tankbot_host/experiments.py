@@ -185,7 +185,7 @@ class ExperimentLab:
         init['contract']=copy.deepcopy(artifact['contract']);init['publisher_id']=a.publisher_id
         init['input_channels']=copy.deepcopy(a.input_channels);init['output_channels']=copy.deepcopy(a.output_channels)
         init['experiment_seed']=self.record['seed']
-        worker=a.worker_factory(a.config,init,deferred=True)
+        worker=a.create_worker(init,deferred=True)
         self.job={'worker':worker,'artifact':artifact,'index':0,'phase':'booting','gate':None,
             'validator':Validator(a.config,self.record['run_id']),
             'report':{'revision':snapshot['revision'],'environment_sha256':artifact['environment'],

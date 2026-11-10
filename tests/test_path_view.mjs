@@ -43,3 +43,10 @@ test('terminal task metrics remain independent when individual visualization gra
   assert.ok(!pathResultSummary({tracking_samples:10}).includes('RMSE'));
   assert.equal(pathResultSummary({scored_duration_s:2}), ' 计分 2.00 s。');
 });
+
+test('an unrelated course without path state keeps the path layer empty',()=>{
+  const overlay=new PathOverlay({campaign:{active_level:'weapons',levels:[]}});
+  overlay.update('run-a',undefined);
+  assert.equal(overlay.state,null);
+  assert.deepEqual(overlay.points(),[]);
+});

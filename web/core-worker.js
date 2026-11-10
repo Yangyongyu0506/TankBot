@@ -2,6 +2,7 @@ import {WasmCore} from "/wasm-core.js";
 import {python} from "/python-loader.js";
 let py, authority, ready=false, timer, config, runtimePort, coldStart,security,playerMemory,fixtures;
 const coreTimes=[];
+let benchmarkLoadMs=0;
 const distribution=values=>{const a=[...values].sort((x,y)=>x-y);return {count:a.length,p50_ms:a[Math.floor(a.length*.5)],p95_ms:a[Math.floor(a.length*.95)],max_ms:a.at(-1)};};
 const notify=(kind,value)=>self.postMessage({kind,value});
 function evaluate(code){return JSON.parse(py.runPython(`json.dumps(${code},allow_nan=False)`));}
@@ -11,6 +12,9 @@ function tick(){
   try{
     py.runPython("authority.advance()");
     const n=evaluate("authority.tick");
+    if(benchmarkLoadMs&&n%(config.clock.physics_hz/config.clock.algorithm_hz)===1){
+      const until=performance.now()+benchmarkLoadMs;while(performance.now()<until){} // Explicit QA host-load stratum.
+    }
     if(!completed&&evaluate("authority.campaign is not None and authority.campaign.status == 'passed'")){
       completed=true;notify("completed",evaluate("authority.campaign_status()"));
     }
@@ -44,12 +48,13 @@ self.onmessage=async({data})=>{
         else {
           py.globals.set("_runtime_event_json",JSON.stringify(result));
           py.runPython("runtime_event(json.loads(_runtime_event_json))");
-          if(result.op==="progress"&&!ready)notify("progress",String(result.phase).slice(0,64));
-          if(result.op==="ready"&&!ready){
+          const currentWorker=result.worker_id===evaluate("authority.worker.worker_id");
+          if(result.op==="progress"&&!ready&&currentWorker)notify("progress",String(result.phase).slice(0,64));
+          if(result.op==="ready"&&!ready&&currentWorker){
             security=result.security;playerMemory=result.memory_bytes;
             coldStart=performance.now()-started;ready=true;deadline=performance.now();
             notify("profile",evaluate("authority.public_profile()"));tick();
-          }else if(result.op==="fault"&&!ready)notify("error","Python initialization failed: "+result.code);
+          }else if(result.op==="fault"&&!ready&&currentWorker)notify("error","Python initialization failed: "+result.code);
         }
       };runtimePort.start();
       const [bytes,conf,sources]=await Promise.all([
@@ -76,6 +81,17 @@ self.onmessage=async({data})=>{
       }
       authority=true;
     }else if(data.op==="command"&&authority){
+      if(data.path==="/api/benchmark"){
+        if(!config.browser.probe_enabled)throw Error("UNAUTHORIZED");
+        const value=data.value;
+        if(!value||!['drain','restart'].includes(value.operation)||Object.keys(value).some(k=>!['operation','host_load_ms'].includes(k)))throw Error("INVALID_BENCHMARK_REQUEST");
+        if(value.operation==='restart'){
+          if(!Number.isFinite(value.host_load_ms)||value.host_load_ms<0||value.host_load_ms>1000/config.clock.physics_hz)throw Error("INVALID_BENCHMARK_LOAD");
+          clearTimeout(timer);ready=false;completed=false;benchmarkLoadMs=value.host_load_ms;
+          py.runPython("authority.close()\nauthority=start(json.loads(_startup_sources_json),startup_is_deployment=True)");
+        }
+        self.postMessage({kind:"response",id:data.id,ok:true,value:evaluate("__import__('tankbot_host.runtime_benchmark',fromlist=['snapshot']).snapshot(authority)")});return;
+      }
       if(data.path==="/api/developer"){
         if(!developerMode)throw Error("UNAUTHORIZED");
         self.postMessage({kind:"response",id:data.id,ok:true,value:evaluate("authority.developer_snapshot()")});return;

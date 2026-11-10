@@ -14,6 +14,8 @@
 | [chassis-controller.schema.json](chassis-controller.schema.json) | 受信底盘类型、速度轴限值、cmd_vel_timeout；不是逐条速度消息 |
 | [wheel-calibration.schema.json](wheel-calibration.schema.json) | radial_omni@1 公开轮组标定和可复用几何结构 |
 | [chassis-profile.schema.json](chassis-profile.schema.json) | 通用底盘类型、几何、四面装甲、GPS 安装与外观；表面一致性另作领域校验 |
+| [runtime-benchmark.schema.json](runtime-benchmark.schema.json) | 可信隔离基准的候选、负载、校准及磁盘/样本配额 |
+| [runtime-execution.schema.json](runtime-execution.schema.json) | 可信后端目录、独立声明准入与整批墙钟 |
 | [simulation-profile.schema.json](simulation-profile.schema.json) | 通用配置与生成的内部 DTO；跨字段/数值可行性另由 Host/Core 校验 |
 | [campaign.schema.json](campaign.schema.json) | 生成的 Campaign 兼容 DTO，以及既有 Radar、巡逻与血量组件定义 |
 | [level.schema.json](level.schema.json) | 独立 YAML 关卡 1.0：元数据、世界、机器人、接口、权限、规则、诊断和教材 |
@@ -107,3 +109,9 @@ engineering-settings.json、runtime-telemetry.json及workspace-backup.json是公
 [path-tracking.schema.json](path-tracking.schema.json)定义generator、task与reference：有界搜索/平滑参数、只读数组的JSON表示、身份与生成指标。level.schema通过objectives.path_tracking引用task；simulation-profile可选navigation_path携带已解析reference。旧课程无新增必填字段。
 
 结构以外，领域层校验初态/完整车体通道、重采样间距、长度、自交、可执行转弯、摘要/检查点一致、EKF连接和轮电压授权。task_inputs只开放path_reference；task_feedback区分live/terminal，path/checkpoints各自授权，旧设置缺项只在内存补false。公开模块合同见 [示例](../examples/path-follower-contract.json)，职责及默认参数依据见 [40](../40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)。
+
+## Runtime 执行 profile
+
+[runtime-execution.schema.json](runtime-execution.schema.json)定义版本1.0的可信目录：共同声明准入总上限、每后端默认ID、独立整批墙钟与profile版本/状态。simulation-profile.schema要求已解析runtime使用新profiles或旧batch_budget_ms其中一种，禁止混用；profiles_file只在可信YAML引用解析前存在。
+
+Schema之外检查默认ID存在且后端匹配、整数纳秒可表示性和可信资产路径。Authority冻结有效对象后，玩家请求/遥测均不能改写。budget_ms诊断别名只表示墙钟，不再用作模块准入。公开配置样例见 [runtime-execution-profiles.json](../examples/runtime-execution-profiles.json)，时间与兼容语义见 [41](../41_RUNTIME_EXECUTION_PROFILES.md)。

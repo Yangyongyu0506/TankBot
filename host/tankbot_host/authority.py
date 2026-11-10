@@ -32,6 +32,8 @@ def load_config(path):
         if "walls" in config["scene"]:
             raise LevelValidationError(path,"scene","map and walls cannot both be configured")
         config["scene"]["walls"] = resolve_map(config["scene"].pop("map"),path,config,"scene.map")
+    from .execution_profiles import load_execution_profiles
+    load_execution_profiles(config)
     from .chassis_profiles import load_profiles
     load_profiles(config)
     if config.get("level_plugins") and "campaign" not in config:
@@ -42,7 +44,7 @@ def load_config(path):
         raise ValueError("Physical profile not confirmed")
     # No defaults: all runtime and controller fields must be present.
     required = {
-        "runtime": ("commit_delay_ticks", "batch_budget_ms", "startup_timeout_s", "max_message_bytes", "max_failures", "input_max_age_ticks", "max_log_bytes", "seed"),
+        "runtime": ("commit_delay_ticks", "startup_timeout_s", "max_message_bytes", "max_failures", "input_max_age_ticks", "max_log_bytes", "seed"),
         "view": ("pose_source_id", "snapshot_hz", "max_visual_trail", "poll_ms", "keyboard_refresh_ms", "keyboard_linear_mps", "keyboard_yaw_radps"),
         "host": ("bind", "port", "max_catchup_ticks"),
         "module": ("module_id", "entry_point", "pose_offset_m", "output_frame", "fault"),
@@ -117,6 +119,8 @@ class Authority:
         validate_wheels(config["wheels"])
         validate_profile(config)
         self.config = copy.deepcopy(config)
+        from .execution_profiles import select_execution_profile
+        self.runtime_profile=select_execution_profile(config,getattr(worker_factory,'runtime_backend','native'))
         self.graph = None
         self.run_id = uuid.uuid4().hex
         self.controlled = controlled
@@ -197,7 +201,7 @@ class Authority:
         self.worker_init = copy.deepcopy(init)
         self.deployment = None
         try:
-            self.worker = worker_factory(config, init)
+            self.worker = self.create_worker(init)
             self.worker.deployment_id = "startup"
             self.worker.revision = None
             explicit_startup = (workspace is not None or startup_sources is not None) if startup_is_deployment is None else startup_is_deployment
@@ -209,6 +213,10 @@ class Authority:
             self.core.close()
             raise
         self._build_view()
+
+    def create_worker(self,init,*,deferred=False):
+        """Every lease in this attempt inherits the same trusted frozen limits."""
+        return self.worker_factory(self.config,init,deferred=deferred,execution_profile=self.runtime_profile)
 
     def _message(self, schema, channel, payload, *, frame, publisher="authority", tick=None):
         seq = self._sequences.get((publisher, channel), 0)
@@ -513,16 +521,20 @@ class Authority:
             return
         pending,self._pending = self._pending,None
         response = self.worker.finish(controlled=self.controlled)
+        decision = None
         try:
             if response is None:
                 raise Rejected(self.worker.fault or "MISSED_DEADLINE")
             self.graph.commit(self.graph.check(response,pending["request"],self.validator))
         except Rejected as error:
+            decision = error.code
             self.audit.append({"event":"rejected","tick":self.tick,"code":error.code})
             self.logs.append("Robot Runtime: "+error.code+"\n",source="runtime",module_id=self.contract["module_id"],tick=self.tick,stream="error")
             self._faulted = True
             self._revoke_robot = True
             self.worker.close()
+        finally:
+            self.worker.timing.decision(decision,pending["request"]["request_id"])
 
     def reference_output(self, message):
         """Normalize before graph caching so every subscriber sees the same bounded reference."""
@@ -748,6 +760,7 @@ class Authority:
         if calibration is not None:
             self.validator.structure(calibration,"wheel-calibration.schema.json")
         return {"run_id": self.run_id, "physics_hz": self.hz, "chassis": self.config["scene"]["default_chassis"],
+                "runtime_execution_profile":self.runtime_profile.public(),
                 "custom_map_practice":bool(self.config.get("map_override")),
                 "controller_profile":controller,"view_mode":self.config["view_mode"],
                 "campaign": {"active_level": campaign_level(self.config), "levels": catalog(self.config),"chapters":copy.deepcopy(self.config.get("campaign",{}).get("chapters",[]))},

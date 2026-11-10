@@ -151,3 +151,4 @@ footer{margin:0 24px;padding:0;align-items:center;gap:12px;min-width:0;overflow:
 #experiment-dialog button:disabled,#storage-dialog button:disabled{opacity:.45;cursor:default}
 #experiment-dialog select,#storage-dialog input[type=number]{font:inherit;padding:7px;background:#10251f;color:#d7ebe3;border:1px solid #426f5d;border-radius:4px;max-width:100%}
 #experiment-dialog .workspace-toolbar,#storage-dialog .workspace-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:12px 0}
+:root .runtime-timing-table{overflow-x:auto;max-width:100%}

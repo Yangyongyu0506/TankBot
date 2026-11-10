@@ -1,0 +1,64 @@
+schema_version: '1.0'
+# 只由可信本机基准入口读取；不属于玩家请求，也不修改评分或固定门。
+seed: 0
+candidates_ms:
+  native: [80, 20, 30]
+  pyodide: [80, 20, 30, 40, 50]
+conditions:
+  foreground:
+    host_load_ms: 0
+  host_load:
+    host_load_ms: 8
+batches_per_cell:
+  native: 1667
+  pyodide: 1000
+# 每个主要负载至少 10000 批：原生 3×2×1667、浏览器 5×2×1000。
+workloads:
+  empty:
+    level: c2
+    kind: empty
+    primary: false
+    batches: 120
+  weapons_kf:
+    level: c2
+    kind: kf
+    primary: true
+  weapons_ekf:
+    level: c3
+    kind: ekf
+    primary: true
+  navigation_path:
+    level: navigation.c4
+    kind: path
+    primary: true
+  near_cap:
+    level: c2
+    kind: controlled_compute
+    primary: false
+    batches: 120
+  nonreturning:
+    level: c2
+    kind: infinite
+    primary: false
+    batches: 1
+limits:
+  max_attempts_per_cell: 64
+  max_cell_seconds: 7200
+  poll_seconds: 0.5
+  max_jsonl_part_bytes: 8388608
+  max_jsonl_parts: 128
+  max_summary_batches: 100000
+calibration:
+  target_update_ms: 18
+  relative_tolerance: 0.10
+  initial_iterations:
+    native: 120000
+    pyodide: 12000
+  min_iterations: 1
+  max_iterations: 2000000
+  max_rounds: 4
+  batches_per_round: 12
+browser:
+  width: 1440
+  height: 1000
+  startup_timeout_s: 120

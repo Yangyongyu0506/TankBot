@@ -1,0 +1,571 @@
+{
+  "date": "2026-11-05",
+  "measurement": "Reanalysis of saved observations, not new benchmark runs",
+  "limitations": [
+    "Different revisions and workflows; do not pool into one timeout estimate",
+    "Old 20 ms enforcement censors latency tails",
+    "Browser timing is quantized; internal telemetry is untrusted wall time, not CPU accounting",
+    "Navigation records belong to an in-progress implementation; hashes identify the read snapshots",
+    "Float-boundary failure 1070c6c9 is historical and must not be counted as current scheduler overload"
+  ],
+  "observations": [
+    {
+      "source": "docs/reports/engineering-quality-validation-20261105.json",
+      "source_sha256": "df0af2ad564940797d4636dfba4a5a62f2377371090ce3453afc1ad1f9f91d07",
+      "case": "weapons.c2/native",
+      "workflow_passed": true,
+      "backend": "native",
+      "budget_ms": 20,
+      "total_batches": 40,
+      "window_batches": 40,
+      "timeouts": 0,
+      "timeout_rate": 0,
+      "round_trip_ms": {
+        "count": 40,
+        "p50_ms": 3.1438599980901927,
+        "p95_ms": 4.306185997847933,
+        "p99_ms": 4.512768995482475,
+        "max_ms": 4.512768995482475
+      },
+      "runtime_python_ms": {
+        "count": 40,
+        "p50_ms": 0.3621139985625632,
+        "p95_ms": 0.4333499964559451,
+        "p99_ms": 3.209157999663148,
+        "max_ms": 3.209157999663148
+      },
+      "module_update_ms": {
+        "perception": {
+          "count": 40,
+          "p50_ms": 0.29562700365204364,
+          "p95_ms": 0.3478660000837408,
+          "p99_ms": 1.314294000621885,
+          "max_ms": 1.314294000621885
+        }
+      },
+      "failures": []
+    },
+    {
+      "source": "docs/reports/engineering-quality-validation-20261105.json",
+      "source_sha256": "df0af2ad564940797d4636dfba4a5a62f2377371090ce3453afc1ad1f9f91d07",
+      "case": "weapons.c2/browser",
+      "workflow_passed": true,
+      "backend": "pyodide",
+      "budget_ms": 20,
+      "total_batches": 40,
+      "window_batches": 40,
+      "timeouts": 0,
+      "timeout_rate": 0,
+      "round_trip_ms": {
+        "count": 40,
+        "p50_ms": 9.999999999999787,
+        "p95_ms": 11.000000000001009,
+        "p99_ms": 12.000000000000455,
+        "max_ms": 12.000000000000455
+      },
+      "runtime_python_ms": {
+        "count": 40,
+        "p50_ms": 0,
+        "p95_ms": 1.000000000000334,
+        "p99_ms": 2.9999999999998916,
+        "max_ms": 2.9999999999998916
+      },
+      "module_update_ms": {
+        "perception": {
+          "count": 40,
+          "p50_ms": 0,
+          "p95_ms": 1.000000000000334,
+          "p99_ms": 2.9999999999998916,
+          "max_ms": 2.9999999999998916
+        }
+      },
+      "failures": []
+    },
+    {
+      "source": "docs/reports/engineering-quality-validation-20261105.json",
+      "source_sha256": "df0af2ad564940797d4636dfba4a5a62f2377371090ce3453afc1ad1f9f91d07",
+      "case": "weapons.c2/transient-comparison-failure",
+      "workflow_passed": false,
+      "backend": "pyodide",
+      "budget_ms": 20,
+      "total_batches": 25,
+      "window_batches": 25,
+      "timeouts": 1,
+      "timeout_rate": 0.04,
+      "round_trip_ms": {
+        "count": 24,
+        "p50_ms": 13.999999999999346,
+        "p95_ms": 16.99999999999946,
+        "p99_ms": 18.000000000000682,
+        "max_ms": 18.000000000000682
+      },
+      "runtime_python_ms": {
+        "count": 24,
+        "p50_ms": 0,
+        "p95_ms": 1.000000000000334,
+        "p99_ms": 4.0000000000000036,
+        "max_ms": 4.0000000000000036
+      },
+      "module_update_ms": {
+        "perception": {
+          "count": 24,
+          "p50_ms": 0,
+          "p95_ms": 1.000000000000334,
+          "p99_ms": 4.0000000000000036,
+          "max_ms": 4.0000000000000036
+        }
+      },
+      "failures": [
+        {
+          "status": "RESOURCE_LIMIT",
+          "failure_location": "receive_validation",
+          "round_trip_ms": null,
+          "elapsed_to_failure_ms": 21.000000000000796
+        }
+      ]
+    },
+    {
+      "source": ".m1-cache/navigation-c4-qa/browser/browser/0640aa2a83ac44b681bb62b6201e7fe9/result.json",
+      "source_sha256": "3c44d2b05a219f9e68629b132984a5f5a5b82dc0854f55e16ec8b11c3bdcfdcb",
+      "case": "navigation.c4/0640aa2a83ac44b681bb62b6201e7fe9",
+      "workflow_passed": false,
+      "backend": "pyodide",
+      "budget_ms": 20,
+      "total_batches": 169,
+      "window_batches": 169,
+      "timeouts": 1,
+      "timeout_rate": 0.005917159763313609,
+      "round_trip_ms": {
+        "count": 169,
+        "p50_ms": 7.999999999999119,
+        "p95_ms": 16.99999999999946,
+        "p99_ms": 21.000000000000796,
+        "max_ms": 22.999999999999687
+      },
+      "runtime_python_ms": {
+        "count": 168,
+        "p50_ms": 2.000000000000668,
+        "p95_ms": 3.0000000000001137,
+        "p99_ms": 3.9999999999995595,
+        "max_ms": 4.0000000000000036
+      },
+      "module_update_ms": {
+        "ekf": {
+          "count": 168,
+          "p50_ms": 0,
+          "p95_ms": 1.0000000000012221,
+          "p99_ms": 1.0000000000012221,
+          "max_ms": 1.9999999999988916
+        },
+        "odometry": {
+          "count": 168,
+          "p50_ms": 0,
+          "p95_ms": 0.9999999999994458,
+          "p99_ms": 1.000000000000334,
+          "max_ms": 1.0000000000012221
+        },
+        "path_tracking": {
+          "count": 168,
+          "p50_ms": 0,
+          "p95_ms": 1.0000000000012221,
+          "p99_ms": 1.9999999999988916,
+          "max_ms": 2.000000000000668
+        },
+        "wheel_control": {
+          "count": 167,
+          "p50_ms": 0,
+          "p95_ms": 0.9999999999994458,
+          "p99_ms": 0.9999999999998899,
+          "max_ms": 1.000000000000334
+        }
+      },
+      "failures": [
+        {
+          "status": "RESOURCE_LIMIT",
+          "failure_location": "wall_deadline",
+          "round_trip_ms": 22.999999999999687,
+          "elapsed_to_failure_ms": null
+        }
+      ]
+    },
+    {
+      "source": ".m1-cache/navigation-c4-qa/browser/browser/1070c6c980b4408782e6f6165a17ce61/result.json",
+      "source_sha256": "f811273bb5d34d8e377d6be45d35a8b4665eb91665827c7dfa7ba9e4db118a9c",
+      "case": "navigation.c4/1070c6c980b4408782e6f6165a17ce61",
+      "workflow_passed": false,
+      "backend": "pyodide",
+      "budget_ms": 20,
+      "total_batches": 367,
+      "window_batches": 367,
+      "timeouts": 1,
+      "timeout_rate": 0.0027247956403269754,
+      "round_trip_ms": {
+        "count": 367,
+        "p50_ms": 8.000000000000895,
+        "p95_ms": 16.99999999999946,
+        "p99_ms": 19.000000000000128,
+        "max_ms": 20.000000000003126
+      },
+      "runtime_python_ms": {
+        "count": 366,
+        "p50_ms": 2.000000000000668,
+        "p95_ms": 3.0000000000001137,
+        "p99_ms": 3.9999999999995595,
+        "max_ms": 14.99999999999968
+      },
+      "module_update_ms": {
+        "ekf": {
+          "count": 366,
+          "p50_ms": 0,
+          "p95_ms": 1.0000000000012221,
+          "p99_ms": 1.0000000000047748,
+          "max_ms": 2.0000000000024443
+        },
+        "odometry": {
+          "count": 366,
+          "p50_ms": 0,
+          "p95_ms": 0.9999999999994458,
+          "p99_ms": 1.0000000000012221,
+          "max_ms": 1.0000000000047748
+        },
+        "path_tracking": {
+          "count": 366,
+          "p50_ms": 0,
+          "p95_ms": 1.0000000000012221,
+          "p99_ms": 1.9999999999953388,
+          "max_ms": 2.0000000000024443
+        },
+        "wheel_control": {
+          "count": 365,
+          "p50_ms": 0,
+          "p95_ms": 0.9999999999976694,
+          "p99_ms": 1.0000000000012221,
+          "max_ms": 1.0000000000012221
+        }
+      },
+      "failures": [
+        {
+          "status": "RESOURCE_LIMIT",
+          "failure_location": "wall_deadline",
+          "round_trip_ms": 20.000000000003126,
+          "elapsed_to_failure_ms": null
+        }
+      ]
+    },
+    {
+      "source": ".m1-cache/navigation-c4-qa/browser/browser/16dfd8059f1c4881bd0ec34ba7869c19/result.json",
+      "source_sha256": "33d89a0f4fe08fd9c6587001a84b988168682a29bfb92f46c1b65d53224af5c1",
+      "case": "navigation.c4/16dfd8059f1c4881bd0ec34ba7869c19",
+      "workflow_passed": false,
+      "backend": "pyodide",
+      "budget_ms": 20,
+      "total_batches": 269,
+      "window_batches": 269,
+      "timeouts": 1,
+      "timeout_rate": 0.0037174721189591076,
+      "round_trip_ms": {
+        "count": 269,
+        "p50_ms": 8.000000000000895,
+        "p95_ms": 16.00000000000179,
+        "p99_ms": 19.000000000005457,
+        "max_ms": 26.999999999993918
+      },
+      "runtime_python_ms": {
+        "count": 268,
+        "p50_ms": 2.000000000000668,
+        "p95_ms": 3.0000000000001137,
+        "p99_ms": 3.0000000000001137,
+        "max_ms": 3.0000000000001137
+      },
+      "module_update_ms": {
+        "ekf": {
+          "count": 268,
+          "p50_ms": 0,
+          "p95_ms": 1.0000000000012221,
+          "p99_ms": 1.0000000000012221,
+          "max_ms": 1.0000000000012221
+        },
+        "odometry": {
+          "count": 268,
+          "p50_ms": 0,
+          "p95_ms": 0.9999999999994458,
+          "p99_ms": 1.0000000000012221,
+          "max_ms": 1.0000000000012221
+        },
+        "path_tracking": {
+          "count": 268,
+          "p50_ms": 0,
+          "p95_ms": 1.0000000000012221,
+          "p99_ms": 1.0000000000012221,
+          "max_ms": 1.9999999999988916
+        },
+        "wheel_control": {
+          "count": 267,
+          "p50_ms": 0,
+          "p95_ms": 0,
+          "p99_ms": 1.0000000000012221,
+          "max_ms": 1.0000000000012221
+        }
+      },
+      "failures": [
+        {
+          "status": "RESOURCE_LIMIT",
+          "failure_location": "wall_deadline",
+          "round_trip_ms": 26.999999999993918,
+          "elapsed_to_failure_ms": null
+        }
+      ]
+    },
+    {
+      "source": ".m1-cache/navigation-c4-qa/browser/browser/bc9326a308c248459a126fe0d0c22739/result.json",
+      "source_sha256": "3064de89e790acd04d511a7f646c9cf71eea941b0a9982bece3ff2ba84ae61bf",
+      "case": "navigation.c4/bc9326a308c248459a126fe0d0c22739",
+      "workflow_passed": true,
+      "backend": "pyodide",
+      "budget_ms": 20,
+      "total_batches": 424,
+      "window_batches": 424,
+      "timeouts": 0,
+      "timeout_rate": 0,
+      "round_trip_ms": {
+        "count": 424,
+        "p50_ms": 7.999999999995566,
+        "p95_ms": 13.999999999999346,
+        "p99_ms": 18.000000000000682,
+        "max_ms": 19.99999999999602
+      },
+      "runtime_python_ms": {
+        "count": 424,
+        "p50_ms": 2.0000000000024443,
+        "p95_ms": 3.0000000000001137,
+        "p99_ms": 3.999999999997783,
+        "max_ms": 5.0000000000003375
+      },
+      "module_update_ms": {
+        "ekf": {
+          "count": 424,
+          "p50_ms": 0,
+          "p95_ms": 1.0000000000012221,
+          "p99_ms": 1.0000000000047748,
+          "max_ms": 1.9999999999988916
+        },
+        "odometry": {
+          "count": 424,
+          "p50_ms": 0,
+          "p95_ms": 0.9999999999976694,
+          "p99_ms": 1.0000000000012221,
+          "max_ms": 1.0000000000047748
+        },
+        "path_tracking": {
+          "count": 424,
+          "p50_ms": 0,
+          "p95_ms": 1.0000000000012221,
+          "p99_ms": 1.0000000000047748,
+          "max_ms": 2.000000000000668
+        },
+        "wheel_control": {
+          "count": 423,
+          "p50_ms": 0,
+          "p95_ms": 0.9999999999994458,
+          "p99_ms": 1.0000000000012221,
+          "max_ms": 1.0000000000047748
+        }
+      },
+      "failures": []
+    },
+    {
+      "source": ".m1-cache/navigation-c4-qa/browser/browser/c6f7ac8402c446c7965cbf74fd645280/result.json",
+      "source_sha256": "89abbda65ae677444f1a8fc01153a2e222689af770e3762a482e69095123a295",
+      "case": "navigation.c4/c6f7ac8402c446c7965cbf74fd645280",
+      "workflow_passed": true,
+      "backend": "pyodide",
+      "budget_ms": 20,
+      "total_batches": 387,
+      "window_batches": 387,
+      "timeouts": 0,
+      "timeout_rate": 0,
+      "round_trip_ms": {
+        "count": 387,
+        "p50_ms": 5.000000000002558,
+        "p95_ms": 8.000000000002672,
+        "p99_ms": 15.000000000000568,
+        "max_ms": 17.000000000003013
+      },
+      "runtime_python_ms": {
+        "count": 387,
+        "p50_ms": 2.000000000000668,
+        "p95_ms": 3.0000000000001137,
+        "p99_ms": 3.0000000000001137,
+        "max_ms": 4.0000000000000036
+      },
+      "module_update_ms": {
+        "ekf": {
+          "count": 387,
+          "p50_ms": 0,
+          "p95_ms": 1.0000000000012221,
+          "p99_ms": 1.0000000000047748,
+          "max_ms": 1.9999999999988916
+        },
+        "odometry": {
+          "count": 387,
+          "p50_ms": 0,
+          "p95_ms": 0.9999999999994458,
+          "p99_ms": 1.0000000000012221,
+          "max_ms": 1.0000000000047748
+        },
+        "path_tracking": {
+          "count": 387,
+          "p50_ms": 0,
+          "p95_ms": 1.0000000000012221,
+          "p99_ms": 1.0000000000047748,
+          "max_ms": 1.0000000000047748
+        },
+        "wheel_control": {
+          "count": 386,
+          "p50_ms": 0,
+          "p95_ms": 0.9999999999976694,
+          "p99_ms": 1.0000000000012221,
+          "max_ms": 1.0000000000047748
+        }
+      },
+      "failures": []
+    },
+    {
+      "source": ".m1-cache/navigation-c4-qa/browser/browser/fd09950dc01244208a4634caa753a7d6/result.json",
+      "source_sha256": "9ae355192c468eea28242e68f963c107ff0d9ab40bbf994f2a157bf03c11397f",
+      "case": "navigation.c4/fd09950dc01244208a4634caa753a7d6",
+      "workflow_passed": false,
+      "backend": "pyodide",
+      "budget_ms": 20,
+      "total_batches": 50,
+      "window_batches": 50,
+      "timeouts": 1,
+      "timeout_rate": 0.02,
+      "round_trip_ms": {
+        "count": 50,
+        "p50_ms": 7.999999999999119,
+        "p95_ms": 10.000000000001563,
+        "p99_ms": 20.99999999999902,
+        "max_ms": 20.99999999999902
+      },
+      "runtime_python_ms": {
+        "count": 49,
+        "p50_ms": 2.000000000000224,
+        "p95_ms": 3.0000000000001137,
+        "p99_ms": 4.999999999999893,
+        "max_ms": 4.999999999999893
+      },
+      "module_update_ms": {
+        "ekf": {
+          "count": 49,
+          "p50_ms": 0,
+          "p95_ms": 1.000000000000334,
+          "p99_ms": 1.9999999999997797,
+          "max_ms": 1.9999999999997797
+        },
+        "odometry": {
+          "count": 49,
+          "p50_ms": 0,
+          "p95_ms": 0,
+          "p99_ms": 0.9999999999994458,
+          "max_ms": 0.9999999999994458
+        },
+        "path_tracking": {
+          "count": 49,
+          "p50_ms": 0,
+          "p95_ms": 1.000000000000334,
+          "p99_ms": 1.000000000000334,
+          "max_ms": 1.000000000000334
+        },
+        "wheel_control": {
+          "count": 48,
+          "p50_ms": 0,
+          "p95_ms": 0.9999999999994458,
+          "p99_ms": 1.000000000000334,
+          "max_ms": 1.000000000000334
+        }
+      },
+      "failures": [
+        {
+          "status": "RESOURCE_LIMIT",
+          "failure_location": "wall_deadline",
+          "round_trip_ms": 20.99999999999902,
+          "elapsed_to_failure_ms": null
+        }
+      ]
+    },
+    {
+      "source": ".m1-cache/navigation-c4-qa/browser/native/da6b3d93fcc04caab819e5d2fd3ba207/result.json",
+      "source_sha256": "c7b01feeccb20b41cbc55c2c635a97cd7302ae4dc682c120111ed159247303f2",
+      "case": "navigation.c4/da6b3d93fcc04caab819e5d2fd3ba207",
+      "workflow_passed": true,
+      "backend": "native",
+      "budget_ms": 20,
+      "total_batches": 400,
+      "window_batches": 400,
+      "timeouts": 0,
+      "timeout_rate": 0,
+      "round_trip_ms": {
+        "count": 400,
+        "p50_ms": 3.0904949962859973,
+        "p95_ms": 3.758935010409914,
+        "p99_ms": 4.166172002442181,
+        "max_ms": 4.661269005737267
+      },
+      "runtime_python_ms": {
+        "count": 400,
+        "p50_ms": 1.0946740076178685,
+        "p95_ms": 1.276327995583415,
+        "p99_ms": 1.3570640003308654,
+        "max_ms": 1.57077400945127
+      },
+      "module_update_ms": {
+        "ekf": {
+          "count": 400,
+          "p50_ms": 0.17096901137847453,
+          "p95_ms": 0.2220210008090362,
+          "p99_ms": 0.2517039974918589,
+          "max_ms": 0.27782400138676167
+        },
+        "odometry": {
+          "count": 400,
+          "p50_ms": 0.04392900154925883,
+          "p95_ms": 0.06173900328576565,
+          "p99_ms": 0.07717299740761518,
+          "max_ms": 0.08310998964589089
+        },
+        "path_tracking": {
+          "count": 400,
+          "p50_ms": 0.1602830016054213,
+          "p95_ms": 0.19233999773859978,
+          "p99_ms": 0.23033299657981843,
+          "max_ms": 0.27307499840389937
+        },
+        "wheel_control": {
+          "count": 399,
+          "p50_ms": 0.035617995308712125,
+          "p95_ms": 0.04511699080467224,
+          "p99_ms": 0.060550999478437006,
+          "max_ms": 0.07598601223435253
+        }
+      },
+      "failures": []
+    }
+  ],
+  "candidate_profiles": {
+    "native_local_v1": {
+      "batch_wall_deadline_ms": 30,
+      "module_declared_budget_cap_ms": 20
+    },
+    "browser_pyodide_v1": {
+      "batch_wall_deadline_ms": 50,
+      "module_declared_budget_cap_ms": 20
+    }
+  },
+  "statistics": {
+    "zero_failures_40_one_sided_95_upper_rate": 0.0721575245055146,
+    "zero_failures_400_one_sided_95_upper_rate": 0.0074613555287995625,
+    "per_batch_rate_for_99_percent_1200_batch_episode_success_iid": 8.37524480534757e-06,
+    "zero_failure_batches_for_upper_rate_8e_6": 374466
+  }
+}

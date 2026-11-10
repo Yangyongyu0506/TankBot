@@ -10,7 +10,7 @@ export class PathOverlay {
   update(runId,state){
     if(runId!==this.runId){this.state=null;this.runId=runId;}
     const count=this.reference?.checkpoints_m?.length??0;
-    this.state=state?.path_id===this.reference?.path_id&&Number.isInteger(state.reached_count)
+    this.state=state&&this.reference&&state.path_id===this.reference.path_id&&Number.isInteger(state.reached_count)
       &&state.reached_count>=0&&state.reached_count<=count?{...state}:null;
   }
   points(){

@@ -23,3 +23,7 @@ JS Authority 减少启动/内存，却需重复安全规则与一致性维护；
 两个解释器增加下载/内存与转换成本；可信 Authority tick 的长尾接近 60 Hz 时间预算，多机器人前必须测量。单机器人本机数据见 [M2 验收](../reports/M2_VALIDATION.md)，接口与限制见 [16](../16_BROWSER_RUNTIME.md)。所有控制和物理参数仍在唯一配置，内部配置升级 1.4，公共消息不变。
 
 浏览器没有 cgroups 等价的硬内存/CPU/存储额度，本地设备所有者可检查启动资源；不声称可在本地保密或保证 Arena 公平。ADR-0013 的完整平台安全组合仍为 Proposed。未来移植 Authority、换 Pyodide 或放宽 CSP 均须新增证据和 ADR。
+
+## 2026-11-06 局部修订入口
+
+本机运行profile的声明准入、整批墙钟及完整解码截止已由 [ADR-0053](0053-backend-runtime-execution-profiles.md) 局部修订；其状态与实际证据按新ADR核对。本文已有固定tick、权限、算法接口、物理和课程评分约束保持。历史20ms验收不能用来推定新profile的可靠性。

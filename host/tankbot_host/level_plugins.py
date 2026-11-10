@@ -325,7 +325,8 @@ def _validate(value, filename, config, validator):
         if execution["deadline_ticks"]!=config["runtime"]["commit_delay_ticks"] or interval<execution["deadline_ticks"]:fail(path+".execution","unsupported schedule/deadline")
         if runtime["mode"]=="single" and (execution["mode"]!="periodic" or interval!=clock["physics_hz"]//clock["algorithm_hz"]):fail(path+".execution","single-module schedule must match the declared algorithm frequency")
     if runtime["manifest"]["entry_point"] not in {c["entry_point"] for c in runtime["contracts"].values()}:fail("communication.runtime.manifest.entry_point","entry point is not a declared module")
-    if sum(c["execution"]["budget_ms"] for c in runtime["contracts"].values())>config["runtime"]["batch_budget_ms"]:fail("communication.runtime.contracts","robot batch budget exceeded")
+    from .execution_profiles import admission_cap
+    if sum(c["execution"]["budget_ms"] for c in runtime["contracts"].values())>admission_cap(config):fail("communication.runtime.contracts","robot batch budget exceeded")
     writers={};bound=set()
     subscriptions=[]
     if len(runtime["manifest"]["connections"])>config["robot_graph"]["max_connections"]:fail("communication.runtime.manifest.connections","too many connections")

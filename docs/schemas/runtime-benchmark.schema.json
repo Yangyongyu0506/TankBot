@@ -1,0 +1,276 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tankbot.example/schemas/v1/runtime-benchmark.schema.json",
+  "title": "可信隔离Runtime基准参数",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "seed": {
+      "type": "integer"
+    },
+    "candidates_ms": {
+      "type": "object",
+      "properties": {
+        "native": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          }
+        },
+        "pyodide": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          }
+        }
+      },
+      "required": [
+        "native",
+        "pyodide"
+      ],
+      "additionalProperties": false
+    },
+    "conditions": {
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 8,
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_]{0,31}$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "host_load_ms": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000
+          }
+        },
+        "required": [
+          "host_load_ms"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "batches_per_cell": {
+      "type": "object",
+      "properties": {
+        "native": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        },
+        "pyodide": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        }
+      },
+      "required": [
+        "native",
+        "pyodide"
+      ],
+      "additionalProperties": false
+    },
+    "workloads": {
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 32,
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_]{0,31}$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.]{0,63}$"
+          },
+          "kind": {
+            "enum": [
+              "empty",
+              "kf",
+              "ekf",
+              "path",
+              "controlled_compute",
+              "infinite"
+            ]
+          },
+          "primary": {
+            "type": "boolean"
+          },
+          "batches": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100000
+          }
+        },
+        "required": [
+          "level",
+          "kind",
+          "primary"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "limits": {
+      "type": "object",
+      "properties": {
+        "max_attempts_per_cell": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "max_cell_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 86400
+        },
+        "poll_seconds": {
+          "type": "number",
+          "minimum": 0.01,
+          "maximum": 10
+        },
+        "max_jsonl_part_bytes": {
+          "type": "integer",
+          "minimum": 4096,
+          "maximum": 16777216
+        },
+        "max_jsonl_parts": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1024
+        },
+        "max_summary_batches": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        }
+      },
+      "required": [
+        "max_attempts_per_cell",
+        "max_cell_seconds",
+        "poll_seconds",
+        "max_jsonl_part_bytes",
+        "max_jsonl_parts",
+        "max_summary_batches"
+      ],
+      "additionalProperties": false
+    },
+    "calibration": {
+      "type": "object",
+      "properties": {
+        "target_update_ms": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 1000
+        },
+        "relative_tolerance": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 0.5
+        },
+        "initial_iterations": {
+          "type": "object",
+          "properties": {
+            "native": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000000
+            },
+            "pyodide": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000000
+            }
+          },
+          "required": [
+            "native",
+            "pyodide"
+          ],
+          "additionalProperties": false
+        },
+        "min_iterations": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000000
+        },
+        "max_iterations": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000000
+        },
+        "max_rounds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16
+        },
+        "batches_per_round": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        }
+      },
+      "required": [
+        "target_update_ms",
+        "relative_tolerance",
+        "initial_iterations",
+        "min_iterations",
+        "max_iterations",
+        "max_rounds",
+        "batches_per_round"
+      ],
+      "additionalProperties": false
+    },
+    "browser": {
+      "type": "object",
+      "properties": {
+        "width": {
+          "type": "integer",
+          "minimum": 320,
+          "maximum": 8192
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 240,
+          "maximum": 8192
+        },
+        "startup_timeout_s": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 600
+        }
+      },
+      "required": [
+        "width",
+        "height",
+        "startup_timeout_s"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema_version",
+    "seed",
+    "candidates_ms",
+    "conditions",
+    "batches_per_cell",
+    "workloads",
+    "limits",
+    "calibration",
+    "browser"
+  ],
+  "additionalProperties": false
+}

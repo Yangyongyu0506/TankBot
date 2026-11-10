@@ -53,7 +53,8 @@ class RuntimeTimingTests(unittest.TestCase):
         try:
             for _ in range(90):a.advance()
             report=a.worker.timing.public()
-            self.assertEqual(report['budget_ms'],20)
+            self.assertEqual(report['budget_ms'],a.runtime_profile.batch_wall_deadline_ms)
+            self.assertEqual(a.runtime_profile.module_declared_budget_cap_ms,20)
             self.assertGreater(report['costs']['request_encode_ms']['count'],0)
             self.assertGreater(report['costs']['response_decode_ms']['count'],0)
             self.assertGreater(report['costs']['worker_decode_ms']['count'],0)

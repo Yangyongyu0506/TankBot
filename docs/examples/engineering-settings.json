@@ -12,7 +12,8 @@
   },
   "timing": {
     "max_batches": 512,
-    "max_public_samples": 32
+    "max_public_samples": 32,
+    "max_journal_events": 512
   },
   "storage": {
     "max_backup_bytes": 33554432,

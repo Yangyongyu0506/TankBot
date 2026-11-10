@@ -10,13 +10,19 @@ import copy
 import tempfile
 import codecs
 from .logs import RuntimeLogs
-from tankbot_protocol.wire import send, receive, encode
+from tankbot_protocol.wire import receive, encode
+from .execution_profiles import select_execution_profile
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
 class Supervisor:
-    def __init__(self, config, init, *, deferred=False):
+    runtime_backend = "native"
+
+    def __init__(self, config, init, *, deferred=False, execution_profile=None):
+        self.execution_profile = execution_profile or select_execution_profile(config, self.runtime_backend)
+        if self.execution_profile.backend != self.runtime_backend:
+            raise ValueError("RUNTIME_PROFILE_BACKEND")
         init = copy.deepcopy(init)
         self.workspace_temp = None
         if "sources" in init:
@@ -32,13 +38,16 @@ class Supervisor:
         self.limit = config["runtime"]["max_message_bytes"]
         self.logs = RuntimeLogs(config["runtime"]["max_log_bytes"])
         self.workspace_path = init["workspace"]
-        self.budget = config["runtime"]["batch_budget_ms"] / 1000
+        self.budget = self.execution_profile.batch_wall_deadline_ms / 1000
+        self.budget_ns = self.execution_profile.wall_deadline_ns
         from .runtime_timing import RuntimeTiming
-        self.timing = RuntimeTiming(self.budget*1000, "native")
+        self.timing = RuntimeTiming(self.execution_profile.batch_wall_deadline_ms, self.runtime_backend,
+                                    profile=self.execution_profile.public())
         self.condition = threading.Condition()
         self.active = None
         self.result = None
-        self.expires = None
+        self.expires_ns = None
+        self.outgoing = None
         self.closed = False
         self.fault = None
         self.ready = False
@@ -51,17 +60,19 @@ class Supervisor:
         self.reader = threading.Thread(target=self._read, daemon=True)
         self.log_reader = threading.Thread(target=self._read_logs, daemon=True)
         self.watchdog = threading.Thread(target=self._watch, daemon=True)
+        self.writer = threading.Thread(target=self._write, daemon=True)
         self.reader.start()
         self.log_reader.start()
-        send(self.proc.stdin, init, self.limit)
-        deadline = time.monotonic() + config["runtime"]["startup_timeout_s"]
-        self.startup_deadline = deadline
+        self.outgoing = (None, encode(init, self.limit), time.monotonic_ns())
+        self.writer.start()
+        deadline = time.monotonic_ns() + round(config["runtime"]["startup_timeout_s"]*1_000_000_000)
+        self.startup_deadline_ns = deadline
         if deferred:
             self.watchdog.start()
             return
         with self.condition:
             while self.result is None and not self.fault:
-                remaining = deadline-time.monotonic()
+                remaining = (deadline-time.monotonic_ns())/1_000_000_000
                 if remaining <= 0:
                     self.fault = "RESOURCE_LIMIT"
                     break
@@ -81,13 +92,13 @@ class Supervisor:
             if self.result is not None:
                 value, received = self.result
                 self.result = None
-                if value.get("ready") is True and received <= self.startup_deadline:
+                if value.get("ready") is True and received <= self.startup_deadline_ns:
                     self.ready = True
                     self.startup_result = value
                 else:
                     self.fault = "MODULE_ERROR"
                     self.detail = str(value.get("error", "Startup handshake rejected"))[:256]
-            elif time.monotonic() > self.startup_deadline:
+            elif time.monotonic_ns() > self.startup_deadline_ns:
                 self.fault = "RESOURCE_LIMIT"
             if self.fault:
                 self._kill()
@@ -98,20 +109,34 @@ class Supervisor:
             while True:
                 decode = {}
                 value = receive(self.proc.stdout, self.limit, timing=decode)
-                received = time.monotonic()
+                decoded_at = time.monotonic_ns()
                 with self.condition:
                     if self.closed:
                         return
+                    received = time.monotonic_ns()
+                    decode['response_delivery_ms']=(received-decoded_at)/1_000_000
                     if isinstance(value, dict) and value.get("ready") is False:
                         self.detail = str(value.get("error", "Startup failed"))[:256]
                         self.fault = "MODULE_ERROR"
                         self.condition.notify_all()
                         return
-                    if self.result is not None:
-                        self.fault = "RESOURCE_LIMIT"
-                        self._kill()
+                    if self.fault:
                         return
-                    self.timing.received(value, received, **decode)
+                    if self.result is not None or (self.ready and self.active is None):
+                        self.fault = "RESOURCE_LIMIT"
+                        self.timing.finish(self.fault, "duplicate_or_unsolicited_response")
+                        self._kill()
+                        self.condition.notify_all()
+                        return
+                    self.timing.received(value, received_ns=received, **decode)
+                    if self.active is not None and received > self.expires_ns:
+                        self.fault = "RESOURCE_LIMIT"
+                        decode_started=decode.get("response_decode_started_monotonic_ns")
+                        location = "response_decode_deadline" if type(decode_started) is int and decode_started<=self.expires_ns else "wall_deadline"
+                        self.timing.finish(self.fault, location)
+                        self._kill()
+                        self.condition.notify_all()
+                        return
                     self.result = (value, received)
                     self.condition.notify_all()
         except (EOFError, ValueError, OSError, RecursionError):
@@ -119,6 +144,32 @@ class Supervisor:
                 if not self.closed:
                     self.fault = self.fault or "MODULE_ERROR"
                     self.timing.finish(self.fault,"response_decode_or_transport")
+                    self.condition.notify_all()
+
+    def _write(self):
+        """One bounded frame at a time; pipe backpressure never waits on the physics thread."""
+        try:
+            while True:
+                with self.condition:
+                    while self.outgoing is None and not self.closed and not self.fault:
+                        self.condition.wait()
+                    if self.closed or self.fault:return
+                    (step_id, raw, encoded_at), self.outgoing = self.outgoing, None
+                writing = time.monotonic_ns()
+                self.proc.stdin.write(raw)
+                self.proc.stdin.flush()
+                written = time.monotonic_ns()
+                with self.condition:
+                    if step_id is not None:
+                        self.timing.sent(step_id=step_id,request_queue_ms=(writing-encoded_at)/1_000_000,
+                                         request_write_ms=(written-writing)/1_000_000)
+                    self.condition.notify_all()
+        except (ValueError, OSError):
+            with self.condition:
+                if not self.closed:
+                    self.fault=self.fault or "MODULE_ERROR"
+                    self.timing.finish(self.fault,"request_transport")
+                    self._kill()
                     self.condition.notify_all()
 
     def _read_logs(self):
@@ -158,9 +209,9 @@ class Supervisor:
                 if self.active is None or self.result is not None:
                     self.condition.wait()
                     continue
-                remaining = self.expires-time.monotonic()
-                if remaining > 0:
-                    self.condition.wait(remaining)
+                remaining = self.expires_ns-time.monotonic_ns()
+                if remaining >= 0:
+                    self.condition.wait(remaining/1_000_000_000)
                 else:
                     self.fault = "RESOURCE_LIMIT"
                     self.timing.finish(self.fault, "wall_deadline")
@@ -170,20 +221,24 @@ class Supervisor:
 
     def submit(self, request):
         with self.condition:
-            if self.fault or self.active is not None:
+            if self.closed or self.fault or self.active is not None:
                 return False
-            self.started = time.monotonic()
+            self.started_ns = time.monotonic_ns()
             self.active = request["request_id"]
-            self.expires = self.started+self.budget
+            self.expires_ns = self.started_ns+self.budget_ns
             self.result = None
-            self.timing.begin(request, self.started)
-            encode_started = time.monotonic()
-            encoded = encode(request, self.limit)
-            encoded_at = time.monotonic()
-            self.proc.stdin.write(encoded)
-            self.proc.stdin.flush()
-            sent_at = time.monotonic()
-            self.timing.sent(request_encode_ms=(encoded_at-encode_started)*1000, request_write_ms=(sent_at-encoded_at)*1000)
+            self.timing.begin(request, started_ns=self.started_ns)
+            try:
+                encoded = encode(request, self.limit)
+            except (ValueError, TypeError, RecursionError):
+                self.fault="RESOURCE_LIMIT"
+                self.timing.finish(self.fault,"request_encode")
+                self._kill()
+                self.condition.notify_all()
+                return False
+            encoded_at = time.monotonic_ns()
+            self.timing.sent(request_encode_ms=(encoded_at-self.started_ns)/1_000_000)
+            self.outgoing = (self.active, encoded, encoded_at)
             self.condition.notify_all()
             return True
 
@@ -191,21 +246,22 @@ class Supervisor:
         """Called at the fixed commit gate. Only controlled tests may wait, bounded by budget."""
         with self.condition:
             if controlled:
-                while self.result is None and not self.fault and self.expires is not None:
-                    remaining = self.expires-time.monotonic()
+                while self.result is None and not self.fault and self.expires_ns is not None:
+                    remaining = (self.expires_ns-time.monotonic_ns())/1_000_000_000
                     if remaining <= 0:
                         break
                     self.condition.wait(remaining)
             result = self.result
-            if self.fault or result is None or result[1] > self.expires:
-                self.fault = self.fault or "MISSED_DEADLINE"
-                self.timing.finish(self.fault, "commit_gate" if self.fault == "MISSED_DEADLINE" else "wall_deadline")
+            if self.fault or result is None or result[1] > self.expires_ns:
+                expired = self.expires_ns is not None and time.monotonic_ns()>self.expires_ns
+                self.fault = self.fault or ("RESOURCE_LIMIT" if expired else "MISSED_DEADLINE")
+                self.timing.finish(self.fault, "commit_gate" if self.fault == "MISSED_DEADLINE" else "wall_deadline",at_gate=True)
                 self._kill()
                 self.active = None
                 self.condition.notify_all()
                 return None
-            self.batch_times_ms.append((result[1]-self.started)*1000)
-            self.timing.finish()
+            self.batch_times_ms.append((result[1]-self.started_ns)/1_000_000)
+            self.timing.finish(at_gate=True)
             self.result, self.active = None, None
             self.condition.notify_all()
             return result[0]
@@ -223,6 +279,8 @@ class Supervisor:
             self.reader.join(timeout=1)
         if self.watchdog.is_alive():
             self.watchdog.join(timeout=1)
+        if self.writer.is_alive():
+            self.writer.join(timeout=1)
         if self.log_reader.is_alive():
             self.log_reader.join(timeout=1)
         self.proc.stderr.close()

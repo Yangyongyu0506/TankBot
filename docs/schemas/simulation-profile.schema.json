@@ -453,11 +453,13 @@
         "estimate_history_ticks": {
           "type": "integer",
           "minimum": 0
+        },
+        "profiles": {
+          "$ref": "runtime-execution.schema.json"
         }
       },
       "required": [
         "commit_delay_ticks",
-        "batch_budget_ms",
         "startup_timeout_s",
         "max_message_bytes",
         "max_failures",
@@ -470,7 +472,29 @@
         "max_inbound_per_wall_second",
         "estimate_history_ticks"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "required": [
+            "batch_budget_ms"
+          ],
+          "not": {
+            "required": [
+              "profiles"
+            ]
+          }
+        },
+        {
+          "required": [
+            "profiles"
+          ],
+          "not": {
+            "required": [
+              "batch_budget_ms"
+            ]
+          }
+        }
+      ]
     },
     "view_policy": {
       "$ref": "view-policy.schema.json"

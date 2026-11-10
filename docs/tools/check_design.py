@@ -40,6 +40,7 @@ def strict_json(text):
 
 
 def schema_for(value):
+    if "module_declared_budget_cap_ms" in value and "profiles" in value:return "runtime-execution.schema.json", None
     if "backup_version" in value:return "workspace-backup.schema.json", None
     if "record_version" in value:return "experiment.schema.json", None
     if "experiment_version" in value:return "experiment-package.schema.json", None
@@ -95,6 +96,8 @@ def main():
     sys.path[:0]=[str(ROOT/p) for p in ("host","protocol","sdk/python")]
     from tankbot_host.authority import load_config
     profile = load_config(ROOT / "config/game.yaml")
+    from tankbot_host.configuration import load_yaml
+    validators[("runtime-benchmark.schema.json", None)].validate(load_yaml(ROOT / "config/runtime-benchmark.yaml"))
     validators[("simulation-profile.schema.json", None)].validate(profile)
     if strict_json((ROOT/"core/tests/fixtures/default-profile.json").read_text()) != profile:
         raise ValueError("Generated profile is stale; run tools/export_profile.py")

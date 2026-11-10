@@ -25,3 +25,7 @@
 ## Validation / Open Questions
 
 测试同 tick 排序、时间公式、早/迟结果、乱序、reset、Host 超载；60/30/10/5 Hz 和预算是 Proposed 默认值，需基准确认。细节见 [07](../07_SIMULATION_DESIGN.md)。
+
+## 2026-11-06 局部修订入口
+
+本机运行profile的声明准入、整批墙钟及完整解码截止已由 [ADR-0053](0053-backend-runtime-execution-profiles.md) 局部修订；其状态与实际证据按新ADR核对。本文已有固定tick、权限、算法接口、物理和课程评分约束保持。历史20ms验收不能用来推定新profile的可靠性。

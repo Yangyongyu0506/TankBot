@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh"><meta charset="utf-8"><title>TankBot Runtime Budget Benchmark</title>
+<style>body{background:#14222a;color:#d4f4e7;font:18px monospace;padding:2em}pre{white-space:pre-wrap}</style>
+<h1>TankBot Runtime 截止基准</h1><p id="connection">加载中…</p>
+<p>隔离测试工程。使用正式 Core Worker、Robot Worker、双 Origin、视图与健康消息；此页不运行游戏画布。</p>
+<pre id="status"></pre>
+<script type="module">
+import {connectBrowser} from '/browser-client.js';
+try {
+  const client=await connectBrowser();
+  document.getElementById('connection').textContent='Runtime 已启动；测量数据由本机驱动逐批落盘';
+  setInterval(()=>{document.getElementById('status').textContent=JSON.stringify(client.health(),null,2);},1000);
+} catch(error){document.getElementById('connection').textContent=String(error);}
+</script></html>

@@ -243,3 +243,17 @@ python3 tools/tankbot.py browser --level navigation.c3 --developer
 “日志→耗时诊断”显示整批/模块、编码/解码、往返、等待提交的p50/p95/p99及超时位置。仍沿用20ms墙钟和固定tick，并非新的CPU配额。F2“模板、备份与恢复→项目容量与完整备份”可导出整个当前课程工程、固定历史版本，预览并确认可恢复清理；旧源码/历史不自动删除。恢复前备份当前HEAD，异常中断可以回滚。工程配额在 [engineering.yaml](config/engineering.yaml)。
 
 完整接口、操作及限制见 [工程与实验台](docs/38_ENGINEERING_AND_ALGORITHM_LAB.md)，实际命令/截图/失败见 [本轮验收](docs/reports/ENGINEERING_QUALITY_VALIDATION_20261105.md)，当前风险见 [评估跟进](docs/reports/PROJECT_REVIEW_FOLLOWUP_20261105.md)。连续路径追踪已作为Navigation C4实施，见 [设计与验收](docs/40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)。全局规划、局部避障及IMU/建图/SLAM仍为 [课程提案](docs/39_NAVIGATION_COURSE_PROPOSALS.md)。CI跨平台构建与Linux/Firefox实际玩家流程分别记录；其他OS/浏览器仍需独立实测。
+
+## Runtime 执行 profile 与可重复基准
+
+[config/runtime-profiles.yaml](config/runtime-profiles.yaml) 独立定义模块声明总上限和原生/Pyodide整批墙钟截止。当前实验性默认为声明总上限20ms、原生整批30ms、Pyodide整批40ms。可信后端在一次尝试开始前冻结profile，测试、部署与回放继承；日志中的ID、版本、参数和摘要可追踪。旧`runtime.batch_budget_ms`仅在不含新profile时保持原来的双重语义，混用报错。固定6tick提交不随墙钟时限移动，模块耗时自报不构成CPU配额。
+
+```bash
+python3 tools/benchmark_runtime.py --plan --offline
+python3 tools/benchmark_runtime.py --backend native --workloads weapons_kf --output .m1-cache/my-native-budget --offline
+# 先完成WASM构建及prepare_browser；使用独立Firefox目录/端口，不访问日常userdata
+python3 tools/benchmark_runtime.py --backend pyodide --workloads navigation_path --output .m1-cache/my-browser-budget --offline
+python3 tools/calibrate_runtime_benchmark.py --backend native --output .m1-cache/my-budget-calibration --offline
+```
+
+基准参数来自 [config/runtime-benchmark.yaml](config/runtime-benchmark.yaml)。near_cap负载需先校准并通过`--calibration-file`传入冻结结果。逐批事件写入有界JSONL分片，`summary.json`保留首次激活/稳态、阶段分位数、截断和完整实验结果。`--slice-attempts --batches-per-cell 12`只验证工具链；不代表完整关卡或可靠性验收。传感器回放不能替代真实闭环对照。命令、当前证据范围及默认选择依据见 [41](docs/41_RUNTIME_EXECUTION_PROFILES.md)。
