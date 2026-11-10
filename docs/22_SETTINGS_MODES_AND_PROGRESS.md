@@ -63,7 +63,7 @@ flowchart LR
     Authority --> Runtime[仅 Contract 授权输入的 Python Runtime]
 ```
 
-“图层”页包含静态地图、授权车体、轨迹、玩家目标估计、Radar、IMU、轮编码器、炮台观测；开发者额外获得真实车体/目标、弹丸、真实速度和碰撞外形。坐标系可按已有授权位姿显示。C0 或显式真值练习本来授权的目标/弹丸仍可在玩家图层列表中选择；C1/C2 不出现这些真值选项。图层开关保存在 YAML 的 `layers` 中，不改变权限。
+“图层”页按关卡allowed_layers列出授权内容，user_toggleable约束普通玩家切换，initial_enabled决定初态；保存的偏好不能突破上限。C0/显式真值练习可显示目标和炮弹；Weapons C1–C5均可显示炮弹，但不提供敌车真值、真实速度或命中特效位置。Navigation没有武器，按课程显示定位、GPS和任务图层。开发者另有真实车体/目标、速度与碰撞外形grant，开关保存在YAML layers中，不改变程序数据权限。逐关范围见 [04](04_STATE_AND_VIEW_MODEL.md)。
 
 开发者真值与估计分别显示，可同时比较；真值通过独立时间缓存插值，不改写估计或物理世界。仅开发者 Radar 图层可把观测投到地图；玩家保留局部 Radar，地图目标仍须由 Python 输出，避免替玩家完成 C1 变换。速度箭头按车体系速度转换到世界系，并标注显示比例；碰撞外形显示当前已实现车体几何，不宣称提供接触力。
 
@@ -73,7 +73,7 @@ Navigation C3 新增可选的 `layers.waypoints`，只显示获授权的公开�
 
 Navigation C4另有可选 `layers.path/checkpoints`，分别显示完整公开路径/起终点和顺序检查点；旧设置缺项只在内存补false，不写回或重置文件。显示上限与默认/可切换状态来自YAML，任务距终点标量及终局追踪误差由独立task_feedback授权，不加入玩家输入。见 [40](40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)。
 
-消息查看器可选择现有授权 Topic 并隐藏/显示原始内容；开发者另可选私有物理 DTO、候选位姿、选中位姿、目标估计、Runtime 与最近 100 条审计。没有数据时不伪造传感器。新增消息类型需添加对应可视化适配，尚无通用 RViz 插件生态。
+消息查看器只列出当前授权Topic；可查看的原始消息不等于Robot Runtime可订阅的数据。实时指标另受allowed_metrics/live_feedback和task_feedback授权：Weapons C2/C3显示累计目标RMSE，Navigation C1–C4显示定位RMSE；C4路径真实追踪误差仅终局，距终点标量在UI公开。开发者另可选私有物理DTO、候选/选中位姿、目标估计、Runtime及有界审计。没有数据不伪造传感器，尚无通用RViz插件生态。
 
 `GET /api/developer` 在玩家模式下由原生宿主拒绝，浏览器同名 Worker RPC 也检查开发者 grant；开发者 DTO 不加入协议的 PlayerViewSnapshot 或 SDK。关闭模式重建 Authority/Worker，销毁旧 DOM/缓存；同服务其他标签页检测模式变更后关闭旧 Worker 并刷新。浏览器设备所有者边界仍按 [16](16_BROWSER_RUNTIME.md)，不是远程安全隔离。
 

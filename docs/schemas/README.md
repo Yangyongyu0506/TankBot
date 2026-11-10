@@ -1,117 +1,76 @@
-# Schema 与示例组织
+# Schema与结构验证
 
-## 目的与状态
+## 当前版本与已支持范围
 
-本目录提供 `TankBot Protocol 1.0`、Module Contract、Workspace、受信 View Policy、ControllerProfile 及 M1 SimulationProfile 的结构定义。Host/SDK已使用协议、模块图、关卡、设置/进度、编辑部署及工程实验/备份子集；未实现的服务/scan等不得因Schema存在而宣称已支持。下文分阶段增量说明保留演进顺序，当前范围以领域规范和最新验收为准。Dialect 为 JSON Schema Draft 2020-12；`$id` 中的 `tankbot.example` 是命名占位，不是下载或运行端点。验证工具必须将本地 Schema 注册后离线解析 `$ref`。
+应用配置为 `config_version: 2.1`，课程源 `schema_version: 1.0`，完整底盘profile为2.0，运行profile目录为1.0；Protocol 1.0和SDK 0.1.0仍是未发布的仓库profile。版本属于不同接口，不能一起升级或由旧报告推断。当前十一关、模块图、编辑部署、设置/进度、C2实验与工程备份已使用相应Schema；字段语义和平台证据以领域规范为准。
 
-| 文件 | 职责 |
+所有Schema使用JSON Schema Draft 2020-12；`tankbot.example`的$id只是命名标识，离线注册本地引用，不是下载地址。源YAML先安全解析/引用展开，再验证生成的内部配置；Schema合法不代表获得权限、算法正确或平台已支持。
+
+## 文件与职责
+
+| Schema | 当前职责 |
 | --- | --- |
-| [envelope.schema.json](envelope.schema.json) | 公共字段、payload/type/frame 静态组合、请求关联规则 |
-| [payloads.schema.json](payloads.schema.json) | 协议负载与 Vector3/FireResult 辅助结构，使用 `$defs`；不单独匹配任意对象 |
-| [module-contract.schema.json](module-contract.schema.json) | 端口、周期/event 元数据、预算、依赖与状态版本 |
-| [workspace.schema.json](workspace.schema.json) | Manifest、模块引用、连线、精确依赖与位姿来源 |
-| [view-policy.schema.json](view-policy.schema.json) | 受信策略字段；不是玩家授权申请格式 |
-| [chassis-controller.schema.json](chassis-controller.schema.json) | 受信底盘类型、速度轴限值、cmd_vel_timeout；不是逐条速度消息 |
-| [wheel-calibration.schema.json](wheel-calibration.schema.json) | radial_omni@1 公开轮组标定和可复用几何结构 |
-| [chassis-profile.schema.json](chassis-profile.schema.json) | 通用底盘类型、几何、四面装甲、GPS 安装与外观；表面一致性另作领域校验 |
-| [runtime-benchmark.schema.json](runtime-benchmark.schema.json) | 可信隔离基准的候选、负载、校准及磁盘/样本配额 |
-| [runtime-execution.schema.json](runtime-execution.schema.json) | 可信后端目录、独立声明准入与整批墙钟 |
-| [simulation-profile.schema.json](simulation-profile.schema.json) | 通用配置与生成的内部 DTO；跨字段/数值可行性另由 Host/Core 校验 |
-| [campaign.schema.json](campaign.schema.json) | 生成的 Campaign 兼容 DTO，以及既有 Radar、巡逻与血量组件定义 |
-| [level.schema.json](level.schema.json) | 独立 YAML 关卡 1.0：元数据、世界、机器人、接口、权限、规则、诊断和教材 |
-| [gamepad-input.schema.json](gamepad-input.schema.json) | 可选的手柄映射、死区、速度与发送周期；不授予执行器权限 |
+| [envelope](envelope.schema.json) | 公共Envelope、消息类型/帧静态组合与关联 |
+| [payloads](payloads.schema.json) | 已登记负载的$defs；不能用任意object绕过类型注册 |
+| [module-contract](module-contract.schema.json) | 输入输出、periodic/event、声明预算、依赖和状态版本 |
+| [workspace](workspace.schema.json) | Manifest、模块/连线、依赖与位姿源；动态build_robot仍非运行API |
+| [view-policy](view-policy.schema.json) | 受信显示策略结构，不是玩家提权请求 |
+| [chassis-controller](chassis-controller.schema.json) | 底盘速度能力、限制和watchdog，不是每条指令 |
+| [wheel-calibration](wheel-calibration.schema.json) | radial_omni@1公开轮组几何；差速几何由完整底盘Schema约束 |
+| [chassis-profile](chassis-profile.schema.json) | 完整底盘的质量/惯量、轮组、伺服/阻力、控制器、装甲/安装和外观；可选差速motor |
+| [simulation-profile](simulation-profile.schema.json) | 已解析应用配置与兼容Core/Authority DTO；引用和数值可行性另验 |
+| [campaign](campaign.schema.json) | 生成的课程兼容DTO及既有目标/生命/传感器组件，不是第二套源配置 |
+| [level](level.schema.json) | 独立YAML：元数据、世界/实例、接口/权限、任务/诊断、教材与脚手架 |
+| [path-tracking](path-tracking.schema.json) | 生成器、任务和已解析参考的JSON表示；安全性/摘要另验 |
+| [settings](settings.schema.json) / [progress](progress.schema.json) | 本机YAML设置与版本1进度；前置闭包/解锁由目录解释 |
+| [gamepad-input](gamepad-input.schema.json) | 映射、死区、速度和发送周期，不授予执行器权限 |
+| [player-dependencies](player-dependencies.schema.json) | 课程库白名单，导入与运行检查由SDK/Host执行 |
+| [engineering](engineering.schema.json) | 实验、诊断、备份/恢复等工程配额 |
+| [experiment](experiment.schema.json) / [experiment-package](experiment-package.schema.json) | 授权输入记录与比较/失败导出包，不含私有目标参考 |
+| [workspace-backup](workspace-backup.schema.json) | 工程备份结构，摘要/引用/CAS/安全路径及实际配额由Store验证 |
+| [runtime-execution](runtime-execution.schema.json) | 可信后端目录、共同声明上限、独立整批墙钟和版本/状态 |
+| [runtime-benchmark](runtime-benchmark.schema.json) | 隔离基准候选、工作负载/校准、样本与磁盘限额 |
 
-payload 标识为 `joint_state@1`、`pose2d@1`、`imu@1`、`encoder@1`、`radar@1`、`twist@1`、`view_snapshot@1`、`error@1`、`negotiate_request@1`、`negotiate_response@1`、`runtime_step_request@1`、`runtime_step_result@1`。Twist 保留 linear.x/y/z、angular.x/y/z，二维的 linear.z/angular.x/angular.y 限定为零，底盘是否支持非零 linear.y 由领域层判定。首发 `view_snapshot@1` 的 objects/effects 为空；实体/效果、scan、地图瓦片、pose_fix、选源服务仍须补齐结构和权限后才能注册，不以任意 object 扩展绕过审查。
+## 消息、配置与运行能力的区别
+
+现用负载覆盖Pose2D、JointState/Encoder/IMU、Radar、目标点/位姿/极坐标、匿名装甲、Twist、轮电压、炮台速度/角加速度、开火及武器反馈。Navigation GPS为position_fix2d@1，公开目标为waypoint_goal@1；完整路径一次通过受权初始化配置交付，不新增路径Topic。各canonical频道及兼容规则见 [03](../03_PROTOCOL_SPECIFICATION.md)。
+
+view_snapshot@1保留空objects/effects；@2增加获授权弹丸/目标，@3增加目标估计，@4增加图输出，@5增加白名单自身位姿候选。旧版本结构不自动接受新字段，当前Web已解码这些版本；图层、候选与指标仍分别授权，见 [04](../04_STATE_AND_VIEW_MODEL.md)。
+
+negotiate等结构夹具不证明正式远程会话服务已发布；局部scan、地图瓦片、通用动态TF/选源服务、任意异步融合仍未实现。intercepted_gps兼容组件存在，但当前正式Weapons不启用；不能由Schema枚举推断某关开放该数据。
+
+runtime.profiles_file只存在于可信YAML引用阶段，解析后为runtime.profiles；与旧batch_budget_ms互斥。旧字段独用时准入/墙钟仍同值。共同声明上限不等于墙钟，timing.budget_ms只保留为墙钟诊断别名；数值、冻结与后端选择以 [41](../41_RUNTIME_EXECUTION_PROFILES.md) 为准。
 
 ## 四层验证职责
 
-Navigation C2 增加 position_fix2d@1（二维位置与必填2×2协方差）及 view_snapshot@5（显式授权的玩家位姿候选列表），见 [位置样例](../examples/position-fix2d-message.json)、[多源视图](../examples/pose-comparison-view.json) 和 [设计](../35_NAVIGATION_GPS_LOCALIZATION.md)。旧消息标识保持兼容；新枚举不代表旧客户端已实现解码。level.schema.json 同时约束编码器误差、我方GPS、固定评分源及对照图层；数值PSD、候选权限及采样周期对齐仍需领域校验。settings.schema.json 新增可选图层键，旧文件加载时按false补齐到内存，保留原文件。
+1. 安全解析/结构：文件大小、重复键、对象标签、字段/类型/枚举和静态范围；JSON不接受非有限数字。
+2. 数值/时序：PSD、真实周期关系、run、未来/过期、采样/提交与截止；不借真值替玩家修复估计。
+3. 帧与业务：帧关系、机器人/实例归属、端口/依赖、路径安全/摘要、前置未知和循环。
+4. 权限：可信身份/部署、关卡grants、Topic操作、参考与执行器仲裁、View Policy和资源额度。
 
-1. 严格 JSON/Schema：重复键、结构、字段、类型、枚举、静态上下界；非有限数字在 JSON 解析/数值层拒绝。
-2. 数值/时序：PSD、物理范围、时间公式、run、未来/过期、周期与 deadline 的跨字段关系。
-3. 帧与业务：帧注册/变换许可、端口存在、依赖图、选源与策略窗口。
-4. 权限：绑定身份、部署租约、机器人范围、关卡 grant、频道操作和输出额度。
+validation-cases.json刻意包含Schema应通过的领域负例。文档工具只确认其不被结构层提前拒绝；test_protocol_fixtures.py直接执行其中10个协议领域案例。模块图、策略和Workspace另有行为测试，但不能据此声称所有文档案例都已逐项映射，也不能再把这些功能整体标为未来实现。
 
-Schema 通过不表示消息可信。`validation-cases.json` 特意包含 **Schema 应通过但将由未来领域验证器拒绝** 的案例，防止把安全语义误归给 Schema。
-
-## 运行文档检查
-
-在已具备 `jsonschema`（支持 2020-12）和 `referencing` 的 Python 环境执行：
+## 检查入口与限制
 
 ```bash
 python3 docs/tools/check_design.py
+python3 tools/export_profile.py --check --offline
 ```
 
-工具检查本地链接、ADR 状态、JSON/Python 片段语法、Schema 定义、完整正例和结构负例；领域负例仅验证“确实通过结构层”，不代替真实 Host 验证。不导入/执行玩家 Python，不安装依赖、不联网。M1 已在 tests/test_protocol_fixtures.py 接入其中 10 个协议领域拒绝案例，另由 tests/test_m1.py 覆盖物理/进程/视图。Manifest/event 等剩余案例仍为后续实施，不能混算。
+需要已准备的requirements.txt依赖。前者离线核对本地链接、ADR、Schema、正/反结构夹具、JSON/Python片段语法和课程引用；后者核对从YAML生成的Rust/Node夹具。二者不运行完整玩家流程或证明安全隔离。完整标准入口为tools/check.py，WASM和真实网页分组见 [38](../38_ENGINEERING_AND_ALGORITHM_LAB.md)。
 
-## 版本、取舍与验收
+公共结构变化须同步领域规范、SDK/协议映射、样例和语义回归，不只让Schema通过。当前源码和报告的区别见 [本轮核对](../reports/DOCUMENTATION_STATE_SYNC_20261110.md)。
 
-结构较严格有利于阻止意外真值字段，但新增类型必须版本化注册；扩展字段只走 Envelope 的 `extensions.x_*`。语义约束不硬塞到难维护的 Schema 表达式。更改本目录时同步 [03](../03_PROTOCOL_SPECIFICATION.md)、[05](../05_ROBOT_MODULE_SYSTEM.md)、[06](../06_WORKSPACE_AND_TEMPLATES.md) 和 [样例](../examples/README.md)。
+## 历史版本演进（不作为当前默认）
 
-首发冻结前完成所有必需频道与服务的 Schema、授权矩阵及跨语言夹具。当前未实现服务不能因 Schema 存在而标为已完成。
+| 阶段 | 当时配置与主要增量 |
+| --- | --- |
+| M1b | 1.1增加武器/控制源与严格view_snapshot@2 |
+| 显示与全向修订 | 1.2引入rendering，1.3改为radial_omni@1几何 |
+| M2 / M3 | 1.4引入browser；1.5增加workspace，原验收仅单模块 |
+| M4 | 1.6增加campaign、目标估计和view_snapshot@3；设置/存档、手柄与库策略随后扩展 |
+| 插件与底盘 | 独立关卡、几何资产后扩展为2.1完整底盘/实例/场景；旧形状作为显式兼容DTO |
+| Navigation与工程 | 追加轮电压、GPS/候选对照、航点、路径与工程Schema；未重定义旧消息 |
+| 后端profile | 在2.1配置内拆分准入/墙钟，旧单字段独立模式仍兼容，见ADR-0053 |
 
-## M1b 增量
-
-已注册 turret_velocity@1、fire_command@1、weapon_state@1、view_snapshot@2，接口权威见 [14](../14_WEAPONS_DESIGN.md)。旧 view_snapshot@1 的空实体数组约束不变；@2 只允许严格 projectile/target 联合类型，effects 仍为空。结构夹具同时覆盖空开火 payload、请求类型/帧、反馈脱敏及旧快照不能夹带实体。SimulationProfile 内部版本为 1.1，weapons/control_sources/practice_view_policy 均为必填；Model/权限跨字段约束仍由 Host/Core 验证。
-
-## 显示配置增量
-
-SimulationProfile 内部版本升为 1.2，新增必填 rendering：显示缓冲、相机、网格及 differential/omnidirectional 独立外观。Host 另检查历史长度覆盖插值延迟与快照周期；协议 Envelope / view_snapshot@1/@2 形状未变。具体字段/语义见 [15](../15_RENDERING_DESIGN.md)，不将显示配置用于修改物理状态。
-
-## 全向轮组修订
-
-当前 SimulationProfile 为 1.3，wheels.omnidirectional 显式声明 radial_omni@1、center_radius_m 和四组 name/azimuth_deg；移除旧麦轮几何字段。公开 wheel_calibration 添加共同 radius_m，结构由 wheel-calibration.schema.json 验证，90° 等距/唯一命名另由 Host/Core 验证。协议 JointState/Twist 结构、单位与权限不变，旧配置和物理回放不能忽略模型版本；参见 [ADR-0019](../adr/0019-fourfold-omni-wheel-layout.md)。
-
-## M2 配置增量
-
-内部 SimulationProfile 版本 1.4 必填 browser 段（资源 origin 端口、独立初始化预算、UI 待处理控制请求上限与显式 QA 开关）；物理/SDK/协议消息未变。旧 1.3 文件须显式迁移，工具不覆盖。49 个 Envelope 夹具已接入真实多 Adapter 及浏览器同源验证器，见 16 与 M2 报告；M3 已实现单模块 Manifest profile；event/完整模块图仍未实现。
-
-M3 内部 SimulationProfile 为 **1.5**，新增必填 workspace 限额；未改变已确认物理或 Protocol 1.0。实际单模块夹具为 `m3-workspace.json` 与 `m3-module-contract.json`，通用 `tankbot.json` / `module-contract-event.json` 保留为未来图组装示例，不能混用为当前可运行项目。
-
-M4 内部配置为 **1.6**，增加必填 campaign；1.5 沙盒仍可读。新增 `target_estimate@1` 的地图点/可空 2×2 协方差、`view_snapshot@3` 的严格目标估计 Envelope，以及受信策略的 `target_estimates_allowed`。旧快照结构保留，PSD、历史时间、权限与重复采样计分仍由领域层执行。动态目标的 motion/health 仅在已确认教学场景启用；详细语义见 [18](../18_CAMPAIGN_DESIGN.md)。
-
-手柄增量：1.5/1.6 的 view 可选 `gamepad`，一旦声明须提供全部映射和参数，未声明则仅键盘；Protocol、control_sources 枚举及速度消息保持兼容。范围见 [20](../20_GAMEPAD_INPUT.md)。
-
-本机设置增量：`settings.schema.json` 校验 YAML 解析后的模式、键盘与图层结构，`progress.schema.json` 校验 JSON 通关存档。它们属于本机管理文件，不是机器人消息；重复按键、完成项前置闭包、尝试模式与当前关卡权限由领域层校验。语义见 [22](../22_SETTINGS_MODES_AND_PROGRESS.md)，不改变 SimulationProfile 或 Protocol 版本。
-
-课程依赖增量：player-dependencies.schema.json 约束受信库策略结构，实际跨文件导入/相对模块/运行检查由 SDK 内部 loader 与 Authority 执行。策略见 [23](../23_PLAYER_CODE_AND_LIBRARIES.md)。协方差 JSON 仍为行优先扁平数组；SDK 使用二维 ndarray，不改消息 Schema。
-
-游戏可编辑配置为 `config/game.yaml`，仍以 `simulation-profile.schema.json` 校验解析后的结构。`campaign.schema.json` 新增每关时间/起算/生命、目标类型、教学数据及结算顺序。生成的 `core/tests/fixtures/default-profile.json` 只供 Rust/Node 测试与探针；数值从 YAML 导出，不得单独维护。详见 [25](../25_ATTEMPT_RULES_AND_CONFIGURATION.md)。
-
-## YAML 关卡插件增量
-
-C5 匿名装甲增量为 `armor_detections@1`：Envelope 固定 Topic `/robot/sensors/armor_detections`、frame `base_link`，payload 只有 `measurements_rt` 的 0/1/2 行 `[r,theta]`。SDK 为只读 NumPy `ArmorDetections`，不增加身份/真实朝向字段；`level.schema.json` 声明受限 armor_detector 参数与可选 yaw 评价周期，几何对称性另由领域层验证。参见 [30](../30_ARMOR_OBSERVATIONS.md)。
-
-应用配置 2.0 的 `level_plugins` 声明目录与资源限额；`levels/*.yaml` 经 `level.schema.json` 及交叉引用/组件/权限验证后，编译为上述内部 DTO。`chassis_profiles` 加载 `config/chassis/*.yaml`，经 `chassis-profile.schema.json` 和表面一致性校验生成车体/外观/安装参数，见 [29](../29_CHASSIS_PROFILES.md)。安全加载器限制文件大小、节点、嵌套深度与组件数量，拒绝别名、重复键、任意对象标签、无效地图路径及未注册类型。权限不是仅靠 Schema 执行，实际数据仍由 Authority 裁剪。关卡和生成夹具由同一加载器校验；文档工具也检查该流程和关卡编写指南。格式与精确错误路径见 [27](../27_LEVEL_PLUGIN_ARCHITECTURE.md)。
-
-可选的 permissions.visualization.allowed_metrics 与 evaluation.live_feedback 显式授权运行中累计位置 RMSE；字段结构/精度/曲线容量由 level.schema.json 约束，指标是否登记并获授权由加载器交叉校验。反馈只走 Campaign 管理状态，不改变 view_snapshot 或机器人协议 Schema。
-
-渐进 Weapons 增量：Envelope/负载新增 gps_fix@1、target_polar_estimate@1；level.sensor 支持 intercepted_gps，patrol 支持全向 spin_rate_radps；教材可声明 edit_files。对应 SDK、帧、噪声/时间、独立可视化与兼容见 [28](../28_WEAPONS_PROGRESSIVE_ESTIMATION.md)。所有旧类型保留原形状，内部生成夹具仍由 export_profile 维护。
-
-## Navigation 控制增量
-
-轮电压 wheel_voltage@1 是新的兼容 topic 类型，固定 base_link 与 /robot/wheels/cmd_voltage；两个有限电压的限幅/过期由领域层执行。完整底盘可选 motor、内部仿真 DTO 可选 wheel_drive。关卡支持无武器/无目标、wheel_voltage 驱动、twist_sequence、首批控制起算及两项运动指标；默认均保持旧关卡语义。scaffolding.workspace_scope 只做项目分组，不决定物理行为。实际约束和状态见 [33](../33_NAVIGATION_MOTION_CONTROL.md)。
-
-Navigation 增量：level 的 evaluation.source 可选 player_pose，live_feedback 兼容单对象/多指标数组；规则新增累计位置/朝向 RMSE 比较。visualization.control_feedback 声明有界控制曲线，permissions.visualization.allowed_control_signals 独立授权，不增加 Runtime 输入能力。候选位姿沿用 pose2d@1；源格式、Topic 和旧配置兼容。见 [34](../34_NAVIGATION_ODOMETRY_AND_FEEDBACK.md)。
-
-## 分支进度
-
-[progress.schema.json](progress.schema.json)保留版本1和四个字段，关卡ID按与metadata.id相同的格式约束，不枚举固定关卡列表。已知ID、前置闭包、稳定序列化顺序与current_level合法性由ApplicationState依据目录验证；非连续完成集合合法。level.schema.json中order只负责展示，prerequisites要求全部完成并由加载器检查未知/循环引用。非连续完成存档示例见 [branch-progress.json](../examples/branch-progress.json)，当前树见 [36](../36_BRANCHING_PROGRESSION.md)。
-
-Navigation C3增量：`waypoint_goal@1`的payload在payloads.schema.json中定义，Envelope固定Topic/map帧；[正例](../examples/waypoint-goal-message.json)不含测量或真值。level.schema.json声明waypoint_route、waypoints_complete、参考发布白名单和任务样式；有限坐标、模型/频率、前置权限和发布者冲突由领域层验证。waypoints是向后兼容的可选设置字段，缺失时只在内存补false；显示与程序订阅分别授权。见 [37](../37_NAVIGATION_WAYPOINT_CONTROL.md)。
-
-engineering.schema.json约束公共工程配额；experiment.schema.json约束有界授权输入记录，experiment-package.schema.json封装比较及失败导出。域校验另检查Topic、时间、配置上下文、源码和评分权限；私有参考不进入这些文件。runtime_step_result增加可选telemetry，不改变原执行/提交合同。工作区备份与恢复由Store验证摘要、路径/引用、总量和CAS；当前实现和限制见 [38](../38_ENGINEERING_AND_ALGORITHM_LAB.md)。
-
-engineering-settings.json、runtime-telemetry.json及workspace-backup.json是公共结构样例；experiment-empty-record.json和experiment-empty-package.json是空记录的结构夹具，不能直接运行比较。真实回放还要求非空输入、当前课程授权和兼容上下文。备份Schema允许结构上限，实际数量/字节配额由engineering.yaml及Store执行。
-
-## 连续路径追踪增量
-
-[path-tracking.schema.json](path-tracking.schema.json)定义generator、task与reference：有界搜索/平滑参数、只读数组的JSON表示、身份与生成指标。level.schema通过objectives.path_tracking引用task；simulation-profile可选navigation_path携带已解析reference。旧课程无新增必填字段。
-
-结构以外，领域层校验初态/完整车体通道、重采样间距、长度、自交、可执行转弯、摘要/检查点一致、EKF连接和轮电压授权。task_inputs只开放path_reference；task_feedback区分live/terminal，path/checkpoints各自授权，旧设置缺项只在内存补false。公开模块合同见 [示例](../examples/path-follower-contract.json)，职责及默认参数依据见 [40](../40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)。
-
-## Runtime 执行 profile
-
-[runtime-execution.schema.json](runtime-execution.schema.json)定义版本1.0的可信目录：共同声明准入总上限、每后端默认ID、独立整批墙钟与profile版本/状态。simulation-profile.schema要求已解析runtime使用新profiles或旧batch_budget_ms其中一种，禁止混用；profiles_file只在可信YAML引用解析前存在。
-
-Schema之外检查默认ID存在且后端匹配、整数纳秒可表示性和可信资产路径。Authority冻结有效对象后，玩家请求/遥测均不能改写。budget_ms诊断别名只表示墙钟，不再用作模块准入。公开配置样例见 [runtime-execution-profiles.json](../examples/runtime-execution-profiles.json)，时间与兼容语义见 [41](../41_RUNTIME_EXECUTION_PROFILES.md)。
+各阶段原始验收计数、配置和失败保留在reports，不将旧20ms或旧单模块范围作为当前限制。未来全局规划、scan/SLAM、多机器人与远程沙箱须独立设计和验证。

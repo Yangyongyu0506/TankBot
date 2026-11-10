@@ -56,7 +56,7 @@ diagnostic("innovation", innovation)
 
 ## 耗时观测与边界
 
-RuntimeTiming在现有Supervisor与浏览器Adapter上增量观测。每批记录输入采样tick、激活/固定提交tick、宿主单调时钟的启动/接收/提交时刻，以及模块解码、update、输出构建；序列化、写入、往返和收到后等待提交门分别记录。Native和Pyodide共用MeasuredExecution。
+RuntimeTiming在现有Supervisor与浏览器Adapter上增量观测。每批记录输入采样tick、激活/固定提交tick、宿主单调时钟的启动/接收/提交时刻，以及模块解码、update和输出构建。序列化、可测写入/桥接及完整往返单独观测；gate_wait_ms是收到至提交的合并耗时，包含门等待和Authority校验，并未可靠拆成纯等待/纯验证两项。Native和Pyodide共用MeasuredExecution。
 
 输出编码无法把自身最终耗时放进同一已编码消息，因此报告前一批编码耗时，并附前批step_id；UI明确标“前批”。浏览器桥接与Authority总往返是不同计时范围，不能互减或假定跨Worker绝对时钟同步。通信/排队/调度的剩余时间没有被可靠分开的部分明确保留为往返，不伪造独立CPU耗时。
 

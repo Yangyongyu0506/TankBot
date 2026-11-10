@@ -91,6 +91,6 @@ ResolvedScene重试复用定义，新建run/Core、轮状态、路程、指令�
 
 决策见 [ADR-0045](adr/0045-independent-course-workspaces.md)、[ADR-0046](adr/0046-confirmed-wheel-voltage-control.md)。直接轮速隐藏电机控制，直接力矩略过电气模型，完整电气/轮胎模型增加本关负担；本次采用用户逐项确认的降阶模型。
 
-验收包括有效闭环、零输出失败、异常日志、看门狗/限幅、惯量/方向、权限、精确结算、工程往返/重试，旧六关冻结轨迹与原生/WASM 一致性。控制曲线和 Navigation C1 理想里程计已接入，见 [34](34_NAVIGATION_ODOMETRY_AND_FEEDBACK.md)。完整轮胎/转子接触、电感状态、独立左右轮参数及后续导航课程仍未实现。
+验收包括有效闭环、零输出失败、异常日志、看门狗/限幅、惯量/方向、权限、精确结算、工程往返/重试，旧六关冻结轨迹与原生/WASM 一致性。控制曲线和 Navigation C1 理想里程计已接入，见 [34](34_NAVIGATION_ODOMETRY_AND_FEEDBACK.md)。完整轮胎/转子接触、电感状态和独立左右轮参数仍未实现。后续里程计、GPS/EKF、航点与连续路径课程已实现，见34/35/37/40；玩家规划、避障和建图仍为计划。
 
 参考：[ROS 2 差速控制器分层](https://control.ros.org/master/doc/ros2_controllers/diff_drive_controller/doc/userdoc.html)、[WPILib 状态空间说明](https://docs.wpilib.org/en/latest/docs/software/advanced-controls/state-space/state-space-intro.html)；运行时不依赖这些框架。

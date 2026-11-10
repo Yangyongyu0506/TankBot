@@ -6,7 +6,7 @@
 
 ## 配置源与加载
 
-当前完整模型重构见 [32](32_RESOLVED_SCENE_AND_COMPONENTS.md)。应用配置版本为 `2.1`，底盘 profile 为 `2.0`。`config/game.yaml` 的 `chassis_profiles` 显式引用 `config/chassis/differential.yaml`、`omnidirectional.yaml`。每个文件声明 `schema_version`、`chassis_type`、`body`、`armor`、`gps_mount_m`、`visual`。文件不能引用代码或其他配置；模型文件只允许在 `config/chassis/` 内，沿用有界安全 YAML 读取器，使用 [chassis-profile.schema.json](schemas/chassis-profile.schema.json) 验证。
+当前完整模型重构见 [32](32_RESOLVED_SCENE_AND_COMPONENTS.md)。应用配置版本为 `2.1`，底盘 profile 为 `2.0`。`config/game.yaml` 的 `chassis_profiles` 显式引用 `config/chassis/differential.yaml`、`omnidirectional.yaml`。每个文件声明版本/类型、body质量与惯量、servo、drive黏性阻力、motion_limits/controller、wheels、armor/GPS安装及visual；差速可选motor用于轮电压场景。文件不能引用代码或其他配置；模型文件只允许在 `config/chassis/` 内，沿用有界安全 YAML 读取器，使用 [chassis-profile.schema.json](schemas/chassis-profile.schema.json) 验证。
 
 | 配置 | 差速 | 四轮径向全向 |
 | --- | --- | --- |
@@ -17,7 +17,7 @@
 | 装甲宽 | 0.24 m | 0.24 m |
 | 车头 GPS | (+0.4,0) m | (+0.21,0) m |
 
-GPS 行描述通用安装几何；当前正式关卡不启用 GPS；C4 用中心 Radar，C5 按 [30](30_ARMOR_OBSERVATIONS.md) 使用匿名装甲观测，不因模型记录了安装点就自动启用或授权 GPS。
+GPS 行描述通用安装几何；当前正式Weapons不启用车头GPS；Navigation的质心自身GPS是另一实例，不使用这项安装点。Weapons C4用中心Radar，C5 按 [30](30_ARMOR_OBSERVATIONS.md) 使用匿名装甲观测，不因模型记录了安装点就自动启用或授权 GPS。
 
 `armor.mounts_m` 是四行 `[x_m,y_m,outward_yaw_rad]`，顺序前、后、左、右，角度为 0、−π、π/2、−π/2。结构校验之外还验证安装点位于真实直边、宽度避开圆角、GPS 位于前侧中央、外观类型合法。未知类型和错误字段拒绝加载，不静默使用另一底盘。
 

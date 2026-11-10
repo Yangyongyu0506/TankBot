@@ -2,7 +2,7 @@
 
 ## 目的与范围
 
-实现 C0 手动熟悉、C1 理想 Radar 的 SE(3) 矩阵坐标变换、C2 噪声下跟踪与击杀。复用同一 Authority、固定提交门、Python Runtime、Workspace 和 View Policy；M5 的模块图与 C3/C4 已实现，当前章节/控制边界以 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md) 为准。Radar、巡逻、血量及销毁规则已由用户逐项确认。当前应用配置版本为 `1.9`，通用模型在 `config/game.yaml`，关卡数据在独立 `levels/*.yaml`，由加载器生成内部 `campaign` DTO，见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)；仍能读取不含 Campaign 的 `1.5` 沙盒配置。计时、玩家生命和 YAML 迁移以 [25](25_ATTEMPT_RULES_AND_CONFIGURATION.md) 为准。
+实现 C0 手动熟悉、C1 理想 Radar 的 SE(3) 矩阵坐标变换、C2 噪声下跟踪与击杀。复用同一 Authority、固定提交门、Python Runtime、Workspace 和 View Policy；M5 的模块图与 C3/C4 已实现，当前章节/控制边界以 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md) 为准。Radar、巡逻、血量及销毁规则已由用户逐项确认。当前应用配置版本为 `2.1`，完整底盘在 `config/chassis/*.yaml`，世界/武器与平台参数在 `config/game.yaml`，关卡数据在独立 `levels/*.yaml`，由加载器生成内部 `campaign` DTO，见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)；仍能读取不含 Campaign 的 `1.5` 沙盒配置。计时、玩家生命和 YAML 迁移以 [25](25_ATTEMPT_RULES_AND_CONFIGURATION.md) 为准。
 
 ## 关卡与数据流
 
@@ -14,7 +14,7 @@
 
 三关玩家初态均为零位姿/零速度，复用原地图；C0 靶标 `(-3, 0, 0)`，C1 换新靶标 `(-3, 1.5, 0)`，C2 使用新敌车场景。切换建立新纪元，不能把 C0 已公开的目标原地改称秘密。玩家按 C0 → C1 → C2 解锁；开发者模式可直接选择任一关练习，详见 [22](22_SETTINGS_MODES_AND_PROGRESS.md)。首期没有账号。
 
-按用户后续要求，整个 Weapons 章节 C1–C4 都授权显示真实炮弹，默认开启，玩家可在设置中切换。各关 YAML 声明 world_effects、projectiles 图层及其 authorized_truth 来源；Authority 仍裁剪敌车真实模型和命中特效，Python 输入权限不变。可见弹道提供射击反馈，弹丸消失也可能间接提示碰撞，这是本章节明确接受的视觉信息。
+按用户后续要求，整个Weapons章节C1–C5 都授权显示真实炮弹，默认开启，玩家可在设置中切换。各关 YAML 声明 world_effects、projectiles 图层及其 authorized_truth 来源；Authority 仍裁剪敌车真实模型和命中特效，Python 输入权限不变。可见弹道提供射击反馈，弹丸消失也可能间接提示碰撞，这是本章节明确接受的视觉信息。
 
 ```mermaid
 flowchart LR
@@ -103,7 +103,7 @@ C2 的公式为 `RMSE = sqrt(sum((x_est−x_true)^2+(y_est−y_true)^2)/N)`，�
 
 ## 约束、替代方案与待确认项
 
-将教学逻辑放进 Renderer 无法执行权限；复制三套引擎会造成规则漂移。因此用受信关卡配置驱动 Authority。首期使用一个目标和单周期模块，后续多目标关联、多模块、Arena 和强服务器隔离不属于本阶段。
+将教学逻辑放进 Renderer 无法执行权限；复制三套引擎会造成规则漂移。因此用受信关卡配置驱动 Authority。C0–C2保留一个目标和单周期兼容包装；多模块图已在后续课程实现，见26。多目标课程、Arena和强服务器隔离仍未实施，不从本篇首期范围推断全项目能力。
 
 源码、版本和模板 ledger 保存在 Workspace；玩家通关结果另写 `userdata/progress.json`，开发者练习不奖励解锁，见 [22](22_SETTINGS_MODES_AND_PROGRESS.md)。重试先加载随游戏提供的启动脚手架，已保存草稿需重新 Test/Deploy。沙盒项目与首次进入 Campaign 使用独立版本库，防止不同 Contract 混入旧项目。用户通过 UI 切换前必须先保存草稿并等待当前测试/部署结束。
 

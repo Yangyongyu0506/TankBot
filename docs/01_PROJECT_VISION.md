@@ -10,15 +10,15 @@ TankBot 将 `Robot Algorithms Learning + Simulation + Programming + Competition`
 
 | 模式 | 主要职责 | 共享基础 |
 | --- | --- | --- |
-| Campaign | 能力逐步接管、提示、问题驱动关卡 | Core、传感器、Runtime、SDK、协议、View Policy |
-| Algorithm Lab | 参数实验、轨迹图、录制数据和算法比较 | 相同模块 Contract 与 Replay；真值只供授权评估 |
-| Arena | 服务器执行机器人、赛制、公平性和赛后回放 | 同一规则库与协议语义；更强隔离和版本锁定 |
+| Campaign（当前十一关） | 能力逐步接管、提示、问题驱动关卡 | Core、传感器、Runtime、SDK、协议、View Policy |
+| Algorithm Lab（C2滤波试点） | 已有授权录制/双版本回放；通用参数/控制实验仍为计划 | 相同模块 Contract 与 Replay；真值只供授权评估 |
+| Arena（Planned） | 服务器执行机器人、赛制、公平性和赛后回放 | 同一规则库与协议语义；更强隔离和版本锁定 |
 
-首轮实现范围是小地图、单个可控坦克、少量静态障碍、基础传感器、一个 Python 位姿模块与估计视图闭环。联网竞技、复杂履带动力学、插件市场、移动端、全局分布式通信和完整 SLAM 框架均不进入首个 MVP。
+历史首个MVP范围是小地图、单个可控坦克、少量静态障碍、基础传感器、一个 Python 位姿模块与估计视图闭环。联网竞技、复杂履带动力学、插件市场、移动端、全局分布式通信和完整 SLAM 框架均不进入首个 MVP。
 
 ## 设计假设与冲突处理
 
-1. 目标是二维平面，初期坦克以差速驱动近似；公共 Twist 速度接口保留 vx/vy/wz，未来可通过底盘适配加入全向轮。炮塔独立角度作为后续能力。物理精度服务于可理解的误差模型，而非认证级机器人仿真。
+1. 目标是二维平面；当前已实现差速与四轮径向全向底盘、独立炮台，以及Navigation差速轮电压驱动。公共Twist保留vx/vy/wz，实际能力由模型和权限限制，不能用配置声明未实现的物理。精度服务于可理解误差模型，不是认证级机器人仿真。
 2. 初期 Workspace 依赖限 SDK、标准库与受控数学库。不能承诺桌面 CPython 的任意扩展能在 Pyodide 使用。
 3. 离线本机运行无法向设备所有者保密全部 Ground Truth；仍禁止 UI、SDK 获得未授权真值。防作弊保证以远程 Authority 为边界。
 4. 单纯“随关卡移除更多信息”可能破坏前序代码。关卡必须先提供替代输入、模板、测试与局部视图，再撤回系统能力；允许练习回退。
@@ -27,7 +27,7 @@ TankBot 将 `Robot Algorithms Learning + Simulation + Programming + Competition`
 
 ## 能力接口与数据流
 
-关卡用 `LevelDefinition` 声明传感器配置、`capabilities`、`view_policy_id`、可选 Contract、模板版本、评分规则和执行配置。能力撤回只更换 Provider、连接与策略，不改 Game Core。
+当前关卡用独立YAML声明传感器实例、data_access与View Policy、Contract/模板、任务和评分，见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)。早期LevelDefinition中的capabilities/view_policy_id是概念命名，不是现行源字段。能力撤回只更换 Provider、连接与策略，不改 Game Core。
 
 ```mermaid
 flowchart LR

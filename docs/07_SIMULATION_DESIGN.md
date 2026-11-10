@@ -2,11 +2,13 @@
 
 ## 目的、范围与约束
 
-定义二维权威仿真、传感器、多频率模块与异步执行的统一时间模型。ADR-0010 接受固定步长和边界提交，ADR-0011 接受分层确定性保证。M1 频率、伺服、接触与轮组参数已经用户确认并完成本机探针，见 [13](13_PHYSICS_MODEL_DECISIONS.md)；Radar 与完整跨平台部署仍未实现；M1b 武器增量见 14，不能由本机测量外推性能。
+定义二维权威仿真、传感器、多频率模块与异步执行的统一时间模型。固定步长、边界提交与有限确定性遵守ADR-0010/0011，执行profile由ADR-0053局部修订。当前已实现两类底盘、武器、Radar/装甲观测、生命规则及Navigation差速轮电压电机；模型分别见 [13](13_PHYSICS_MODEL_DECISIONS.md)、[14](14_WEAPONS_DESIGN.md)、[32](32_RESOLVED_SCENE_AND_COMPONENTS.md)、[33](33_NAVIGATION_MOTION_CONTROL.md)。已有Linux原生/Firefox证据不代表完整跨平台部署或性能保证。
 
 ## 物理模型与核心接口
 
-目标 `World` 设计保存静态墙体/碰撞几何、坦克刚体状态，并在后续增加炮塔朝向、弹丸、生命与规则状态；M1 原范围为静态地图/车体；M1b 已增加双刚体炮台、弹丸和命中记录，生命/完整规则仍未实现。公共控制目标采用车体 Twist（vx/vy/wz），M1 Chassis Controller 同时实现差速 vx/wz 与径向全向轮 vx/vy/wz，由场景选择。ControllerProfile 公开能力、各轴限值和 watchdog，叠加有上限的加速度、转动与碰撞响应；Encoder 来自相应轮子运动模型而非直接读取全局位姿。后续可增加独立轮电机、空转/轮滑与不同地面参数，但必须版本化模型和传感器，不能仅开放横向瞬移。
+当前 `World` 保存静态墙体、车体刚体，以及场景按需启用的双刚体炮台、弹丸、命中和生命状态；可信Host裁判使用这些事实执行声明式任务与结算。Weapons保留原受限力/力矩速度伺服，差速支持vx/wz、径向全向支持vx/vy/wz；Navigation显式选择差速轮电压驱动，电机力矩及轮惯量参与动力学，不直接覆盖真实速度。Twist是上层参考，由玩家轮控制器转为电压。轮组观测来自实际车体运动约束，Navigation可对测量施加已配置误差；轮滑、空转和全向轮电机模型仍未实现。
+
+地图与模型先解析为不可变场景，再创建Core和传感器实例；底盘质量、惯量、轮组、伺服、阻力及外观集中在完整底盘YAML，世界时钟、接触和求解器独立。具体归属和每run生命周期见 [32](32_RESOLVED_SCENE_AND_COMPONENTS.md)。
 
 `GameCore.step(actuator_inputs) -> StepEvents` 只处理已验证执行器输入，固定 dt 来自不可变 SimulationProfile；不持有网络、Renderer、Python 或墙钟。Host 将获准的 Twist/离散操作转换为 `ActuatorInputBatch`，包含目标、原始生成 tick 与失效事件；Core 内 Controller 保存最新目标并按仿真时钟检查超时、执行运动映射。地图只在场景构建/明确规则事件时改变。Physics Adapter 封装 Rapier2D 或备选 Box2D，支持静态几何、接触、射线、shape cast 和必要的连续碰撞。弹丸速度高时须使用 swept test/CCD，定义同 tick 多碰撞的稳定排序和反弹上限，不能仅依靠离散位置重叠。
 
@@ -14,11 +16,12 @@
 
 ## 时钟与不同频率
 
-| 子系统 | 建议起始频率 | 说明 |
+| 子系统 | 当前课程频率 | 说明 |
 | --- | --- | --- |
 | Physics | 60 Hz | `dt = 1/60 s`，整数 tick 为权威 |
 | Encoder / IMU | 30 Hz | 每 2 tick，易对齐测试与模块 |
-| Radar | 5 Hz | 每 12 tick，独立含噪/延迟模型 |
+| Radar / 装甲观测 | 10 Hz | 每6tick；按实例配置误差、遮挡与丢失 |
+| Navigation GPS | 2 Hz | 每30tick，独立随机流，与编码器采样分开 |
 | Odometry / Control | 10 Hz | 每 6 tick，默认 deadline 为 6 tick |
 | View Snapshot | 30 Hz（当前 profile） | 与 Physics/Render 独立配置，授权裁剪后发送 |
 | Render | 浏览器可用刷新率，目标 60 FPS | 插值授权样本，不推进物理 |
@@ -77,7 +80,7 @@ Supervisor 将结果绑定到 `(run_id, deployment_id, step_id)`，验证每个�
 
 ## 传感器与随机性
 
-每个传感器定义采样周期、帧/标定、视场、遮挡、最大量程、噪声、偏置、漂移、量化、丢失概率和延迟分布。按 `(match_seed, robot_id, sensor_id)` 派生独立 RNG 流，固定算法与版本；新增一个传感器不改变其他传感器噪声序列。玩家算法 RNG 使用另一个公开派生流，不暴露可反推秘密地图/敌人的物理与传感器种子。
+每个传感器实例声明id、robot_id、安装、period_ticks、random_stream和输出topic/schema/frame；支持的安装与误差子集由组件校验。统一SensorScheduler管理Rust理想观测与Python测量后端。现有Radar为兼容序列使用legacy_seed，装甲/GPS/带噪编码器使用独立命名随机流；新run重建，新增命名流不消耗其他实例的随机数。实际派生规则以 [32](32_RESOLVED_SCENE_AND_COMPONENTS.md) 为准，不能把尚未实现的通用三元组派生或ctx.rng写成现有SDK能力。
 
 Radar 输出自传感器系的距离/方位测量和临时观测标签，不发布精确敌方位置/稳定世界实体 ID。Encoder、IMU 的测量差异须来自公开模型；不能一边宣称轮滑、一边把真实全局速度当无噪 Encoder。初期可简化噪声，但 profile 必须显式声明“无偏置/无丢失”等条件。
 
@@ -92,7 +95,9 @@ Radar 输出自传感器系的距离/方位测量和临时观测标签，不发�
 
 固定 dt 不消除浮点、数学库、集合顺序、并行求解和异步截止差异。默认采用稳定 ID/排序、禁用核心中的墙钟决策和未控线程；受控 Python profile 固定 `PYTHONHASHSEED` 和数值库线程数，无法约束的算法只记录实际输出，不承诺 D2。不为了“绝对确定”立刻改固定点物理。Rapier 的增强确定性与 Box2D 的确定性均有版本/条件限制，库承诺不自动覆盖 TankBot（[Rapier](https://rapier.rs/docs/user_guides/templates/determinism)、[Box2D Simulation](https://box2d.org/documentation/md_simulation.html)）。
 
-## Replay 设计
+## Replay目标设计与当前子集
+
+下述完整持久化、seek/checkpoint和闭环版本编排是目标合同。当前已有有界私有执行器重放探针，以及Weapons C2授权滤波输入录制/双版本回放；其导出、私有参考和准备时序限制见 [38](38_ENGINEERING_AND_ALGORITHM_LAB.md)。这不等于完整Replay产品或控制器成对闭环实验。
 
 记录头包含 Replay 格式版本、Core 构建摘要、Schema bundle 摘要、依赖/编译目标、协议/SDK/内容/物理/ControllerProfile/执行 profile、场景摘要、部署摘要和参与者绑定。私有日志另含种子与初始真实世界；玩家公开回放不得继承它们。
 
@@ -113,7 +118,7 @@ seek 后新建 `run_id` 并清空消息/插值历史。初期从初态重新执�
 
 开放项：物理库、子步数、高速弹丸 CCD 成本、真实预算与采样频率、Replay 压缩。验收包含时间戳公式、同 tick 稳定排序、延迟乱序、输出早到/迟到、重置旧消息、worker 无限循环、Host 超载、同构建重放，以及错误估计不影响真实碰撞。
 
-## M1 物理配置、数值误差与录制
+## 历史：M1物理配置、数值误差与录制
 
 唯一数值来源为 [config/game.yaml](../config/game.yaml)，结构受 simulation-profile Schema 校验，跨字段约束由 Host/Core 校验；缺失参数、未知模式与非整数采样比拒绝。`solver.dt` 必须等于 `1/(physics_hz*substeps)`，不静默覆盖矛盾值。Rapier 引擎 profile 完整显式保存；只在升级审查时用 `cargo run --example solver_profile` 导出候选默认设置，不在运行时补缺。刚体不额外使用引擎阻尼/休眠，受力仅来自已确认伺服、地面阻力与接触。
 
@@ -135,9 +140,9 @@ Authority 的有界私有记录保留 tick、执行器实际提交、真实位�
 
 浏览器运行同一 Authority.advance()，固定提交不因 MessagePort 到达提前。Core Worker timer 与 rAF 独立；每个边界让出事件循环但不等待 Python。外部 iframe watchdog 终止超预算玩家 Worker，缺/晚响应在原门丢弃；tab 后台降频或设备过载影响墙钟进度，不能改 simulation_time_ns 公式或伪造补偿 tick。平台差异与测量见 [16](16_BROWSER_RUNTIME.md)。
 
-## M5 当前增量
+## 历史：M5原始课程增量
 
-M5 多模块使用同一冻结/提交门，支持 event 去重与实际调用 dt；模块链跨批次保留测量 tick。C3/C4 新增受限角加速度力矩输入，C4 首次表面接触装甲判定不改变子步动量模型，详见 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)。
+M5 多模块使用同一冻结/提交门，支持 event 去重与实际调用 dt；模块链跨批次保留测量 tick。C3/C4 新增受限角加速度力矩输入，C4 首次表面接触装甲判定不改变子步动量模型，该段指原M5课程；当前角加速度自瞄在Weapons C4/C5、装甲在C5，见 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)。
 
 ## 连续路径的准备、接触观测与评分
 

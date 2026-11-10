@@ -8,11 +8,11 @@
 
 ## 平台方案与保证边界
 
-| 环境 | 建议实现 | 有效边界 | 必须承认的限制 |
+| 环境 | 方案与状态 | 有效边界 | 必须承认的限制 |
 | --- | --- | --- | --- |
-| 浏览器单人 | Core WASM Worker + 独立 Pyodide Worker | 消息传递、不共享 World、可终止 worker | Worker 不是服务器沙箱；本机用户能读客户端内存 |
-| 本地桌面 | 独立 CPython worker；提供受限模式 | 故障隔离、明确输入与运行目录 | 普通子进程没有足够文件/网络隔离；OS 差异待验证 |
-| 服务器/Arena | Linux 上每机器人独立强化沙箱 | 无 Host FS/网络、系统资源配额、可信桥接 | gVisor/microVM 等需基准与攻击测试后选型 |
+| 浏览器单人 | 已实现：Core WASM Worker + 独立Pyodide Worker | 消息传递、不共享 World、可终止 worker | Worker 不是服务器沙箱；本机用户能读客户端内存 |
+| 本机原生 | 已实现本人可信代码CPython worker；桌面发行/OS受限模式待实现 | 故障隔离、明确输入与运行目录 | 普通子进程没有足够文件/网络隔离；OS 差异待验证 |
+| 服务器/Arena | Planned：Linux上每机器人独立强化沙箱 | 无 Host FS/网络、系统资源配额、可信桥接 | gVisor/microVM 等需基准与攻击测试后选型 |
 
 本地第一版若只具进程隔离，必须在产品中清楚标注“仅运行本人可信代码”，不得接收任意下载脚本或把该模式叫安全沙箱。远程第三方代码在服务器隔离验收前禁用，不能用“内部测试”绕过边界。Windows/macOS 在服务器级本地隔离未验证前，可采用浏览器运行或远程 Runtime。
 
@@ -42,7 +42,9 @@ Pyodide 可访问 JS 桥，删除 `import js`、过滤 builtins 或 AST 扫描�
 
 候选 profile：每机器人 1 个 worker、内存 256 MiB、进程/线程上限 16、可写数据 16 MiB、每墙钟秒日志 32 KiB、内存等数值仍是服务器资源隔离候选。当前本机整批墙钟与模块声明总上限分别由 [runtime-profiles.yaml](../config/runtime-profiles.yaml) 定义，详见 [41](41_RUNTIME_EXECUTION_PROFILES.md)。模块请求预算之和须经过 Host 的独立声明准入；不能把共享 worker 的内部模块当成独立安全主体。Runtime 初始化可有独立 5 s 上限；Pyodide 引擎自身内存占用需单独测量，浏览器无法可靠实现与 cgroups 等价的硬内存限额，所以不能机械照搬 256 MiB 声明。
 
-| 故障 | Supervisor 动作 | 游戏后果 |
+下表是目标安全合同：回调、截止/终止和授权输出已有本机实现；OS内存/磁盘/进程配额及服务端网络/文件拒绝仍是服务器上线要求，不能当作当前普通CPython或浏览器Worker已具备的保证。
+
+| 故障 | Supervisor动作（含待实现的OS隔离要求） | 游戏后果 |
 | --- | --- | --- |
 | 语法/import/setup 异常 | 拒绝 staging，记录用户可读定位 | 旧部署继续运行 |
 | 回调异常 | 拒绝该模块子批次，累计失败 | 控制器按 watchdog 要求零目标，估计自然变旧 |
@@ -66,7 +68,7 @@ Pyodide 可访问 JS 桥，删除 `import js`、过滤 builtins 或 AST 扫描�
 
 未决：浏览器严格网络隔离、桌面安全执行能力、服务器沙箱、真实内存/启动成本、侧信道风险接受范围。验收必须在目标部署上实际测试无限循环、内存炸弹、fork/线程风暴、恶意路径、Host/metadata 网络访问、跨机器人通信、畸形 JSON/日志洪泛、worker 强杀与 Host 连续运行；没有证据前不开放第三方服务器代码执行。
 
-## M1 的实际本机边界
+## 历史：M1建立的本机边界
 
 M1 为明确授权的**本人可信代码开发 profile**：原生 Rust Core 的私有管道只给 Host，CPython worker 是另一个进程，仅收到授权传感器和公开初始化数据。外部线程看门狗强制批次墙钟上限，超时强杀 worker；实时 tick 不 await 玩家程序。长度前缀在分配前限长、严格 JSON 深度限制、固定提交门和 Authority 校验都已实现；stdout 中的玩家 print 重定向到丢弃的 stderr，不能混入协议。
 
@@ -84,4 +86,4 @@ Test/import/setup/玩家 unittest 也在独立 Runtime 中执行；原生仍仅�
 
 ## M5 当前增量
 
-M5 每台机器人仍共享一个 Worker；每模块预算仅作准入，总批次硬预算与外部终止沿用原方案。模块之间不构成安全隔离，候选测试独立缓存不驱动实时执行器。图/连接/公开 Topic 均有 YAML 上限；见 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)。服务端 OS 沙箱仍待实现。
+当前每台机器人仍共享一个Worker；模块声明总和用于准入，整批往返墙钟另由冻结后端profile强制执行，见 [41](41_RUNTIME_EXECUTION_PROFILES.md)。没有逐模块硬CPU配额。模块之间不构成安全隔离，候选测试独立缓存不驱动实时执行器。图/连接/公开 Topic 均有 YAML 上限；见 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)。服务端 OS 沙箱仍待实现。

@@ -69,7 +69,7 @@ class EkfLocalization:
 
 self.state 为可写 float64 (3,) [x,y,yaw]；self.covariance 为可写 (3,3)、顺序相同、有限且对称半正定。框架复制一次公开初态，初始 P=0 表示起点已知；噪声先验是 (2,2) 的轮速协方差与 (2,) 的增益误差边界，均只读，不含真实增益。内部可增广状态，但公开输出保持三维位姿与对应边缘协方差。两个函数均返回 None。
 
-系统文件 localization/ekf_module.py 负责构造、取左右轮名、重复样本跳过、GPS 去重、类型/形状/有限性检查、yaw 归一化，发布 /robot/estimates/ekf/pose。SDK/Router 检查协方差形状、对称与 PSD；失败使用现有 Python traceback 或明确的 INVALID_COVARIANCE，不会替玩家修复错误矩阵。C2 默认 graph 包含 wheel_control、odometry、ekf，周期均为6 tick、deadline6 tick，预算分别为8/4/8 ms，总预算仍为20 ms。
+系统文件 localization/ekf_module.py 负责构造、取左右轮名、重复样本跳过、GPS 去重、类型/形状/有限性检查、yaw 归一化，发布 /robot/estimates/ekf/pose。SDK/Router 检查协方差形状、对称与 PSD；失败使用现有 Python traceback 或明确的 INVALID_COVARIANCE，不会替玩家修复错误矩阵。C2 默认 graph 包含 wheel_control、odometry、ekf，周期均为6 tick、deadline6 tick，声明额度分别为8/4/8ms，合计20ms用于图准入；整批墙钟独立取冻结后端profile，见 [41](41_RUNTIME_EXECUTION_PROFILES.md)。
 
 Navigation 使用原独立工作区。进入 C2 只补缺失文件；已有控制器、里程计、EKF、其他文件与历史 revision 不覆盖。受管 graph 从 C1 的两个模块变为三个，走已有预览/显式应用，只更新系统适配器、合同和 manifest。返回 C1 同样检查受管工程声明，保留算法。自定义高级项目仍使用通用 graph 校验，不按关卡 ID 分支。
 
@@ -102,4 +102,4 @@ view_snapshot@5 在 V4 基础上增加授权 pose_estimates 列表。View Policy
 
 仅轮速+GPS有利于集中解释基础EKF；加入IMU、异步延迟、打滑或多径会扩大本关难点，本轮未实现。参考解使用有效Q近似固定增益漂移，不代表唯一正确误差建模；无需逐个随机种子都优于纯里程计每一项，只按公开绝对阈值评分。参考结果只对当前配置、种子和已测平台成立，不承诺跨硬件位级相同。
 
-后续IMU融合、增广参数估计、地图定位及路径跟踪仍待独立课程设计。浏览器本地运行只提供教学/接口隔离，强服务端安全沙箱仍按原运行时路线图推进。验收包括传感器重现、共享输入、GPS去重/对齐、数值拒绝、固定评分、权限投影、保存升级、重试，以及真实原生/浏览器编辑测试部署。
+后续航点和连续路径追踪已分别在Navigation C3/C4实现，见37/40；IMU融合、增广参数估计及地图定位仍待独立课程设计。浏览器本地运行只提供教学/接口隔离，强服务端安全沙箱仍按原运行时路线图推进。验收包括传感器重现、共享输入、GPS去重/对齐、数值拒绝、固定评分、权限投影、保存升级、重试，以及真实原生/浏览器编辑测试部署。

@@ -1,18 +1,18 @@
 # Level Plugins
 
-本目录当前有 C0–C5、navigation.c0、navigation.c1、navigation.c2 和 navigation.c3 共十个独立 YAML，是关卡专属配置的唯一来源。Weapons 课程见 [28](../docs/28_WEAPONS_PROGRESSIVE_ESTIMATION.md)，Navigation 首关见 [33](../docs/33_NAVIGATION_MOTION_CONTROL.md)。正式 Schema 为 [level.schema.json](../docs/schemas/level.schema.json)，架构和迁移说明见 [27](../docs/27_LEVEL_PLUGIN_ARCHITECTURE.md)。
+本目录当前有公共C0、Weapons C1–C5与Navigation C0–C4共十一个独立YAML，是关卡专属配置的唯一来源。Weapons 课程见 [28](../docs/28_WEAPONS_PROGRESSIVE_ESTIMATION.md)，Navigation 首关见 [33](../docs/33_NAVIGATION_MOTION_CONTROL.md)。正式 Schema 为 [level.schema.json](../docs/schemas/level.schema.json)，架构和迁移说明见 [27](../docs/27_LEVEL_PLUGIN_ARCHITECTURE.md)。
 
 ## 编写与验证流程
 
 文件名统一为 `<chapter_id>.C<n>.yaml`：章节使用 `metadata.chapter.chapter_id` 的小写标识，`C` 大写，保留当前课程编号。例如 `hello_robot.C0.yaml`、`weapons.C1.yaml` 至 `weapons.C5.yaml`、`navigation.C0.yaml`。
-文件名只用于组织配置；加载、`--level`、前置关卡及存档继续使用 YAML 内稳定的 `metadata.id`（现有 `c0`–`c5`、`navigation.c0`–`navigation.c3`），不得因重命名而改变 ID 或玩家工作区。
+文件名只用于组织配置；加载、`--level`、前置关卡及存档继续使用 YAML 内稳定的 `metadata.id`（现有 `c0`–`c5`、`navigation.c0`–`navigation.c4`），不得因重命名而改变 ID 或玩家工作区。
 
 1. 选择使用相同现有组件的配置作为起点，完整保留所需字段。metadata.id使用新稳定ID，order唯一且只负责展示/序列化；prerequisites引用已发现ID，必须无环，数组表示全部通关，不要求排在展示列表前面。不要修改已有稳定关卡的ID/顺序。
 2. 在同一 YAML 中声明地图/初态/传感器/控制源、通信合同、权限、规则、诊断、教材与模板。当前C0–C5及Navigation C0–C3引用空旷教学场地，Navigation C4引用仓储地图，见 [地图资产](../assets/maps/README.md)，地图可 inline，或仅引用 assets/ 内 `{walls: [...]}` 格式的地图文件；禁止 include 其他配置或脚本。
-3. 机器人、传感器、规则、指标、可视化及模板必须使用已登记类型。调节现有参数不需要改引擎；未登记能力明确报错。当前仅一个玩家和一个目标，不提前宣称支持 SLAM、机械臂或多机器人课程。
+3. 机器人、传感器、规则、指标、可视化及模板必须使用已登记类型。调节现有参数不需要改引擎；未登记能力明确报错。当前一个玩家和可选的单个任务目标，不提前宣称支持 SLAM、机械臂或多机器人课程。
 4. 先设置程序 inputs/outputs/actuators，再分别设置 View Policy 与 allowed_layers；初始显示和可切换项必须在显示权限内。默认保持旧用户图层偏好；需要按新关卡初始状态显示时可设 preserve_user_settings=false。
    运行中指标需同时声明 permissions.visualization.allowed_metrics 和 evaluation.live_feedback，且指标必须已在 evaluation.metrics 登记；标题、单位、小数精度和曲线容量全部由 YAML 配置。当前支持累计位置 rmse_m 和朝向 yaw_rmse_rad，未声明时不发布运行中诊断。
-5. objectives.success 用 compare/all/any/not，终局数组顺序就是优先级。沿用声明的 timer_start；诊断仅结束后发布。不要通过改变显示权限改变评分。
+5. objectives.success 用 compare/all/any/not，终局数组顺序就是优先级。沿用声明的timer_start；没有live_feedback/task_feedback授权的诊断仅在终局发布。显示权限不改变评分，通用定位指标与路径追踪裁判指标分开。
 6. tutorial.lesson.edit_files 声明文件树高亮的本关主要编辑文件（省略则从 functions 推导）；必须引用本 YAML 生成的玩家算法，不能标记系统管理文件。玩家算法文件不得加入 runtime.managed_files。YAML 只能选择引擎模板并提供字符串说明，不能提供执行脚本。默认入口、合同路径、类型、连线、预算和依赖均会校验。
 7. 运行 `python3 docs/tools/check_design.py`、相关自动测试，以及 `python3 tools/export_profile.py --offline` 更新生成夹具；修改宿主代码后另运行 `python3 tools/prepare_browser.py --offline`。
 8. 原生或浏览器以 `--developer --level <metadata.id>` 启动验收，使用独立 `--workspace-store`、`--settings-file` 和 `--save-file`。正式玩家仍按原存档解锁。无需修改 CLI choices、注册列表、UI 分支或 Level Manager。
@@ -25,11 +25,11 @@
 
 公共标定用受限 `source` 引用模型尺寸/武器参数，不能引用敌方当前位姿或巡逻路径。教材中的数量/频率/噪声可使用公开占位符，避免修改参数后出现陈旧说明。所有修改都应验证原玩家源码兼容与不覆盖 Workspace。
 
-新增已实现组件：`intercepted_gps` 提供地图系车头 fix；巡逻 `spin_rate_radps` 只允许全向底盘且受角速度上限限制。模板组件包括 polar_tracker、fusion_tracker、raw_sensor_adapters、target_prediction、polar_auto_aim、predictive_aiming_adapter 及对应 contract_tests；每个关卡依自己的 YAML 组合，不依赖关卡 ID 分支。当前正式关卡不启用 intercepted_gps；该兼容组件按同期采样工作，未实现任意异步融合。Navigation C2/C3 使用独立的自身 gps 实例。
+新增已实现组件：`intercepted_gps` 提供地图系车头 fix；巡逻 `spin_rate_radps` 只允许全向底盘且受角速度上限限制。模板组件包括 polar_tracker、fusion_tracker、raw_sensor_adapters、target_prediction、polar_auto_aim、predictive_aiming_adapter 及对应 contract_tests；每个关卡依自己的 YAML 组合，不依赖关卡 ID 分支。当前正式关卡不启用 intercepted_gps；该兼容组件按同期采样工作，未实现任意异步融合。Navigation C2–C4使用独立的自身gps实例。
 
 `armor_detector` 提供最近可见装甲的匿名 base_link 极坐标，使用 `armor_detections@1`，最多两行；对应模板为 armor_tracker、armor_tracking_adapter、armor_contract_tests。当前 C5 用这些组件替换 GPS/中心 Radar。C4 则复用 C3 的 polar_tracker/raw_sensor_adapters，并组合 predictive_aiming_adapter、target_prediction 和 polar_auto_aim；无装甲时构造器获得 (0,3) 空矩阵，不要求 yaw。yaw_rmse 可声明 `period_rad`，加载器验证该周期确实保持底盘装甲布局；不允许用错误周期隐藏估计误差。完整接口和教学约束见 [30](../docs/30_ARMOR_OBSERVATIONS.md)。
 
-通用底盘在 `config/chassis/*.yaml` 定义几何、装甲、GPS 安装与外观，由 `config/game.yaml` 统一加载。`motion.chassis` 选择底盘，`armor: {source: chassis_profile}` 启用其装甲；不要在关卡或教材中重复安装数值。共享引擎模型是经 ADR-0036 允许的组件资产，不允许关卡任意 include 其他文件。C5 当前全向车体 0.42×0.42 m、装甲中心 ±0.21 m；完整约束见 [29](../docs/29_CHASSIS_PROFILES.md)。
+通用底盘在 `config/chassis/*.yaml` 定义质量/惯量、轮组、伺服/阻力、限制、装甲/GPS安装与外观，由 `config/game.yaml` 统一加载。`motion.chassis` 选择底盘，`armor: {source: chassis_profile}` 启用其装甲；不要在关卡或教材中重复安装数值。共享引擎模型是经 ADR-0036 允许的组件资产，不允许关卡任意 include 其他文件。C5 当前全向车体 0.42×0.42 m、装甲中心 ±0.21 m；完整约束见 [29](../docs/29_CHASSIS_PROFILES.md)。
 
 传感器正式源现显式声明 id、robot_id、mount、period_ticks、random_stream 与 topic/schema/frame_id。旧 update_hz 和内部适配字段在加载时生成并校验；不要复制两组矛盾参数。底盘 profile 2.0 为完整模型，世界配置不再手填重复的质量/伺服/轮组数值。关卡首次解析后缓存 ResolvedScene，重试共享定义而重新创建运行状态，详见 [32](../docs/32_RESOLVED_SCENE_AND_COMPONENTS.md)。
 
@@ -46,6 +46,8 @@ evaluation.module_id 固定主位姿评分，reference_module_id 指定独立对
 当前十一关进度为公共c0后同时开放Weapons C1和Navigation C0，各主线内部保持原依赖。新增插件时，公开catalogue自动输出prerequisites/order/description，关卡树据此生成节点和实线；不要手工维护UI关系。新档从无前置入口开始，已完成集合不要求全局前缀，完整规范见 [36](../docs/36_BRANCHING_PROGRESSION.md)。
 
 Navigation C3 的 `objectives.waypoint_route` 组合公开目标与私有到点/停稳评价，使用 `waypoints_complete` 事实。`permissions.data_access.references` 仅授权轮电压驱动的 `/robot/cmd_vel` 参考，`actuators` 继续授权实际电压；禁止双发布源或与速度伺服混用。waypoint_goal@1 只向程序提供当前目标，`waypoints` 图层独立授权公开路线/任务状态，不能补画真值车体。接口、边界与零代码复用限制见 [37](../docs/37_NAVIGATION_WAYPOINT_CONTROL.md)。
+
+模块Contract.execution.budget_ms只声明准入额度，整图求和与冻结profile的module_declared_budget_cap_ms比较；整批往返另用后端batch_wall_deadline_ms，固定6tick门不因墙钟增加而变化。配置兼容与诊断以 [41](../docs/41_RUNTIME_EXECUTION_PROFILES.md) 为准，不能在关卡中借改预算扩大权限。
 
 ## 连续路径组件
 

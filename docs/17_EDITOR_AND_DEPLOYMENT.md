@@ -1,10 +1,10 @@
-# 17 M3 编辑器与部署实现
+# 17 编辑器、Workspace与部署实现
 
 ## 目的、范围与保证
 
-M3 提供可持久化的多文件 Python 编辑、Manifest/Contract 校验、非覆盖模板、不可变快照测试、原子切换和显式回滚。继承 [06](06_WORKSPACE_AND_TEMPLATES.md)、ADR-0009/0012；实际入口见根 [README](../README.md)。此处定义已实现的本机 profile，不把后续的多模块图、Arena、云同步或独立托管网站存储视为已完成。
+当前本机提供持久多文件Python编辑、单模块/同步多模块图的Manifest/Contract校验、非覆盖模板、不可变快照测试、原子部署与回滚，以及工程备份/固定版本/预览清理。继承 [06](06_WORKSPACE_AND_TEMPLATES.md)、ADR-0009/0012；模块图详见 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)，维护详见 [38](38_ENGINEERING_AND_ALGORITHM_LAB.md)。Arena、云同步和独立静态Web存储尚未实现。
 
-M3 不改变物理模型或 Protocol 1.0 Envelope。`config/game.yaml` 内部版本升为 `1.5`，增加 `workspace` 段：文件数、源码字节、迁移预览数、测试批次数、部署数量、归档数量和界面轮询间隔。旧配置需显式补齐，工具不改写用户配置。
+当前应用配置为 `2.1`，workspace段和engineering.yaml共同提供文件、测试/部署、归档/备份与UI配额；Runtime准入/墙钟分别由后端profile约束，见 [41](41_RUNTIME_EXECUTION_PROFILES.md)。历史M3在1.5引入workspace段，没有改变物理或Protocol 1.0；该历史版本不代表当前配置要求。工具不改写用户自定义配置。
 
 ## 职责与数据流
 
@@ -28,7 +28,7 @@ flowchart LR
 
 ## Workspace 与存储
 
-两种本机启动方式都由 HTTP 启动器提供版本库。Campaign 默认路径为 `userdata/workspaces/<seed-and-campaign-scope-hash>/`，身份不取关卡、控制权、模板或 Module 入口；沙盒沿用原 seed/control profile 身份。可用 `--workspace-store PATH` 明确指定目录。此选择不等于独立静态网站的浏览器存储方案；IndexedDB/OPFS 留待独立 Web 分发验证。
+两种本机启动方式都由HTTP启动器提供版本库。默认路径为 `userdata/workspaces/<seed-and-scope-hash>/`，公共入门/Weapons使用campaign，Navigation使用navigation；身份不取具体关卡、控制权、模板或Module入口。两分支共享进度文件但不复制算法。沙盒沿用原seed/control profile身份，`--workspace-store PATH`可指定目录。独立静态网站的IndexedDB/OPFS尚待验证。
 
 `--workspace PATH` 是只读种子：首次建立编辑库时导入文件，只补不存在的基础模板；原目录和仓库示例均不回写。后续启动继续读取保存的编辑库。启动机器人使用原种子示例；编辑库须经 Test/Deploy 才成为 Active，避免启动时自动执行未测试草稿。
 
@@ -38,9 +38,9 @@ flowchart LR
 
 ## Manifest、模板与渐进扩展
 
-M3 managed profile 恰有一个周期模块，但源码和测试可跨多个文件。`tankbot.json.entry_point` 必须等于该模块 Contract 的类入口，如 `localization.odometry:Odometry`；高级 `main:build_robot` 图组装是 M5 范围。支持 SDK `0.1.0` 本地 profile、NumPy、指定基础标准库与空 `dependencies`，不执行安装钩子或联网 pip。
+当前兼容managed profile可运行一个周期模块，图模式支持多个同步periodic/event模块，均允许多文件源码/测试。入口、模块及连线必须匹配关卡授予的Contract图，不能使用任意 `main:build_robot` 动态工厂；M5实现的是声明式图，不是该早期草案API。支持SDK `0.1.0`本地profile、NumPy、指定标准库与空dependencies，不执行安装钩子或联网pip。实际合同见 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)。
 
-模块 `config` 传入 `ctx.config['module']`；场景、传感器标定、授权端口和执行预算由任务提供。Contract 可修改 `entry_point`、`state_version`；模块 ID、端口、频率、截止、依赖图须匹配任务 profile。`connections` 必须恰好是任务授予的连线；`pose_source` 为该玩家模块且无真值 fallback。练习模式的系统显示仍只由 Authority 的 View Policy 决定。
+模块config传入 `ctx.config['module']`；场景、传感器标定、授权端口和执行额度由任务与冻结profile提供。Contract入口/状态版本须经验证；模块ID、端口、频率、截止、依赖、连接及pose_source匹配任务配置，玩家候选无真值fallback。系统显示仍由Authority的View Policy单独授权，不由Manifest获得。
 
 模板 `odometry-starter@1.0.0` 来自随应用发布的本地文本包，使用内容摘要；没有远程模板安装机制。预览返回 template ID/version、base revision、每个路径的旧模板/当前文件/新建议；ledger 保存来源版本、原始内容与摘要、生成 revision。默认保留所有现有文件，显式选择 incoming 才替换到**新的** revision；旧内容仍可恢复。手工合并在编辑器进行，保存后重做预览。重复应用相同模板不覆盖代码；并发修改使旧 plan 失效。导入项目也经过相同预览，不信任导入 ledger。
 
@@ -100,7 +100,7 @@ CodeMirror 6 + Python/JSON 扩展 + 可切换 Vim，通过 esbuild 本地打包�
 
 弹窗打开时清除游戏按键并发送零目标，整个打开期间屏蔽游戏输入；keydown/keyup 不把 Vim 的 W/J/L/Space 转为执行器指令。F2 在捕获阶段处理，编辑器内 Escape 保留给 CodeMirror/Vim，不用它强制关闭编辑器；其他弹窗控件的 Escape 可关闭。Ctrl/⌘S 和 Vim `:w` 保存，不自动部署。离开有未保存草稿的页面会提示。
 
-验收追踪见 [M3 报告](reports/M3_VALIDATION.md)：多文件/测试真实执行，非覆盖/冲突/磁盘错误、摘要与环境匹配、旧版本保留、部署门/World 连续、回滚新实例、浏览器刷新持久化和焦点隔离。未决项为其他浏览器/OS、独立浏览器存储、完整模块图、长时资源/磁盘回收及强服务端沙箱；不作为本机 M3 已验证能力宣传。
+M3原始验收见 [历史报告](reports/M3_VALIDATION.md)，记录当时多文件、非覆盖/CAS、部署/回滚、持久化与焦点；模块图、项目维护和后续Runtime证据分别见26、38、41。当前剩余项为其他OS/浏览器、独立Web存储、长时资源增长、会话artifact GC及强服务端沙箱，不能继续将模块图或磁盘预览清理列为全部未实现。
 
 弹窗交互补充验证：`tools/browser_dialog.py` 在真实 Firefox 中检查顶部按钮、F2 切换、× 关闭、草稿/文件选择保留、焦点限制、打开时释放按键及 HUD 页签；实测 1440×814、1280×634、1024×526、500×654 的内容视口无页面滚动。代码、文件列表及工具区仅在各自面板内部滚动。运行 `tools/browser_m3.py` 继续验证弹窗内完整 Edit/Test/Deploy/回滚流程；截图与布局记录保存在 `.m1-cache/`。
 
@@ -124,7 +124,7 @@ M4 新增独立的 Campaign 单模块 profile：标准输入是授权系统自�
 
 用户要求玩家代码归入 userdata。两种本机 Runtime 仍共享同一个 WorkspaceAPI/版本库实现；可编辑源码、所有历史 revision、模板 ledger 和 archive 均保存在 `userdata/workspaces/<项目标识>/`，完整备份 userdata 可包含设置、进度和代码。源码继续使用版本化 JSON，不改变快照、CAS 或部署接口。
 
-路径在 `config/game.yaml` 的 `workspace.storage.directory` 配置，历史根目录由 `legacy_directory` 指定；相对路径以仓库根为基准。当前 1.8 配置必须声明这两个字段，旧 profile 未声明时读取当前 YAML 中的应用存储策略。显式 `--workspace-store` 优先，不迁移或改写该目录；`--workspace` 仍为只读种子。
+路径在 `config/game.yaml` 的 `workspace.storage.directory` 配置，历史根目录由 `legacy_directory` 指定；相对路径以仓库根为基准。这两个字段在1.8阶段引入并由当前2.1配置保留；旧profile未声明时读取当前YAML应用存储策略。显式 `--workspace-store` 优先，不迁移或改写该目录；`--workspace` 仍为只读种子。
 
 打开默认库前扫描历史根目录的默认项目标识，逐个在原库文件锁下复制完整内容到新根的独立暂存目录；验证 HEAD 和全部历史源码摘要后原子发布。迁移锁串行化并发启动。目标目录存在时保留其内容，不合并旧库；原库保留为备份。缺 HEAD、损坏 revision、不安全链接或复制/发布失败时不生成替代项目，并清理本次暂存目录，可修复后重试。升级前应关闭旧服务，迁移后新目录为主；独立项目不会被合并。
 
@@ -134,4 +134,4 @@ M4 新增独立的 Campaign 单模块 profile：标准输入是授权系统自�
 
 ## 工程诊断与完整项目备份增量
 
-测试快照仍是语法/接口/样例和短输入检查，不因新增算法实验台而变为完整比赛。日志面板另显示有界批次/模块/编解码/等待提交的耗时分位数；Worker数值不构成强制CPU配额，预算和门不变。F2项目维护与同输入滤波对照的当前接口见 [38](38_ENGINEERING_AND_ALGORITHM_LAB.md)。新维护操作继续使用原control-token、revision CAS、文件锁和原子HEAD。
+测试快照仍是语法/接口/样例和短输入检查，不因算法实验台而变为完整比赛。日志面板显示有界批次/模块/编解码/收到至提交的合并耗时分位数；Worker数值不构成强制CPU配额。声明准入与墙钟现按41拆分，固定门保持。F2项目维护与同输入滤波对照见 [38](38_ENGINEERING_AND_ALGORITHM_LAB.md)，继续使用control-token、revision CAS、文件锁和原子HEAD。磁盘保留/恢复不回收当前Authority的会话artifact，不解除会话数量上限。

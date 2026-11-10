@@ -85,17 +85,19 @@ tick、序号和纳秒计数字段限制在 `0..9007199254740991`，防止 JavaS
 | `/robot/estimates/{module_id}/pose` | topic / `pose2d@1` | 已注册候选模块 | 本机器人、Pose Selector、获准调试 UI |
 | `/robot/estimates/{module_id}/target` | topic / `target_estimate@1` | 获授权感知模块 | 获准目标估计图层；不进入自身 Pose Selector |
 | `/robot/localization/pose` | topic / `pose2d@1` | Pose Selector | View Gateway、本机器人在策略允许时 |
-| `/robot/cmd_vel` | topic / `twist@1` | 当前控制租约持有者 | Chassis Controller / Actuator Arbiter；不转发给对手 |
-| `/view/snapshot` | topic / `view_snapshot@1/@2/@3` | View Gateway | 对应玩家 UI，按执行 profile 选择版本 |
+| `/robot/cmd_vel` | topic / `twist@1` | 当前获授权参考或执行器来源 | 速度伺服模式进入Controller；轮电压模式只供轮控制器作参考，见37 |
+| `/view/snapshot` | topic / `view_snapshot@1`至`@5` | View Gateway | 对应UI，按已授权视图能力选择注册版本 |
 | `/session/negotiate` | service / 协商 request/response | 连接主体 / Host | 仅本连接 |
 | `/runtime/step` | service / RuntimeStep 类型 | Supervisor / 指定 Runtime | 私有运行控制面，不给玩家通用 service 权限 |
 | `/system/diagnostics` | event / `error@1` | Host | 对应主体，内容须脱敏 |
+
+表中保留基础频道；当前轮组、武器、匿名装甲、GPS、极坐标候选与航点扩展见下文已注册接口小节。协商负载是结构合同，正式通用远程协商/重连仍未实现，不由表格推断已发布服务。
 
 `/system/pose` **不是公共频道**。System Pose Provider 在 Authority 私有接口内向 Selector 提供许可候选。`/robot/sensors/pose_fix`、局部 scan、建图瓦片、选源服务等是后续频道，须补 Schema、授权与验收后注册；不能因出现在概念图中就自动开放。
 
 M4 注册 `target_estimate@1`，使用 `map` 中的 `x_m/y_m` 和可空、行优先 2×2 `covariance`；有限性、历史时间窗、对称及 PSD 在 Authority 验证。样例见 [目标估计](examples/target-estimate-message.json)。`view_snapshot@3` 在严格 v2 结构上新增最多一个 `target_estimates` Envelope，旧 v1/v2 不接收该字段。协议仍为未发布 1.0 草案；新类型在对应 profile 注册，既有沙盒继续输出 v1/v2。
 
-C0–C2 授权系统自定位时，System Pose Provider 仍先进入 Pose Selector，后者作为唯一写者发布 `/robot/localization/pose`，并提供给模块 `self_pose` 端口。`radar@1` 的标签仅在单次采样内有效；C1/C2 的标定与噪声模型见 [18](18_CAMPAIGN_DESIGN.md)。
+公共C0与Weapons C1–C5授权系统自定位时，System Pose Provider 仍先进入 Pose Selector，后者作为唯一写者发布 `/robot/localization/pose`，并提供给模块 `self_pose` 端口。`radar@1` 的标签仅在单次采样内有效；C1/C2 的标定与噪声模型见 [18](18_CAMPAIGN_DESIGN.md)。
 
 Authority 根据主体、机器人、部署、关卡、频道、操作（publish/subscribe/call）检查 grant；所有资源默认拒绝。每个输出端口拥有单写者租约。重连/部署时旧租约失效；一个 Runtime 内的模块不是彼此隔离的安全主体，模块名只用于配置和路由，不能扩大整个机器人获授的能力。
 
@@ -181,7 +183,7 @@ ROS2/DDS 超出部署和学习负担；直接函数调用只允许在模块内�
 
 M1 实现严格 JSON、Schema、源/频道 grant、run/序号/时间/帧、PSD 和固定提交门；候选为 `/robot/estimates/odometry/pose`，Selector 生成 `/robot/localization/pose`，Gateway 生成 `/view/snapshot`。当时只开放单机器人、单周期模块和键盘控制租约。通用协商、任意订阅/服务、event、动态 TF 仍不能因 Schema 已存在而宣称可用。早期 M1 Runtime 帧上限为 64 KiB；当前多文件课程的私有 Runtime/管理帧预算为 YAML `runtime.max_message_bytes`，默认 256 KiB，见 [29](29_CHASSIS_PROFILES.md)。消息形状和权限不因容量预算变化而扩宽。M1 源码入口与历史验证见 [报告](reports/M1_VALIDATION.md)。
 
-## M1b 已实现的武器接口
+## M1b建立的武器接口与历史首发范围
 
 炮台 Topic `/robot/turret/cmd_vel` 使用 `turret_velocity@1`，payload 为 `velocity_radps`，相对车体 rad/s，frame=base_link。与 Twist 一样只含当前速度意图，按生成时间执行统一 watchdog，没有执行起止字段。开火 Command `/robot/weapons/cannon/fire` 使用空 payload 的 `fire_command@1`，frame=null，必须关联非空 request_id。完整 Envelope、SDK 与数值规则见 [14](14_WEAPONS_DESIGN.md)。
 
@@ -189,7 +191,7 @@ M1 实现严格 JSON、Schema、源/频道 grant、run/序号/时间/帧、PSD �
 
 开火业务去重键为 run/绑定主体/ID，保存成功及拒绝结果，不因冷却结束重试改变。日志容量来自 weapons.firing.request_cache_capacity，满后拒绝新 ID；pending 队列和活跃弹丸也有配置上限。当前 payload 恒为空，同 ID 携带其他内容会被结构层拒绝。人工重试重新经过绑定身份/结构校验再查询缓存；程序可以在新的合法批次中复用原 ID 获取原结果，不能重发过期 Runtime 批次。运行时输出每频道每批最多一个；整批验证后在固定门处理，命令没有插队特权。
 
-控制源在启动时按执行器配置为 keyboard/robot；只为被授予的输出派生 Contract/grant，运行中动态切换尚未实现。默认 view_snapshot@1 的 objects/effects 仍为空。新增 view_snapshot@2 仅在显式 weapons-practice 策略下携带严格 projectiles/targets 对象，不新增任意 World 字段；不向 Robot Runtime 转发该快照。Protocol 仍为未发布的 1.0 草案；新增 Schema ID 不改变旧 @1 结构。
+控制源在启动时按执行器配置为 keyboard/robot；只为被授予的输出派生 Contract/grant，运行中动态切换尚未实现。默认 view_snapshot@1 的 objects/effects 仍为空。M1b最初仅在显式weapons-practice策略下使用view_snapshot@2携带严格projectiles/targets；当前Campaign也按逐关YAML分别授权弹丸/目标对象，见04，不新增任意 World 字段；不向 Robot Runtime 转发该快照。Protocol 仍为未发布的 1.0 草案；新增 Schema ID 不改变旧 @1 结构。
 
 ## 全向轮几何版本修订
 

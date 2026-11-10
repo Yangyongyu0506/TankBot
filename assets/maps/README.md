@@ -6,7 +6,7 @@
 
 | 文件 | 净尺寸 | 布局与当前用途 |
 | --- | --- | --- |
-| [open_training.yaml](open_training.yaml) | 12×8 m | C0 Hello Robot、C1–C5 Weapons 共用；仅四面边界墙 |
+| [open_training.yaml](open_training.yaml) | 12×8 m | 公共C0、Weapons C1–C5及Navigation C0–C3共用；仅四面边界墙 |
 | [open_large.yaml](open_large.yaml) | 20×14 m | 更大的空旷场地；未绑定关卡 |
 | [navigation_slalom.yaml](navigation_slalom.yaml) | 16×12 m | 三道交替连接上下边界的隔墙，形成连续绕行通道；未绑定关卡 |
 | [navigation_warehouse.yaml](navigation_warehouse.yaml) | 24×18 m | 六组货架，保留中央、纵向及外围通道；Navigation C4 |
@@ -33,7 +33,7 @@ path: maps/open_training.yaml
 
 运行 `PYTHONPATH=sdk/python .m1-cache/learning-venv/bin/python -m unittest discover -s tests -p test_map_assets.py -v`。测试覆盖加载、错误路径、原地图保留、场地连通性、真实车体穿过已移除隔墙且被边界阻挡。通道连通性按 0.25 m 网格、保守 0.5 m 膨胀验证，不等同于完成导航任务。运行完整相关测试并通过 `python3 tools/export_profile.py --offline` 更新生成夹具。发布应包含 `assets/maps/`。
 
-本次验证（2026-10-28）：完整 Python 回归 192 项通过（含上述 5 项地图测试与课程通关）；渲染测试 15 项通过；原生/WASM 共享 ABI 的武器、课程、角加速度/装甲及小陀螺状态对比通过。浏览器资源包和生成夹具已更新；本次未另行进行真实浏览器人工游玩验收。
+历史验证（2026-10-28；不含后续Navigation路径课程）：完整 Python 回归 192 项通过（含上述 5 项地图测试与课程通关）；渲染测试 15 项通过；原生/WASM 共享 ABI 的武器、课程、角加速度/装甲及小陀螺状态对比通过。浏览器资源包和生成夹具已更新；本次未另行进行真实浏览器人工游玩验收。
 
 ## 启动覆盖与游戏内预览
 

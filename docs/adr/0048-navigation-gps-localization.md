@@ -3,6 +3,8 @@
 - Status: Accepted
 - Date: 2026-11-03
 
+> 现行解读（2026-11-10）：下文8/4/8ms现在用于20ms总声明准入，不是独立模块硬截止；整批墙钟由 [0053](0053-backend-runtime-execution-profiles.md) 的冻结后端profile执行。保留原传感器、EKF、权限和评分决策。
+
 ## Context
 
 Navigation C0/C1 已完成轮驱动和理想轮式里程计。用户要求 C2 引入我方 GPS，帮助玩家理解 EKF 定位，并已逐项确认轮速误差、GPS 模型、函数、时序、评分及可视化。现有 GPS 类型属于敌车截获观测，不能重定义为我方定位。

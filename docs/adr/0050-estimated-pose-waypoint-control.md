@@ -4,6 +4,8 @@
 - Date: 2026-11-04
 - Scope: Navigation C3及可复用航点组件；不改变既有物理或旧关卡接口
 
+> 现行解读（2026-11-10）：原20ms墙钟是本ADR接受时的配置，后由 [0053](0053-backend-runtime-execution-profiles.md) 局部修订为独立声明/墙钟profile。固定6tick、航点、物理、权限和评分不变；旧计数/失败保留，当前默认及证据见 [41](../41_RUNTIME_EXECUTION_PROFILES.md)。
+
 ## Context
 
 Navigation C2已实现轮控制与GPS/EKF，但目标Twist仍由系统按时间发送。用户要求继续开发位置闭环，已确认复用现有底盘/传感器和三个玩家算法，新增WaypointController，采用公开方形航点和120仿真秒。到点0.35m、终点连续停稳0.5秒、速度限幅和安全/评分细节均已确认。

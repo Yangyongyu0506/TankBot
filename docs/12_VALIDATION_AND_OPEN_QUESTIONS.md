@@ -1,14 +1,16 @@
 # 12 设计验证、研究依据与开放问题
 
-## 目的、范围与完成定义
+## 目的、范围与证据层次
 
-汇总需求覆盖、检查证据、假设与下一步准入条件，防止“设计接受”被误读成“技术验证完成”。 当前实现覆盖十关、原生/浏览器Runtime、多文件编辑部署及C2实验试点，最新范围见 [索引](README.md)、[工程验收](reports/ENGINEERING_QUALITY_VALIDATION_20261105.md) 和 [评估跟进](reports/PROJECT_REVIEW_FOLLOWUP_20261105.md)。下文M0/M1研究表和未决技术记录按原阶段保留，不代表当前仅有M1。M0 原范围为离线文档；用户后续授权 M1，当前已有原生 Core、Host、SDK 子集和 Web 原型，实际证据见 [M1 报告](reports/M1_VALIDATION.md)。完整沙箱仍未实现；本轮 M1 收尾与 M2 本机浏览器范围见 [报告](reports/M2_VALIDATION.md)。初版资料核实日期为 2026-10-20；当时基线 `m1-0.1`，2026-10-21 按 ROS 习惯修订速度接口。新增 ROS 参考链接因网络不可达尚未在线复核，不能当作已验证的滚动版本默认行为。
+当前实现为应用配置2.1、十一关、原生/浏览器Runtime、同步模块图、多文件编辑部署、C2滤波回放试点和项目维护；Navigation含轮控、里程计、GPS/EKF、航点及连续路径。运行profile已拆分声明准入/墙钟，默认仍experimental。当前事实与提交状态见 [本轮核对](reports/DOCUMENTATION_STATE_SYNC_20261110.md)，接口由领域规范负责，验收由各历史报告记录，未来能力由开放项追踪。
+
+本轮开始HEAD为7c065ab、工作区干净；Runtime profile等不是本轮新增代码。历史M0–M3研究/计数保留在文末明确标注的小节，不以当时范围否定后续实现，也不将历史通过计数称作本轮检查。完整平台隔离ADR-0013仍为Proposed，CI配置不是平台通过证据。
 
 ## 需求与接口追踪
 
-| 需求领域 | 权威规范 / ADR | 后续实现验收 |
+| 需求领域 | 权威规范 / ADR | 当前检查与后续验收方向 |
 | --- | --- | --- |
-| 产品愿景、模式、持续学习 | 01、09；0001 | C0–C7 可复用项目，问题驱动评价 |
+| 产品愿景、模式、持续学习 | 01、09、36；0001/0049 | 十一关双主线、主线内代码复用；未来课程另行确认 |
 | 逻辑/进程/部署、Rust/C++ | 02；0001/0002 | 无头/原生/WASM 探针与平台矩阵 |
 | Web 表现/编辑器 | 02、06、17；0021 | 只读 DTO、多文件/Vim/焦点测试 |
 | JSON、权限、版本和 Transport | 03；0004/0005/0014 | 结构、时序、授权、ROS 风格速度流、Adapter 等价夹具 |
@@ -32,21 +34,23 @@
 - Workspace revision 可编辑，DeploymentArtifact 不可变；测试报告绑定摘要；重启/部署不隐含重置 World，reset/seek 才新建 run。
 - JSON Schema 只处理结构；PSD、帧关系、跨字段时间与权限有独立验证责任。文档检查不声称实现这些领域验证器。
 
-## 本轮离线检查与可重复命令
+## 统一检查入口与文档专项
 
 ```bash
+python3 tools/check.py --offline
+# 纯文档同步可只运行以下专项，不声称已执行全部回归：
 python3 docs/tools/check_design.py
-git status --short
+python3 tools/export_profile.py --check --offline
 git diff --check
 ```
 
-检查工具需要现有 Python 环境具备 `jsonschema` 与 `referencing`；M0 检查使用已有环境；M1 requirements.txt 明确记录 Python 验证依赖。工具离线注册本地 Schema，不访问 `$id` 示例域名。
+标准入口依次运行自动发现的普通Node测试、Python、Rust、文档与生成配置一致性，失败返回非零。`npm test`仅为普通前端；构建后WASM另跑 `npm run test:wasm`，真实UI另用 `npm run test:browser -- --help` 选择流程。文档专项需要requirements.txt中的jsonschema/referencing/PyYAML等依赖，离线注册本地Schema，不访问$id域名。具体入口和范围见 [38](38_ENGINEERING_AND_ALGORITHM_LAB.md)。
 
 检查范围：Markdown 本地链接与代码块、ADR 状态和索引、严格 JSON、Draft 2020-12 Schema、自包含正例、结构负例与领域案例分层、Python 示例语法、行尾空白。Python 示例仅 AST 解析，此工具不导入 SDK；另由 M1 测试执行 SDK 片段。早期检查仅针对初始化后的文档；当前`git diff --check` 检查已跟踪改动；新增文件仍需检查。工具对所有 Markdown 检查空白，JSON 做完整格式检查；也可逐文件运行 `git diff --no-index --check /dev/null <path>`，退出码 1 仅表示文件差异，实际空白告警不能忽略。
 
 当前检查计数由工具输出，避免手工统计与文档变更漂移。M1 初版历史验证包括：22 项单元/集成测试（其中一项接入 10 个文档协议领域案例）、两底盘各 600 tick 测量、同构建执行器重放、原生/WASM 构建与执行、Firefox 页面和按键验证。基准 JSON 记录实际配置和构建摘要，见报告。
 
-剩余 4 个文档领域案例涉及通用 Manifest/event/连线及独立策略配置接口，不混算为 M1 已完成能力。OS 沙箱、Windows/macOS 与 Arena 仍未验证；浏览器双 Worker 与多 Adapter 等价已在下方 M2 更新给出证据。
+`test_protocol_fixtures.py`直接接入10个协议领域负例；另外的Manifest/event/连线/策略案例并未因此全部绑定到该夹具循环。当前模块图和权限已另有 `test_robot_graph.py`、`test_level_plugins.py` 等行为回归，不能继续将功能本身统称未实现，也不能声称所有文档案例均已逐项映射。OS沙箱、其他平台和Arena仍需独立证据。
 
 ## 实现阶段如何保持文档与 API 一致
 
@@ -63,36 +67,36 @@ git diff --check
 | --- | --- | --- |
 | 离线运行且隐藏全部真值 | 本地实施教学边界；对抗防作弊依赖远程 Authority | 本机逆向、调试器读取内存 |
 | 实时执行且算法完全确定 | 固定逻辑提交，记录实际超时；受控测试另设执行 profile | 硬件/OS 抖动影响预算结果 |
-| 强隐藏与操作反馈 | 只显示局部观测/估计，停止后提供授权评估 | 可玩性与信息难度待用户测试 |
+| 强隐藏与操作反馈 | 局部观测/估计、逐关授权实时标量及终局评估分开 | 反馈有推断性，教学效果与信息oracle仍需评估 |
 | 自动模板与代码所有权 | exclusive-create、预览、三方合并、revision CAS | 用户需理解少量迁移冲突 |
 | 前期公开地图后期未知地图 | 使用新场景与 seed，不声称能撤回已知信息 | 玩家可能记忆通用地图规律 |
 | 跨平台与强服务端沙箱 | 共享语义，按平台采用不同 Adapter/安全承诺 | 桌面任意第三方代码能力可能后置 |
 | 一个 worker 与每模块预算 | 模块预算用于准入/诊断，硬限制在可信 Supervisor 的机器人批次 | 无法把共享解释器内模块彼此安全隔离 |
 
-## 开放问题与验证任务
+## 当前完成子项与剩余验证任务
 
-| ID | 推荐假设或暂定方案 | 证据/决定门 | 影响 |
+| ID | 已实现/已接受的子项 | 仍待决定或验证的部分 | 权威入口 |
 | --- | --- | --- | --- |
-| O01 | Rust/Rapier2D 优先，C++/Box2D 备选 | M1 构建、CCD、600 tick 和维护成本报告；ADR-0002 | 核心工具链与物理 |
-| O02 | M3 Canvas/CodeMirror/Vim 本机组合已接受 | 17、M3 报告、ADR-0021；其他浏览器/独立 Web 存储仍待验证 | 平台矩阵与后续迁移 |
-| O03 | Pyodide 独立 origin/Worker | M2 CSP/网络/JS 桥/终止/启动探针；ADR-0013 | 浏览器安全与性能 |
-| O04 | gVisor 或 microVM，桌面按 OS 验证 | M8 前文件/网络/CPU/内存攻击与成本报告；ADR-0013 | 第三方代码上线硬门 |
-| O05 | 60/30/10/5 Hz，单机器人批次 20 ms 起测 | M1/M2/M6 延迟、控制效果、资源准入报告 | 预算和教学参数 |
-| O06 | 严格 JSON + 64 KiB Envelope | M2 实际扫描/地图负载；必要时分瓦片，之后才评估二进制 | 消息吞吐与回放大小 |
-| O07 | 首期保留上一已发布 SDK minor 的兼容窗口 | 首次 SDK 发布前评估维护成本/安全更新 | 玩家项目寿命 |
-| O08 | 固定 profile/硬件类别、多 seed/换出生位 | M8 公平性与超时分布基准 | Arena 评分可信度 |
-| O09 | 停止后真值评估、活跃时聚合反馈 | M4/M7 教学/信息 oracle 测试 | 学习反馈与保密 |
-| O10 | 首期只处理公开固定帧与玩家 map/odom | M5 决定是否需要通用动态变换 Topic | 多模块坐标复杂度 |
-| O11 | 局部 scan、弹丸/音频效果后补独立 Schema | M4/M5 观测可玩性和泄漏测试 | 关卡与表现权限 |
-| O12 | v1 草案冻结前补齐首发频道/服务 | M2/M3 协商、选源、模块诊断的注册与兼容测试 | 公共 API 发布 |
-| O13 | 其他机器人消息逐项参考 ROS 命名/类型/时间习惯 | SDK 发布前审查现有 Pose2D/IMU 等差异，不冒充完整 ROS 消息 | 学习迁移与接口一致性 |
-| O14 | 全向底盘共用 Twist，新增按轮名状态的传感器 | M1 两底盘模型、joint_state Schema/SDK 和 600 tick 测试已交付；轮电机/空转仍不在模型内 | 全向轮扩展可行性 |
+| O01 | Rust/Rapier已在Linux原生/Firefox WASM范围接受 | 其他OS/浏览器完整流程、规模与维护成本 | 02、ADR-0002、16 |
+| O02 | Canvas/CodeMirror/Vim、类型帮助与多文件编辑部署 | 其他平台键位/编辑体验、独立静态Web存储 | 17、19、ADR-0021 |
+| O03 | 双origin/Pyodide Worker与可信共享Authority已实现 | 浏览器硬资源隔离、后台/休眠与其他浏览器 | 16；ADR-0013完整安全组合仍Proposed |
+| O04 | 本机可信本人代码与受限浏览器Worker | 服务端OS沙箱、第三方上传、CPU/内存/网络攻击测试 | 08、M8上线门 |
+| O05 | 固定60Hz/4子步、按实例采样、10Hz算法、6tick门；独立后端profile及流式基准 | 更多完整UI尝试、设备/平台与整局截止可靠性；未证明<1% | 07、41、11月7日Runtime报告 |
+| O06 | 严格JSON、现用消息/地图/路径与原生-WASM夹具 | 大规模scan/地图瓦片、多机器人与必要时的编码优化；公共Envelope与私有帧配额分开 | 03、27、40 |
+| O07 | revision/ledger、预览迁移、旧源码和完整工程恢复 | 已发布SDK兼容窗口、云同步、会话artifact GC | 06、17、38 |
+| O08 | 固定尝试profile、权限和可重复本机基准 | 远程权威、赛制硬件/资源类别与Arena公平性 | 08、41、M8 |
+| O09 | 逐关实时RMSE、C2授权回放和失败复现 | 完整Lab、多模块/控制器成对闭环与信息oracle评估 | 04、38 |
+| O10 | 固定公开帧、Navigation编码器/GPS特定时间对齐 | 通用动态TF、任意异步融合与非零安装 | 32、35 |
+| O11 | Weapons弹丸显示、Radar与匿名装甲已实现 | scan、听觉模型和通用接触方向观测 | 04、30、39 |
+| O12 | 已注册消息、跨Adapter/Schema/SDK夹具及当前兼容规则 | Protocol 1.0首次发布冻结、正式网络会话/服务集 | 03、schemas索引 |
+| O13 | Twist/JointState等采用ROS习惯，PolarTargetEstimate元组统一 | 首次SDK发布审查命名/单位差异；不声称完整ROS消息兼容 | 03、05、ADR-0014 |
+| O14 | 两种底盘、完整模型、理想轮观测；差速轮电压电机已实现 | 全向轮电机、空转/轮滑、更多地面模型与热替换 | 29、32、33 |
 
-这些项目都有推荐方向，但没有被文档工作“解决为事实”。参考设备、性能门槛、项目许可证/资产政策、账号/存储服务方案仍需产品与维护者决策；后两项不阻塞 M1。
+当前课程阈值与模型已经确认，不列为待选默认，也不在文档同步中调整。玩家全局规划、局部避障、IMU融合、建图/SLAM课程仍为Planned，见 [39](39_NAVIGATION_COURSE_PROPOSALS.md)；裁判路径生成已实现，不能当作玩家规划课。发布许可/资产政策、账号与服务方案仍需维护者决策。
 
-## 研究来源与适用限度
+## 历史研究来源与适用限度（M0/M1）
 
-只使用第一方资料支撑技术事实；比较结论是针对 TankBot 的架构判断，不是测量结论。滚动 stable 文档不是依赖锁，实际采用时重新核对并固定版本。
+下表保留2026-10-20/21研究时的访问和选型记录；其中“本轮”“当前”等指当时资料，不是2026-11-10重新访问结果。当前依赖以仓库锁文件和Accepted ADR为准。滚动stable不是依赖锁，后续升级需另行核实；本次没有重新抓取外部来源。
 
 | 来源 | 本轮用于判断什么 / 不证明什么 |
 | --- | --- |
@@ -117,13 +121,13 @@ git diff --check
 
 所有需求领域有负责人模块、数据流、接口、替代与验收；JSON/Python 例子和术语一致；Accepted/Proposed 不混写；不把设计样例当实现；没有未授权真值路径；现有玩家代码迁移不覆盖。M0 以此结束；后续 M1/M1b 已按授权完成本机实现与验收，见 [M1b 报告](reports/M1B_VALIDATION.md)；后续已授权阶段的当前状态以路线图及上述最新验收为准。
 
-## M1 更新
+## 历史：M1更新
 
-新验收入口为 `python3 -m unittest discover -s tests -v`（真实物理/worker/HTTP/SDK），`python3 tools/measure_m1.py`（双底盘 600 tick、同构建重放和原生/WASM 构建探针）。文档工具仍只检查结构/链接，不替代权限或运行测试。M1 的范围与源码路径见报告；Schema 已新增独立 joint_state@1 和 SimulationProfile，旧 encoder@1 含义未改。
+M1当时使用 `python3 -m unittest discover -s tests -v` 和 `python3 tools/measure_m1.py` 验证物理、worker及双底盘探针；现行统一入口已改为上节tools/check.py。文档工具不替代权限/运行测试。M1增加joint_state@1和SimulationProfile，旧encoder@1语义保留。
 
 O01 已得到 Linux/Node WASM 的部分证据，完整浏览器 Worker 和其他 OS 保持开放；O05 的 60/30/10 Hz 和 20 ms 批次在本机验证，Arena/慢设备需另测；O14 的 M1 聚合全向模型已完成，详细轮电机/轮滑仍需新模型确认。以上为 M1 阶段历史结论；当前 ADR 状态以索引和以下 M2 证据为准，不以历史计数推断实现。
 
-## M2 更新与剩余门槛
+## 历史：M2更新与当时门槛
 
 M1/M1b [收尾](reports/M1_CLOSEOUT.md) 后，M2 已完成共享 Authority / ModuleRunner 的浏览器双 Worker、49 个 Envelope 正反夹具在真实 MessagePort/IPC/WebSocket/In-Process/Replay 的一致性、实际文件/网络/宿主句柄负例、死循环终止与新 run 恢复、程序炮台/开火、资源与 UI 帧间隔测量。配置内部升级 1.4，没有改变已确认物理和公共协议。
 
@@ -131,6 +135,6 @@ O01 已在 Linux 原生与 Firefox WASM 范围接受，ADR-0002 改 Accepted；O
 
 本轮 Python 53 项、Rust 10 项、渲染 JS 9 项及两底盘各 600 tick WASM/原生全快照比较通过。具体命令、摘要、平台矩阵与测量限制见 M2 报告。Windows/macOS 和 Chromium/WebKit 未实际执行；CI 矩阵是待运行的自动化入口。浏览器无硬内存/磁盘配额，未做破坏性 OOM 压力测试；服务端 gVisor/microVM、安全依赖准入、公平配额仍是 M8 上线门。
 
-## M3 实施状态
+## 历史：M3/M4初次验收
 
 M3 多文件编辑、非覆盖模板、CAS/文件锁、快照报告、独立 Test Runtime、tick 边界部署与显式回滚已验证。历史测试与原生/Firefox UI 记录见 [M3 报告](reports/M3_VALIDATION.md)。单模块 profile、观察式仿真测试、会话内 Ready 和启动器存储限制见 [17](17_EDITOR_AND_DEPLOYMENT.md)。M4 新增模型已逐项确认，C0–C2、两种跟踪法、结束后评分及原生/Firefox 通关记录见 [M4 报告](reports/M4_VALIDATION.md)。

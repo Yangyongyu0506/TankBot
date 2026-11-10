@@ -4,7 +4,7 @@ TankBot 将二维坦克运动、机器人算法学习与多文件 Python 编程�
 
 当前为可玩的本机原型：Rust/Rapier2D 权威物理、差速/四轮径向全向底盘、Python SDK/Runtime、固定 tick 提交、授权视图和 CodeMirror 多文件编辑部署。原生模式与 Rust/WASM + Pyodide 双 Worker 浏览器模式共享仿真及课程语义。
 
-现有公共 C0、Weapons C1–C5 和 Navigation C0–C4 共十一关，由 YAML 自动发现。Weapons 覆盖坐标变换、目标滤波、预测自瞄和小陀螺装甲；Navigation 已有轮电压控制、里程计、GPS/EKF、航点位置闭环和仓储地图连续路径追踪。C2 滤波回放实验、耗时诊断和可恢复项目备份已接入；规划、建图及 Arena 尚未实现。各阶段历史与当前验收范围见 [文档索引](docs/README.md)。
+现有公共 C0、Weapons C1–C5 和 Navigation C0–C4 共十一关，由 YAML 自动发现。Weapons 覆盖坐标变换、目标滤波、预测自瞄和小陀螺装甲；Navigation 已有轮电压控制、里程计、GPS/EKF、航点位置闭环和仓储地图连续路径追踪。Weapons C2有授权滤波回放试点，另有耗时诊断和可恢复项目备份；完整Algorithm Lab、玩家全局规划、建图及Arena尚未实现。应用配置为2.1；当前实现、历史验证和未来计划见 [文档索引](docs/README.md)、[2026-11-10核对](docs/reports/DOCUMENTATION_STATE_SYNC_20261110.md)。
 
 ## 构建与运行
 
@@ -167,7 +167,7 @@ python3 tools/build.py --format-check
 
 ## 当前边界与设计入口
 
-原生模式仅运行**本人可信的本机 Python**；普通子进程不是安全沙箱，不能开放第三方代码上传。UI 仅接收 View Policy 授权的估计/传感器或显式练习图层，不提供通用真值接口；本机设备所有者仍可通过文件/调试器读取自己的数据。实测为 Linux x86_64 原生和 Firefox 浏览器单机；Windows/macOS 构建 CI 已配置但尚无本次运行证据，其他浏览器与服务器隔离仍待验证。
+原生模式仅运行**本人可信的本机 Python**；普通子进程不是安全沙箱，不能开放第三方代码上传。UI 仅接收 View Policy 授权的估计/传感器或显式练习图层，不提供通用真值接口；本机设备所有者仍可通过文件/调试器读取自己的数据。实测为 Linux x86_64 原生和 Firefox 浏览器单机；Windows/macOS构建CI已配置，本次未取得其完整玩家流程证据，其他浏览器与服务器隔离仍待验证。
 
 从 [文档索引](docs/README.md)、[物理确认记录](docs/13_PHYSICS_MODEL_DECISIONS.md) 与 [路线图](docs/10_DEVELOPMENT_ROADMAP.md) 阅读。根 [AGENTS.md](AGENTS.md) 已同步当前实现目录和检查入口；当前功能以本 README、文档索引及对应验收为准，历史报告按各自日期/平台范围保留。
 
@@ -179,7 +179,7 @@ M3 UI 验收使用独立临时编辑库启动服务和 Marionette Firefox，再�
 
 ## M5：Weapons 与多文件机器人
 
-章节展示顺序保持 **Hello Robot（C0）、Weapons（C1–C5）、Navigation（C0–C3）**；公共 C0 后分为两条独立主线，展示顺序不产生解锁条件。C0–C2 玩法不变；C3 直接处理原始车体系距离/方位，输出仍是 `(r, theta)`，可实现 EKF；C4 沿用 C3 的中心 Radar 与差速敌车，玩家分文件实现中心预测与自动武器控制；C5 在此基础上加入匿名装甲观测、有效装甲与全向小陀螺，复用控制器并扩展旋转预测。Navigation 首关实现 FK/IK 与轮电压控制：系统发送 24 秒方形指令，按终点误差和真实路程验收，见 [设计与状态](docs/33_NAVIGATION_MOTION_CONTROL.md)。
+章节展示顺序保持 **Hello Robot（C0）、Weapons（C1–C5）、Navigation（C0–C4）**；公共 C0 后分为两条独立主线，展示顺序不产生解锁条件。C0–C2 玩法不变；C3 直接处理原始车体系距离/方位，输出仍是 `(r, theta)`，可实现 EKF；C4 沿用 C3 的中心 Radar 与差速敌车，玩家分文件实现中心预测与自动武器控制；C5 在此基础上加入匿名装甲观测、有效装甲与全向小陀螺，复用控制器并扩展旋转预测。Navigation 首关实现 FK/IK 与轮电压控制：系统发送 24 秒方形指令，按终点误差和真实路程验收，见 [设计与状态](docs/33_NAVIGATION_MOTION_CONTROL.md)。
 
 C1–C5 底盘锁定并保留真实受力，系统自身位姿仍公开；C1–C3 人工炮台/开火，C4/C5 仅允许程序角加速度/单发。C3/C4/C5 时限为 120/120/180 仿真秒，首次成功部署起算。C2–C4 Radar 误差沿用 σr=0.45 m、σtheta=0.08 rad、10% 丢失；C4 不提供 GPS、不要求装甲命中，双方 HP、整车扣血和终局顺序与 C3 相同。C5 仅提供最近两块可见装甲的匿名车体系 `[r,theta]`，10 Hz、12 m，σr=0.03 m、σtheta=0.005 rad，每块独立丢失 10%，实际返回 0/1/2 行。没有中心 Radar 或 GPS，朝向按模 90° 解释。所有参数在对应 YAML。
 
@@ -240,7 +240,7 @@ python3 tools/tankbot.py browser --level navigation.c3 --developer
 
 任务页的“算法实验台”目前由 Weapons C2 显式开放：部署后开始/停止录制，结束尝试，再选择两个保存版本比较同一组授权输入。可查看实际执行、测量/估计/协方差、累计和分段误差、缺测、可选创新及原生Python错误栈，保存/导出失败复现记录。导出含源码、revision、配置/环境摘要和时刻，不含敌车真值；重新导入没有私有参考时，新RMSE留空。传感器回放不是完整通关，控制器须从同初态重跑，不能套用旧测量。
 
-“日志→耗时诊断”显示整批/模块、编码/解码、往返、等待提交的p50/p95/p99及超时位置。仍沿用20ms墙钟和固定tick，并非新的CPU配额。F2“模板、备份与恢复→项目容量与完整备份”可导出整个当前课程工程、固定历史版本，预览并确认可恢复清理；旧源码/历史不自动删除。恢复前备份当前HEAD，异常中断可以回滚。工程配额在 [engineering.yaml](config/engineering.yaml)。
+“日志→耗时诊断”显示整批/模块、编解码、往返及收到至提交的合并耗时，提供p50/p95/p99/p99.9/max与失败位置，并显示冻结profile。声明总上限与后端墙钟已分开，见下节；固定tick/6tick门不变，遥测不是CPU配额。F2“模板、备份与恢复→项目容量与完整备份”可导出整个当前课程工程、固定历史版本，预览并确认可恢复清理；旧源码/历史不自动删除。恢复前备份当前HEAD，异常中断可以回滚。工程配额在 [engineering.yaml](config/engineering.yaml)。
 
 完整接口、操作及限制见 [工程与实验台](docs/38_ENGINEERING_AND_ALGORITHM_LAB.md)，实际命令/截图/失败见 [本轮验收](docs/reports/ENGINEERING_QUALITY_VALIDATION_20261105.md)，当前风险见 [评估跟进](docs/reports/PROJECT_REVIEW_FOLLOWUP_20261105.md)。连续路径追踪已作为Navigation C4实施，见 [设计与验收](docs/40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)。全局规划、局部避障及IMU/建图/SLAM仍为 [课程提案](docs/39_NAVIGATION_COURSE_PROPOSALS.md)。CI跨平台构建与Linux/Firefox实际玩家流程分别记录；其他OS/浏览器仍需独立实测。
 

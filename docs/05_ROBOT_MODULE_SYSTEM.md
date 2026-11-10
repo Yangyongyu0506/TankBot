@@ -2,7 +2,7 @@
 
 ## 目的、范围与约束
 
-`tankbot` SDK 隐藏 JSON、网络、进程和权限细节，公开稳定的类型、模块生命周期和端口。初学者函数与高级模块采用同一份 Contract 及同一 Host 验证路径。ADR-0008 接受 Contract 和混合交互原则；M1 已实现下述类型与同步周期 API 的子集，源码在 `sdk/python/tankbot/`，尚未发布到 pip；未实现部分在文末明确列出。
+`tankbot` SDK 隐藏 JSON、网络、进程和权限细节，公开稳定的类型、模块生命周期和端口。初学者函数与高级模块采用同一份 Contract 及同一 Host 验证路径。ADR-0008 接受 Contract 和混合交互原则；当前已实现类型化消息、同步periodic/event、声明式模块图与课程适配器，源码在 `sdk/python/tankbot/` 和runtime；尚未发布到pip。下文区分现有API、历史M1子集和未实现扩展。
 
 ## 类型与 Contract
 
@@ -35,7 +35,7 @@ SDK 核心类型是不可变值：`Pose2D`、`ImuData`、`EncoderData`、`RadarD
 
 `module_id` 为小写 snake_case，在部署内唯一。Contract 声明端口类型、必要输入、新鲜度、执行频率/触发、预算、初始化依赖、状态版本；Manifest 只负责把端口接到频道。Host 以 Contract、任务 grant、运行 profile 三者交集配置执行，玩家修改文件不能提高配额或授予权限。
 
-Contract 的 `budget_ms` 是请求的墙钟预算；Host 可以下调或拒绝。公开的生效预算写入部署报告。`dependencies` 只规定 setup 顺序，必须为无环图；Topic 控制反馈环是合法的，但跨模块边至少延迟到下一次输入快照，不能在同一回调中递归调用。
+Contract的 `execution.budget_ms` 是模块声明额度，用于模块图准入和诊断，不是Supervisor单独为该模块强制的墙钟截止。Host检查整图声明总和不超过冻结profile的 `module_declared_budget_cap_ms`；整批往返另受 `batch_wall_deadline_ms` 约束。当前目录、后端选择、新旧配置互斥与公开摘要以 [41](41_RUNTIME_EXECUTION_PROFILES.md) 为准。`dependencies` 只规定setup顺序，必须为无环图；Topic反馈环合法，但跨模块边至少延迟到下一次输入快照，不能同回调递归执行。
 
 ## Module API 与生命周期
 
@@ -82,7 +82,7 @@ ctx.publish("cmd_vel", velocity, frame_id="base_link")
 
 生命周期为 `created → initializing → ready → running → stopped`；异常可进入 `faulted`。部署时先按依赖调用 `setup`，成功后才能激活。新 run 在 tick 0 调用 `reset` 清空时间相关状态、输入历史和 RNG。调度起点 `origin_tick` 是部署生效 tick，run 重置时归零；第一个周期回调在 `origin_tick + period_ticks`，因此正常 `dt_seconds > 0`。`teardown` 有界且尽力执行，强杀时不保证运行。
 
-模块对象字段只活在当前 Runtime。可选 `ctx.state.get/set` 保存带 `state_version` 的有大小限制 JSON 检查点，写入隔离数据区并由 Host 校验；不得 pickle 任意对象。默认部署不继承旧内存或检查点，跨代码版本恢复需显式迁移并测试。
+模块对象字段只活在当前 Runtime。持久检查点是未实现的目标设计：未来可选ctx.state.get/set须保存带state_version的有界JSON，写隔离数据区并由Host校验；不得pickle任意对象。默认部署不继承旧内存或检查点，跨代码版本恢复需显式迁移并测试。
 
 ## 调度与错误语义
 
@@ -92,11 +92,11 @@ ctx.publish("cmd_vel", velocity, frame_id="base_link")
 | 同步 event | 指定输入有新样本时，下个可用 tick 激活 | Contract 为 `mode="event"`、`trigger_inputs`、`min_interval_ticks`；同 tick 合并事件 |
 | 异步 callback | 后续研究 | v1 不接受 `async def update`，避免墙钟 await 改变仿真含义 |
 
-周期与 event 使用同一 `deadline_ticks`、`budget_ms` 和下一边界提交机制；event 的最小间隔至少等于 deadline，periodic 的 period 也必须不小于 deadline。初期同机器人共用执行 profile 的 `commit_delay_ticks`（建议 6），各模块的 `deadline_ticks` 必须等于它，才能用一个批次生效 tick；不支持的配置在准入时拒绝。
+周期与event使用同一声明准入及固定提交机制；event的最小间隔至少等于deadline，periodic的period也必须不小于deadline。同机器人模块的 `deadline_ticks` 必须等于 `runtime.commit_delay_ticks`，当前为6，才能共享批次生效tick；不支持的配置在准入时拒绝。这个仿真时间边界与后端墙钟截止是两道独立条件，增加墙钟时限不能移动提交门。
 
 `dt_seconds` 是距上次**实际调用的激活时刻**的 tick 差/physics_hz，首次从 `origin_tick` 算起；缺输入/忙碌跳过没有调用，因此下次 dt 累积。回调异常或输出被拒绝不会回滚任意 Python 对象字段，下次 dt 仍从该次调用算，玩家需修复/显式重置状态。`ctx.dt_seconds` 不是传感器采样时间差，算法应使用 Sample 的 tick 处理异步测量。event 最早在 origin 后下一个 tick 激活，避免零 dt。
 
-同 worker 内模块不构成安全边界，Host 对同批模块预算做准入，生效预算之和不得超过机器人批次硬上限。模块预算用于配置与诊断，外部 Supervisor 强制的是整个批次的墙钟/OS 资源限额，不信任 Python 自报的每模块耗时。初始机器人批次上限建议 20 ms；单模块例子可独占，多模块须分配或通过经过基准验证的新 profile 调整。
+同worker内模块不构成安全边界；Host对整图声明预算求和准入，不只检查某次碰巧激活的模块。当前共同声明上限20ms，原生/浏览器整批墙钟分别为30/40ms，均为experimental后端profile。Supervisor从Authority开始编码到完整响应接收/解码判断截止，及时结果仍须在activation+6tick门通过权限和语义检查；早到不提前、晚到不补交。模块自报update耗时仅供观测，不是可信CPU配额；本机普通进程和浏览器Worker均没有逐模块硬隔离，服务端OS配额仍待实施。
 
 必要输入缺失/过期时跳过该模块，产生 `INPUT_UNAVAILABLE`，不调用玩家函数，也不自动填零。可选输入由玩家处理。缺测跳过不累计为执行失败。输出先整批验证：任一输出非法则该模块本次输出全部拒绝；共享 Runtime 内其他已完成模块的合法子批次可以提交。整个 worker 超时/崩溃时未返回的批次全部丢弃。
 
@@ -124,7 +124,7 @@ ctx.publish("cmd_vel", velocity, frame_id="base_link")
 
 全部用函数调用耦合太强；全部暴露原始 JSON 增加学习负担；以 Python 线程隔离模块无法可靠终止死循环。采用模块内调用、模块间 Topic、机器人级 worker。单 worker 让一个模块卡住整台机器人，后续可按风险/预算分 worker，需记录部署拓扑而不改算法端口。
 
-开放项：event 批处理对吞吐的影响、数学库可用集、检查点上限、IDE 类型提示生成。验收包含类型/连线/依赖静态检查、缺输入、异常、重置、多文件 import、超时、过期/错帧输出，以及函数包装与等价类输出一致。SDK 示例必须在 SDK 实现后通过 import、Contract 与文档片段测试。
+开放项：event批处理的规模性能、持久检查点、动态组装和更多平台。课程数学库白名单与编辑器类型帮助已实现，见 [19](19_LEARNING_GUIDES_AND_SE3.md)、[23](23_PLAYER_CODE_AND_LIBRARIES.md)。验收包含类型/连线/依赖静态检查、缺输入、异常、重置、多文件import、超时、过期/错帧输出及适配器行为；文档AST检查不能代替SDK片段执行与Contract测试。
 
 ## M1 可用 API 与后续能力
 
@@ -134,7 +134,7 @@ M1 原始子集仅运行一个 periodic Module。M5 已补同步周期/event 多
 
 ## M1b 增量 API
 
-已增加不可变 `TurretVelocity`、`FireCommand`、`FireResult`、`WeaponState` 与 `ctx.fire(port="fire", request_id=None)`。ctx.publish 收集炮台速度 Topic；ctx.fire 收集离散命令并返回 ID，结果从后续武器状态读取，不阻塞算法。只有启动配置授予 robot 控制源时，对应输出端口才出现在 Contract；声明端口不等于自动获得权限。新示例单独位于 [weapon_demo.py](../examples/robot/weapon_demo.py)，保留原定位源码；接口、时序、反馈字段与可执行片段见 [14](14_WEAPONS_DESIGN.md)。炮台/武器输入为可选授权观测；新增功能仍复用单 periodic Module，不代表完整模块图已实现。
+已增加不可变 `TurretVelocity`、`FireCommand`、`FireResult`、`WeaponState` 与 `ctx.fire(port="fire", request_id=None)`。ctx.publish 收集炮台速度 Topic；ctx.fire 收集离散命令并返回 ID，结果从后续武器状态读取，不阻塞算法。只有启动配置授予 robot 控制源时，对应输出端口才出现在 Contract；声明端口不等于自动获得权限。新示例单独位于 [weapon_demo.py](../examples/robot/weapon_demo.py)，保留原定位源码；接口、时序、反馈字段与可执行片段见 [14](14_WEAPONS_DESIGN.md)。炮台/武器输入为可选授权观测；M1b当时仍复用单periodic Module；当前模块图已在M5实现，此处仅记录武器API来源。
 
 ## M2 运行适配
 

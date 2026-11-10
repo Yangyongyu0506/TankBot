@@ -1,12 +1,86 @@
-# 27 YAML 关卡插件：审计与迁移设计
+# 27 YAML关卡插件架构与迁移记录
 
-## 范围与迁移前审计
+## 当前范围与权威来源
 
-本篇记录原五关的架构迁移，基线提交 `ba2b5f8`；该次迁移不增加关卡、传感器、物理或评分玩法。后续用户明确重做 C3/C4 并新增 C5、GPS/极坐标组件，当前课程见 [28](28_WEAPONS_PROGRESSIVE_ESTIMATION.md)，不是本篇旧玩法基线的无意变化。基线快照在 `tests/fixtures/level-behavior-before.json`，由重构前的真实 Authority、Core、Radar、学习说明与 CampaignSession 生成。数据不是运行时配置源。
+当前十一关全部由 `levels/*.yaml` 自动发现、校验并通过同一加载器创建。应用配置为2.1，关卡Schema为1.0；公共c0后开放Weapons与Navigation，分支内部按prerequisites推进。关卡是配置，不是可执行插件；物理、传感器、适配器与裁判由通用引擎组件提供。原五关迁移属于历史阶段，见文末，不用旧报告替代后续课程验收。
 
-下表记录重构前基线。后续用户要求 Weapons 全章炮弹可见，当前 C1–C4 已通过 YAML 开放此显示权限，见 [ADR-0022 修订](adr/0022-campaign-capabilities-and-evaluation.md)。冻结夹具保留，回归仅明确允许 world_effects 这一项后续变更；当前仅 C0–C2 保持这份旧玩法基线；C3/C4 新规则和 C5 由新的课程验收覆盖。
+| ID | 当前课程 | 配置源 | 必须通关的前置 |
+| --- | --- | --- | --- |
+| `c0` | C0 · 认识坦克与坐标 | [hello_robot.C0.yaml](../levels/hello_robot.C0.yaml) | 无 |
+| `c1` | C1 · 用 SE(3) 矩阵变换坐标 | [weapons.C1.yaml](../levels/weapons.C1.yaml) | c0 |
+| `c2` | C2 · 噪声中跟踪与击杀 | [weapons.C2.yaml](../levels/weapons.C2.yaml) | c1 |
+| `c3` | C3 · 直接处理距离与方位观测 | [weapons.C3.yaml](../levels/weapons.C3.yaml) | c2 |
+| `c4` | C4 · 从极坐标滤波到自动瞄准 | [weapons.C4.yaml](../levels/weapons.C4.yaml) | c3 |
+| `c5` | C5 · 预测小陀螺并自动瞄准 | [weapons.C5.yaml](../levels/weapons.C5.yaml) | c4 |
+| `navigation.c0` | Navigation C0 · 让双轮执行速度指令 | [navigation.C0.yaml](../levels/navigation.C0.yaml) | c0 |
+| `navigation.c1` | Navigation C1 · 从轮速推算自身位姿 | [navigation.C1.yaml](../levels/navigation.C1.yaml) | navigation.c0 |
+| `navigation.c2` | Navigation C2 · 用 GPS 校正里程计漂移 | [navigation.C2.yaml](../levels/navigation.C2.yaml) | navigation.c1 |
+| `navigation.c3` | Navigation C3 · 让定位参与航点驾驶 | [navigation.C3.yaml](../levels/navigation.C3.yaml) | navigation.c2 |
+| `navigation.c4` | Navigation C4 · 连续路径追踪 | [navigation.C4.yaml](../levels/navigation.C4.yaml) | navigation.c3 |
 
-2026-10-26 用户另要求 C2 运行中显示累计 RMSE；当前该关通过 allowed_metrics 与 evaluation.live_feedback 授权聚合 UI，原累计公式、终局报告和通关规则保持。冻结基线继续保留，回归明确适配了对应教学说明，详见 [ADR-0034](adr/0034-authorized-live-evaluation.md)。
+课程目标与控制权见 [09](09_LEVEL_DESIGN.md)，分支/存档见 [36](36_BRANCHING_PROGRESSION.md)。原五个ID保留，新增课程按独立增量验收；关卡数、章节名和order不参与仿真分支。
+
+## 逻辑架构与加载生命周期
+
+```mermaid
+flowchart TD
+    A[ApplicationState / CLI / Server] --> B[load_config / level_plugins.discover]
+    B --> C[有界安全YAML / Schema / 交叉引用校验]
+    C --> D[地图资产 / 完整底盘 / 传感器实例解析]
+    D --> E[SceneResolver / 不可变ResolvedScene]
+    E --> F[每run新建Core / SensorScheduler / Authority / Runtime]
+    F --> G[规则与裁判 / 固定提交门]
+    F --> H[输入输出grants / Selector / ViewGateway]
+    H --> I[授权UI与课程目录]
+```
+
+`load_config`发现目录，`campaign.configure(id)`只查定义并装配通用组件；`scene_definition.py`先解析引用、验证初态和可选路径，随后创建世界。SceneResolver缓存不可变定义，重试复用定义但新建run、物理、传感器/RNG、Topic序号、算法Worker、评分和部署状态。Native/Browser启动器沿用同一解析器；浏览器通过既有authority-config交付已解析DTO，不手写注册列表。具体场景接口见 [32](32_RESOLVED_SCENE_AND_COMPONENTS.md)。
+
+文件尚未读取为Unloaded，校验/解析后Loaded，实例初始化后Ready；Campaign active/preparing等待起算，active/running正式计时，passed/finished或ended/finished记录成功、失败或主动结束原因。切关与重试替换Authority并关闭旧Core/Worker/候选，整页重载清理监听器、计时器、插值和测试/部署会话；已保存Workspace不清空。没有独立暂停/恢复UI，不能把通用状态图当成已交付按钮。
+
+## Schema与配置归属
+
+正式结构为 [level.schema.json](schemas/level.schema.json)，精确组件与编写步骤见 [levels/README](../levels/README.md)。
+
+| 来源 / 字段 | 当前职责与限制 |
+| --- | --- |
+| config/game.yaml | 通用时钟、求解器、接触、武器、平台、存储及模型/关卡/profile目录；非第二套课程配置 |
+| config/chassis/*.yaml | 完整底盘2.0：质量/惯量、轮组、伺服、黏性阻力、限制、装甲/GPS安装与外观；关卡按模型类型选择 |
+| metadata | 稳定ID、名称/章节、学习说明、order和prerequisites；order仅展示/存档序列化，前置数组表示全部满足 |
+| world | 2D/map、固定频率、武器开关、inline矩形墙或assets内地图引用；C0/Weapons/Nav C0–C3为空旷场地，Nav C4为仓储资产 |
+| robots | 一个player和可选任务target；初态、生命、drive/control_sources、传感器实例和既有巡逻/装甲组件 |
+| communication.runtime | managed/graph、Contract/Manifest、处理组件、声明预算、模板版本；不加载任意Python入口或安装钩子 |
+| permissions.data_access | 以玩家程序为参照的inputs/outputs/actuators、参考发布与task_inputs；缺省拒绝 |
+| permissions.visualization | View Policy、图层/指标/控制信号上限与独立task_feedback；不是程序订阅grant |
+| visualization | 初始显示、可切换项、来源、图表/历史容量；用户偏好不能突破上限 |
+| objectives | 参数、进度、组合成功/有序终局规则、时限/起算；可声明twist_sequence、waypoint_route或path_tracking |
+| evaluation | 采样对齐的目标/自身定位诊断、固定评分与对照源；显式live_feedback或C2滤波实验；没有通用星级/加权分数系统 |
+| randomization | seed、发生/重建时机；传感器实例使用已登记随机流，路径生成使用独立seed流 |
+| tutorial / scaffolding | 完整教材、edit_files高亮、公开参数引用、注册的文本脚手架与workspace_scope；YAML不携带可执行脚本 |
+
+底盘模型是通用引擎资产，地图是关卡可引用的内容资产；不得借此include任意关卡专属配置或脚本。生成的campaign/lesson/旧Core字段只是兼容DTO，default-profile.json由同一加载器导出，禁止手工维护。地图覆盖/预览及练习隔离见 [31](31_MAP_OVERRIDE_AND_PREVIEW.md)。
+
+读取拒绝超大文件、过深/过多节点、alias、重复键、危险tag和非有限数，再做Schema与领域验证。后者检查组件/模型、机器人/传感器ID与归属、canonical Topic、类型/发布冲突、Contract依赖/声明准入、前置未知/循环、地图路径、权限/来源、指标及源码生成上限。报错包含File/Path/Reason。资源限额由受信应用配置给定，插件不能放大。
+
+## 复用组件与接口
+
+`level_plugins.SENSORS/ACTUATORS`登记当前传感器/执行器的Topic、Schema和frame，`level_templates.COMPONENTS`登记受管算法脚手架，`level_rules`执行compare/all/any/not及固定比较符；不eval表达式或按关卡ID分派。通用进度为displacement/heading_change；任务组件另产生固定指令、航点和连续追踪事实。位置/yaw诊断仍由METRICS计算，路径裁判独立累计时间加权追踪误差。
+
+现有实例后端包括Rust理想轮组/IMU和Python Radar、匿名装甲、带噪编码器及自身GPS，统一生命周期见32。intercepted_gps兼容组件保留，但当前正式Weapons不启用它。Navigation支持差速轮电压、无武器/无敌车，见 [33](33_NAVIGATION_MOTION_CONTROL.md)；定位、航点和路径组件分别见 [35](35_NAVIGATION_GPS_LOCALIZATION.md)、[37](37_NAVIGATION_WAYPOINT_CONTROL.md)、[40](40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)。
+
+连续路径在可信准备阶段生成并复验，不占玩家批次预算；readonly path_reference只经task_inputs授权。PathFollower复用EKF/轮控制链，裁判生成路线不等于玩家规划课程。Runtime声明准入与后端往返截止分开，准入读取冻结profile而非墙钟别名，见 [41](41_RUNTIME_EXECUTION_PROFILES.md)。不引入通用中间件或任意代码式注册。
+
+## 权限、评分与Workspace边界
+
+程序只收到data_access授权输入，测试也不额外授予真值；可选未授权端口保持无数据。ViewGateway裁剪真实对象、局部观测和估计，UI只在allowed_layers与user_toggleable内展示，来源由注册组件限定。开发者grant提供独立只读DTO，不改变普通Runtime或正式进度。浏览器场景在客户端运行，不能保证恶意设备所有者无法读取内部真值。
+
+裁判独立使用私有真实状态/历史，不依赖UI或估计图层是否打开。终局规则按YAML顺序执行；如Weapons玩家死亡优先、时限内击杀成功、随后超时。估计按采样tick评价，正式测试输出不计分。运行中反馈只发布获授权指标：Weapons C2/C3累计目标RMSE、Navigation各关定位/控制反馈，C4另授权距终点/检查点，真实追踪误差仅终局。程序数据权限、显示和任务反馈分别校验，详见 [04](04_STATE_AND_VIEW_MODEL.md)。
+
+进度文件仍为版本1，非连续完成集合合法；仅metadata.prerequisites决定解锁，见36。campaign/navigation两个scope保存独立工程，切换清理旧会话但保留源码/revision/ledger/history；模板只补缺失文件，更新先预览，见 [06](06_WORKSPACE_AND_TEMPLATES.md)、[17](17_EDITOR_AND_DEPLOYMENT.md)。项目备份/清理属于38，不代替部署会话GC。
+
+## 历史：原五关迁移（基线ba2b5f8）
+
+原迁移前game.yaml混有课程、Radar、lesson/graph配置，模板、UI、CLI及存档还存在按ID的分支。迁移提取配置、统一发现/规则/权限/教材，并冻结 `tests/fixtures/level-behavior-before.json`；该夹具不是配置源。原阶段不增加关卡或玩法，验收见 [历史迁移报告](reports/LEVEL_PLUGINS_VALIDATION.md)。下表和当时地图、时限、诊断发布方式仅表示迁移前事实，不代表当前C3/C4或当前显示权限。
 
 | ID / 名称 | 目标与输入 | 控制、初态与权限 | 成功、失败与诊断 |
 | --- | --- | --- | --- |
@@ -20,122 +94,21 @@
 
 原有诊断为有效估计采样数、位置 RMSE、可用时的 yaw RMSE、物理命中数；仅结束后发布，无加权分数、星级或额外误差通关门槛。重复/倒退采样不计分。计时、手动结束、热部署不重置倒计时、末 tick 和同时死亡优先级必须保持。
 
-当前地图更新（2026-10-28）：C0–C5 已改为引用 `assets/maps/open_training.yaml`，仅保留原四面边界墙；旧地图保存为自由试验场资产。另有不同尺寸的导航布局资产，尚未绑定课程。上述迁移前表格保留历史事实，当前配置与预览见 [地图资产](../assets/maps/README.md)、[ADR-0041](adr/0041-shared-map-assets.md)。
 
-当前进度更新（2026-11-04）：九关保留稳定身份，公共c0后分为独立Weapons/Navigation主线。prerequisites是唯一前置规则，order仅展示/序列化；目录驱动的关卡树与存档兼容见 [36](36_BRANCHING_PROGRESSION.md)、[验收报告](reports/BRANCHING_PROGRESSION_VALIDATION.md)。
+### 历史迁移与后续修订的对应
 
-## 原实现职责与问题
-
-`campaign.configure` 已统一启动，但 `game.yaml` 同时混有关卡、Radar profile、lesson 和 graph profile；仅改文件仍无法新增可运行关卡。`campaign_templates` 生成/执行按 c0/c1/c2 分支；learning 另有按 ID 的文案和行为；前端按 ID 选文件、展示真值说明/进度。CLI choices、Schema 枚举及存档数字排序也固定了关卡集合。权限校验对 c0 特许，成功规则直接耦合 CampaignSession。
-
-可复用部分：Rust 机器人/炮台/弹丸/墙体/巡逻与生命模型，Python Radar，Protocol/Validator、Pose Selector/ViewGateway，GraphExecution、Sandbox/Supervisor、Workspace CAS/非覆盖迁移、现有 UI 布局和管理 API。地图当前为中心/尺寸矩形墙体，无独立资产加载器。
-
-## 目标设计与边界
-
-每个 `levels/*.yaml` 包含 metadata、world、robots、communication、permissions、visualization、objectives、evaluation、randomization、tutorial 和 scaffolding。配置只能组合注册的现有组件，不能加载脚本/导入钩子；关卡文件自身的资产路径引用限于 assets 内地图。[ADR-0036](adr/0036-shared-chassis-geometry.md) 另明确允许引擎在统一目录加载通用底盘模型，关卡按类型选择，不能引用任意额外专用配置。通用 Python 算法脚手架属于引擎组件，YAML 指定组件和教学说明，不能提供可执行插件代码。
-
-统一流程为发现→受限安全解析→JSON Schema→引用/权限/组件校验→解析地图→编译现有 Core/Authority DTO→沿用启动生命周期。ID 只用于索引、存档、管理和随机观测标签，不能选择关卡行为。浏览器使用同样的已编译配置，构建/启动自动扫描，不手写注册列表。
-
-规则注册仅包含当前需要的组合/比较及移动转角进度；指标注册保留现有位置/yaw RMSE 与命中/采样计数。Authority 执行输入输出 grant 与 View Policy；UI 在上限内应用初始显示和可切换状态，程序数据权限与显示权限独立。浏览器本地隔离不保证恶意用户无法检查客户端内部真值。
-
-## 迁移计划与验收
-
-先保留初态、组件参数、传感器序列、合同、教程、成功/死亡/超时/评分基线，再提取 YAML 和建立统一加载器。旧 API 可保留通用 DTO 适配，不保留隐藏的 ID 配置。玩家已有源码不覆盖，现有 Topic/Schema、关卡ID、存档版本与管理路由不变。新文件复用组件时无需改引擎。
-
-原迁移验收包括五关完整回归、旧玩家代码、权限负例、切换/重试/资源回收、旧存档、严格错误路径、临时额外配置的零代码发现。未来机械臂、SLAM、多机器人教学组件为 Planned，不能以通用 Schema 冒充已支持。
-
-## 已实现的逻辑架构与加载生命周期
-
-```mermaid
-flowchart TD
-    A[ApplicationState / CLI / Server] --> B[load_config]
-    B --> C[level_plugins.discover]
-    C --> D[安全 YAML + Schema + 交叉校验]
-    D --> E[编译 Catalogue / Core DTO / Runtime Contract]
-    E --> F[campaign.configure]
-    F --> G[现有 Core / Sensor / Module Runtime]
-    F --> H[Rule Registry / Diagnostics]
-    F --> I[Topic grants / ViewGateway / UI policy]
-```
-
-物理及机器人实例仍由既有 Rust 工厂创建。Host 的 `core_configuration` 不向私有 IPC/WASM 传递教材目录。底盘与工作区扩展后的私有 Runtime/管理帧上限为 `runtime.max_message_bytes`，当前 256 KiB，见 [29](29_CHASSIS_PROFILES.md)；协议消息形状不变。浏览器启动器运行同一发现/编译器，经既有 `/authority-config.json` 交付生成的目录，Core Worker 使用同一 Authority；不需要浏览器读取任意文件或手写关卡列表。源码包构建仍用 `prepare_browser.py`；独立无启动器 Web 部署仍未实现。
-
-`load_config` 发现/校验并加载目录，`configure(id)` 只按 ID 取数据；UI 选择、CLI 启动、原生和浏览器都走同一路径。新实例 ready 后替换旧 Authority，关闭旧 Runtime/Core 与候选；重试也建立新 run、清空观测/估计/计时/评分缓存。Workspace 源码保持，缺失文件按 ledger 非覆盖解锁。编辑/测试/部署时钟行为及主动结束保持原样，编辑器不暂停正式尝试；原 UI 没有独立暂停/恢复操作，本次未新增。
-
-状态映射：文件尚未读取为 Unloaded；发现/编译成功为 Loaded；Core/Runtime 初始化成功为 Ready；Campaign 的 `active/preparing` 表示等待既有起算条件，`active/running` 表示正式计时；`passed/finished`、`ended/finished` 表示成功、失败或 aborted，原因保留原字段。退出和切关关闭进程/Worker，前端仍通过整页重新加载清理计时器、事件监听和插值缓存。
-
-## 正式 Schema 与配置来源
-
-源格式为 `schema_version: "1.0"`，正式结构在 [level.schema.json](schemas/level.schema.json)。应用配置版本为 2.0；`config/game.yaml` 保留通用受力系数、平台、预算与插件/底盘目录，`config/chassis/*.yaml` 定义通用底盘几何、装甲/GPS 安装与外观。`campaign`、lesson/profile 等旧形状现在是生成的内部兼容 DTO，不是第二套手工配置。Rust/Node 的 `default-profile.json` 也由 `export_profile.py` 从同一加载器生成，禁止手工编辑。
-
-| YAML 字段 | 权威内容与限制 |
-| --- | --- |
-| metadata | 稳定id/name/description/chapter/version与学习元信息；order只负责展示/序列化，prerequisites是全部必须完成的前置；ID无数值解析规则 |
-| world | 2D/map、现有 clock 参数、inline 矩形墙体或 assets 内地图；地图资产沿用 `{walls:[{center,size}]}` 形状 |
-| robots | 一个 player 与一个任务 target；当前可复用 tank、static_tank_target、patrol_tank；实例初态、生命、控制源、传感器归属及既有巡逻/装甲参数 |
-| communication.runtime | 单模块/图模式、Manifest、Contract、处理组件、预算与模板版本；默认入口只能来自注册的脚手架 Module |
-| permissions.data_access | 以玩家程序为参照：inputs 可订阅、outputs 可发布的估计 Schema、actuators 可发布的执行器 Topic；缺省拒绝 |
-| permissions.visualization | Authority View Policy、可显示图层上限；与程序订阅权限分别检查 |
-| visualization | initial_enabled、user_toggleable、source；当前关卡 preserve_user_settings=true 保留已有图层偏好，偏好不能越权 |
-| objectives | 参数、可锁存移动/转角进度、组合成功条件、按数组顺序执行的终局条件、时限与起算 |
-| evaluation | terminal_diagnostics 及位置/yaw RMSE 组件；可选 live_feedback 只显示显式授权的累计指标，无新增星级、加权分数或通关误差门槛 |
-| randomization | 既有 Python Random 的 seed、新 run 重建策略；不增加地图随机化 |
-| tutorial | 原文任务/提示、完整学习说明、默认文件、UI 说明与公共标定引用；数量/频率/噪声用公开占位符引用权威参数 |
-| scaffolding | 注册的通用模板组件及文档字符串；不允许 YAML 提供可执行脚本或任意导入路径 |
-
-通用机器人运动/物理、轮组、伺服、炮台和弹道模型继续使用 `game.yaml` 的既有引擎组件参数；原五关没有独立动力学差异，不复制实现。C5 复用同一全向动力学，巡逻组件增加可配置 spin_rate_radps；不通过 ID 分支控制。玩家 `model: scene_selected` 保留原 CLI 底盘选择，也可用已有 differential/omnidirectional 类型；敌车依其既有 patrol 参数创建。独立每实例动力学模型、更多传感器、机械臂与多机器人教学需将来扩展引擎组件，不能宣称当前支持。
-
-所有新配置先做大小/层级/节点限制与安全解析，拒绝 alias、重复键、危险 tag、非有限数；再执行 JSON Schema 与语义校验。后者包括 ID/顺序/前置引用、组件与模型、Topic 类型/冲突/绑定、合同依赖/预算、地图路径、可视化来源/上限、指标与生成源码大小。报错携带 File/Path/Reason，例如 `robots[0].sensors[0].update_hz`。资源限额在 `game.yaml: level_plugins.limits`，不是可由插件自行放大的值。
-
-## 实际组件注册与接口
-
-`level_plugins.SENSORS/ACTUATORS` 登记既有 canonical Topic/Schema/frame；新插件只能复用已支持的接口，不重命名旧频道。`level_templates.COMPONENTS` 登记通用多文件脚手架，文案由 YAML 安全写为字符串；只允许已登记默认 Module 类，不把 YAML 当代码加载器。现有多文件玩家源码依然由编辑→测试→部署执行，和插件数据属于不同信任域。
-
-`level_rules.PROGRESS` 只有 displacement 和 heading_change；规则树支持 compare/all/any/not，操作符为 ==、!=、<、<=、>、>=。compare 读取已登记的事实 moved/turned/hits/estimates/target_alive/player_alive/objective_complete/elapsed_ticks，以及参数/limit_ticks，不 eval 表达式。`METRICS` 只有现用 position_rmse/yaw_rmse；重复采样过滤、计数与命中报告保持原样。
-
-例如既有“存活、时限内击杀”由成功条件 `target_alive == false` 与终局数组表达：先 player_alive=false 失败；再 objective_complete=true 且 elapsed_ticks<=limit_ticks 成功；最后 elapsed_ticks>=limit_ticks 超时。C0/C1 的移动/转角/估计/命中检查通过同一规则树与锁存进度组合。
-
-## 权限、默认显示与评分边界
-
-程序只收到 data_access 允许的输入；Manifest 声明端口不授予权限，可选未授权端口保持无数据。测试快照也使用同一裁剪，不能从测试通道取得额外真值。系统自身位姿可被允许显示但禁止程序读取，也可允许程序读取而禁止显示，均有自动化验证。
-
-编译器将 allowed_layers 与 View Policy 取交集，Authority/ViewGateway 裁剪对应地图、真实物体、局部观测和估计，消息查看器也不能获得被禁止图层的数据；UI 只列出 allowed_layers，初始显示和用户开关取交集。锁定开关不能由普通操作重新启用。来源是注册组件规定的数据源，不允许把机器人估计图层改接真值。开发者独立 grant 保留全量只读调试，关闭模式撤回；不改变玩家程序权限或通关奖励。
-
-评分读取私有物理历史，独立于是否显示 UI、是否允许玩家读真值。正式提交的估计按采样 tick 评分，测试输出不计分；终局前不公布诊断，不把估计修正回物理状态。浏览器完整场景在客户端运行，权限是教学/接口边界，不能保证恶意客户端无法检查内部真值。
-
-C2 的实时累计 RMSE 是上段终局发布规则的显式教学例外。allowed_metrics 给出可视指标上限，live_feedback 选择其中已登记/已计算的指标；加载器拒绝越权、未知指标或无效精度/历史容量。管理状态只发布获授权的标量与计数，曲线缓存由 YAML 限长；当前不增加窗口误差或原始雷达基线指标。
-
-## 五关迁移结果与开放项
-
-| Level | 原实现 | 唯一关卡源 | 状态 |
+| 原关卡 | 原实现 | 迁移配置 | 后续变化及当前权威 |
 | --- | --- | --- | --- |
-| C0 认识坦克与坐标 | game.yaml + 被动包装 + UI 真值分支 | [hello_robot.C0.yaml](../levels/hello_robot.C0.yaml) | 已迁移，基线及实际通关验证 |
-| C1 用 SE(3) 矩阵变换坐标 | ideal Radar profile + 函数模板 + checklist | [weapons.C1.yaml](../levels/weapons.C1.yaml) | 已迁移，旧玩家矩阵 API 保留 |
-| C2 噪声下跟踪 | noisy profile + Tracker 分支 + 击杀判断 | [weapons.C2.yaml](../levels/weapons.C2.yaml) | 已迁移，噪声、巡逻、生命和评分不变 |
-| 原 C3 让炮台自己瞄准 | 原 graph + 自动武器 | [weapons.C3.yaml](../levels/weapons.C3.yaml) | 迁移后又经用户要求重做为极坐标滤波；自动武器移至 C5 |
-| 原 C4 从底盘中心推算装甲瞄准点 | 原中心观测位姿/装甲组件 | [weapons.C4.yaml](../levels/weapons.C4.yaml) | 后续按 ADR-0038 改为 C3 同款中心观测下自瞄；装甲任务在 C5 |
-| C5 预测小陀螺并自动瞄准 | 本轮新增的可复用 GPS、全向巡逻与预测/控制适配器 | [weapons.C5.yaml](../levels/weapons.C5.yaml) | 新增 YAML 插件；无关卡 ID 初始化分支 |
+| c0 认识坦克与坐标 | game.yaml、被动包装与UI真值分支 | hello_robot.C0.yaml | 后续改共享空旷地图，稳定ID保留 |
+| c1 SE(3)坐标变换 | ideal Radar、函数模板与checklist | weapons.C1.yaml | 玩家矩阵API保留，后续明确授权炮弹 |
+| c2 噪声跟踪 | noisy profile、Tracker与击杀判断 | weapons.C2.yaml | 后续授权实时RMSE及单关滤波实验，见38 |
+| 原c3 自动瞄准 | 三模块图与程序武器 | weapons.C3.yaml | 当前为极坐标滤波；中心自瞄在c4，见28 |
+| 原c4 装甲瞄准 | 中心轨迹推算yaw/装甲 | weapons.C4.yaml | 当前为中心自瞄；匿名装甲/小陀螺在c5，见30 |
 
-存档仍为原 v1 结构，五个 ID 保持；顺序来自 metadata.order，解锁来自 prerequisites，不从 ID 数字推断。已有源码和 userdata 目录不自动改写；原先带关卡判断的玩家包装作为用户代码兼容，新的引擎包装只读声明的 processing，不检查 ID。
+后续C5和Navigation五关是独立功能增量，不冒充原五关迁移验收。旧单链入口已由ADR-0049修订；完整模型/实例由ADR-0043修订；运行预算由ADR-0053修订。各历史报告保留原测试计数、失败、配置与平台范围。
 
-剩余限制：当前组件覆盖已实现的六关能力、单玩家/单任务目标；其他 OS/浏览器、服务端强沙箱、独立静态 Web、未来组件均仍待验证/实现。源码与测试/部署会话规则继续遵守既有设计。完整证据见 [迁移验收](reports/LEVEL_PLUGINS_VALIDATION.md)，编写流程见 [levels/README](../levels/README.md)。
+## 限制与验收入口
 
-## 2026-10-26 组件与教材增量
+当前组件只覆盖上述十一关、一个玩家及可选单目标；真正的多机器人/同类多实例命名、非零传感器安装、机械臂、scan/SLAM和玩家规划课程仍为Planned。强服务端沙箱、独立静态Web及其他平台完整流程仍待实现/验证。
 
-新传感器 `intercepted_gps` 的 Topic/type/frame 固定为 `/robot/sensors/intercepted_gps` / `gps_fix@1` / `map`，YAML 指定目标实例、前侧中央安装、量程、误差、可见性和独立 random_stream。`target_polar_estimate@1` 允许玩家输出当前 base_link 下的 r/theta，不改原消息。新模板和图适配器通过稳定类型登记；当前 C3/C4 各一个图模块、C5 两个，图并不要求至少两个模块。
-
-`tutorial.lesson.edit_files` 是可选的文件树高亮列表，省略则由 functions 推导；校验必须指向该配置生成的玩家算法，拒绝管理文件或不存在路径。它不限制玩家自建/编辑其他文件，不参与控制权或算法判断。GPS 可视化由观察层单独授权，订阅权与显示权仍然独立。细节及模型边界见 28。
-
-## Navigation 首关增量
-
-原五关迁移约束不变；随后用户明确要求新增 Navigation 首关 navigation.c0。统一加载器现支持无武器/无任务目标场景，新增 wheel_voltage 与 twist_sequence 通用组件；成功条件继续使用规则树，运动反馈独立授权，不按 ID 分支。workspace_scope 只控制持久工程分组，旧 campaign 工程不迁移或清空。组件、Schema、接口与实际范围见 [33](33_NAVIGATION_MOTION_CONTROL.md) 及其验收报告，不表示定位/规划课程已实现。
-
-## Navigation 里程计与授权曲线增量
-
-新增 navigation.c1 YAML 复用原电机与控制器组件；wheel_odometry 生成玩家文件，wheel_odometry_adapter 负责时间与发布。evaluation.source=player_pose 选择自身候选评分，rmse_m/yaw_rmse_rad 作为声明式规则事实，live_feedback 支持分别授权的多个指标。control_feedback 使用固定语义信号注册表、独立显示 grant 与有界记录，不是可执行图表表达式；不修改原 Topic/Envelope，也不按关卡 ID 选择行为。详见 [34](34_NAVIGATION_ODOMETRY_AND_FEEDBACK.md)。
-
-## 连续路径组件（2026-11-05）
-
-当前新增Navigation C4，正式目录共十一关。新任务只引用仓储地图资产，在可信场景准备阶段按YAML声明的生成器/参数/seed得到已解析完整路径；旧课程继续各自原地图和规则。`path_follower/path_tracking_adapter`组合既有EKF与轮电压模块，`continuous_path`裁判供通用规则使用，不按关卡ID初始化或评分。
-
-静态程序输入task_inputs与任务UI反馈task_feedback独立授权，路径/检查点图层分别控制；Schema、只读数组、终局规则和组件编写入口见 [40](40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)、[levels指南](../levels/README.md)。早期五关审计与验收报告保留原时间范围，不改写为本轮结果。
+新关仅复用已有组件时添加一个合法YAML即可发现；新能力需扩展组件、Schema、规范和测试，不能藏在ID分支。回归覆盖发现/非法字段、行为冻结、权限、切换/重试/关闭、旧源码/存档及临时YAML零代码扩展。标准检查及独立WASM/网页分组见 [38](38_ENGINEERING_AND_ALGORITHM_LAB.md)；本轮文档核对不重新宣称全部玩家流程已运行。

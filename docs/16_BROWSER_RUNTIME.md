@@ -2,7 +2,7 @@
 
 ## 目的、范围与当前状态
 
-M2 在 Linux / Firefox 上验证纯浏览器物理与 Python 闭环，并复用原生模式的权限、时间和 SDK 语义。已实现双 Worker、固定资源的双 origin 启动器、受限部署快照和 Adapter 一致性测试；证据见 [M2 验收](reports/M2_VALIDATION.md)。当前仍是单机器人本地原型，不是 Arena 沙箱或桌面发行包。
+当前浏览器模式复用原生Authority、SDK、课程、模块图和部署语义，已实现双Worker、固定资源的双origin启动器、受限快照及本机持久Workspace。M2建立此拓扑，历史证据见 [M2验收](reports/M2_VALIDATION.md)；当前后端profile与完整解码截止见 [41](41_RUNTIME_EXECUTION_PROFILES.md)、[Runtime验收](reports/RUNTIME_EXECUTION_PROFILES_VALIDATION_20261107.md)。仍是Linux/Firefox有运行证据的本机原型，不是Arena沙箱、独立静态网站或桌面发行包。
 
 ## 进程与信任边界
 
@@ -43,7 +43,11 @@ flowchart LR
 
 Authority Worker 在每个固定边界调用同一 `advance()`：先提交上一批→采样→激活→裁剪视图→推进物理。60 Hz/4 子步、30 Hz 观测、10 Hz 算法和 6 tick 提交延迟保持原约定。Worker 的墙钟 timer 只负责调度，Python 响应绝不改变提交 tick。每次边界之间让出事件循环，不 await 玩家。
 
-iframe 以独立 timer 执行 20 ms 批次截止，超时 `Worker.terminate()`；可信 Authority 再检查接收时间、关联 ID 和完整批次。缺结果在原定门丢弃，撤销程序执行器目标；晚到、重复或无对应激活的结果不能恢复控制。浏览器后台降频和系统调度可能延迟 timer，不能声称硬实时 CPU 配额。初始化单独使用配置的 45 s 上限；失败不开始世界时钟。M3 编辑器通过共享 Authority 启动候选 Worker，在 tick 边界替换旧 Runtime；用 worker_id 隔离并存与旧消息，最多两个玩家 Worker。候选启动失败不停止世界。SDK/Authority 修改仍须重新 prepare bundle。
+可信Worker工厂选择pyodide后端profile，Authority在尝试开始前冻结，并供测试、部署和实验Worker继承。声明总上限与往返墙钟独立；当前目录为20ms声明上限、40ms整批墙钟的experimental profile，权威参数见 [41](41_RUNTIME_EXECUTION_PROFILES.md)。Authority用自身整数单调时钟，从开始编码到完整响应接收/解码判断截止；恰好到期合法，解码期间跨界或迟到均拒绝，桥接elapsed_ms仅作诊断。
+
+iframe在自己的时钟域执行局部timer和结果到达复核，超限 `Worker.terminate()`；timer调度延迟不能使迟到响应合法。早到结果缓存至activation+6tick，缺结果在原门丢弃并撤销程序目标；晚到、重复或旧worker_id响应不能恢复控制。宿主追赶时6tick未必有100ms现实时间，增加墙钟不移动门。浏览器后台降频和OS抖动不构成硬实时CPU配额，当前没有逐模块硬隔离。
+
+初始化独立使用browser.startup_timeout_s（当前45s）；失败不开始世界时钟。候选在tick边界替换旧Runtime，最多两个玩家Worker；旧ready/fault也按worker_id隔离，不能启动或停止新Authority。候选失败保留当前世界，SDK/Authority修改后仍须重新prepare bundle。
 
 ## 资源、网络与数据权限
 
@@ -58,7 +62,7 @@ iframe 以独立 timer 执行 20 ms 批次截止，超时 `Worker.terminate()`�
 
 `tools/prepare_browser.py` 校验 `config/browser-assets.lock.json` 的每个 SHA-256，首次下载固定文件，之后可 `--offline` 重建两份 bundle；不运行浏览器时联网安装包。底层资源和生成 bundle 放在忽略的 `build/browser/`，不提交第三方二进制。
 
-M2 内部 `config_version` 从 1.3 升为 **1.4**，仅新增 `browser.runtime_port/startup_timeout_s/max_pending_requests/probe_enabled`，物理参数未变。旧自定义配置须显式补齐 browser 段并升级版本；工具不会自动覆盖文件。公共 Protocol 仍为 `1.0` 草案，没有改变任何消息含义。
+当前应用配置为 `2.1`，浏览器接收同一加载器解析的场景与runtime.profiles目录，不接收可由玩家请求改写的预算。历史M2从1.3升为1.4引入browser段、M3在1.5加入workspace；这些是演进记录，不能代替当前配置。旧文件支持范围由加载器/Schema明确验证，工具不自动覆盖。Protocol仍为 `1.0` 未发布草案。
 
 曾比较：JS 重写 Authority（少一个解释器但易发生权限/调度漂移）、把完整 Authority 移植 Rust（长期可评估，当前扩大重构范围）、仅做 Node WASM 探针（不能验证浏览器运行）。当前先以共享 Python 源码减少语义分叉，记录性能后再决定优化。
 
@@ -66,18 +70,16 @@ M2 内部 `config_version` 从 1.3 升为 **1.4**，仅新增 `browser.runtime_p
 
 验收：两底盘原生/WASM 各 600 tick 全快照对比；浏览器真实闭环、固定提交、程序武器、死循环终止后 tick/画面继续；同一 49 个协议夹具跨 Adapter；CSP/文件/宿主句柄负例；启动、内存分配和帧间隔报告。浏览器未实现的性能观察 API须标明，不能把 rAF 测量当所有 Long Task 的证明。
 
-Windows/macOS 与 Chromium/WebKit 尚无本机执行证据；CI 构建矩阵已配置，运行结果不在此次本机报告内。强 OS 沙箱、数学扩展库准入、移动端、持久化/多项目存储、正式网络会话协商与 Arena 公平配额仍未完成。
+Windows/macOS与Chromium/WebKit尚无本轮核对到的完整玩家流程证据；CI定义不证明远程Runner已通过。NumPy课程白名单、本机多scope持久工程及备份已实现；独立Web存储、强OS沙箱、移动端、正式网络会话协商与Arena公平配额仍未完成。当前40ms默认依据Linux/Firefox候选对照，尚未证明整局截止失败率低于1%。
 
 官方依据：[Pyodide 0.29.5 发布](https://github.com/pyodide/pyodide/releases/tag/0.29.5)、[Worker CSP](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy)、[websockets 官方 API](https://websockets.readthedocs.io/en/stable/reference/asyncio/server.html)。这些来源用于接口研究，具体能力以上述锁定版本的实测为准。
 
-M3 在此基础上升为 `1.5`，增加 workspace 限额；UI origin 提供带 Host/Origin/token 校验的管理 API，Runtime origin 仍无 Workspace 路由。源码持久化由本机启动器提供，独立静态 Web 存储仍未验证。候选启动期间可信 Core + Active + candidate 共三个解释器。
+UI origin提供带Host/Origin/token校验的管理API，Runtime origin无Workspace路由。源码持久化、备份与恢复由本机启动器提供，独立静态Web存储仍未验证；候选启动期间可信Core + Active + candidate共三个解释器。
 
 ## 玩家反馈与数学库增量
 
 SDK 数值矩阵使用 NumPy，可信 Authority 和玩家 Worker 都加载已锁定的 NumPy 包。课程白名单在静态检查与玩家 loader 执行，不扩大传感器 grants，见 [23](23_PLAYER_CODE_AND_LIBRARIES.md)。玩家输出经受限 op: log 旁路、worker 身份检查和有界缓冲后进入管理状态；没有把日志写入物理快照或开放 Runtime 网络权限，见 [24](24_RUNTIME_LOGS.md)。
 
-## 2026-11-06 执行 profile 修订
+## 历史配置与证据适用范围
 
-当前 BrowserSupervisor 由可信工厂选择 pyodide profile，并与本次尝试的测试、部署和实验 Worker 共用冻结参数。声明准入总上限与往返墙钟独立；旧配置互斥兼容、公开摘要和测量依据见 [41](41_RUNTIME_EXECUTION_PROFILES.md) 与 [ADR-0053](adr/0053-backend-runtime-execution-profiles.md)。前文 M2 的20ms测量保留其历史适用范围。
-
-Authority 的整数单调时钟从开始编码计至完整响应解码完成，解析跨界同样拒绝。iframe 只在自己的时钟域执行局部终止，并在结果事件内显式复核，避免延迟的timer放行迟到结果；elapsed_ms只用于诊断。关闭/重建时按worker_id隔离，旧ready/fault不能启动或终止新Authority。早到结果仍在activation+6tick门才可生效；追赶、后台降频或定时器延迟不延长门。模块遥测不是CPU配额，浏览器仍无逐模块硬隔离。
+M2至Navigation C4初次验收曾使用20ms共享预算；原报告的测量、失败与配置保持原样。ADR-0053局部修订预算配置和截止计量，不修改既有固定tick、权限或课程评分。当前默认及其不确定性以41和11月7日报告为准，不能用旧20ms成功记录证明40ms的跨平台可靠性。

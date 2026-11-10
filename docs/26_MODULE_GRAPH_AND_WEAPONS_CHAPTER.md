@@ -2,9 +2,9 @@
 
 ## 目的、范围与当前状态
 
-M5 提供同步多模块机器人项目、Contract/Topic 图调度与渐进武器课程。2026-10-26 用户调整为 **Hello Robot（C0）→ Weapons（C1–C5）→ Locomotion（后续）**：C3 原始极坐标滤波，C4 复用滤波并接管武器自瞄，C5 小陀螺预测/自瞄。具体模型、接口、教材及兼容见 [28](28_WEAPONS_PROGRESSIVE_ESTIMATION.md)，当前验收见 [中心自瞄报告](reports/CENTER_AUTO_AIM_VALIDATION.md)。原 C3/C4 自动武器验收保留为 [历史 M5 报告](reports/M5_VALIDATION.md)，不代表当前关卡配置。
+M5建立同步多模块项目、Contract/Topic图与渐进武器课程。当前公共Hello Robot（c0）后并列开放Weapons（c1–c5）和Navigation（navigation.c0–c4），主线内按YAML prerequisites推进，见 [36](36_BRANCHING_PROGRESSION.md)。本篇负责模块图和Weapons：C3原始极坐标滤波、C4复用滤波并接管中心自瞄、C5匿名装甲/小陀螺。当前接口见 [28](28_WEAPONS_PROGRESSIVE_ESTIMATION.md)、[30](30_ARMOR_OBSERVATIONS.md)；原C3/C4自动武器范围保留为 [历史M5报告](reports/M5_VALIDATION.md)，不作为当前配置。
 
-本机原生和浏览器复用 `GraphExecution`、SDK、Contract 与协议。服务端 OS 沙箱、Arena、异步 Python、持久检查点、独立浏览器 Workspace 存储仍不在本轮范围。自身定位、scan、建图继续留给后续章节。
+本机原生和浏览器复用GraphExecution、SDK、Contract与协议。Navigation已用同一模块图实现轮控、里程计、GPS/EKF、航点及连续路径；自身定位不再是未实现项。scan、建图、玩家全局规划、异步Python、持久检查点、服务端沙箱/Arena和独立Web存储仍未实现。
 
 ## 关卡与控制权限
 
@@ -19,7 +19,7 @@ M5 提供同步多模块机器人项目、Contract/Topic 图调度与渐进武�
 
 C1–C5 保留系统自身位姿和公开地图。底盘零目标主动制动，仍受后坐、受击和炮台反向力矩影响；Router 与 Authority 拒绝驾驶。C4/C5 不授权人工炮台/开火或程序旧速度接口。C2–C5 双方 3 HP，死亡、超时、末 tick 判定及运行期编辑锁沿用 [25](25_ATTEMPT_RULES_AND_CONFIGURATION.md)。
 
-Weapons 均通过 YAML 授权炮弹可视化，显示继续插值；真实敌车/命中特效位置仍隐藏。C4 仅使用 C3 同款中心 Radar；C5 只有匿名装甲极坐标，不再生成 GPS 或中心 Radar，详见 [30](30_ARMOR_OBSERVATIONS.md)。估计车体/装甲只来自玩家输出，不借用开发者真值层。C2/C3 显式授权运行中累计位置 RMSE、样本数与曲线；其他关卡终局才发布误差。配置/权限源见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)。
+Weapons均通过YAML授权炮弹可视化并插值；真实敌车/命中特效位置仍隐藏。C4使用C3同款中心Radar；C5只有匿名装甲极坐标，不生成GPS或中心Radar，见 [30](30_ARMOR_OBSERVATIONS.md)。估计车体/装甲只来自玩家输出。Weapons C2/C3显式授权累计位置RMSE、样本数与曲线，C1/C4/C5误差在终局发布；Navigation另按各关授权，不能由本篇推断。配置源见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)。
 
 ## 模块职责与数据流
 
@@ -49,9 +49,9 @@ flowchart LR
 
 每机器人同时最多一个批次，先冻结全部模块输入，结果只在配置的提交 tick 生效。提交后激活，跨模块至少跨一个批次；同模块预测→控制直接组合。转发测量保留采样 tick，不把旧测量冒充新数据。`runtime_step_request@1.origin_tick` 是调度元数据，不是执行器开始/终止字段。
 
-原始 Radar/装甲适配器匹配同期自身位姿，再按实际处理间隔调用算法；空数组表达当帧缺测，支持只预测。C4 控制适配器以有界公开位姿历史投影极坐标目标，找不到对应采样 tick 时按无目标处理；不能回退真值。不同步传感器的通用融合不是已实现能力。
+原始Radar/装甲适配器匹配同期自身位姿，再按实际处理间隔调用算法；C3/C4缺测为类型化空元组，C5为(0,2)数组，支持只预测。C4控制适配器以有界公开位姿历史投影极坐标目标，找不到同期样本则按无目标处理，不回退真值。Navigation C2已实现特定GPS/编码器时间对齐，不能扩大为任意异步传感器融合能力。
 
-图、连线、预算及消息限制均取 YAML：当前全局最多 8 模块/64 连接，每批 128 输出，可视 Topic 32 KiB。关卡合同每模块 6 ms，C4/C5 合计 12 ms，不超过机器人 20 ms。每模块预算用于准入，外部 Supervisor 强制整个机器人批次预算，不宣称 Python 内逐模块抢占。
+图、连线和消息限制取YAML，额度字段的权威定义见 [05](05_ROBOT_MODULE_SYSTEM.md)、[41](41_RUNTIME_EXECUTION_PROFILES.md)。当前Weapons合同每模块声明6ms，C4/C5合计12ms，低于共同20ms声明准入上限；这不是实际执行耗时。外部Supervisor按可信后端profile执行独立整批往返截止，结果还须满足固定6tick门；不宣称共享Python内逐模块抢占或硬CPU配额。
 
 普通异常/非法输出按模块原子拒绝，同批合法兄弟模块可提交；连续失败达到配置阈值后停止该模块，Python 字段不回滚。Worker 崩溃、死循环或错过截止丢弃整批未提交输出并撤回控制，物理继续；看门狗仍生效。算法异常不自动结束尝试或解锁编辑器。
 
@@ -69,4 +69,4 @@ C4 与 C3 均整车扣血；C5 敌车四侧中央 0.24 m 装甲，按首次真�
 
 Test 执行语法、依赖、Schema、图准入、项目 unittest 和配置数量的授权输入批次；输出不驱动世界或计分。报告分别列出 modules_executed/modules_waiting，不能把未触发模块称为已执行。通过接口测试不代表估计精度或关卡完成，不强制 KF/EKF/PD 的唯一实现。
 
-选择共享 Worker 与显式单写者以降低框架负担；代价是一个死循环仍影响整台机器人。C4 不再引入 GPS/朝向融合，C5 的匿名装甲朝向按模 90° 等价。验收应覆盖新三关、原三关基线、旧源码/进度、权限、时序、真实网页与原生/WASM。多 seed、教学效果、其他平台、强服务端沙箱、每模块抢占、Lab 与 Locomotion 仍需后续工作。
+选择共享Worker与显式单写者以降低框架负担；代价是死循环影响整台机器人。C4不引入GPS/朝向融合，C5朝向按模90°等价。Weapons课程与Navigation增量各有独立验收，不由历史M5报告推定。剩余项为长期教学效果、其他平台、强沙箱/每模块抢占、完整Lab和后续导航课程；C2滤波实验、现有Navigation和运行profile已分别实施，见38、40、41。

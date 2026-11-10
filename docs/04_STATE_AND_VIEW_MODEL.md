@@ -36,7 +36,7 @@ World 的写权限只属于 Core；估计写入独立存储。Gateway 的真值�
 | View Policy | 主体、能力、允许来源、允许图层 | 决定选择资格与表现渠道，不能只在 UI 执行 |
 | Topic Permission | 主体、部署、频道、操作 | 决定能否产生/读取某个消息，不能替代 View Policy |
 
-标准 topic 是 Selector 的只读出口；玩家在 SDK 调用 `ctx.publish("pose", estimate, frame_id="map")`，其输出连接到候选频道，再由 Selector 发布标准结果。标准 Envelope 的发布者是 `host:pose_selector`，原候选来源保存在 Authority 的选择记录与授权视图 `source_id`，不能把客户端自报来源当凭据。这样满足“发布估计后恢复显示”，同时杜绝多个模块争写标准频道。
+标准 topic 是 Selector 的只读出口；玩家在 SDK 调用 `ctx.publish("pose", estimate, frame_id="map")`，其输出连接到候选频道，再由 Selector 发布标准结果。当前标准Envelope的发布者为 `pose_selector`（由Host绑定），原候选来源保存在 Authority 的选择记录与授权视图 `source_id`，不能把客户端自报来源当凭据。这样满足“发布估计后恢复显示”，同时杜绝多个模块争写标准频道。
 
 UI 能显示系统位姿不代表 Runtime 可以读取它。向玩家订阅者转发标准 Topic 时，还须按选中来源检查数据许可：玩家估计读权限不能自动获得系统真值读权限；来源切换时重新检查并清除不再许可的缓存。前期如确需程序读取理想位姿，应作为明确授权传感器能力另行声明。
 
@@ -62,21 +62,21 @@ Navigation C2 在 `view_snapshot@5` 中显式授权 `pose_estimate_channels` 对
 
 同源样本时间倒退只进入历史图，不覆盖当前值；相同 tick 用该源更高序号替代。未知帧、未来时间、无效协方差和非有限值拒绝并生成脱敏诊断，当前合法样本按原时间自然过期。
 
-Renderer 只在同 `run_id`、同 source、同 frame 且有效的相邻估计样本之间做短角度插值。建议显示缓冲 6 tick，无未来样本则保持最后位置，不使用真值修正或默认外推。超过公开跳变阈值（初始 2 m 或 π/2）立即重建历史、显示“估计重定位”；阈值不是与真值比较。yaw 插值取最短弧，协方差只作为误差图层，不能保证真实覆盖率。
+Renderer 只在同 `run_id`、同 source、同 frame 且有效的相邻估计样本之间做短角度插值。显示缓冲与跳变阈值读取rendering/view配置，实际时间规则见 [15](15_RENDERING_DESIGN.md)；无未来样本保持最后位置，不使用真值修正或默认外推。超过公开跳变阈值时重建历史，阈值不与真值比较。yaw 插值取最短弧，协方差只作为误差图层，不能保证真实覆盖率。
 
 碰撞始终根据真实位置：估计坦克可能看起来穿墙，实际仍会撞墙。UI 必须标明“估计位置”，通过授权接触/里程计异常提示帮助排查；不能为视觉一致修改物理，或把真实碰撞点直接标到全局图。
 
-## PlayerViewSnapshot 与局部视图
+## PlayerViewSnapshot与当前局部视图
 
 `view_snapshot@1` 首发最小字段为 `view_revision`、`policy_id`、`selected_pose`（可空）、`local_observations`、`objects`、`effects`。`view_revision` 是该 run/主体的可见性代号，策略、授权、选源或部署切换时递增；普通快照沿用当前值。UI 见新代号清理旧缓存，拒绝随后迟到的旧代号快照，并按 Envelope sequence 排序。同代号内仍需执行样本新鲜度与 source/frame 检查。
 
-`selected_pose` 含估计 frame、source、sample tick、freshness 与 `pose2d@1`；`objects`/`effects` 首发保留为空数组，后续增加类型须单独 Schema 与权限审查。不得附带隐藏 World 的任意对象字段。
+`selected_pose` 含frame、source、sample tick、freshness与pose2d@1。旧view_snapshot@1仍要求objects/effects为空；当前@2增加获授权弹丸/目标，@3增加目标估计、@4增加图输出、@5增加白名单自身位姿候选。Authority按实际能力选用已注册版本，effects仍不发送任意命中特效；不得附带隐藏World字段。协议结构权威见 [03](03_PROTOCOL_SPECIFICATION.md) 和Schema。
 
-未定位但可键盘控制时，保留以 `base_link` 为中心的局部观测面板、车体固定图标、朝向约定、近距 scan/雷达回波与授权碰撞提示。局部世界不是以真值为相机中心裁剪的全彩全知地图：画面只由实际可见/可测到的观测产生，包含遮挡、噪声和采样延迟。键盘发送车体坐标速度意图，无需全局位姿。局部几何可由 Simulator 生成测量，但不能包含超出关卡传感器能力的信息。
+未定位时当前保留获授权的局部传感器/状态面板，不显示全局车体。自由试验场的车体系键盘速度不依赖全局位姿，Navigation课程则不授予人工驾驶。通用近距scan、接触方向提示与完整局部几何视图尚未实现；未来增加时只能由授权测量构建，不能用真值相机裁剪全知局部地图。
 
 地图显示一片未知区域、最后估计轨迹或公开任务地图；没有位姿时不显示全局坦克。相机跟随获选估计或由用户平移；不得隐式跟随真实位置。传感器视图、全局估计图层和获授权评分图层使用不同标签和数据权限。
 
-## View Policy 草案
+## 受信View Policy
 
 ```json
 {
@@ -94,7 +94,7 @@ Renderer 只在同 `run_id`、同 source、同 frame 且有效的相邻估计样
 }
 ```
 
-这是策略配置示例，不是玩家可申请同等权限的消息。Host 从受信关卡内容加载、按版本验证，再与主体权限取交集。初期 policy 格式仍为 Proposed，M1 的测试夹具先覆盖上述字段；未增加授权类型的效果默认拒绝。撤权需原子切换、清空不再许可的缓存；无法撤回已获授权并被用户保存的历史信息，关卡设计不能声称能“让玩家忘记”前关地图。
+这是策略结构示例，不是玩家可申请同等权限的消息，也不是当前某一关的完整YAML。View Policy与Selector原则由Accepted ADR-0007约束，当前已由加载器、Authority/ViewGateway及权限测试执行；不再整体标为Proposed。字段来自受信关卡，经Schema和语义验证后与主体grant取交集。未注册/未授权效果默认拒绝；撤权原子清空不再许可的缓存，无法撤回用户已保存的信息。
 
 ## 泄漏分析与防护矩阵
 
@@ -115,15 +115,15 @@ Renderer 只在同 `run_id`、同 source、同 frame 且有效的相邻估计样
 
 把真值下发后隐藏违反核心约束；系统真值自动回退会掩盖定位失败；把估计钳到真实地图位置会偷偷提供定位服务，均不采用。过严隐藏可能不可玩，需用局部观测、可选练习关与赛后评估缓解。
 
-开放项：局部 scan 的分辨率、噪声与炮弹观测规则、失效阈值的教学效果。验收覆盖“无估计不显示全局坦克”“数值合法的错误估计照常显示”“系统源禁用后所有旁路无未授权真值”“多源切换清空历史”“漂移不改碰撞”“客户端抓包仅有授权 DTO”。以两份仅隐藏状态不同、授权观测相同的世界比较输出，是重要的泄漏回归测试。
+开放项：未来局部scan/听觉模型、未授权炮弹的传感器观测规则与现有失效阈值的教学效果。Weapons炮弹显示已确认，不能继续视为未定显示权限。验收覆盖“无估计不显示全局坦克”“数值合法的错误估计照常显示”“系统源禁用后所有旁路无未授权真值”“多源切换清空历史”“漂移不改碰撞”“客户端抓包仅有授权 DTO”。以两份仅隐藏状态不同、授权观测相同的世界比较输出，是重要的泄漏回归测试。
 
-## M1 实施边界
+## 历史：M1实施边界
 
 M1 只有玩家位姿源 odometry，默认 System Pose Provider 禁用；开启未实现的系统源会拒绝配置。Selector 独占 `/robot/localization/pose`，Gateway 只接受标准估计与授权观测，不接受真值对象。UI 只在同 run/revision/source/frame 内插值，来源变化清缓存；跳变阈值以 config/game.yaml 的 `view` 为准。`view_revision` 不随普通快照递增，Envelope sequence 负责排序。
 
 公开地图和零初始位姿属于用户确认的试验场任务信息；这不授予运行中的世界状态读取权限。未定位时仍能使用键盘与轮速/IMU 面板；完整局部 scan/接触提示、通用选源服务和 TF 留在后续任务。C0 系统显示及 C1/C2 雷达已在 M4 增加，相关权限见下节。
 
-## M1b 实施范围
+## 历史：M1b实施范围
 
 默认估计模式仍禁用系统定位，objects/effects 为空。显式 `--view weapons-practice` 在启动时启用单独受信策略：System Pose Provider 按字段投影真实位姿，经同一个 Pose Selector 发布内部标准位姿，再由 Gateway 生成 view_snapshot@2。实体只包含已授权的弹丸 ID/位置/半径和静态靶标位姿/命中计数；无原始世界句柄或通用 dump。UI 显著标记真值练习。Python 仍只获轮组、IMU、炮台关节和自身武器反馈，不能订阅系统位姿或视图。具体已确认限制与测试见 [14](14_WEAPONS_DESIGN.md)。本阶段只在启动时选择模式，不提供动态提权/撤权服务。
 
@@ -131,11 +131,21 @@ M1 只有玩家位姿源 odometry，默认 System Pose Provider 禁用；开启�
 
 当前显示实现见 [15](15_RENDERING_DESIGN.md)：快照 30 Hz，RAF 独立刷新；使用仿真/采样时间插值车体、累计炮台角与同 ID 授权弹丸。相机直接跟随同一显示位姿的 x/y，始终保持世界坐标方向，不使用真实位姿修正估计。无合法位姿时隐藏全局车体并保持最后合法相机位置；run/权限 revision 改变清理缓存。新增外观配置属于公开元数据，不授予额外世界读取权限。
 
-## M4 教学授权
+## 当前逐关授权
 
-C0–C2 明确授权自身系统位姿，仍由 Selector 唯一写标准位姿。C0 额外开放真实靶标/弹道；按用户后续要求，Weapons C1–C4 在系统自身位姿、局部观测、玩家估计和任务反馈之外也授权显示炮弹，但不发送敌车真实模型或命中特效位置。Topic 数据访问与此显示授权独立，Python 不能因此获得炮弹真值。目标估计与自身 Pose Selector 分离，合法错误估计保持原值；旧时间不能替换新状态。`view_snapshot@3` 的目标标记也使用采样时间插值，无合法输出时隐藏，无真值回退。
+以下由 `levels/*.yaml` 的data_access、visualization、evaluation声明；UI管理状态和Robot Runtime输入是独立通道。
 
-C2 的 HP/击杀结果属于明确授权的游戏反馈，不含命中坐标、目标位姿或实体运动信息。按用户后续要求，C2 同时授权在 UI 显示累计位置 RMSE 和有效样本数；其他关卡的误差仍仅在 Runtime 停止后发布。此聚合反馈经关卡 allowed_metrics 与 live_feedback 检查后进入管理状态，不增加 Python 输入或机器人 Topic。切换关卡建立新 run 并清空插值、候选及指标走势。具体规则和教学反馈取舍见 [18](18_CAMPAIGN_DESIGN.md) 与 [ADR-0034](adr/0034-authorized-live-evaluation.md)。
+| 关卡 | 普通玩家视图与UI反馈 | 玩家程序输入边界 |
+| --- | --- | --- |
+| 公共C0 | 系统自身位姿、地图、真实靶标与炮弹 | 仅声明的自身系统位姿；无需编程，不获世界对象 |
+| Weapons C1–C5 | 系统自身位姿、公开地图、局部观测、玩家目标估计；全章授权炮弹，隐藏敌车真值和命中特效位置 | C1–C4中心Radar、C5匿名装甲；自身位姿、炮台/武器状态按各关inputs授权，不因图层可见新增Topic |
+| Weapons C2/C3 | 另授权累计目标位置RMSE、有效样本和有界曲线；C1/C4/C5无运行中误差授权 | 聚合误差不进入滤波器输入；C2实验反馈另按38约束 |
+| Navigation C0 | 系统自身位姿、地图、控制曲线与运动任务标量，无武器 | 目标Twist与轮速；只输出轮电压 |
+| Navigation C1 | 一次起点，运行中车体/相机跟随玩家里程计；授权位置/朝向RMSE | 轮速与Twist，无持续系统位姿 |
+| Navigation C2–C4 | 玩家EKF与纯里程计对照、GPS、协方差椭圆、授权定位RMSE对比 | 轮速/GPS及声明参考，不含当前真实位姿或评分误差 |
+| Navigation C3/C4任务 | C3公开航点；C4公开路径/检查点与真实距终点标量，真实追踪误差只在终局 | C3授权目标Topic，C4一次性静态路径；任务UI标量不进入控制器 |
+
+HP与击杀结果是显式游戏反馈，不含命中位置。炮弹显示可能提供物理推断，属于Weapons已明确接受的显示授权，不代表敌车信息绝对不可推断；当前敌车不主动开火。目标标记保持合法错误估计、按采样时间插值，没有真值回退。allowed_metrics/live_feedback与task_feedback限制管理状态发布；关闭图层不能撤销数据权限，也不能授予程序订阅。切关新建run并清空候选、插值和指标走势，规则见 [18](18_CAMPAIGN_DESIGN.md)、[35](35_NAVIGATION_GPS_LOCALIZATION.md)、[40](40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)、[ADR-0034](adr/0034-authorized-live-evaluation.md)。
 
 ## 本机玩家与开发者角色
 

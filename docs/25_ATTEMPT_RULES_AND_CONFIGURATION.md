@@ -14,7 +14,7 @@
 
 Rust/Node 测试及 WASM probe 使用生成的 `core/tests/fixtures/default-profile.json`，禁止手工维护第二份数值。`python3 tools/build.py` 自动运行 `tools/export_profile.py`；直接 Cargo/Node 开发前可执行 `python3 tools/export_profile.py --offline`。`python3 tools/export_profile.py --check --offline`、文档检查和配置单测都会拒绝过期夹具。默认 CLI 改为 YAML；自定义 JSON 仍可作为私有 Adapter/兼容输入，但新版本 Campaign 必须提供所有新字段，缺失时明确拒绝，不猜测时限。
 
-应用配置基线 `2.0`，关卡 Schema 为 `1.0`。独立底盘几何/安装/外观在 `config/chassis/*.yaml`，由 `game.yaml` 显式引用，见 [29](29_CHASSIS_PROFILES.md)。旧报告记录的 JSON 路径和源码摘要描述当时构建，不能当作当前 YAML 的验证摘要。
+应用配置基线 `2.1`，关卡Schema为 `1.0`。独立完整底盘的质量/惯量、轮组、伺服/阻力、控制器、安装与外观在 `config/chassis/*.yaml`，由 `game.yaml` 显式引用，见 [29](29_CHASSIS_PROFILES.md)。旧报告记录的 JSON 路径和源码摘要描述当时构建，不能当作当前 YAML 的验证摘要。
 
 ## 时间与开始边界
 

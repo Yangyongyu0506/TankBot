@@ -2,7 +2,7 @@
 
 ## 目的与状态
 
-ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评审变更。初版日期为 2026-10-20，当前更新到后端执行profile与截止加固（2026-11-06）。`Accepted` 表示当前接受的设计约束；不是实施完成证明。`Proposed` 表示仍需指定实验/审查，不得当成已锁定依赖。`Superseded` 表示被明确编号的新 ADR 完整替代，保留原记录与链接。ADR-0003 已由 M3 实证后的 ADR-0021 替代；ADR-0014 局部修订 0004/0010 的速度接口表达，其余约束仍有效。ADR-0017 局部修订武器阶段与后坐作用模型，未整体废弃 ADR-0015。
+ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评审变更。初版日期为 2026-10-20，当前索引核对于2026-11-10，最近决策为后端执行profile与截止加固（2026-11-06至07）。`Accepted` 表示当前接受的设计约束；不是实施完成证明。`Proposed` 表示仍需指定实验/审查，不得当成已锁定依赖。`Superseded` 表示被明确编号的新 ADR 完整替代，保留原记录与链接。ADR-0003 已由 M3 实证后的 ADR-0021 替代；ADR-0014 局部修订 0004/0010 的速度接口表达，其余约束仍有效。ADR-0017 局部修订武器阶段与后坐作用模型，未整体废弃 ADR-0015。
 
 | 编号 | 决策 | Status |
 | --- | --- | --- |
@@ -40,7 +40,7 @@ ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评
 | [0032](0032-weapons-curriculum-and-armor.md) | Weapons 章节、角加速度、装甲与噪声 | Accepted |
 | [0033](0033-declarative-level-plugins.md) | 独立 YAML 关卡、自动发现、声明式规则与独立权限 | Accepted |
 | [0034](0034-authorized-live-evaluation.md) | 显式授权的运行中累计 RMSE 与教学 UI | Accepted |
-| [0035](0035-progressive-weapons-estimation.md) | C3 极坐标、C4 车头 GPS、C5 小陀螺预测/控制与文件树 | Accepted |
+| [0035](0035-progressive-weapons-estimation.md) | 渐进Weapons与文件树；原C4 GPS/观测方案由0037/0038局部修订 | Accepted |
 | [0036](0036-shared-chassis-geometry.md) | 独立底盘配置、目标碰撞外形与统一装甲/GPS 安装 | Accepted |
 | [0037](0037-anonymous-armor-observations.md) | C5 匿名装甲观测、关联/预测与模 90° 朝向 | Accepted |
 | [0038](0038-center-target-auto-aim.md) | C4 复用 C3 中心观测自瞄，C5 扩展装甲/小陀螺 | Accepted |
@@ -57,9 +57,14 @@ ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评
 | [0049](0049-branching-course-progression.md) | 公共入门、双主线依赖与目录驱动关卡树；修订旧全局链式入口 | Accepted |
 | [0050](0050-estimated-pose-waypoint-control.md) | 玩家EKF反馈、航点闭环与轮电压速度参考；原生/浏览器闭环通过 | Accepted |
 | [0051](0051-engineering-experiments-and-retention.md) | 授权滤波实验、耗时观测与可恢复项目保留 | Accepted |
-
 | [0052](0052-generated-continuous-path-tracking.md) | 自动安全路径、只读完整参考、真实轨迹裁判与独立任务反馈 | Accepted |
 | [0053](0053-backend-runtime-execution-profiles.md) | 冻结后端profile、独立声明准入与墙钟、解码跨界及流式对照；默认仍experimental | Accepted |
+
+## 后续局部修订与历史状态
+
+旧ADR的Context、原参数和验收计数保留。当前解读需合并后续记录：0021替代0003；0043扩展0036完整模型；0049修订0026/0046的全局章节入口；0050/0052扩展Navigation任务；0053局部修订0010/0020/0031/0051/0052的共享预算与截止表达。0034及0047/0048/0051分别扩展实时指标和实验反馈，不能将早期“仅C2/仅终局”当作当前全局限制。
+
+ADR-0053的Accepted针对可信配置、冻结与截止合同；目录中的30/40ms默认仍为experimental，未证明整局截止失败率<1%。ADR-0013仍Proposed；本轮不改变任何ADR状态。当前实现与历史证据对照见 [核对记录](../reports/DOCUMENTATION_STATE_SYNC_20261110.md)。
 
 ## 变更流程与完成条件
 

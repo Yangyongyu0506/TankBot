@@ -2,9 +2,9 @@
 
 ## 阅读方式与规范状态
 
-文档基线：`continuous-path-1.0`，更新日期：2026-11-05。已完成 M1/M1b、M2 本机浏览器/Transport、M3 编辑部署和 M4 C0–C2 教学闭环验收：实现与限制见 [运行入口](../README.md)、[M4 验证报告](reports/M4_VALIDATION.md)；模型由用户逐项确认，见 [13](13_PHYSICS_MODEL_DECISIONS.md)、[18](18_CAMPAIGN_DESIGN.md)。M5 已实现模块图、角加速度与装甲；现按用户要求调整为 C3 极坐标滤波、C4 中心预测与自瞄、C5 小陀螺自瞄，当前边界及验收见 [28](28_WEAPONS_PROGRESSIVE_ESTIMATION.md)、[新课程报告](reports/WEAPONS_REDESIGN_VALIDATION.md)。关卡使用独立 YAML 插件，现有 C0–C5 与 Navigation C0–C4 十一关，见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)。Navigation 已实现双轮电压控制、控制曲线、理想里程计、GPS/EKF定位、航点位置闭环和仓储连续路径追踪；IMU融合、建图、规划与 Arena 尚未实现。进度现为公共c0后同时开放Weapons与Navigation，两条主线可交替推进；当前规则与实测见 [36](36_BRANCHING_PROGRESSION.md)、[双主线验收](reports/BRANCHING_PROGRESSION_VALIDATION.md)。
+当前同步日期：2026-11-10；应用配置2.1，关卡Schema 1.0。事实核对基于已提交HEAD `7c065ab`，开始时工作区干净；实现、历史实测与待验证范围见 [本轮核对表](reports/DOCUMENTATION_STATE_SYNC_20261110.md)。已完成 M1/M1b、M2 本机浏览器/Transport、M3 编辑部署和 M4 C0–C2 教学闭环验收：实现与限制见 [运行入口](../README.md)、[M4 验证报告](reports/M4_VALIDATION.md)；模型由用户逐项确认，见 [13](13_PHYSICS_MODEL_DECISIONS.md)、[18](18_CAMPAIGN_DESIGN.md)。M5 已实现模块图、角加速度与装甲；现按用户要求调整为 C3 极坐标滤波、C4 中心预测与自瞄、C5 小陀螺自瞄，当前边界及验收见 [28](28_WEAPONS_PROGRESSIVE_ESTIMATION.md)、[新课程报告](reports/WEAPONS_REDESIGN_VALIDATION.md)。关卡使用独立 YAML 插件，现有 C0–C5 与 Navigation C0–C4 十一关，见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)。Navigation 已实现双轮电压控制、控制曲线、理想里程计、GPS/EKF定位、航点位置闭环和仓储连续路径追踪；IMU融合、建图、规划与 Arena 尚未实现。进度现为公共c0后同时开放Weapons与Navigation，两条主线可交替推进；当前规则与实测见 [36](36_BRANCHING_PROGRESSION.md)、[双主线验收](reports/BRANCHING_PROGRESSION_VALIDATION.md)。
 
-工程增量已交付统一检查、Weapons C2授权滤波实验、原生/Pyodide耗时诊断与可恢复工程保留；实际证据与限制见 [验收](reports/ENGINEERING_QUALITY_VALIDATION_20261105.md)。这是Algorithm Lab的单关试点，控制器成对重跑和其他课程实验尚未实现。
+工程增量已交付统一检查、Weapons C2授权滤波实验、原生/Pyodide耗时诊断与可恢复工程保留；实际证据与限制见 [验收](reports/ENGINEERING_QUALITY_VALIDATION_20261105.md)。这是Algorithm Lab的单关试点，控制器成对重跑和其他课程实验尚未实现。后端运行profile已由ADR-0053接受配置/截止合同：20ms声明上限、原生30ms与Pyodide40ms墙钟均取可信目录，后两项仍为experimental，固定6tick门不变。Linux/Firefox候选对照不证明其他平台、强沙箱或整局截止失败率<1%。
 
 “必须／不得”为设计约束；“建议／拟采用”为待验证方案。Accepted ADR 表示接受设计原则或接口方向，不表示实现或平台验证完成；Proposed 技术不得当作既成依赖。协议 `1.0` 是**未发布草案**，首次发布前由兼容性审查冻结；发布后执行版本规则。
 
@@ -44,7 +44,7 @@
 | [Weapons 重设计验收](reports/WEAPONS_REDESIGN_VALIDATION.md) | 原三关基线、新三关闭环、权限、工作区和真实网页 |
 | [26 多模块与 Weapons](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md) | M5 图、调度、章节、C3/C4 控制与装甲边界 |
 | [C2/C3 实时 RMSE 验收](reports/LIVE_RMSE_VALIDATION.md) | 授权累计指标、采样时间、生命周期和两种玩家 UI |
-| [27 YAML 关卡插件](27_LEVEL_PLUGIN_ARCHITECTURE.md) | 五关审计、Schema、自动发现/生命周期、组件、权限、规则与迁移 |
+| [27 YAML关卡插件](27_LEVEL_PLUGIN_ARCHITECTURE.md) | 当前十一关加载/场景/组件/权限与原五关迁移历史 |
 | [关卡编写指南](../levels/README.md) | 配置来源、已有组件、校验、启动与扩展流程 |
 | [关卡插件验收](reports/LEVEL_PLUGINS_VALIDATION.md) | 冻结基线、旧源码/存档、临时插件和两种 Runtime 五关通关 |
 | [01 项目愿景](01_PROJECT_VISION.md) | 目标、范围、假设、模式与成功标准 |
@@ -63,7 +63,7 @@
 | [14 武器设计与确认](14_WEAPONS_DESIGN.md) | M1b 范围、控制/开火接口、共同确认、数值近似及验收 |
 | [15 渲染设计](15_RENDERING_DESIGN.md) | 多频率时间插值、固定世界朝向相机、独立底盘外观 |
 | [16 浏览器 Runtime](16_BROWSER_RUNTIME.md) | 共享 Authority、私有 WASM ABI、独立 origin、加载/截止与平台限制 |
-| [17 编辑器与部署](17_EDITOR_AND_DEPLOYMENT.md) | M3 存储、Manifest profile、测试、原子激活、回滚和管理 API |
+| [17 编辑器与部署](17_EDITOR_AND_DEPLOYMENT.md) | 当前存储/模块图、短测、原子部署/回滚及维护边界，含M3历史 |
 | [编辑器阶段锁定验收](reports/EDITOR_ATTEMPT_LOCK_VALIDATION.md) | Space 发射焦点、运行期编辑门与结束/重试恢复 |
 | [18 教学关卡](18_CAMPAIGN_DESIGN.md) | M4 C0–C2、Radar、目标估计、巡逻敌车与血量通关 |
 | [19 学习说明与 SE(3)](19_LEARNING_GUIDES_AND_SE3.md) | 所有关卡的类型/步骤、编辑器帮助、矩阵实验、NumPy 与模板升级 |
@@ -91,7 +91,8 @@
 | [M1 验证报告](reports/M1_VALIDATION.md) | 当前实现范围、实际命令、证据与平台限制 |
 | [M1b 验证报告](reports/M1B_VALIDATION.md) | 武器、SDK、浏览器与原生/WASM 证据及限制 |
 | [ADR 索引](adr/README.md) | 决策状态、替代方案与变更流程 |
-| [Schema 与样例](schemas/README.md) | 可机读的协议、模块、Workspace、底盘配置草案及正反样例 |
+| [Schema与样例](schemas/README.md) | 当前结构、已支持子集、版本演进与正反夹具；结构不等于运行验证 |
+| [2026-11-10文档核对](reports/DOCUMENTATION_STATE_SYNC_20261110.md) | 提交基线、逐项事实/证据、修订与本轮检查范围 |
 
 建议先读 01 → 02 → 04 → 03 → 05，再按任务阅读其他领域。开始实现前阅读对应 Accepted ADR 和验收条件。
 
