@@ -378,6 +378,8 @@ try {
     visualization.navigation.update(profile.run_id,state?.navigation);
     canvas.dataset.waypoints=JSON.stringify(state?.navigation??null);
     visualization.pathTracking.update(profile.run_id,state?.path_tracking);
+    visualization.globalPlanning.update(profile.run_id,state?.global_planning);
+    canvas.dataset.globalPlanning=JSON.stringify(state?.global_planning??null);
     canvas.dataset.pathTracking=JSON.stringify(state?.path_tracking??null);
     const ended=Boolean(state&&state.status!=="active");
     campaignWaiting=Boolean(state?.phase==="preparing"&&state?.timing.start_on==="first_deployment");

@@ -1,0 +1,121 @@
+{
+  "preparation_version": "1.0",
+  "request_id": "prep-example-1",
+  "run_id": "run-example",
+  "deployment_id": "deployment-example",
+  "task_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "operation": "plan",
+  "payload": {
+    "map_data": {
+      "grid": [
+        [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ]
+      ],
+      "origin_xy": [
+        -0.8,
+        -0.8
+      ],
+      "resolution_m": 0.2,
+      "field_bounds_m": [
+        -0.8,
+        -0.8,
+        0.8,
+        0.8
+      ],
+      "bounds_m": [
+        -0.8,
+        -0.8,
+        0.8,
+        0.8
+      ]
+    },
+    "start_xy": [
+      0.0,
+      0.0
+    ],
+    "goal_xy": [
+      0.1,
+      0.0
+    ],
+    "robot_radius_m": 0.5,
+    "safety_margin_m": 0.15
+  }
+}

@@ -4,6 +4,10 @@
 
 当前浏览器模式复用原生Authority、SDK、课程、模块图和部署语义，已实现双Worker、固定资源的双origin启动器、受限快照及本机持久Workspace。M2建立此拓扑，历史证据见 [M2验收](reports/M2_VALIDATION.md)；当前后端profile与完整解码截止见 [41](41_RUNTIME_EXECUTION_PROFILES.md)、[Runtime验收](reports/RUNTIME_EXECUTION_PROFILES_VALIDATION_20261107.md)。仍是Linux/Firefox有运行证据的本机原型，不是Arena沙箱、独立静态网站或桌面发行包。
 
+## C5一次性准备阶段
+
+Robot Worker可先进入PreparationRunner，解释器就绪不等于周期控制就绪。可信init明确5秒规划截止；iframe对preparation请求使用该截止，后续step仍使用冻结的40ms profile。Core Worker/Authority用自身单调时钟完整解码后最终裁决，桥接耗时不授权宽限。规划器导入/构造/调用位于计时请求内，结果身份绑定run/deployment/task；Authority校验并交付静态路径后才构造周期模块。测试与正式候选各规划一次，关闭/旧Worker路由仍清理。详情见 [42](42_NAVIGATION_GLOBAL_PLANNING.md)，原有初始化上限与安全承诺不变。
+
 ## 进程与信任边界
 
 ```mermaid

@@ -1,0 +1,12 @@
+{
+  "preparation_version": "1.0",
+  "request_id": "prep-example-1",
+  "run_id": "run-example",
+  "deployment_id": "deployment-example",
+  "task_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "operation": "plan",
+  "payload": {
+    "status": "completed",
+    "result": null
+  }
+}

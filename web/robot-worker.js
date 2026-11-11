@@ -62,7 +62,7 @@ json.dumps(checks)
       self.postMessage({op:"progress",phase:"Module initialization"});
       const init={...data.value.init,sources:data.value.init.sources??data.sources};
       py.globals.set("_init_json",JSON.stringify(init));
-      py.runPython("from module_runner import ModuleRunner, runtime_packages\nfrom runtime_metrics import MeasuredExecution\nfrom source_loader import prepare, PlayerTestsFailed\nimport traceback\n_init=json.loads(_init_json)\ntry:\n _temporary,_tests=prepare(_init)\n runner=ModuleRunner(_init)\n _execution=MeasuredExecution(runner)\nexcept Exception as _error:\n if not isinstance(_error,PlayerTestsFailed):\n  traceback.print_exc(file=sys.stderr)\n raise\ndel _init_json");
+      py.runPython("from module_runner import ModuleRunner, runtime_packages\nfrom runtime_metrics import MeasuredExecution\nfrom source_loader import prepare, PlayerTestsFailed\nimport traceback\n_init=json.loads(_init_json)\ntry:\n _temporary,_tests=prepare(_init)\n from preparation_runner import PreparationRunner\n runner=PreparationRunner(_init) if _init.get('preparation') else ModuleRunner(_init)\n _execution=MeasuredExecution(runner)\nexcept Exception as _error:\n if not isinstance(_error,PlayerTestsFailed):\n  traceback.print_exc(file=sys.stderr)\n raise\ndel _init_json");
       runner = py.globals.get("runner");
       self.postMessage({op:"ready",security,unit_tests:py.runPython("_tests"),runtime_packages:JSON.parse(py.runPython("json.dumps(runtime_packages())")),memory_bytes:py._module.HEAPU8.buffer.byteLength});
     } else if(data.op==="probe_ping") {

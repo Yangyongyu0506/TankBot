@@ -34,6 +34,10 @@ class BrowserSupervisor:
 
     def __init__(self, config, init, *, deferred=False, execution_profile=None):
         self.execution_profile = execution_profile or select_execution_profile(config, self.runtime_backend)
+        self.preparation = init.get("preparation")
+        self.task_pending = False
+        self.task_elapsed_ms = None
+        self.initialization_budget_ns = round(config["browser"]["startup_timeout_s"]*1_000_000_000)
         if self.execution_profile.backend != self.runtime_backend:
             raise ValueError("RUNTIME_PROFILE_BACKEND")
         self.worker_id = uuid.uuid4().hex
@@ -55,6 +59,7 @@ class BrowserSupervisor:
         self.closed = False
         self.send("init", {"init":init,"limit":self.limit,"budget_ms":self.budget*1000,
                            "batch_wall_deadline_ns":self.budget_ns,
+                           "preparation_wall_deadline_ns":round(self.preparation["wall_deadline_ms"]*1_000_000) if self.preparation else None,
                            "max_log_bytes": config["runtime"]["max_log_bytes"],
                            "probe":config["browser"]["probe_enabled"],
                            "startup_timeout_s":config["browser"]["startup_timeout_s"]})
@@ -71,14 +76,34 @@ class BrowserSupervisor:
         return self.ready
 
     def submit(self, request):
+        return self._submit(request, self.budget_ns, task=False)
+
+    def submit_preparation(self, request):
+        if not self.preparation or request.get("operation") not in ("plan", "initialize"):
+            raise ValueError("UNAUTHORIZED_PREPARATION")
+        from tankbot_host.execution_profiles import milliseconds_ns
+        budget = milliseconds_ns(self.preparation["wall_deadline_ms"]) if request["operation"] == "plan" else self.initialization_budget_ns
+        return self._submit(request, budget, task=True)
+
+    def poll_preparation(self):
+        if self.result is None:
+            if self.active is not None and time.monotonic_ns() > self.expires_ns:
+                self.fault = "RESOURCE_LIMIT"
+                self.close()
+            return None
+        return self.finish()
+
+    def _submit(self, request, budget_ns, *, task):
         if self.closed or self.fault or self.active:
             return False
         self.active = request["request_id"]
         self.started_ns = time.monotonic_ns()
-        self.expires_ns = self.started_ns+self.budget_ns
+        self.expires_ns = self.started_ns+budget_ns
+        self.task_pending = task
         self.result = None
-        self.timing.begin(request,started_ns=self.started_ns)
-        encoded,written=self.send("step", request)
+        if not task:
+            self.timing.begin(request,started_ns=self.started_ns)
+        encoded,written=self.send("preparation" if task else "step", request)
         self.timing.sent(request_encode_ms=encoded,request_write_ms=written)
         return True
 
@@ -100,8 +125,9 @@ class BrowserSupervisor:
             decoded=time.monotonic_ns()
             result = strict_loads(raw)
             received=time.monotonic_ns()
-            self.timing.received(result,received_ns=received,response_decode_ms=(received-decoded)/1_000_000,
-                                 response_decode_started_monotonic_ns=decoded,bridge_round_trip_ms=elapsed_ms)
+            if not self.task_pending:
+                self.timing.received(result,received_ns=received,response_decode_ms=(received-decoded)/1_000_000,
+                                     response_decode_started_monotonic_ns=decoded,bridge_round_trip_ms=elapsed_ms)
             # The Authority clock is final. A delayed bridge watchdog cannot grant time,
             # and parsing a large response cannot straddle the deadline unnoticed.
             if received > self.expires_ns:
@@ -110,7 +136,10 @@ class BrowserSupervisor:
                 self.close()
                 return
             self.result = result
-            self.batch_times_ms.append((received-self.started_ns)/1_000_000)
+            if self.task_pending:
+                self.task_elapsed_ms = (received-self.started_ns)/1_000_000
+            else:
+                self.batch_times_ms.append((received-self.started_ns)/1_000_000)
         except (ValueError, TypeError, RecursionError):
             self.fault = "RESOURCE_LIMIT"
             self.timing.finish(self.fault,"receive_validation")
@@ -127,6 +156,7 @@ class BrowserSupervisor:
             self.close()
             return None
         self.timing.finish(at_gate=True)
+        self.task_pending = False
         return result
 
     def close(self):

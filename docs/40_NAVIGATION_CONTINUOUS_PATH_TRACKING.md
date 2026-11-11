@@ -51,7 +51,7 @@ path与checkpoints独立图层，公开起终点、完整折线、检查点位�
 
 F2高亮navigation/path_follower.py，完整说明ndarray维度/坐标/单位、连续追踪与逐点停车的区别、最近线段/前视点/横向误差、角度环绕、弯道减速、终点制动和提交延迟。正式空模板只返回零Twist，参考解只在测试或隔离工程。
 
-旧轮控/里程计/EKF/C3源码及revision/ledger/history不覆盖。新算法只补缺失文件，受管适配器/manifest/Contract升级须预览和显式应用，可从旧版本恢复。课程YAML自动发现，不按ID写仿真、评分或UI分支。新增本关前的十关、地图、Topic和进度保持兼容；当前目录共十一关。
+旧轮控/里程计/EKF/C3源码及revision/ledger/history不覆盖。新算法只补缺失文件，受管适配器/manifest/Contract升级须预览和显式应用，可从旧版本恢复。课程YAML自动发现，不按ID写仿真、评分或UI分支。新增本关前的十关、地图、Topic和进度保持兼容；当前目录后续新增C5后共十二关；C5规划合同与评分见 [42](42_NAVIGATION_GLOBAL_PLANNING.md)，不改变本文C4。
 
 ## 取舍、验收与开放项
 

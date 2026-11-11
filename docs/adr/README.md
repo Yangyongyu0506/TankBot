@@ -59,12 +59,13 @@ ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评
 | [0051](0051-engineering-experiments-and-retention.md) | 授权滤波实验、耗时观测与可恢复项目保留 | Accepted |
 | [0052](0052-generated-continuous-path-tracking.md) | 自动安全路径、只读完整参考、真实轨迹裁判与独立任务反馈 | Accepted |
 | [0053](0053-backend-runtime-execution-profiles.md) | 冻结后端profile、独立声明准入与墙钟、解码跨界及流式对照；默认仍experimental | Accepted |
+| [0054](0054-known-map-planning-preparation.md) | 已知原始地图、一次性5秒规划准备、独立路径校验与静态交付 | Accepted |
 
 ## 后续局部修订与历史状态
 
 旧ADR的Context、原参数和验收计数保留。当前解读需合并后续记录：0021替代0003；0043扩展0036完整模型；0049修订0026/0046的全局章节入口；0050/0052扩展Navigation任务；0053局部修订0010/0020/0031/0051/0052的共享预算与截止表达。0034及0047/0048/0051分别扩展实时指标和实验反馈，不能将早期“仅C2/仅终局”当作当前全局限制。
 
-ADR-0053的Accepted针对可信配置、冻结与截止合同；目录中的30/40ms默认仍为experimental，未证明整局截止失败率<1%。ADR-0013仍Proposed；本轮不改变任何ADR状态。当前实现与历史证据对照见 [核对记录](../reports/DOCUMENTATION_STATE_SYNC_20261110.md)。
+ADR-0053的Accepted针对可信配置、冻结与截止合同；目录中的30/40ms默认仍为experimental，未证明整局截止失败率<1%。ADR-0013仍Proposed；0054新增C5准备合同，状态与本关验收单独记录。当前实现与历史证据对照见 [核对记录](../reports/DOCUMENTATION_STATE_SYNC_20261110.md)。
 
 ## 变更流程与完成条件
 

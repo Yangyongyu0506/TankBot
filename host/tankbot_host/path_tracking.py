@@ -4,7 +4,37 @@ import math
 import numpy as np
 
 
-class PathTracking:
+class PolylineMetrics:
+    """Shared time-weighted distance to the full polyline; no success policy."""
+    def init_polyline(self, points):
+        points = np.asarray(points, dtype=np.float64)
+        self.segment_starts = points[:-1]
+        self.segment_deltas = np.diff(points, axis=0)
+        self.segment_squared = np.sum(self.segment_deltas**2, axis=1)
+        self.weighted_squared_error = self.scored_duration_s = 0.
+        self.max_deviation_m = 0.
+        self.tracking_samples = 0
+
+    def observe_error(self, position, dt):
+        delta = np.asarray(position[:2], dtype=np.float64)-self.segment_starts
+        projection = np.clip(np.sum(delta*self.segment_deltas,axis=1)/self.segment_squared,0.,1.)
+        distance = float(np.min(np.linalg.norm(delta-projection[:,None]*self.segment_deltas,axis=1)))
+        self.weighted_squared_error += distance*distance*dt
+        self.scored_duration_s += dt
+        self.tracking_samples += 1
+        self.max_deviation_m = max(self.max_deviation_m,distance)
+        return distance
+
+    @property
+    def rmse_m(self):
+        return math.sqrt(self.weighted_squared_error/self.scored_duration_s) if self.scored_duration_s else None
+
+    def report(self):
+        return {'tracking_rmse_m':self.rmse_m,'max_deviation_m':self.max_deviation_m,
+                'scored_duration_s':self.scored_duration_s,'tracking_samples':self.tracking_samples}
+
+
+class PathTracking(PolylineMetrics):
     kind = 'path_tracking'
 
     def __init__(self, specification, reference, parameters, physics_hz):
@@ -12,16 +42,10 @@ class PathTracking:
         self.reference = copy.deepcopy(reference)
         self.hz = physics_hz
         self.checkpoints = reference['checkpoints_m']
-        points = np.asarray(reference['points_m'], dtype=np.float64)
-        self.segment_starts = points[:-1]
-        self.segment_deltas = np.diff(points, axis=0)
-        self.segment_squared = np.sum(self.segment_deltas**2, axis=1)
+        self.init_polyline(reference['points_m'])
         self.goal_index = self.reached_count = self.settled_ticks = 0
         self.complete = self.collision = self.deviation_exceeded = False
         self.stable_since = self.last_tick = None
-        self.weighted_squared_error = self.scored_duration_s = 0.
-        self.max_deviation_m = 0.
-        self.tracking_samples = 0
         self.goal_distance_m = math.dist(reference['points_m'][0], reference['points_m'][-1])
 
     def start(self, tick):
@@ -36,13 +60,7 @@ class PathTracking:
             self.stable_since = None
         self.last_tick = tick
         dt = (tick-previous)/self.hz if previous is not None else 1/self.hz
-        delta = np.asarray(pose[:2], dtype=np.float64)-self.segment_starts
-        projection = np.clip(np.sum(delta*self.segment_deltas,axis=1)/self.segment_squared,0.,1.)
-        distance = float(np.min(np.linalg.norm(delta-projection[:,None]*self.segment_deltas,axis=1)))
-        self.weighted_squared_error += distance*distance*dt
-        self.scored_duration_s += dt
-        self.tracking_samples += 1
-        self.max_deviation_m = max(self.max_deviation_m,distance)
+        distance = self.observe_error(pose, dt)
         self.deviation_exceeded |= distance > self.spec['max_deviation_m']
         self.collision |= wall_contact
         self.goal_distance_m = math.dist(pose[:2],self.reference['points_m'][-1])
@@ -62,10 +80,6 @@ class PathTracking:
             self.settled_ticks = tick-self.stable_since
             self.complete = self.settled_ticks >= self.spec['stop_duration_ticks']
 
-    @property
-    def rmse_m(self):
-        return math.sqrt(self.weighted_squared_error/self.scored_duration_s) if self.scored_duration_s else None
-
     def facts(self):
         return {'path_complete':self.complete,'path_collision':self.collision,
                 'path_deviation_exceeded':self.deviation_exceeded,
@@ -80,7 +94,3 @@ class PathTracking:
                 'reached_count':self.reached_count,'total':len(self.checkpoints),
                 'settled_ticks':self.settled_ticks,'required_settle_ticks':self.spec['stop_duration_ticks'],
                 'complete':self.complete}
-
-    def report(self):
-        return {'tracking_rmse_m':self.rmse_m,'max_deviation_m':self.max_deviation_m,
-                'scored_duration_s':self.scored_duration_s,'tracking_samples':self.tracking_samples}

@@ -47,9 +47,14 @@ window.addEventListener("message",event=>{
         state.worker.postMessage({op,value:{...value,ui_origin:uiOrigin},sources:value.sources});
         state.budget=value.budget_ms;
         state.budgetNs=value.batch_wall_deadline_ns;
-      }else if(op==="step"){
+        state.preparationBudgetNs=value.preparation_wall_deadline_ns;
+        state.initializationBudgetNs=Math.round(value.startup_timeout_s*1e9);
+      }else if(op==="step"||op==="preparation"){
         if(!old||old.active||old.booting)throw Error("Runtime not ready");
-        old.active=true;old.startedNs=Math.round(performance.now()*1e6);old.deadlineNs=old.startedNs+old.budgetNs;
+        const preparation=op==="preparation";
+        if(preparation&&(!old.preparationBudgetNs||!["plan","initialize"].includes(value.operation)))throw Error("Unauthorized preparation");
+        const budgetNs=preparation?(value.operation==="plan"?old.preparationBudgetNs:old.initializationBudgetNs):old.budgetNs;
+        old.active=true;old.startedNs=Math.round(performance.now()*1e6);old.deadlineNs=old.startedNs+budgetNs;
         old.logBytes=0;old.logLines=0;old.logNotice=false;
         const checkDeadline=()=>{
           if(workers.get(worker_id)!==old||!old.active)return;
@@ -57,8 +62,8 @@ window.addEventListener("message",event=>{
           if(remaining<0)old.fault("RESOURCE_LIMIT","Batch wall deadline","wall_deadline");
           else old.timer=setTimeout(checkDeadline,remaining/1e6);
         };
-        old.timer=setTimeout(checkDeadline,old.budget);
-        old.worker.postMessage({op,raw:JSON.stringify(value)});
+        old.timer=setTimeout(checkDeadline,budgetNs/1e6);
+        old.worker.postMessage({op:"step",raw:JSON.stringify(value)});
       }else throw Error("Unknown operation");
     }catch(error){
       workers.get(worker_id)?.stop();port.postMessage({op:"fault",worker_id,code:"INVALID_SCHEMA",detail:String(error).slice(0,256)});

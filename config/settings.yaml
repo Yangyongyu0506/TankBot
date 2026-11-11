@@ -35,3 +35,5 @@ layers:
   waypoints: false
   path: false
   checkpoints: false
+  planning_map: false
+  safety_grid: false

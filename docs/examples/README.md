@@ -4,7 +4,7 @@
 
 本目录提供结构正例、反例描述及历史接口示意，不是可直接部署的玩家工程。可运行的启动示例在根examples/robot；正式关卡由levels/*.yaml生成与授权。Protocol 1.0和SDK 0.1.0是当前仓库未发布profile，`run-demo-001`、publisher与profile名称只是示例身份，不授予权限。
 
-当前应用配置为2.1、课程十一关；样例中的M3/M4/M5名称保留当时接口形状。消息兼容不意味着示意Manifest可用于任意关卡，测试/部署仍要求当前Contract图、库策略、环境摘要和冻结执行profile。
+当前应用配置为2.1、课程十二关；样例中的M3/M4/M5名称保留当时接口形状。消息兼容不意味着示意Manifest可用于任意关卡，测试/部署仍要求当前Contract图、库策略、环境摘要和冻结执行profile。
 
 ## 目录索引
 
@@ -19,11 +19,12 @@
 | [估计视图](view-snapshot.json)、[真值练习视图](weapons-practice-view.json)、[目标估计视图](campaign-view.json)、[位姿对照](pose-comparison-view.json) | 不同view_snapshot版本和显式授权，不能混为原始World |
 | [view-policy](view-policy.json) | 禁用系统源的受信策略结构，不是玩家提权申请 |
 | [runtime请求](runtime-step-request.json)、[响应](runtime-step-result.json)、[遥测](runtime-telemetry.json) | 固定激活/提交的私有控制面；遥测不可信、不是CPU额度 |
+| [规划请求](planning-prepare-request.json)、[路径响应](planning-prepare-response.json)、[冻结交付](planning-initialize-request.json)、[正常无解](planning-none-response.json) | 一次性准备消息结构；小网格仅演示形状，不是满足正式生成约束的关卡或参考解 |
 | [运行profile目录](runtime-execution-profiles.json) | 当前新目录结构与实验性后端默认；兼容/优先级合同见41 |
 | [协商请求](negotiate-request.json)、[响应](negotiate-response.json)、[错误](error-event.json) | 结构夹具，不证明正式远程协商或服务器已发布 |
 | [周期Contract](module-contract.json)、[event Contract](module-contract-event.json) | 两种已实现调度模式的结构样例；端口与额度仍须经实际任务准入 |
 | [M3 Manifest](m3-workspace.json)、[Contract](m3-module-contract.json) | 历史单模块本机形状，仍用于兼容测试 |
-| [M4 Manifest](m4-workspace.json)、[Contract](m4-module-contract.json) | C0–C2兼容包装的历史形状，不代表全部十一关只用一模块 |
+| [M4 Manifest](m4-workspace.json)、[Contract](m4-module-contract.json) | C0–C2兼容包装的历史形状，不代表全部十二关只用一模块 |
 | [M5 Manifest](m5-workspace.json)、[Contract](m5-module-contract.json)、[路径Contract](path-follower-contract.json) | 图结构和追踪器端口；当前每关模块/参数由YAML生成 |
 | [早期通用Manifest](tankbot.json) | main:build_robot目标设计示意；动态RobotApp/工厂尚未实现，不能当受管可运行工程 |
 | [分支进度](branch-progress.json) | 版本1非连续完成集合；不要求Weapons通关后再学Navigation |

@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def core_configuration(config):
     # Level discovery/tutorials belong to Host. Preserve the existing private physics DTO.
-    return {key:value for key,value in config.items() if key not in ("campaign","level_plugins","robot_graph","map_override")}
+    return {key:value for key,value in config.items() if key not in ("campaign","level_plugins","robot_graph","map_override","navigation_planning")}
 
 
 def load_config(path):
@@ -207,7 +207,7 @@ class Authority:
             explicit_startup = (workspace is not None or startup_sources is not None) if startup_is_deployment is None else startup_is_deployment
             if self.campaign and explicit_startup and self.campaign.definition["timer_start"] == "first_deployment":
                 self.campaign.start(self.tick)
-            if self.campaign and explicit_startup and self.campaign.motion_task:
+            if self.campaign and explicit_startup and self.campaign.motion_task and not init.get("preparation"):
                 self.campaign.deployment_armed=True
         except BaseException:
             self.core.close()
@@ -508,6 +508,8 @@ class Authority:
 
     def _activate_graph(self):
         if self._pending is not None or self._faulted or (self.campaign and self.campaign.status != "active"):
+            return
+        if self.worker_init.get("preparation") and not self.campaign.deployment_armed:
             return
         request = self.graph.request(self.tick)
         if request is not None and self.worker.submit(request):

@@ -22,14 +22,16 @@ from browser_support import port,stop
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--mode',choices=('native','browser','both'),default='both')
-    parser.add_argument('--scenario',choices=('engineering','path-tracking'),default='engineering')
+    parser.add_argument('--scenario',choices=('engineering','path-tracking','global-planning'),default='engineering')
+    parser.add_argument('--planner',choices=('astar','dijkstra'),default='astar',help='Verification-only planning reference')
+    parser.add_argument('--planning-faults',action='store_true',help='Also exercise isolated planning failures before the valid deployment')
     parser.add_argument('--seed',type=int,default=0,help='Isolated path-tracking scenario seed')
     parser.add_argument('--offline',action='store_true')
     parser.add_argument('--firefox',default=shutil.which('firefox'))
     parser.add_argument('--output',type=Path)
     args=parser.parse_args()
     if args.output is None:
-        args.output=ROOT/('.m1-cache/navigation-c4-qa/browser' if args.scenario=='path-tracking' else '.m1-cache/engineering-quality-20261104/browser')
+        args.output=ROOT/('.m1-cache/navigation-c5-qa/browser' if args.scenario=='global-planning' else '.m1-cache/navigation-c4-qa/browser' if args.scenario=='path-tracking' else '.m1-cache/engineering-quality-20261104/browser')
     from python_env import relaunch_if_needed
     relaunch_if_needed(Path(__file__).resolve(),offline=args.offline)
     if not args.firefox:parser.error('需要Firefox和Marionette；普通组件测试请使用npm test')
@@ -41,6 +43,7 @@ def main():
     import yaml
     base=load_config(ROOT/'config/game.yaml')
     if args.scenario=='path-tracking':base['campaign']['levels']['navigation.c4']['randomization']['seed']=args.seed
+    if args.scenario=='global-planning':base['campaign']['levels']['navigation.c5']['randomization']['seed']=args.seed
     reports=[]
     for mode in ('native','browser') if args.mode=='both' else (args.mode,):
         directory=args.output.resolve()/mode/uuid.uuid4().hex;directory.mkdir(parents=True)
@@ -48,14 +51,16 @@ def main():
         config['host']['port']=ui;config['browser']['runtime_port']=runtime
         # A loaded profile can be serialized as an inline config for an isolated launcher.
         config_path=directory/'game.yaml';config_path.write_text(yaml.safe_dump(config,allow_unicode=True))
-        initial_level='navigation.c3' if args.scenario=='path-tracking' else 'c2'
+        initial_level='navigation.c4' if args.scenario=='global-planning' else 'navigation.c3' if args.scenario=='path-tracking' else 'c2'
         course=configure(config,initial_level);store=directory/'workspace';api=WorkspaceAPI(course,directory=store)
         first=api.store.read()
-        if args.scenario=='path-tracking':
-            from navigation_support import solution
+        if args.scenario in ('path-tracking','global-planning'):
+            if args.scenario=='global-planning':from path_tracking_support import solution
+            else:from navigation_support import solution
             reference=solution(course)
-            preserved=('control/wheel_controller.py','localization/odometry.py','localization/ekf.py','navigation/waypoint_controller.py')
-            api.store.edit(first['revision'],{name:reference[name] for name in preserved})
+            preserved=('control/wheel_controller.py','localization/odometry.py','localization/ekf.py',
+                       'navigation/path_follower.py' if args.scenario=='global-planning' else 'navigation/waypoint_controller.py')
+            api.store.edit(first['revision'],{**{name:reference[name] for name in preserved},'my_notes.py':'# preserved browser fixture\n'})
         else:
             from campaign_support import EMA
             # Verification-only covariance/innovation, not a solution added to player templates.
@@ -69,8 +74,8 @@ def main():
         settings=directory/'settings.yaml';settings.write_bytes((ROOT/'config/settings.yaml').read_bytes())
         progress={'version':1,'completed_levels':['c0','c1'],'current_level':'c2',
                   'completions':{i:{'completed_at':datetime.now(timezone.utc).isoformat()} for i in ('c0','c1')}}
-        if args.scenario=='path-tracking':
-            completed=['c0','navigation.c0','navigation.c1','navigation.c2','navigation.c3']
+        if args.scenario in ('path-tracking','global-planning'):
+            completed=['c0','navigation.c0','navigation.c1','navigation.c2','navigation.c3']+(['navigation.c4'] if args.scenario=='global-planning' else [])
             progress.update(completed_levels=completed,current_level=initial_level,
                 completions={i:{'completed_at':datetime.now(timezone.utc).isoformat()} for i in completed})
         save=directory/'progress.json';save.write_text(json.dumps(progress))
@@ -92,8 +97,10 @@ def main():
                     if time.monotonic()>deadline:raise RuntimeError('Firefox Marionette启动超时；见'+str(directory))
                     time.sleep(.1)
             report=directory/'result.json'
-            script='tools/browser_navigation_path.py' if args.scenario=='path-tracking' else 'tools/browser_engineering.py'
+            script='tools/browser_navigation_planning.py' if args.scenario=='global-planning' else 'tools/browser_navigation_path.py' if args.scenario=='path-tracking' else 'tools/browser_engineering.py'
             command=[sys.executable,script,'--url',f'http://127.0.0.1:{ui}/'+('?runtime=browser' if mode=='browser' else ''),'--port',str(marionette),'--mode',mode,'--output',str(report)]
+            if args.scenario=='global-planning':command+=['--planner',args.planner,'--seed',str(args.seed)]
+            if args.scenario=='global-planning' and args.planning_faults:command+=['--planning-faults']
             result=subprocess.run(command,cwd=ROOT)
             if result.returncode:return result.returncode
             reports.append(str(report))

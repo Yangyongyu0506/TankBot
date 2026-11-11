@@ -4,6 +4,10 @@
 
 支持持久化、多文件Python项目、无损解锁新模块和不可变部署。当前本机已支持单模块兼容包装及同步周期/event模块图、整图测试/部署/回滚、模板升级预览和项目维护；分别见 [17](17_EDITOR_AND_DEPLOYMENT.md)、[26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)、[38](38_ENGINEERING_AND_ALGORITHM_LAB.md)。ADR-0009/0012约束非覆盖管理与编辑/运行分离。独立静态Web存储、云同步、持久运行checkpoint和动态RobotApp组装仍未实现。
 
+## Navigation规划工程增量
+
+C5只补缺失的navigation/global_planner.py；已有轮控、里程计、EKF、PathFollower、自建文件和历史保持。一次性准备声明由关卡runtime.preparation派生到Manifest，不加入周期modules；旧Manifest变化通过原升级预览/CAS显式应用。返回C4时不运行未授权准备任务，也不删除新增算法。相同revision的测试与正式部署各用新Worker，静态路径不复用测试对象；再次规划需重试同一任务。合同见 [42](42_NAVIGATION_GLOBAL_PLANNING.md)。
+
 ## Workspace目录与所有权
 
 下列是目录组织示意，实际文件由各关模板按需生成；data与运行checkpoint不是当前默认能力，模板ledger实际保存在Store快照中，不要求玩家手建.tankbot目录。

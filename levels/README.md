@@ -1,6 +1,6 @@
 # Level Plugins
 
-本目录当前有公共C0、Weapons C1–C5与Navigation C0–C4共十一个独立YAML，是关卡专属配置的唯一来源。Weapons 课程见 [28](../docs/28_WEAPONS_PROGRESSIVE_ESTIMATION.md)，Navigation 首关见 [33](../docs/33_NAVIGATION_MOTION_CONTROL.md)。正式 Schema 为 [level.schema.json](../docs/schemas/level.schema.json)，架构和迁移说明见 [27](../docs/27_LEVEL_PLUGIN_ARCHITECTURE.md)。
+本目录当前有公共C0、Weapons C1–C5与Navigation C0–C5共十二个独立YAML，是关卡专属配置的唯一来源。Weapons 课程见 [28](../docs/28_WEAPONS_PROGRESSIVE_ESTIMATION.md)，Navigation 首关见 [33](../docs/33_NAVIGATION_MOTION_CONTROL.md)。正式 Schema 为 [level.schema.json](../docs/schemas/level.schema.json)，架构和迁移说明见 [27](../docs/27_LEVEL_PLUGIN_ARCHITECTURE.md)。
 
 ## 编写与验证流程
 
@@ -18,6 +18,10 @@
 8. 原生或浏览器以 `--developer --level <metadata.id>` 启动验收，使用独立 `--workspace-store`、`--settings-file` 和 `--save-file`。正式玩家仍按原存档解锁。无需修改 CLI choices、注册列表、UI 分支或 Level Manager。
 
 加载器自动扫描 `.yaml` / `.yml`，浏览器启动器也调用相同扫描器并发布生成目录。文件错误显示完整 File/Path/Reason。不要手工编辑生成的 JSON 或用新编号文件替换旧关卡。零代码扩展测试只在临时目录创建额外配置，不进入正式目录。
+
+## 已知地图规划关卡
+
+使用objectives.global_planning配置分辨率、安全余量、任务搜索上限、路径合同与终点停稳；communication.runtime.preparation声明一次性5秒合同，Manifest同名字段由编译器派生，勿另写冲突副本。玩家只获得原始OccupancyGrid，裁判安全膨胀不经机器人接口公开。成功规则使用planning_complete，失败优先planning_collision/controller_faulted；不复用C4误差或检查点门槛。地图源仍为world.map资产引用，runtime四模块/模型/传感器不变，细节见 [42](../docs/42_NAVIGATION_GLOBAL_PLANNING.md)。
 
 ## 单位与受支持范围
 
@@ -43,7 +47,7 @@ Navigation C2（navigation.C2.yaml）复用控制器/里程计，组合 ekf_loca
 
 evaluation.module_id 固定主位姿评分，reference_module_id 指定独立对照；两者必须是已声明且不同的 pose 发布者。live_feedback 的 reference_metric/reference_label/reference_color 可添加与主指标共轴的对照曲线，指标仍各自受 allowed_metrics 授权。View Policy 的 pose_estimate_channels 配置授权候选列表，对应 pose_estimates 图层与 player_pose_candidates 数据源；gps 使用 local_observation，pose_covariance 使用 selected_pose。gps_history_points、trail_points 控制容量，pose_labels 配置来源显示名。command_sequence 可按实际路程和估计阈值验收，无需声明未使用的终点距离门槛。完整课程见 [35](../docs/35_NAVIGATION_GPS_LOCALIZATION.md)。
 
-当前十一关进度为公共c0后同时开放Weapons C1和Navigation C0，各主线内部保持原依赖。新增插件时，公开catalogue自动输出prerequisites/order/description，关卡树据此生成节点和实线；不要手工维护UI关系。新档从无前置入口开始，已完成集合不要求全局前缀，完整规范见 [36](../docs/36_BRANCHING_PROGRESSION.md)。
+当前十二关进度为公共c0后同时开放Weapons C1和Navigation C0，各主线内部保持原依赖。新增插件时，公开catalogue自动输出prerequisites/order/description，关卡树据此生成节点和实线；不要手工维护UI关系。新档从无前置入口开始，已完成集合不要求全局前缀，完整规范见 [36](../docs/36_BRANCHING_PROGRESSION.md)。
 
 Navigation C3 的 `objectives.waypoint_route` 组合公开目标与私有到点/停稳评价，使用 `waypoints_complete` 事实。`permissions.data_access.references` 仅授权轮电压驱动的 `/robot/cmd_vel` 参考，`actuators` 继续授权实际电压；禁止双发布源或与速度伺服混用。waypoint_goal@1 只向程序提供当前目标，`waypoints` 图层独立授权公开路线/任务状态，不能补画真值车体。接口、边界与零代码复用限制见 [37](../docs/37_NAVIGATION_WAYPOINT_CONTROL.md)。
 

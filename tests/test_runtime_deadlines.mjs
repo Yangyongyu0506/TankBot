@@ -18,8 +18,9 @@ function bridge(){
   vm.runInNewContext(readFileSync(new URL('../web/runtime-frame.js',import.meta.url),'utf8'),context);
   bind({source:parent,origin:'http://ui',data:'tankbot-runtime',ports:[port]});
   const send=(op,worker_id,value={})=>port.onmessage({data:JSON.stringify({op,worker_id,value})});
-  function init(id){
-    send('init',id,{init:{},limit:65536,budget_ms:20,batch_wall_deadline_ns:20_000_000,max_log_bytes:8192,startup_timeout_s:5});
+  function init(id,preparation=false){
+    send('init',id,{init:{},limit:65536,budget_ms:20,batch_wall_deadline_ns:20_000_000,max_log_bytes:8192,startup_timeout_s:5,
+      preparation_wall_deadline_ns:preparation?5_000_000_000:null});
     const w=workers.at(-1);w.emit({op:'ready',runtime_packages:{}});return w;
   }
   return {events,timers,send,init,now:value=>{now=value;}};
@@ -51,4 +52,22 @@ test('nonreturning workers terminate and old callbacks cannot enter a replacemen
   current.emit({op:'result',raw:'{}'});assert.equal(current.terminated,true);
   assert.equal(b.events.at(-1).code,'RESOURCE_LIMIT');
   b.send('close','new');assert.equal(b.timers.size,0);
+});
+
+test('preparation has a trusted five second timer while subsequent periodic batches retain their own deadline',()=>{
+  const b=bridge(),w=b.init('plan',true);
+  b.send('preparation','plan',{operation:'plan',wall_deadline_ms:999999});b.now(5000);
+  w.emit({op:'result',raw:'{}'});assert.equal(w.terminated,false);assert.equal(b.events.at(-1).elapsed_ms,5000);
+  b.send('step','plan',{});b.now(5020.000001);w.emit({op:'result',raw:'{}'});
+  assert.equal(w.terminated,true);assert.equal(b.events.at(-1).location,'wall_deadline');
+});
+
+test('late preparation and its stale callbacks cannot be accepted by a replacement worker',()=>{
+  const b=bridge(),old=b.init('old-plan',true);b.send('preparation','old-plan',{operation:'plan'});b.now(5000.000001);
+  old.emit({op:'result',raw:'{}'});assert.equal(old.terminated,true);
+  const current=b.init('new-plan',true),count=b.events.length;
+  old.emit({op:'result',raw:'{}'});assert.equal(b.events.length,count);
+  b.send('preparation','new-plan',{operation:'plan'});b.now(5001);current.emit({op:'result',raw:'{}'});
+  assert.equal(b.events.at(-1).worker_id,'new-plan');b.send('close','new-plan');
+  assert.equal(b.timers.size,0);
 });

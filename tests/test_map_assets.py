@@ -24,15 +24,15 @@ class MapAssetTests(unittest.TestCase):
         opened=load_yaml(ROOT/'assets/maps/open_training.yaml')['walls']
         self.assertEqual(self.config['scene']['walls'],legacy)
         self.assertEqual(opened,legacy[:4])
-        self.assertEqual(set(self.config['campaign']['levels']),{'c0','c1','c2','c3','c4','c5','navigation.c0','navigation.c1','navigation.c2','navigation.c3','navigation.c4'})
+        self.assertEqual(set(self.config['campaign']['levels']),{'c0','c1','c2','c3','c4','c5','navigation.c0','navigation.c1','navigation.c2','navigation.c3','navigation.c4','navigation.c5'})
         definitions={value['metadata']['id']:value for path in (ROOT/'levels').glob('*.yaml') for value in [load_yaml(path)]}
         for lid in self.config['campaign']['levels']:
             source=definitions[lid]
-            expected_map='navigation_warehouse.yaml' if lid=='navigation.c4' else 'open_training.yaml'
+            expected_map='navigation_warehouse.yaml' if lid in ('navigation.c4','navigation.c5') else 'open_training.yaml'
             self.assertEqual(source['world']['map'],{'source':'asset','path':'maps/'+expected_map})
             c=configure(self.config,lid)
             self.assertEqual(c['scene']['walls'],load_yaml(ROOT/'assets/maps'/expected_map)['walls'])
-            if lid=='navigation.c4':continue  # New course explicitly uses the existing warehouse.
+            if lid in ('navigation.c4','navigation.c5'):continue  # Both reuse the existing warehouse.
             self.assertFalse(blocked((0,0),(4,0),c['scene']['walls']))
             self.assertTrue(blocked((0,0),(8,0),c['scene']['walls']))
         self.assertTrue(blocked((0,0),(4,0),legacy))

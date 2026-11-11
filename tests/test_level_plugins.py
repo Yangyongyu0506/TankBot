@@ -72,6 +72,27 @@ class LevelPluginTests(unittest.TestCase):
         self.assertIsNotNone(scene.path_reference)
         self.assertEqual(scene.level_id,'plugin.continuous')
 
+    def test_planning_is_a_reusable_component_and_requires_explicit_raw_map_grants(self):
+        original=self.definition('navigation.c5')
+        for keys,value,expected in [
+            (('permissions','data_access','task_inputs'),['planning_goal'],'task_inputs'),
+            (('permissions','public_map'),False,'permissions'),
+            (('communication','runtime','preparation','max_calls'),2,'max_calls'),
+            (('objectives','global_planning','max_search_nodes'),0,'max_search_nodes'),
+            (('visualization','sources','safety_grid'),'authorized_truth','sources.safety_grid'),
+        ]:
+            invalid=copy.deepcopy(original);target=invalid
+            for key in keys[:-1]:target=target[key]
+            target[keys[-1]]=value;self.write(invalid,'navigation.c5')
+            with self.subTest(keys=keys),self.assertRaises(LevelValidationError) as error:load_config(self.path)
+            self.assertIn(expected,str(error.exception))
+        self.write(original,'navigation.c5')
+        original['metadata'].update(id='plugin.planning',order=20)
+        self.write(original,'plugin.planning')
+        from tankbot_host.scene_definition import resolve_scene
+        scene=resolve_scene(configure(load_config(self.path),'plugin.planning'))
+        self.assertEqual(scene.level_id,'plugin.planning');self.assertIsNotNone(scene.planning_task)
+
     def assert_subset(self,expected,actual,path=''):
         if isinstance(expected,dict):
             self.assertIsInstance(actual,dict,path)
@@ -83,7 +104,7 @@ class LevelPluginTests(unittest.TestCase):
     def test_all_five_match_frozen_pre_refactoring_runtime_baselines(self):
         baseline=json.loads((ROOT/'tests/fixtures/level-behavior-before.json').read_text())
         config=load_config(self.path)
-        self.assertEqual(list(config['campaign']['levels']),[*baseline['levels'],'c5','navigation.c0','navigation.c1','navigation.c2','navigation.c3','navigation.c4'])
+        self.assertEqual(list(config['campaign']['levels']),[*baseline['levels'],'c5','navigation.c0','navigation.c1','navigation.c2','navigation.c3','navigation.c4','navigation.c5'])
         for lid,expected in baseline['levels'].items():
             # User explicitly redesigned C3/C4 and added C5. Freeze the unchanged C0-C2 here;
             # new sensor/control/goal semantics have dedicated curriculum acceptance tests.

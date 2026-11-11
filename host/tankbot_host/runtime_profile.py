@@ -44,6 +44,22 @@ def configure_course_runtime(authority,init,workspace):
             "position_tolerance_m":route.spec["position_tolerance_m"],
             "pose_max_age_ticks":contract["inputs"]["pose"]["max_age_ticks"],
         }
+    if authority.campaign.definition["rules"].get("global_planning"):
+        route=authority.campaign.navigation
+        grants=authority.campaign.definition["permissions"]["data_access"]
+        if not {"occupancy_grid", "planning_goal"} <= set(grants.get("task_inputs", [])):
+            raise ValueError("UNAUTHORIZED_PLANNING_INPUT")
+        contract=next(c for c in authority.campaign.definition["runtime"]["contracts"].values()
+                      if c["entry_point"]=="navigation.path_module:PathTrackingModule")
+        init["preparation"]=copy.deepcopy(authority.campaign.definition["runtime"]["preparation"])
+        init["preparation_limits"]={"max_path_points":route.spec["max_path_points"]}
+        init["config"]["path_tracking_parameters"]={
+            "reference":None,
+            "control_limits":copy.deepcopy(route.spec["control_limits"]),
+            "reference_speed_mps":route.spec["reference_speed_mps"],
+            "position_tolerance_m":route.spec["position_tolerance_m"],
+            "pose_max_age_ticks":contract["inputs"]["pose"]["max_age_ticks"],
+        }
     if authority.graph_profile() and authority.radar.noise is not None:
         noise = authority.radar.noise
         init["config"]["observations"] = {"radar_covariance":[[noise["range_stddev_m"]**2,0],[0,noise["bearing_stddev_rad"]**2]]}

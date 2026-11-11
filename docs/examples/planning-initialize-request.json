@@ -1,0 +1,25 @@
+{
+  "preparation_version": "1.0",
+  "request_id": "prep-example-2",
+  "run_id": "run-example",
+  "deployment_id": "deployment-example",
+  "task_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "operation": "initialize",
+  "payload": {
+    "path": {
+      "task_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "path_id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "points_m": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.1,
+          0.0
+        ]
+      ],
+      "length_m": 0.1
+    }
+  }
+}

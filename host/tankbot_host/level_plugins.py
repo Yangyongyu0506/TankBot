@@ -119,6 +119,29 @@ def _validate(value, filename, config, validator):
     sequence=value["objectives"].get("command_sequence")
     route=value["objectives"].get("waypoint_route")
     tracking=value["objectives"].get("path_tracking")
+    planning=value["objectives"].get("global_planning")
+    if planning:
+        import math
+        path="objectives.global_planning"
+        if sequence or route or tracking or drive!="wheel_voltage" or value["objectives"]["timer_start"]!="first_control_commit":
+            fail(path,"global planning requires one unarmed wheel-voltage motion task")
+        if set(value["permissions"]["data_access"].get("task_inputs",[]))!={"occupancy_grid","planning_goal"}:
+            fail("permissions.data_access.task_inputs","raw grid and public goal need independent explicit grants")
+        if not value["permissions"]["public_map"] or not value["permissions"]["public_initial_pose"]:
+            fail("permissions","known-map planning requires a public map and initial pose")
+        if not value["communication"]["runtime"].get("preparation"):
+            fail("communication.runtime.preparation","missing one-shot planning contract")
+        if (planning["min_reference_length_m"]>planning["max_reference_length_m"]
+                or planning["minimum_segment_m"]>=planning["max_segment_m"]
+                or planning["reference_speed_mps"]>planning["control_limits"]["max_vx_mps"]):
+            fail(path,"inconsistent geometry or motion limits")
+        numbers=[v for v in planning.values() if type(v) in (int,float)]+list(planning["control_limits"].values())
+        if any(not math.isfinite(v) for v in numbers):fail(path,"all parameters must be finite")
+        planning_drive_limits=config["chassis_profiles"][player["model"]]["motion_limits"]
+        if any(planning["control_limits"][k]>planning_drive_limits[k] for k in ("max_vx_mps","max_wz_radps")):
+            fail(path+".control_limits","reference limits exceed chassis limits")
+    elif value["communication"]["runtime"].get("preparation"):
+        fail("communication.runtime.preparation","preparation contract requires a planning task")
     if tracking:
         import math
         path="objectives.path_tracking"
@@ -142,7 +165,7 @@ def _validate(value, filename, config, validator):
             fail(path+".stop_duration_ticks","settling must fit within time limit")
         if not {"tracking_rmse_limit_m","max_deviation_m"}<=value["objectives"]["parameters"].keys():
             fail("objectives.parameters","tracking score limits must be declared")
-    elif value["permissions"]["data_access"].get("task_inputs"):
+    elif not planning and value["permissions"]["data_access"].get("task_inputs"):
         fail("permissions.data_access.task_inputs","static path input requires a continuous tracking task")
     if route:
         import math
@@ -171,7 +194,7 @@ def _validate(value, filename, config, validator):
             fail("objectives.command_sequence","sequence requires wheel voltage, first-control commit start and a matching time limit")
         if "min_path_length_m" not in value["objectives"]["parameters"]:
             fail("objectives.parameters","command sequence requires an actual path threshold")
-    elif not route and not tracking and value["objectives"]["timer_start"]=="first_control_commit":fail("objectives.timer_start","first_control_commit requires a motion task")
+    elif not route and not tracking and not planning and value["objectives"]["timer_start"]=="first_control_commit":fail("objectives.timer_start","first_control_commit requires a motion task")
     sensor_ids = []
     instance_ids=set();streams=set()
     if len(player["sensors"])>limits["max_sensors"]:fail("robots[0].sensors","component count exceeds max_sensors")
@@ -230,13 +253,13 @@ def _validate(value, filename, config, validator):
         if not set(vis[name])<=set(layers):fail("visualization."+name,"display state exceeds visualization permission")
     if set(vis["sources"])!=set(layers):fail("visualization.sources","each allowed layer needs exactly one source")
     for layer,source in vis["sources"].items():
-        expected="task_reference" if layer in ("waypoints","path","checkpoints") else "authorized_truth" if layer in ("truth_targets","projectiles") else "map" if layer=="map" else "selected_pose" if layer in ("robot","trail","frames","pose_covariance") else "player_pose_candidates" if layer=="pose_estimates" else "player_estimate" if layer=="target_estimates" else "local_observation"
+        expected="task_reference" if layer in ("waypoints","path","checkpoints","planning_map","safety_grid") else "authorized_truth" if layer in ("truth_targets","projectiles") else "map" if layer=="map" else "selected_pose" if layer in ("robot","trail","frames","pose_covariance") else "player_pose_candidates" if layer=="pose_estimates" else "player_estimate" if layer=="target_estimates" else "local_observation"
         if source!=expected:fail("visualization.sources."+layer,"source is not supported by this visualization component")
     policy=value["permissions"]["visualization"]["view_policy"]
     feedback=vis.get("control_feedback")
     if feedback:
         from .control_feedback import SIGNALS
-        if not (sequence or route or tracking) or drive!="wheel_voltage" or "wheel_encoder" not in sensor_ids:
+        if not (sequence or route or tracking or planning) or drive!="wheel_voltage" or "wheel_encoder" not in sensor_ids:
             fail("visualization.control_feedback","control plots require a wheel-voltage motion task and wheel encoder")
         if "encoders" not in layers or "/robot/sensors/joint_states" not in policy["local_observation_channels"]:
             fail("visualization.control_feedback","encoder visualization is not authorized")
@@ -256,10 +279,14 @@ def _validate(value, filename, config, validator):
         fail("visualization.waypoints","waypoint visualization requires a route")
     if "waypoints" in layers and "waypoints" not in vis:
         fail("visualization.waypoints","waypoint display needs an explicit style")
-    if set(layers)&{"path","checkpoints"} or "path_tracking" in vis:
+    if not planning and (set(layers)&{"path","checkpoints"} or "path_tracking" in vis):
         if not tracking or "path_tracking" not in vis:fail("visualization.path_tracking","path/checkpoints need a task and explicit style")
+    if planning and ("checkpoints" in layers or "global_planning" not in vis):
+        fail("visualization.global_planning","planning needs an explicit style and has no checkpoint rule")
+    if not planning and (set(layers)&{"planning_map","safety_grid"} or "global_planning" in vis):
+        fail("visualization.global_planning","planning layers require a planning task")
     task_feedback=value["permissions"]["visualization"].get("task_feedback")
-    if task_feedback and not tracking:fail("permissions.visualization.task_feedback","tracking feedback requires a task")
+    if task_feedback and not (tracking or planning):fail("permissions.visualization.task_feedback","feedback requires a motion task")
     if "projectiles" in layers and not policy["world_effects"]:fail("permissions.visualization.allowed_layers","projectile truth is not authorized")
     if set(layers)&{"truth_robot","velocities","colliders"}:fail("permissions.visualization.allowed_layers","these components require the separate developer grant")
     if any(ch not in sensor_topics for ch in policy["local_observation_channels"]):fail("permissions.visualization.view_policy.local_observation_channels","undeclared sensor Topic")
@@ -300,7 +327,7 @@ def _validate(value, filename, config, validator):
         for path,source in generated.items():
             if path.endswith(".py"):ast.parse(source,filename=path)
     except (ValueError,SyntaxError) as exc:fail("scaffolding",str(exc))
-    player_files={"localization/ekf.py","localization/odometry.py","control/wheel_controller.py","perception/transforms.py","perception/tracker.py","perception/pose_tracker.py","perception/polar_tracker.py","perception/fusion_tracker.py","perception/armor_tracker.py","weapons/auto_aim.py","weapons/armor_aim.py","weapons/target_prediction.py"}
+    player_files={"navigation/global_planner.py","navigation/path_follower.py","localization/ekf.py","localization/odometry.py","control/wheel_controller.py","perception/transforms.py","perception/tracker.py","perception/pose_tracker.py","perception/polar_tracker.py","perception/fusion_tracker.py","perception/armor_tracker.py","weapons/auto_aim.py","weapons/armor_aim.py","weapons/target_prediction.py"}
     registered={p for component in COMPONENTS.values() for p in component}
     managed={p for p in registered|set(generated) if p not in player_files and not p.endswith("__init__.py")}
     if not set(runtime["managed_files"])<=managed:fail("communication.runtime.managed_files","managed files must exclude player algorithms and custom files")
@@ -519,6 +546,8 @@ def _compile(value, walls, config):
     target_parameters=target["parameters"] if target else {}
     d=copy.deepcopy(value)
     meta=d["metadata"];runtime=d["communication"]["runtime"]
+    if runtime.get("preparation"):
+        runtime["manifest"]["preparation"]=copy.deepcopy(runtime["preparation"])
     radar=next((s["parameters"] for s in p["sensors"] if s["type"]=="radar"),None)
     policy=d["permissions"]["visualization"]["view_policy"]
     grants=d["permissions"]["data_access"]
@@ -552,7 +581,7 @@ def _compile(value, walls, config):
     if "target_pose_estimate@1" in grants["outputs"]:caps.append("estimate.target_pose.publish")
     definition={"title":meta["name"],"problem":d["tutorial"]["problem"],"hints":d["tutorial"]["hints"],
         "chapter_id":meta["chapter"]["chapter_id"],"capabilities":caps,"target":({"target_id":target["id"],"pose":target["initial_pose"],**target_parameters} if target else None),
-        "objective":{**d["objectives"]["parameters"],"kind":"path_tracking" if "path_tracking" in d["objectives"] else "waypoint_route" if "waypoint_route" in d["objectives"] else "command_sequence" if "command_sequence" in d["objectives"] else "checklist" if d["objectives"]["success"]["type"]=="all" else "destroy_target"},
+        "objective":{**d["objectives"]["parameters"],"kind":"global_planning" if "global_planning" in d["objectives"] else "path_tracking" if "path_tracking" in d["objectives"] else "waypoint_route" if "waypoint_route" in d["objectives"] else "command_sequence" if "command_sequence" in d["objectives"] else "checklist" if d["objectives"]["success"]["type"]=="all" else "destroy_target"},
         "time_limit_s":d["objectives"]["time_limit_s"],"timer_start":d["objectives"]["timer_start"],
         "player_health":"same_as_target" if p["health"]==target_parameters.get("health") and p["health"] else None,
         "control_sources":p["control_sources"],"robot_profile":runtime["profile_id"],"armor_mode":bool(target_parameters.get("armor")),

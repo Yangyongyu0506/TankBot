@@ -106,7 +106,8 @@ class DeploymentManager:
         runtime_entries=[e for e in logs["entries"] if e.get("source")=="runtime" and e.get("deployment_id")==getattr(worker,"deployment_id","startup")]
         files=self.artifacts[self.active["sha256"]]["files"] if self.active else self.authority.worker_init.get("sources",{})
         return copy.deepcopy({"active": self.active, "history": self.history,
-                              "job": None if self.job is None else {k: self.job[k] for k in ("id", "kind", "phase", "sha256")},
+                              "job": None if self.job is None else {**{k: self.job[k] for k in ("id", "kind", "phase", "sha256")},
+                                  **({"preparation":self.job["preparation"].public()} if "preparation" in self.job else {})},
                               "last": self.last, "reports": list(self.reports.values()),
                               "run_id": self.authority.run_id, "tick": self.authority.tick,
                               "attempt_status": self.authority.campaign.status if self.authority.campaign else None,
@@ -123,6 +124,9 @@ class DeploymentManager:
             raise ValueError("DEPLOYMENT_BUSY")
         a = self.authority
         if a.lab.job:raise ValueError("EXPERIMENT_BUSY")
+        planning=bool(a.worker_init.get("preparation"))
+        if planning and (a.campaign.started_tick is not None or a.campaign.navigation.reference is not None):
+            raise ValueError("PLANNING_PATH_FROZEN: 本次尝试已启动；请先结束并重试，不能运行中重新规划")
         if kind in ("test", "deploy"):
             try:
                 artifact = inspect_snapshot(snapshot, a)
@@ -163,6 +167,13 @@ class DeploymentManager:
         self.job = {"id": job_id, "kind": kind, "phase": "Starting", "sha256": sha,
                     "artifact": artifact, "worker": worker, "init": init, "count": 0, "pending": None,
                     "validator": Validator(a.config, a.run_id)}
+        if planning:
+            from .planning_preparation import PlanningPreparation
+            self.job["preparation"]=PlanningPreparation(a,self.job)
+            if kind!="test":
+                a._revoke_robot=True
+                a._keyboard=a._wheel_voltage_target=None
+                a._pending=None
         if "graph" in init:
             from .robot_graph import GraphExecution
             self.job["graph"] = GraphExecution(a,init["graph"],a.tick)
@@ -179,9 +190,14 @@ class DeploymentManager:
         message=diagnostic["summary"] if diagnostic else str(error)
         self.authority.logs.append(message + "\n", source=job["kind"], module_id=self.authority.contract["module_id"], tick=self.authority.tick, stream="error", deployment_id=job["id"], revision=job["artifact"]["revision"])
         self.last = {"id": job["id"], "kind": job["kind"], "sha256": job["sha256"], "revision": job["artifact"]["revision"], "status": "Failed", "error": str(error)}
+        if "preparation" in job:
+            self.last["preparation"]=job["preparation"].public()
         if diagnostic is not None:
             self.last["diagnostic"]=diagnostic
         self.job = None
+        if "preparation" in job and job["kind"]!="test":
+            self.authority.campaign.navigation.preparation.update(phase="failed",error=str(error))
+            self.authority._finish_campaign(reason="planning_failed")
 
     def _check(self, response, job, tick):
         a, v = self.authority, job["validator"]
@@ -218,7 +234,15 @@ class DeploymentManager:
                     raise ValueError(worker.fault + (": " + worker.detail if worker.detail else ""))
                 return
             if worker.fault:
-                raise ValueError(worker.fault + (": " + worker.detail if worker.detail else ""))
+                prefix="PLANNING_TIMEOUT: " if "preparation" in job and not job["preparation"].done and worker.fault=="RESOURCE_LIMIT" else ""
+                raise ValueError(prefix+worker.fault + (": " + worker.detail if worker.detail else ""))
+            if "preparation" in job and not job["preparation"].advance():
+                return
+            if "preparation" in job and "graph" in job and not job.get("prepared_graph"):
+                # Preparation wall time is not the first control update's dt.
+                from .robot_graph import GraphExecution
+                job["graph"]=GraphExecution(a,job["init"]["graph"],a.tick)
+                job["prepared_graph"]=True
             if job["kind"] != "test":
                 if a.tick % a.period == 0:
                     self._activate(job)
@@ -243,6 +267,9 @@ class DeploymentManager:
                     if "graph" in job:
                         report["modules_executed"] = sorted(job["modules_executed"])
                         report["modules_waiting"] = sorted(job["graph"].graph["modules"].keys()-job["modules_executed"])
+                    if "preparation" in job:
+                        report["preparation"]=job["preparation"].public()
+                        report["checks"].extend(["planning_deadline","planned_path_contract","full_segment_safety"])
                     self.artifacts[artifact["sha256"]] = artifact
                     self.reports[artifact["sha256"]] = report
                     self.last = {**report, "kind": "test", "id": job["id"]}
@@ -275,6 +302,9 @@ class DeploymentManager:
 
     def _activate(self, job):
         a = self.authority
+        if "preparation" in job:
+            preparation=job["preparation"]
+            a.campaign.navigation.accept_path(preparation.reference,preparation.elapsed_ms)
         old, old_publisher = a.worker, a.publisher_id
         a.worker = job["worker"]
         a.publisher_id = job["init"]["publisher_id"]
@@ -308,6 +338,8 @@ class DeploymentManager:
                     del table[key]
         a.lab.stop("deployment_changed")
         self.active = {"deployment_id": job["id"], "sha256": job["sha256"], "revision": job["artifact"]["revision"], "activated_tick": a.tick}
+        if "preparation" in job:
+            self.active["preparation"]=job["preparation"].public()
         if a.campaign is not None and a.campaign.definition["timer_start"] == "first_deployment":
             a.campaign.start(a.tick)
         if a.campaign is not None and a.campaign.motion_task:

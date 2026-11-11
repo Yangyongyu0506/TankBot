@@ -29,7 +29,7 @@ from tankbot_host.workspace_api import WorkspaceAPI
 from tankbot_protocol.validation import Validator
 
 DEPENDENCIES={'c0':[],'c1':['c0'],'c2':['c1'],'c3':['c2'],'c4':['c3'],'c5':['c4'],
-              'navigation.c0':['c0'],'navigation.c1':['navigation.c0'],'navigation.c2':['navigation.c1'],'navigation.c3':['navigation.c2'],'navigation.c4':['navigation.c3']}
+              'navigation.c0':['c0'],'navigation.c1':['navigation.c0'],'navigation.c2':['navigation.c1'],'navigation.c3':['navigation.c2'],'navigation.c4':['navigation.c3'],'navigation.c5':['navigation.c4']}
 
 
 class BranchingProgressionTests(unittest.TestCase):
@@ -53,6 +53,8 @@ class BranchingProgressionTests(unittest.TestCase):
         self.assertEqual(p['completed_levels'],['c0','navigation.c0','navigation.c1','navigation.c2','navigation.c3'])
         self.assertNotIn('c2',p['unlocked_levels']);self.assertEqual(p['current_level'],'navigation.c3')
         self.assertIn('navigation.c4',p['unlocked_levels'])
+        with self.assertRaisesRegex(ValueError,'navigation.c4'):self.state.require_level('navigation.c5')
+        self.complete('navigation.c4');self.assertIn('navigation.c5',self.state.progress()['unlocked_levels'])
         self.state.require_level('c1')
         for lid,parent in (('c2','c1'),('c3','c2'),('c4','c3'),('c5','c4')):
             with self.subTest(lid=lid),self.assertRaisesRegex(ValueError,parent):self.state.require_level(lid)

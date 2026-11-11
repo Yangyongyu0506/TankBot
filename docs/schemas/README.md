@@ -2,9 +2,13 @@
 
 ## 当前版本与已支持范围
 
-应用配置为 `config_version: 2.1`，课程源 `schema_version: 1.0`，完整底盘profile为2.0，运行profile目录为1.0；Protocol 1.0和SDK 0.1.0仍是未发布的仓库profile。版本属于不同接口，不能一起升级或由旧报告推断。当前十一关、模块图、编辑部署、设置/进度、C2实验与工程备份已使用相应Schema；字段语义和平台证据以领域规范为准。
+应用配置为 `config_version: 2.1`，课程源 `schema_version: 1.0`，完整底盘profile为2.0，运行profile目录为1.0；Protocol 1.0和SDK 0.1.0仍是未发布的仓库profile。版本属于不同接口，不能一起升级或由旧报告推断。当前十二关、模块图、编辑部署、设置/进度、C2实验与工程备份已使用相应Schema；字段语义和平台证据以领域规范为准。
 
 所有Schema使用JSON Schema Draft 2020-12；`tankbot.example`的$id只是命名标识，离线注册本地引用，不是下载地址。源YAML先安全解析/引用展开，再验证生成的内部配置；Schema合法不代表获得权限、算法正确或平台已支持。
+
+## 一次性规划准备（C5）
+
+[global-planning.schema.json](global-planning.schema.json)定义参数、准备声明和私有已解析任务结构；[preparation-task.schema.json](preparation-task.schema.json)定义plan/initialize请求与响应，版本1.0。workspace Manifest新增可选preparation声明，由同一关卡配置派生，旧Manifest形状仍合法。level支持global_planning规则、occupancy_grid/planning_goal输入授权、独立规划图层及live/terminal标量；simulation-profile允许已解析任务。结构验证不代替5秒截止、身份匹配、原始地图栅格语义、保守膨胀或整段路径安全校验，见 [42](../42_NAVIGATION_GLOBAL_PLANNING.md)。
 
 ## 文件与职责
 
@@ -73,4 +77,4 @@ python3 tools/export_profile.py --check --offline
 | Navigation与工程 | 追加轮电压、GPS/候选对照、航点、路径与工程Schema；未重定义旧消息 |
 | 后端profile | 在2.1配置内拆分准入/墙钟，旧单字段独立模式仍兼容，见ADR-0053 |
 
-各阶段原始验收计数、配置和失败保留在reports，不将旧20ms或旧单模块范围作为当前限制。未来全局规划、scan/SLAM、多机器人与远程沙箱须独立设计和验证。
+各阶段原始验收计数、配置和失败保留在reports，不将旧20ms或旧单模块范围作为当前限制。C5新增原始地图/一次性规划准备合同，见42；未来scan/SLAM、多机器人与远程沙箱仍须独立设计和验证。

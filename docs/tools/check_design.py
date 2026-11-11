@@ -40,6 +40,7 @@ def strict_json(text):
 
 
 def schema_for(value):
+    if "preparation_version" in value:return "preparation-task.schema.json", None
     if "module_declared_budget_cap_ms" in value and "profiles" in value:return "runtime-execution.schema.json", None
     if "backup_version" in value:return "workspace-backup.schema.json", None
     if "record_version" in value:return "experiment.schema.json", None

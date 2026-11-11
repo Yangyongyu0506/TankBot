@@ -407,6 +407,9 @@
                 "track",
                 "modules"
               ]
+            },
+            "preparation": {
+              "$ref": "https://tankbot.example/schemas/v1/global-planning.schema.json#/$defs/preparation"
             }
           },
           "required": [
@@ -466,7 +469,9 @@
               "uniqueItems": true,
               "items": {
                 "enum": [
-                  "path_reference"
+                  "path_reference",
+                  "occupancy_grid",
+                  "planning_goal"
                 ]
               }
             }
@@ -530,7 +535,9 @@
                   "items": {
                     "enum": [
                       "goal_distance_m",
-                      "checkpoints"
+                      "checkpoints",
+                      "planning_elapsed_ms",
+                      "planned_length_m"
                     ]
                   }
                 },
@@ -542,7 +549,8 @@
                       "tracking_rmse_m",
                       "max_deviation_m",
                       "scored_duration_s",
-                      "tracking_samples"
+                      "tracking_samples",
+                      "path_length_m"
                     ]
                   }
                 }
@@ -828,6 +836,55 @@
             "font_size_px",
             "start_color",
             "end_color"
+          ],
+          "additionalProperties": false
+        },
+        "global_planning": {
+          "type": "object",
+          "properties": {
+            "route_color": {
+              "type": "string"
+            },
+            "raw_color": {
+              "type": "string"
+            },
+            "inflated_color": {
+              "type": "string"
+            },
+            "start_color": {
+              "type": "string"
+            },
+            "goal_color": {
+              "type": "string"
+            },
+            "grid_alpha": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "line_width_px": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "marker_radius_px": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "font_size_px": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          },
+          "required": [
+            "route_color",
+            "raw_color",
+            "inflated_color",
+            "start_color",
+            "goal_color",
+            "grid_alpha",
+            "line_width_px",
+            "marker_radius_px",
+            "font_size_px"
           ],
           "additionalProperties": false
         }
@@ -1128,6 +1185,9 @@
         },
         "path_tracking": {
           "$ref": "path-tracking.schema.json#/$defs/task"
+        },
+        "global_planning": {
+          "$ref": "https://tankbot.example/schemas/v1/global-planning.schema.json#/$defs/task"
         }
       },
       "required": [
@@ -1609,7 +1669,8 @@
               "waypoint_controller",
               "waypoint_navigation_adapter",
               "path_follower",
-              "path_tracking_adapter"
+              "path_tracking_adapter",
+              "global_planner"
             ]
           }
         },
@@ -1957,7 +2018,9 @@
                 "path_collision",
                 "path_deviation_exceeded",
                 "tracking_rmse_m",
-                "max_deviation_m"
+                "max_deviation_m",
+                "planning_complete",
+                "planning_collision"
               ]
             },
             "operator": {
@@ -2083,6 +2146,9 @@
             "track",
             "modules"
           ]
+        },
+        "preparation": {
+          "$ref": "https://tankbot.example/schemas/v1/global-planning.schema.json#/$defs/preparation"
         }
       },
       "required": [

@@ -14,6 +14,10 @@ from .campaign_templates import template_version, TRANSFORMS, TRACKER, MANAGED_F
 
 
 TYPE_TEXT: dict[str, tuple[str, dict[str, str]]] = {
+    "OccupancyGrid": ("明确授权的完整已知静态地图；原始网格不包含膨胀结果、裁判路线或机器人真值。", {
+        "grid":"不可重新开启写权限的bool (H,W) NumPy数组；True障碍，False自由，row递增为map +y，col递增为+x。",
+        "origin_xy":"只读float64 (2,)地图坐标；左下角栅格的左下角，m。",
+        "resolution_m":"每格边长，m；world_to_grid向下取整，grid_to_world返回格中心，越界抛IndexError。"}),
     "WaypointGoal": ("框架提供的公开地图航点，不是机器人位置测量；玩家控制函数直接获得 target_xy 数组。", {
         "goal_index":"当前航点的从0开始的索引，int；顺序来自关卡YAML。",
         "position_m":"只读float64 NumPy (2,) 数组，地图系 [x_m,y_m]，单位m。"}),
@@ -83,6 +87,8 @@ TYPE_TEXT: dict[str, tuple[str, dict[str, str]]] = {
 }
 
 METHOD_TEXT: dict[str, str] = {
+    "world_to_grid":"地图绝对[x,y]米坐标转(row,col)，向下取整；越界报错，不钳位。",
+    "grid_to_world":"(row,col)转只读float64 (2,)格中心[x,y]米坐标；越界报错。",
     "with_target_polar":"用当前我方车体系的预测 [r,theta] 生成控制输入副本，供预测与炮台控制分文件复用。",
     "latest": "读取指定端口的最新 Sample；没有输入时返回 None。",
     "publish": "收集类型化输出，经过 Authority 校验后在固定 tick 提交。",
@@ -94,7 +100,8 @@ METHOD_TEXT: dict[str, str] = {
 
 def type_name(annotation: Any) -> str:
     if get_origin(annotation) is np.ndarray:
-        return "NDArray[np.float64]"
+        dtype_args=get_args(get_args(annotation)[1])
+        return "NDArray[np.bool_]" if dtype_args and dtype_args[0] is np.bool_ else "NDArray[np.float64]"
     if get_origin(annotation) is types.UnionType:
         return " | ".join("None" if item is type(None) else type_name(item) for item in get_args(annotation))
     return inspect.formatannotation(annotation).replace("typing.", "").replace("~T", "T")

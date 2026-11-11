@@ -181,6 +181,7 @@ class ExecutionProfileTests(unittest.TestCase):
             with self.subTest(received=received):
                 s=Supervisor.__new__(Supervisor)
                 s.condition=threading.Condition();s.closed=False;s.ready=True;s.active='a'
+                s.task_pending=False
                 s.result=None;s.fault=None;s.detail=None;s.expires_ns=120_000_000;s.started_ns=100_000_000
                 s.timing=RuntimeTiming(20,'native');s.timing.begin({'request_id':'a'},started_ns=s.started_ns)
                 s.proc=types.SimpleNamespace(stdout=None);s.limit=65536;s._kill=Mock();s.batch_times_ms=deque()

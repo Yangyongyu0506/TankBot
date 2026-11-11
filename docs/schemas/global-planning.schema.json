@@ -1,0 +1,303 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tankbot.example/schemas/v1/global-planning.schema.json",
+  "$ref": "#/$defs/task",
+  "$defs": {
+    "task": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "known_grid_navigation"
+        },
+        "resolution_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "safety_margin_m": {
+          "type": "number",
+          "minimum": 0
+        },
+        "max_grid_cells": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        },
+        "max_search_nodes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        },
+        "max_goal_attempts": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1024
+        },
+        "min_reference_length_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "max_reference_length_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "min_endpoint_distance_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "max_path_points": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 512
+        },
+        "endpoint_tolerance_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "minimum_segment_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "max_segment_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "spacing_tolerance_m": {
+          "type": "number",
+          "minimum": 0
+        },
+        "command_topic": {
+          "const": "/robot/cmd_vel"
+        },
+        "reference_speed_mps": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "position_tolerance_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "stop_linear_speed_mps": {
+          "type": "number",
+          "minimum": 0
+        },
+        "stop_yaw_rate_radps": {
+          "type": "number",
+          "minimum": 0
+        },
+        "stop_duration_ticks": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 36000
+        },
+        "control_limits": {
+          "type": "object",
+          "properties": {
+            "min_vx_mps": {
+              "const": 0
+            },
+            "max_vx_mps": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "max_wz_radps": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          },
+          "required": [
+            "min_vx_mps",
+            "max_vx_mps",
+            "max_wz_radps"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "resolution_m",
+        "safety_margin_m",
+        "max_grid_cells",
+        "max_search_nodes",
+        "max_goal_attempts",
+        "min_reference_length_m",
+        "max_reference_length_m",
+        "min_endpoint_distance_m",
+        "max_path_points",
+        "endpoint_tolerance_m",
+        "minimum_segment_m",
+        "max_segment_m",
+        "spacing_tolerance_m",
+        "command_topic",
+        "reference_speed_mps",
+        "position_tolerance_m",
+        "stop_linear_speed_mps",
+        "stop_yaw_rate_radps",
+        "stop_duration_ticks",
+        "control_limits"
+      ],
+      "additionalProperties": false
+    },
+    "preparation": {
+      "type": "object",
+      "properties": {
+        "contract_version": {
+          "const": "1.0"
+        },
+        "task_type": {
+          "const": "known_grid_planner"
+        },
+        "task_name": {
+          "const": "global_planner"
+        },
+        "entry_point": {
+          "const": "navigation.global_planner:GlobalPlanner"
+        },
+        "wall_deadline_ms": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "max_calls": {
+          "const": 1
+        },
+        "inputs": {
+          "const": [
+            "occupancy_grid",
+            "start_xy",
+            "goal_xy",
+            "robot_radius_m",
+            "safety_margin_m"
+          ]
+        },
+        "output": {
+          "const": "map_path_or_none"
+        }
+      },
+      "required": [
+        "contract_version",
+        "task_type",
+        "task_name",
+        "entry_point",
+        "wall_deadline_ms",
+        "max_calls",
+        "inputs",
+        "output"
+      ],
+      "additionalProperties": false
+    },
+    "reference": {
+      "type": "object",
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "seed": {
+          "type": "integer"
+        },
+        "frame_id": {
+          "const": "map"
+        },
+        "map": {
+          "type": "object",
+          "properties": {
+            "grid": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 100000,
+              "items": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 100000,
+                "items": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "origin_xy": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "resolution_m": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "field_bounds_m": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 4,
+              "maxItems": 4
+            },
+            "bounds_m": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 4,
+              "maxItems": 4
+            }
+          },
+          "required": [
+            "grid",
+            "origin_xy",
+            "resolution_m",
+            "field_bounds_m",
+            "bounds_m"
+          ],
+          "additionalProperties": false
+        },
+        "start_xy": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "goal_xy": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "robot_radius_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "safety_margin_m": {
+          "type": "number",
+          "minimum": 0
+        },
+        "inflation_cells": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "reference_length_m": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "task_id",
+        "seed",
+        "frame_id",
+        "map",
+        "start_xy",
+        "goal_xy",
+        "robot_radius_m",
+        "safety_margin_m",
+        "inflation_cells",
+        "reference_length_m"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

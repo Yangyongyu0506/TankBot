@@ -4,6 +4,7 @@ from . import campaign_templates as basic
 from . import weapon_templates as weapons
 from . import weapon_curriculum as curriculum
 from . import navigation_templates as navigation
+from pathlib import Path
 
 COMPONENTS = {
     "wheel_controller":{"control/__init__.py":"","control/wheel_controller.py":navigation.CONTROLLER},
@@ -16,6 +17,8 @@ COMPONENTS = {
     "waypoint_navigation_adapter":{"navigation/waypoint_module.py":navigation.WAYPOINT_ADAPTER},
     "path_follower":{"navigation/__init__.py":"","navigation/path_follower.py":navigation.PATH_FOLLOWER},
     "path_tracking_adapter":{"navigation/path_module.py":navigation.PATH_ADAPTER},
+    "global_planner":{"navigation/__init__.py":"", "navigation/global_planner.py":
+                      (Path(__file__).resolve().parents[2]/"templates/navigation/global_planner.py").read_text()},
     "armor_tracker":{"perception/__init__.py":"","perception/armor_tracker.py":curriculum.ARMOR_TRACKER},
     "armor_tracking_adapter":{"robot_modules/__init__.py":"","robot_modules/armor_observations.py":curriculum.ARMOR_ADAPTER},
     "armor_contract_tests":{"tests/test_armor_contract.py":curriculum.ARMOR_TEST},

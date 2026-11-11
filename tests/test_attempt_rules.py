@@ -44,7 +44,7 @@ class AttemptRulesTests(unittest.TestCase):
         self.assertEqual(config, json.loads((ROOT/"core/tests/fixtures/default-profile.json").read_text()))
         self.assertEqual({lid:d['time_limit_s'] for lid,d in config['campaign']['levels'].items()},
             {'c0':60,'c1':60,'c2':120,'c3':120,'c4':120,'c5':180,
-             'navigation.c0':24,'navigation.c1':24,'navigation.c2':24,'navigation.c3':120,'navigation.c4':120})
+             'navigation.c0':24,'navigation.c1':24,'navigation.c2':24,'navigation.c3':120,'navigation.c4':120,'navigation.c5':120})
         self.assertEqual(config["campaign"]["lessons"]["c1"]["functions"][0]["name"], "radar_to_map")
         with tempfile.TemporaryDirectory() as directory:
             p = Path(directory)/"invalid.yaml"

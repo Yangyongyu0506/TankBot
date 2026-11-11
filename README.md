@@ -4,7 +4,7 @@ TankBot 将二维坦克运动、机器人算法学习与多文件 Python 编程�
 
 当前为可玩的本机原型：Rust/Rapier2D 权威物理、差速/四轮径向全向底盘、Python SDK/Runtime、固定 tick 提交、授权视图和 CodeMirror 多文件编辑部署。原生模式与 Rust/WASM + Pyodide 双 Worker 浏览器模式共享仿真及课程语义。
 
-现有公共 C0、Weapons C1–C5 和 Navigation C0–C4 共十一关，由 YAML 自动发现。Weapons 覆盖坐标变换、目标滤波、预测自瞄和小陀螺装甲；Navigation 已有轮电压控制、里程计、GPS/EKF、航点位置闭环和仓储地图连续路径追踪。Weapons C2有授权滤波回放试点，另有耗时诊断和可恢复项目备份；完整Algorithm Lab、玩家全局规划、建图及Arena尚未实现。应用配置为2.1；当前实现、历史验证和未来计划见 [文档索引](docs/README.md)、[2026-11-10核对](docs/reports/DOCUMENTATION_STATE_SYNC_20261110.md)。
+现有公共 C0、Weapons C1–C5 和 Navigation C0–C5 共十二关，由 YAML 自动发现。Weapons 覆盖坐标变换、目标滤波、预测自瞄和小陀螺装甲；Navigation 已有轮电压控制、里程计、GPS/EKF、航点位置闭环、仓储连续路径追踪和已知地图全局规划。Weapons C2有授权滤波回放试点，另有耗时诊断和可恢复项目备份；完整Algorithm Lab、局部避障、建图及Arena尚未实现。应用配置为2.1；当前实现、历史验证和未来计划见 [文档索引](docs/README.md)、[2026-11-10核对](docs/reports/DOCUMENTATION_STATE_SYNC_20261110.md)。
 
 ## 构建与运行
 
@@ -35,7 +35,7 @@ python3 tools/tankbot.py browser --level c0
 
 在顶部或「任务」面板打开「关卡路线」，选择节点查看简介和具体前置，再点击「开始本关 / 重试」。公共 C0 通关后，可任选 Weapons 或 Navigation 主线并交替推进。C0 先移动至少 1 m、转动车体至少 0.5 rad，并命中可见靶标。C1 隐藏敌车，F2 打开编辑器，完成自动生成的 `perception/transforms.py`，返回 `NDArray[np.float64]` 形式的 4×4 SE(3) 矩阵，测试并部署，利用目标估计瞄准命中。C2 保留该矩阵函数，追加 `perception/tracker.py`；处理带噪声和 10% 丢失的雷达，跟踪巡逻敌车，保持存活并击中三次使敌车 HP 归零即可通关。
 
-前三关保留系统自定位和公开地图；C0 可人工驾驶，C1/C2 锁定底盘并保留人工炮台与开火。Radar 是车体系局部观测，地图上的目标标记来自玩家 Python；Weapons C1–C5 默认显示炮弹，可在图层设置中开关；真实敌车和命中特效位置仍隐藏，Python 输入权限不变。C2/C3 显示双方 HP，以及运行中的累计位置 RMSE、有效样本数和变化曲线；编辑器也显示同一指标。测试不计入、重复部署不清零，重试重新累计。通关或点击「结束本次尝试」后关闭玩家程序并冻结最终误差报告；物理与已有弹丸继续运行。重试建立新场景，新关只补缺失文件，已有源码保留；保存的草稿须重新 Test/Deploy。Weapons 内部仍按 C1 → C2 → C3 → C4 → C5 解锁，Navigation 内部按 C0 → C1 → C2 → C3 → C4 解锁；两条首关均只依赖公共 c0。通关后列出所有新开放节点，允许重玩，不强制自动进入下一关。开发者仍可自由练习。
+前三关保留系统自定位和公开地图；C0 可人工驾驶，C1/C2 锁定底盘并保留人工炮台与开火。Radar 是车体系局部观测，地图上的目标标记来自玩家 Python；Weapons C1–C5 默认显示炮弹，可在图层设置中开关；真实敌车和命中特效位置仍隐藏，Python 输入权限不变。C2/C3 显示双方 HP，以及运行中的累计位置 RMSE、有效样本数和变化曲线；编辑器也显示同一指标。测试不计入、重复部署不清零，重试重新累计。通关或点击「结束本次尝试」后关闭玩家程序并冻结最终误差报告；物理与已有弹丸继续运行。重试建立新场景，新关只补缺失文件，已有源码保留；保存的草稿须重新 Test/Deploy。Weapons 内部仍按 C1 → C2 → C3 → C4 → C5 解锁，Navigation 内部按 C0 → C1 → C2 → C3 → C4 → C5 解锁；两条首关均只依赖公共 c0。通关后列出所有新开放节点，允许重玩，不强制自动进入下一关。开发者仍可自由练习。
 
 F1 或编辑器中的「关卡说明 / 类型」可随时查看每关步骤、输入输出签名、SDK 字段/单位、Python 速查与交互矩阵实验；悬停及 Ctrl+Space 提供类型提示。新模板显式标注变量和返回类型。旧工作区可预览模板升级并选择系统脚手架，已有算法默认保留。原生 NumPy 随首次启动自动准备；浏览器运行 `prepare_browser.py` 准备锁定的 Pyodide/NumPy 资源。
 
@@ -179,7 +179,7 @@ M3 UI 验收使用独立临时编辑库启动服务和 Marionette Firefox，再�
 
 ## M5：Weapons 与多文件机器人
 
-章节展示顺序保持 **Hello Robot（C0）、Weapons（C1–C5）、Navigation（C0–C4）**；公共 C0 后分为两条独立主线，展示顺序不产生解锁条件。C0–C2 玩法不变；C3 直接处理原始车体系距离/方位，输出仍是 `(r, theta)`，可实现 EKF；C4 沿用 C3 的中心 Radar 与差速敌车，玩家分文件实现中心预测与自动武器控制；C5 在此基础上加入匿名装甲观测、有效装甲与全向小陀螺，复用控制器并扩展旋转预测。Navigation 首关实现 FK/IK 与轮电压控制：系统发送 24 秒方形指令，按终点误差和真实路程验收，见 [设计与状态](docs/33_NAVIGATION_MOTION_CONTROL.md)。
+章节展示顺序保持 **Hello Robot（C0）、Weapons（C1–C5）、Navigation（C0–C5）**；公共 C0 后分为两条独立主线，展示顺序不产生解锁条件。C0–C2 玩法不变；C3 直接处理原始车体系距离/方位，输出仍是 `(r, theta)`，可实现 EKF；C4 沿用 C3 的中心 Radar 与差速敌车，玩家分文件实现中心预测与自动武器控制；C5 在此基础上加入匿名装甲观测、有效装甲与全向小陀螺，复用控制器并扩展旋转预测。Navigation 首关实现 FK/IK 与轮电压控制：系统发送 24 秒方形指令，按终点误差和真实路程验收，见 [设计与状态](docs/33_NAVIGATION_MOTION_CONTROL.md)。
 
 C1–C5 底盘锁定并保留真实受力，系统自身位姿仍公开；C1–C3 人工炮台/开火，C4/C5 仅允许程序角加速度/单发。C3/C4/C5 时限为 120/120/180 仿真秒，首次成功部署起算。C2–C4 Radar 误差沿用 σr=0.45 m、σtheta=0.08 rad、10% 丢失；C4 不提供 GPS、不要求装甲命中，双方 HP、整车扣血和终局顺序与 C3 相同。C5 仅提供最近两块可见装甲的匿名车体系 `[r,theta]`，10 Hz、12 m，σr=0.03 m、σtheta=0.005 rad，每块独立丢失 10%，实际返回 0/1/2 行。没有中心 Radar 或 GPS，朝向按模 90° 解释。所有参数在对应 YAML。
 
@@ -193,7 +193,7 @@ C3/C4 的 `PolarTracker.update` 接收 `measurements: tuple[PolarTargetEstimate,
 
 ## YAML 关卡插件
 
-当前十一关通过同一加载器自动发现，稳定 ID、存档及既有 Topic 保持兼容；早期五关迁移与后续 Weapons 调整的历史分别保留于对应报告。复用已有组件时，只需在 `levels/` 添加一个符合 Schema 的 YAML，无需修改引擎、UI 或注册列表；程序输入权限与 UI 显示权限独立配置。启动器会为原生和浏览器生成同一关卡目录，新增文件后重启服务。未知组件会明确拒绝，不支持 YAML 执行脚本。
+当前十二关通过同一加载器自动发现，稳定 ID、存档及既有 Topic 保持兼容；早期五关迁移与后续 Weapons 调整的历史分别保留于对应报告。复用已有组件时，只需在 `levels/` 添加一个符合 Schema 的 YAML，无需修改引擎、UI 或注册列表；程序输入权限与 UI 显示权限独立配置。启动器会为原生和浏览器生成同一关卡目录，新增文件后重启服务。未知组件会明确拒绝，不支持 YAML 执行脚本。
 
 编写及启动流程见 [关卡指南](levels/README.md)，架构与原五关审计见 [27](docs/27_LEVEL_PLUGIN_ARCHITECTURE.md)，测试与限制见 [迁移验收](docs/reports/LEVEL_PLUGINS_VALIDATION.md)。
 
@@ -242,7 +242,7 @@ python3 tools/tankbot.py browser --level navigation.c3 --developer
 
 “日志→耗时诊断”显示整批/模块、编解码、往返及收到至提交的合并耗时，提供p50/p95/p99/p99.9/max与失败位置，并显示冻结profile。声明总上限与后端墙钟已分开，见下节；固定tick/6tick门不变，遥测不是CPU配额。F2“模板、备份与恢复→项目容量与完整备份”可导出整个当前课程工程、固定历史版本，预览并确认可恢复清理；旧源码/历史不自动删除。恢复前备份当前HEAD，异常中断可以回滚。工程配额在 [engineering.yaml](config/engineering.yaml)。
 
-完整接口、操作及限制见 [工程与实验台](docs/38_ENGINEERING_AND_ALGORITHM_LAB.md)，实际命令/截图/失败见 [本轮验收](docs/reports/ENGINEERING_QUALITY_VALIDATION_20261105.md)，当前风险见 [评估跟进](docs/reports/PROJECT_REVIEW_FOLLOWUP_20261105.md)。连续路径追踪已作为Navigation C4实施，见 [设计与验收](docs/40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)。全局规划、局部避障及IMU/建图/SLAM仍为 [课程提案](docs/39_NAVIGATION_COURSE_PROPOSALS.md)。CI跨平台构建与Linux/Firefox实际玩家流程分别记录；其他OS/浏览器仍需独立实测。
+完整接口、操作及限制见 [工程与实验台](docs/38_ENGINEERING_AND_ALGORITHM_LAB.md)，实际命令/截图/失败见 [本轮验收](docs/reports/ENGINEERING_QUALITY_VALIDATION_20261105.md)，当前风险见 [评估跟进](docs/reports/PROJECT_REVIEW_FOLLOWUP_20261105.md)。连续路径追踪已作为Navigation C4实施，见 [设计与验收](docs/40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)。已知地图规划已按用户确认实现为 [Navigation C5](docs/42_NAVIGATION_GLOBAL_PLANNING.md)。局部避障及IMU/建图/SLAM仍为 [课程提案](docs/39_NAVIGATION_COURSE_PROPOSALS.md)。CI跨平台构建与Linux/Firefox实际玩家流程分别记录；其他OS/浏览器仍需独立实测。
 
 ## Runtime 执行 profile 与可重复基准
 
@@ -257,3 +257,15 @@ python3 tools/calibrate_runtime_benchmark.py --backend native --output .m1-cache
 ```
 
 基准参数来自 [config/runtime-benchmark.yaml](config/runtime-benchmark.yaml)。near_cap负载需先校准并通过`--calibration-file`传入冻结结果。逐批事件写入有界JSONL分片，`summary.json`保留首次激活/稳态、阶段分位数、截断和完整实验结果。`--slice-attempts --batches-per-cell 12`只验证工具链；不代表完整关卡或可靠性验收。传感器回放不能替代真实闭环对照。命令、当前证据范围及默认选择依据见 [41](docs/41_RUNTIME_EXECUTION_PROFILES.md)。
+
+## Navigation C5：已知地图全局规划
+
+通过Navigation C4后解锁C5。F2主要编辑`navigation/global_planner.py`，输入为原始只读`OccupancyGrid`、公开起终点和安全参数；自行完成4格方形膨胀、搜索及路径后处理，允许A*、Dijkstra等不同方法。框架只做坐标转换与独立路径校验，不提供搜索解。测试与正式部署各用新Runtime完整规划一次，原生/Pyodide均独立5秒墙钟；正式校验后从首次轮电压生效起计120仿真秒，无碰撞到点并停稳即可，不沿用C4检查点或追踪RMSE门槛。周期20ms声明/30或40ms实验性墙钟及6tick不变。已有四项算法、源码与历史保留，Manifest升级先预览。地图/安全膨胀/合法路径可独立显示，完整合同见 [42](docs/42_NAVIGATION_GLOBAL_PLANNING.md)、实测与截图见 [验收报告](docs/reports/NAVIGATION_GLOBAL_PLANNING_VALIDATION.md)。
+
+```bash
+python3 tools/tankbot.py serve --level navigation.c5
+python3 tools/tankbot.py browser --level navigation.c5
+python3 tools/check.py --suite browser --offline -- --scenario global-planning --seed 0 --planner astar
+```
+
+前两条沿用玩家存档前置检查；开发者模式按既有设置自由练习。第三条创建隔离设置、存档、工程、端口与Firefox目录，使用测试专用参考源码，未执行前不能据此宣称平台流程通过。

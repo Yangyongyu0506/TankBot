@@ -1,0 +1,272 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tankbot.example/schemas/v1/preparation-task.schema.json",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/request"
+    },
+    {
+      "$ref": "#/$defs/response"
+    }
+  ],
+  "$defs": {
+    "request": {
+      "type": "object",
+      "properties": {
+        "preparation_version": {
+          "const": "1.0"
+        },
+        "request_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "deployment_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "task_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "operation": {
+          "enum": [
+            "plan",
+            "initialize"
+          ]
+        },
+        "payload": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "preparation_version",
+        "request_id",
+        "run_id",
+        "deployment_id",
+        "task_id",
+        "operation",
+        "payload"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "operation": {
+                "const": "plan"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "type": "object",
+                "properties": {
+                  "map_data": {
+                    "$ref": "https://tankbot.example/schemas/v1/global-planning.schema.json#/$defs/reference/properties/map"
+                  },
+                  "start_xy": {
+                    "type": "array",
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "items": {
+                      "type": "number"
+                    }
+                  },
+                  "goal_xy": {
+                    "type": "array",
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "items": {
+                      "type": "number"
+                    }
+                  },
+                  "robot_radius_m": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "safety_margin_m": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "map_data",
+                  "start_xy",
+                  "goal_xy",
+                  "robot_radius_m",
+                  "safety_margin_m"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "payload": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "object",
+                    "properties": {
+                      "task_id": {
+                        "type": "string"
+                      },
+                      "path_id": {
+                        "type": "string"
+                      },
+                      "points_m": {
+                        "type": "array",
+                        "minItems": 2,
+                        "maxItems": 512,
+                        "items": {
+                          "type": "array",
+                          "minItems": 2,
+                          "maxItems": 2,
+                          "items": {
+                            "type": "number"
+                          }
+                        }
+                      },
+                      "length_m": {
+                        "type": "number",
+                        "minimum": 0
+                      }
+                    },
+                    "required": [
+                      "task_id",
+                      "path_id",
+                      "points_m",
+                      "length_m"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "path"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "response": {
+      "type": "object",
+      "properties": {
+        "preparation_version": {
+          "const": "1.0"
+        },
+        "request_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "deployment_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "task_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "operation": {
+          "enum": [
+            "plan",
+            "initialize"
+          ]
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "enum": [
+                "completed",
+                "failed"
+              ]
+            },
+            "result": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "dtype": {
+                      "const": "float64"
+                    },
+                    "shape": {
+                      "type": "array",
+                      "minItems": 2,
+                      "maxItems": 2,
+                      "items": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    },
+                    "points_m": {
+                      "type": "array",
+                      "minItems": 2,
+                      "maxItems": 512,
+                      "items": {
+                        "type": "array",
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "items": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  },
+                  "required": [
+                    "dtype",
+                    "shape",
+                    "points_m"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "error": {
+              "type": "string",
+              "maxLength": 1024
+            },
+            "telemetry": {
+              "$ref": "https://tankbot.example/schemas/v1/payloads.schema.json#/$defs/runtime_step_result/properties/telemetry"
+            }
+          },
+          "required": [
+            "status",
+            "result"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "preparation_version",
+        "request_id",
+        "run_id",
+        "deployment_id",
+        "task_id",
+        "operation",
+        "payload"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

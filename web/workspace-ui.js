@@ -169,6 +169,7 @@ export async function mountWorkspace(browser){
         const last=status.last;
         const diagnostic=last.diagnostic,location=diagnostic?.path?`${diagnostic.path}:${diagnostic.line}: `:"";
         message(last.status==="Failed"?`${last.kind==="test"?"测试":"启动"}失败：${location}${diagnostic?.summary??last.error}。完整输出见下方日志。`:last.status==="Ready"?`测试通过：${last.unit_tests} 个单元测试，${last.simulation_batches} 个传感器仿真批次；摘要 ${last.sha256.slice(0,12)}`:`已激活 ${last.sha256.slice(0,12)}；物理世界继续运行。`);
+        if(last.status==="Ready"&&last.preparation)message(`完整规划 ${last.preparation.planning_elapsed_ms.toFixed(2)} ms（宿主往返墙钟），路径及 ${last.simulation_batches} 个接口短测通过；正式部署会在新Runtime重新规划，短测不代表闭环通关。`);
         if(last.status==="Failed"){showLogs(last.kind);locate(location||last.error);}
         else if(last.status==="Active")showLogs("all");
         if(last.revision)http("archive",{revision:last.revision,record:{run_id:status.run_id,...last}}).catch(error=>message("运行结果已生效，但记录归档失败："+error.message));

@@ -140,6 +140,12 @@
         },
         "checkpoints": {
           "type": "boolean"
+        },
+        "planning_map": {
+          "type": "boolean"
+        },
+        "safety_grid": {
+          "type": "boolean"
         }
       },
       "required": [

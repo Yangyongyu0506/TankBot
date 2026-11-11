@@ -2260,7 +2260,11 @@
                   "task_inputs": {
                     "type": "array",
                     "items": {
-                      "const": "path_reference"
+                      "enum": [
+                        "path_reference",
+                        "occupancy_grid",
+                        "planning_goal"
+                      ]
                     },
                     "uniqueItems": true
                   }
@@ -2406,6 +2410,9 @@
     },
     "observe_wall_contacts": {
       "type": "boolean"
+    },
+    "navigation_planning": {
+      "$ref": "https://tankbot.example/schemas/v1/global-planning.schema.json#/$defs/reference"
     }
   },
   "required": [

@@ -17,7 +17,11 @@ def main():
     temporary = None
     try:
         temporary, tests = prepare(init)
-        runner = ModuleRunner(init)
+        if init.get("preparation"):
+            from preparation_runner import PreparationRunner
+            runner = PreparationRunner(init)
+        else:
+            runner = ModuleRunner(init)
     except Exception as error:
         if not isinstance(error, PlayerTestsFailed):
             traceback.print_exc(file=sys.stderr)

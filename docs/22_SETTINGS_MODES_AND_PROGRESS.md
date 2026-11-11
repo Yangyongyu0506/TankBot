@@ -10,6 +10,10 @@
 
 旧版本仅有会话进度，无法从 Workspace 或部署记录推断历史通关；首次创建新存档从 C0 开始，已有源码继续保留，也可开启开发者模式继续实验。
 
+## 规划图层与进度增量
+
+Navigation C5前置C4，沿用同一版本1进度及Navigation工程。planning_map、safety_grid与path独立开关，默认/可切换状态服从该YAML权限；关闭图层不改变裁判或程序授权。规范安全膨胀只进入UI，程序只得原始占用网格。规划往返墙钟/路径长/距终点为独立任务授权，真实追踪误差与实际路程仅终局。地图覆盖仍只练习；完整合同见 [42](42_NAVIGATION_GLOBAL_PLANNING.md)。
+
 ## 文件与设置界面
 
 默认设置来自 `config/settings.yaml`，首次运行复制到 `userdata/settings.yaml`；玩家进度为 `userdata/progress.json`，玩家源码版本库为 `userdata/workspaces/`，迁移规则见 [17](17_EDITOR_AND_DEPLOYMENT.md)。`userdata/` 忽略提交，独立于构建缓存。可用 `--settings-file`、`--save-file` 指定长期路径。已有文件先验证，损坏时报错并保留，不静默重置；不存在的文件才创建。

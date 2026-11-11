@@ -24,6 +24,10 @@ class Supervisor:
         if self.execution_profile.backend != self.runtime_backend:
             raise ValueError("RUNTIME_PROFILE_BACKEND")
         init = copy.deepcopy(init)
+        self.preparation = copy.deepcopy(init.get("preparation"))
+        self.task_pending = False
+        self.task_elapsed_ms = None
+        self.initialization_budget_ns = round(config["runtime"]["startup_timeout_s"]*1_000_000_000)
         self.workspace_temp = None
         if "sources" in init:
             from .workspace import validate_files
@@ -128,7 +132,8 @@ class Supervisor:
                         self._kill()
                         self.condition.notify_all()
                         return
-                    self.timing.received(value, received_ns=received, **decode)
+                    if not self.task_pending:
+                        self.timing.received(value, received_ns=received, **decode)
                     if self.active is not None and received > self.expires_ns:
                         self.fault = "RESOURCE_LIMIT"
                         decode_started=decode.get("response_decode_started_monotonic_ns")
@@ -220,14 +225,34 @@ class Supervisor:
                     return
 
     def submit(self, request):
+        return self._submit(request, self.budget_ns, task=False)
+
+    def submit_preparation(self, request):
+        """Trusted preparation controller only; no budget field is read from a response."""
+        if not self.preparation or request.get("operation") not in ("plan", "initialize"):
+            raise ValueError("UNAUTHORIZED_PREPARATION")
+        from .execution_profiles import milliseconds_ns
+        budget = milliseconds_ns(self.preparation["wall_deadline_ms"]) if request["operation"] == "plan" else self.initialization_budget_ns
+        return self._submit(request, budget, task=True)
+
+    def poll_preparation(self):
+        # Preparation has no six-tick gate. Poll without making physics await it.
+        with self.condition:
+            if self.result is None and not self.fault:
+                return None
+        return self.finish()
+
+    def _submit(self, request, budget_ns, *, task):
         with self.condition:
             if self.closed or self.fault or self.active is not None:
                 return False
             self.started_ns = time.monotonic_ns()
             self.active = request["request_id"]
-            self.expires_ns = self.started_ns+self.budget_ns
+            self.expires_ns = self.started_ns+budget_ns
+            self.task_pending = task
             self.result = None
-            self.timing.begin(request, started_ns=self.started_ns)
+            if not task:
+                self.timing.begin(request, started_ns=self.started_ns)
             try:
                 encoded = encode(request, self.limit)
             except (ValueError, TypeError, RecursionError):
@@ -260,9 +285,14 @@ class Supervisor:
                 self.active = None
                 self.condition.notify_all()
                 return None
-            self.batch_times_ms.append((result[1]-self.started_ns)/1_000_000)
-            self.timing.finish(at_gate=True)
+            elapsed = (result[1]-self.started_ns)/1_000_000
+            if self.task_pending:
+                self.task_elapsed_ms = elapsed
+            else:
+                self.batch_times_ms.append(elapsed)
+                self.timing.finish(at_gate=True)
             self.result, self.active = None, None
+            self.task_pending = False
             self.condition.notify_all()
             return result[0]
 

@@ -142,7 +142,8 @@ M1 只有玩家位姿源 odometry，默认 System Pose Provider 禁用；开启�
 | Weapons C2/C3 | 另授权累计目标位置RMSE、有效样本和有界曲线；C1/C4/C5无运行中误差授权 | 聚合误差不进入滤波器输入；C2实验反馈另按38约束 |
 | Navigation C0 | 系统自身位姿、地图、控制曲线与运动任务标量，无武器 | 目标Twist与轮速；只输出轮电压 |
 | Navigation C1 | 一次起点，运行中车体/相机跟随玩家里程计；授权位置/朝向RMSE | 轮速与Twist，无持续系统位姿 |
-| Navigation C2–C4 | 玩家EKF与纯里程计对照、GPS、协方差椭圆、授权定位RMSE对比 | 轮速/GPS及声明参考，不含当前真实位姿或评分误差 |
+| Navigation C2–C5 | 玩家EKF与纯里程计对照、GPS、协方差椭圆、授权定位RMSE对比 | 轮速/GPS及声明参考，不含当前真实位姿或评分误差 |
+| Navigation C5任务 | 原始地图/起终点、已校验玩家路径、安全膨胀独立图层；规划墙钟/路径长/真实距终点，真实追踪误差/路程仅终局 | 规划器仅获原始网格、公开起终点及安全参数；膨胀/裁判搜索不进程序，静态合法路径交付跟踪器，见42 |
 | Navigation C3/C4任务 | C3公开航点；C4公开路径/检查点与真实距终点标量，真实追踪误差只在终局 | C3授权目标Topic，C4一次性静态路径；任务UI标量不进入控制器 |
 
 HP与击杀结果是显式游戏反馈，不含命中位置。炮弹显示可能提供物理推断，属于Weapons已明确接受的显示授权，不代表敌车信息绝对不可推断；当前敌车不主动开火。目标标记保持合法错误估计、按采样时间插值，没有真值回退。allowed_metrics/live_feedback与task_feedback限制管理状态发布；关闭图层不能撤销数据权限，也不能授予程序订阅。切关新建run并清空候选、插值和指标走势，规则见 [18](18_CAMPAIGN_DESIGN.md)、[35](35_NAVIGATION_GPS_LOCALIZATION.md)、[40](40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)、[ADR-0034](adr/0034-authorized-live-evaluation.md)。

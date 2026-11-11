@@ -159,6 +159,11 @@ def framework_upgrade(config: dict, files: dict[str, str], ledger: dict | None =
         try:
             manifest = json.loads(files.get("tankbot.json","{}"))
             current = bool(manifest.get("modules")) and all(item["contract"] in files for item in manifest["modules"])
+            # A one-shot task is declared separately from periodic modules. An
+            # older project's manifest is upgraded only through the preview.
+            expected_preparation=profile["manifest"].get("preparation")
+            if expected_preparation is not None:
+                current &= manifest.get("preparation")==expected_preparation
             if current:
                 declared={item["module_id"]:json.loads(files[item["contract"]]) for item in manifest["modules"]}
                 source=manifest.get("pose_source",{})

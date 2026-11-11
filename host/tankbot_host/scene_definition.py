@@ -5,6 +5,7 @@ import hashlib
 import json
 from .sensor_instances import SensorInstance,definitions
 from .path_generation import ResolvedPath,prepare_path
+from .global_planning import ResolvedPlanningTask,prepare_planning
 
 
 def canonical(value):
@@ -51,6 +52,7 @@ class ResolvedScene:
     sensors: tuple[SensorInstance,...]
     _configuration_json: str
     path_reference: ResolvedPath | None = None
+    planning_task: ResolvedPlanningTask | None = None
 
     def to_config(self):
         """Private compatibility DTO; never return a reference into the definition."""
@@ -93,8 +95,9 @@ def resolve_scene(config):
     instances=definitions(c)
     if any(s.robot_id not in {r.id for r in robots} for s in instances):raise ValueError('Unknown sensor owner')
     path_reference=prepare_path(c)
+    planning_task=prepare_planning(c)
     encoded=canonical(c)
-    return ResolvedScene(hashlib.sha256(encoded.encode()).hexdigest(),active(c),world,tuple(robots),instances,encoded,path_reference)
+    return ResolvedScene(hashlib.sha256(encoded.encode()).hexdigest(),active(c),world,tuple(robots),instances,encoded,path_reference,planning_task)
 
 
 class SceneResolver:

@@ -2,7 +2,7 @@
 
 ## 当前范围与权威来源
 
-当前十一关全部由 `levels/*.yaml` 自动发现、校验并通过同一加载器创建。应用配置为2.1，关卡Schema为1.0；公共c0后开放Weapons与Navigation，分支内部按prerequisites推进。关卡是配置，不是可执行插件；物理、传感器、适配器与裁判由通用引擎组件提供。原五关迁移属于历史阶段，见文末，不用旧报告替代后续课程验收。
+当前十二关全部由 `levels/*.yaml` 自动发现、校验并通过同一加载器创建。应用配置为2.1，关卡Schema为1.0；公共c0后开放Weapons与Navigation，分支内部按prerequisites推进。关卡是配置，不是可执行插件；物理、传感器、适配器与裁判由通用引擎组件提供。原五关迁移属于历史阶段，见文末，不用旧报告替代后续课程验收。
 
 | ID | 当前课程 | 配置源 | 必须通关的前置 |
 | --- | --- | --- | --- |
@@ -19,6 +19,10 @@
 | `navigation.c4` | Navigation C4 · 连续路径追踪 | [navigation.C4.yaml](../levels/navigation.C4.yaml) | navigation.c3 |
 
 课程目标与控制权见 [09](09_LEVEL_DESIGN.md)，分支/存档见 [36](36_BRANCHING_PROGRESSION.md)。原五个ID保留，新增课程按独立增量验收；关卡数、章节名和order不参与仿真分支。
+
+## 已知地图规划组件
+
+C5声明objectives.global_planning和communication.runtime.preparation；编译器由后者派生Manifest准备声明，避免两处人工维护。已解析场景包含不可变规划任务，起点、网格覆盖和地图边界统一确定。prepare_planning用私有有界搜索选择安全目标；玩家输入为原始网格。PlanningPreparation管理一次请求、独立5秒截止与路径验证，PlanningNavigation只评价无碰撞到点停稳。C4的自动路径/检查点裁判保持独立，不按关卡ID选择行为。planning_map、safety_grid和path图层及live/terminal标量授权分开配置；完整字段见 [42](42_NAVIGATION_GLOBAL_PLANNING.md) 和 [规划Schema](schemas/global-planning.schema.json)。
 
 ## 逻辑架构与加载生命周期
 
@@ -109,6 +113,6 @@ flowchart TD
 
 ## 限制与验收入口
 
-当前组件只覆盖上述十一关、一个玩家及可选单目标；真正的多机器人/同类多实例命名、非零传感器安装、机械臂、scan/SLAM和玩家规划课程仍为Planned。强服务端沙箱、独立静态Web及其他平台完整流程仍待实现/验证。
+当前组件只覆盖上述十二关、一个玩家及可选单目标；真正的多机器人/同类多实例命名、非零传感器安装、机械臂和scan/SLAM仍为Planned；已知地图规划采用42的一次性准备任务。强服务端沙箱、独立静态Web及其他平台完整流程仍待实现/验证。
 
 新关仅复用已有组件时添加一个合法YAML即可发现；新能力需扩展组件、Schema、规范和测试，不能藏在ID分支。回归覆盖发现/非法字段、行为冻结、权限、切换/重试/关闭、旧源码/存档及临时YAML零代码扩展。标准检查及独立WASM/网页分组见 [38](38_ENGINEERING_AND_ALGORITHM_LAB.md)；本轮文档核对不重新宣称全部玩家流程已运行。

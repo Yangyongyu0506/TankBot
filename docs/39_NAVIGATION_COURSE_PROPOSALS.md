@@ -2,7 +2,7 @@
 
 ## 目的与状态
 
-本篇最初为工程改进轮次的Planned建议。阶段一已由后续用户确认并实现为navigation.c4，当前规范见 [40](40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)；其余阶段仍为Planned，不预先接受物理、传感器或评分阈值。navigation.c0–c3继续承担轮控、里程计、GPS/EKF和航点闭环。新增关卡仍由YAML组合通用组件；不跨入Weapons工程或重置旧源码。
+本篇最初为工程改进轮次的Planned建议。阶段一已由后续用户确认并实现为navigation.c4，当前规范见 [40](40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)；阶段二现由用户逐项确认并实现为navigation.c5，规范见 [42](42_NAVIGATION_GLOBAL_PLANNING.md)。局部感知与后续独立扩展仍为Planned，不预先接受物理、传感器或评分阈值。navigation.c0–c3继续承担轮控、里程计、GPS/EKF和航点闭环。新增关卡仍由YAML组合通用组件；不跨入Weapons工程或重置旧源码。
 
 ## 阶段一：连续路径跟踪（已确认并实施）
 
@@ -10,15 +10,13 @@
 
 已确认阈值、0.10m采样、独立图层与明确的任务真值反馈授权均见 [40](40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)。原生与浏览器证据、完整模块链耗时及剩余限制见 [验收](reports/NAVIGATION_PATH_TRACKING_VALIDATION.md)。后续实验比较应从相同已解析场景重新闭环，不回放旧传感器冒充控制评价。
 
-## 阶段二：已知地图全局规划
+## 阶段二：已知地图全局规划（已确认并实施）
 
-学习目标是由公开地图和目标自行产生无碰撞路径，理解车体外形、配置空间、搜索与路径后处理。复用现有地图资产、完整底盘模型、定位和阶段一路径跟踪。先只使用静态障碍，不同时引入未知地图和动态避障。
+navigation.c5前置C4，复用WheelController、Odometry、EkfLocalization和PathFollower，只新增GlobalPlanner。公开原始bool占用网格、起终点和安全参数；玩家实现4格方形膨胀、任意搜索与后处理，返回float64 (N,2)绝对地图路径或None。框架不提供膨胀、搜索、捷径、平滑或重采样解。
 
-拟议接口：`GlobalPlanner.plan(map_data, start_xy, goal_xy) -> NDArray[np.float64]`；map_data应是显式授权的静态几何DTO，或由公开分辨率/原点规则生成的占用网格，不传World对象。机器人形状与安全间距公开；是否先采用保守圆形膨胀、还是朝向相关规划，需要与用户确认。规划输出要检查有限性、坐标系、容量、有效期和可执行性，不能修改真实地图。
+规划是出发前每候选Worker一次的独立准备任务，原生/Pyodide完整往返上限均5秒；测试和正式部署各用新Runtime重新规划。Authority验证全部节点与线段后冻结静态路径，周期闭环和experimental 30/40ms、6tick门不变。行驶只考察120秒内无碰撞到点并连续停稳，不沿用C4检查点或追踪误差门槛。
 
-验收使用已有绕行/仓储布局及必要的新地图资产，至少包含窄通道、明显绕路和无解场景。失败候选为非法/穿墙路径、规划超时、无解时持续输出危险控制、路线执行碰撞或整体任务超时。路径长度/耗时可作比较指标，但必须先定义是否计入搜索时间及近似最优要求。
-
-需确认：地图DTO/网格尺度、栅格中心与边界约定、公开范围、起终点选择、车体膨胀方法、路径节点上限、无解返回类型、重规划触发、执行期间地图是否变化，以及评分/失败阈值。
+地图、保守安全近似、任务选择、接口、错误和明确UI反馈权限以 [42](42_NAVIGATION_GLOBAL_PLANNING.md) 为准；验收证据见 [本关报告](reports/NAVIGATION_GLOBAL_PLANNING_VALIDATION.md)。无解仅作独立测试，正式任务有界生成并保证可达；不新增在线重规划、动态障碍或局部避障。
 
 ## 阶段三：局部感知与避障
 

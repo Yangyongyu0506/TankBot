@@ -1,0 +1,673 @@
+schema_version: '1.0'
+metadata:
+  id: navigation.c5
+  name: Navigation C5 · 已知地图全局路径规划
+  description: 从完整原始占用网格自行膨胀、搜索和后处理，生成安全路径，再复用定位与跟踪器驾驶到目标。
+  chapter:
+    chapter_id: navigation
+    title: Navigation
+    description: 只保留底盘，从轮驱动与运动控制逐步学习导航。
+  order: 11
+  version: 1.0.0
+  learning_objectives:
+  - 理解配置空间与保守膨胀，自行完成八邻接等搜索和路径后处理，区分规划、定位与连续跟踪的职责。
+  recommended_algorithms:
+  - A*
+  - Dijkstra
+  prerequisites:
+  - navigation.c4
+world:
+  dimension: 2
+  frame_id: map
+  weapons_enabled: false
+  simulation:
+    physics_hz: 60
+    substeps: 4
+    sensor_hz: 30
+    algorithm_hz: 10
+  map:
+    source: asset
+    path: maps/navigation_warehouse.yaml
+robots:
+- id: player
+  type: tank
+  role: player
+  model: differential
+  drive: wheel_voltage
+  initial_pose:
+  - 0.0
+  - 0.0
+  - 0.0
+  initial_velocity:
+  - 0.0
+  - 0.0
+  - 0.0
+  health: null
+  control_sources:
+    chassis: robot
+    turret: disabled
+    weapon: disabled
+  sensors:
+  - id: wheel_encoder
+    robot_id: player
+    type: wheel_encoder
+    period_ticks: 2
+    mount:
+      parent_frame: base_link
+      translation_m:
+      - 0.0
+      - 0.0
+      yaw_rad: 0.0
+    random_stream:
+      id: navigation-encoder
+      seed_mode: named
+    topic: /robot/sensors/joint_states
+    schema: joint_state@1
+    frame_id: base_link
+    parameters:
+      velocity_stddev_radps: 0.2
+      gain_error_min: -0.03
+      gain_error_max: 0.03
+      position_model: integrated_rate_noise
+  - id: gps
+    robot_id: player
+    type: gps
+    period_ticks: 30
+    mount:
+      parent_frame: base_link
+      translation_m:
+      - 0.0
+      - 0.0
+      yaw_rad: 0.0
+    random_stream:
+      id: navigation-gps
+      seed_mode: named
+    topic: /robot/sensors/gps/fix
+    schema: position_fix2d@1
+    frame_id: map
+    parameters:
+      noise:
+        position_stddev_m: 0.2
+        bias_m:
+        - 0.0
+        - 0.0
+        drop_probability: 0.0
+      latency_ticks: 0
+      wall_occlusion: false
+communication:
+  runtime:
+    template_version: 1.0.0
+    mode: graph
+    profile_id: known-grid-planning-v1
+    processing: modules
+    logical_module:
+      module_id: wheel_control
+      entry_point: navigation_robot:WheelControlModule
+    target_source: wheel_control
+    managed_files:
+    - navigation_robot.py
+    - tankbot.json
+    - contracts/wheel_control.json
+    - localization/odometry_module.py
+    - contracts/odometry.json
+    - localization/ekf_module.py
+    - contracts/ekf.json
+    - navigation/path_module.py
+    - contracts/path_tracking.json
+    manifest:
+      manifest_version: '1.0'
+      sdk_version: 0.1.0
+      protocol_version: '1.0'
+      project_id: navigation-global-planning
+      entry_point: navigation_robot:WheelControlModule
+      modules:
+      - module_id: wheel_control
+        contract: contracts/wheel_control.json
+        config: {}
+      - module_id: odometry
+        contract: contracts/odometry.json
+        config: {}
+      - module_id: ekf
+        contract: contracts/ekf.json
+        config:
+          initial_covariance:
+          - - 0.0
+            - 0.0
+            - 0.0
+          - - 0.0
+            - 0.0
+            - 0.0
+          - - 0.0
+            - 0.0
+            - 0.0
+      - module_id: path_tracking
+        contract: contracts/path_tracking.json
+        config: {}
+      connections:
+      - from: /robot/cmd_vel
+        to: wheel_control.command
+      - from: /robot/sensors/joint_states
+        to: wheel_control.wheels
+      - from: wheel_control.voltage
+        to: /robot/wheels/cmd_voltage
+      - from: /robot/sensors/joint_states
+        to: odometry.wheels
+      - from: odometry.pose
+        to: /robot/estimates/odometry/pose
+      - from: /robot/sensors/joint_states
+        to: ekf.wheels
+      - from: /robot/sensors/gps/fix
+        to: ekf.gps
+      - from: ekf.pose
+        to: /robot/estimates/ekf/pose
+      - from: /robot/estimates/ekf/pose
+        to: path_tracking.pose
+      - from: path_tracking.command
+        to: /robot/cmd_vel
+      dependencies: []
+      pose_source:
+        mode: player
+        module_id: ekf
+        fallback: none
+    contracts:
+      wheel_control:
+        contract_version: '1.0'
+        module_id: wheel_control
+        entry_point: navigation_robot:WheelControlModule
+        inputs:
+          command:
+            schema: twist@1
+            required: true
+            max_age_ticks: 12
+          wheels:
+            schema: joint_state@1
+            required: true
+            max_age_ticks: 12
+        outputs:
+          voltage:
+            schema: wheel_voltage@1
+        execution:
+          mode: periodic
+          period_ticks: 6
+          deadline_ticks: 6
+          budget_ms: 6
+        dependencies: []
+        state_version: '1'
+      odometry:
+        contract_version: '1.0'
+        module_id: odometry
+        entry_point: localization.odometry_module:WheelOdometryModule
+        inputs:
+          wheels:
+            schema: joint_state@1
+            required: true
+            max_age_ticks: 12
+        outputs:
+          pose:
+            schema: pose2d@1
+        execution:
+          mode: periodic
+          period_ticks: 6
+          deadline_ticks: 6
+          budget_ms: 3
+        dependencies: []
+        state_version: '1'
+      ekf:
+        contract_version: '1.0'
+        module_id: ekf
+        entry_point: localization.ekf_module:EkfLocalizationModule
+        inputs:
+          wheels:
+            schema: joint_state@1
+            required: true
+            max_age_ticks: 12
+          gps:
+            schema: position_fix2d@1
+            required: false
+            max_age_ticks: 12
+        outputs:
+          pose:
+            schema: pose2d@1
+        execution:
+          mode: periodic
+          period_ticks: 6
+          deadline_ticks: 6
+          budget_ms: 8
+        dependencies: []
+        state_version: '1'
+      path_tracking:
+        contract_version: '1.0'
+        module_id: path_tracking
+        entry_point: navigation.path_module:PathTrackingModule
+        inputs:
+          pose:
+            schema: pose2d@1
+            required: false
+            max_age_ticks: 12
+        outputs:
+          command:
+            schema: twist@1
+        execution:
+          mode: periodic
+          period_ticks: 6
+          deadline_ticks: 6
+          budget_ms: 3
+        dependencies:
+        - ekf
+        state_version: '1'
+    preparation:
+      contract_version: '1.0'
+      task_type: known_grid_planner
+      task_name: global_planner
+      entry_point: navigation.global_planner:GlobalPlanner
+      wall_deadline_ms: 5000
+      max_calls: 1
+      inputs:
+      - occupancy_grid
+      - start_xy
+      - goal_xy
+      - robot_radius_m
+      - safety_margin_m
+      output: map_path_or_none
+permissions:
+  data_access:
+    inputs:
+      /robot/sensors/joint_states: joint_state@1
+      /robot/sensors/gps/fix: position_fix2d@1
+    outputs:
+    - pose2d@1
+    actuators:
+      /robot/wheels/cmd_voltage: wheel_voltage@1
+    references:
+      /robot/cmd_vel: twist@1
+    task_inputs:
+    - occupancy_grid
+    - planning_goal
+  public_initial_pose: true
+  public_map: true
+  visualization:
+    allowed_layers:
+    - robot
+    - trail
+    - map
+    - encoders
+    - frames
+    - gps
+    - pose_estimates
+    - pose_covariance
+    - path
+    - planning_map
+    - safety_grid
+    allowed_metrics:
+    - rmse_m
+    - yaw_rmse_rad
+    - reference_rmse_m
+    - reference_yaw_rmse_rad
+    allowed_control_signals:
+    - command_vx_mps
+    - encoder_vx_mps
+    - command_wz_radps
+    - encoder_wz_radps
+    - left_wheel_radps
+    - right_wheel_radps
+    - left_voltage_v
+    - right_voltage_v
+    view_policy:
+      policy_id: navigation-global-planning
+      system_pose_allowed: false
+      player_pose_allowed: true
+      allowed_pose_frames:
+      - map
+      public_map: navigation-warehouse
+      local_observation_channels:
+      - /robot/sensors/joint_states
+      - /robot/sensors/gps/fix
+      true_enemy_objects: false
+      world_effects: false
+      camera_source: selected_pose_or_manual
+      pose_fresh_ticks: 12
+      pose_hide_after_ticks: 60
+      robot_topics_allowed: false
+      target_estimates_allowed: false
+      pose_estimate_channels:
+      - /robot/estimates/odometry/pose
+      - /robot/estimates/ekf/pose
+    task_feedback:
+      live:
+      - goal_distance_m
+      - planning_elapsed_ms
+      - planned_length_m
+      terminal:
+      - tracking_rmse_m
+      - max_deviation_m
+      - scored_duration_s
+      - tracking_samples
+      - path_length_m
+visualization:
+  trail_points: 1800
+  initial_enabled:
+  - robot
+  - trail
+  - map
+  - encoders
+  - frames
+  - gps
+  - pose_estimates
+  - pose_covariance
+  - path
+  - planning_map
+  - safety_grid
+  user_toggleable:
+  - trail
+  - encoders
+  - frames
+  - gps
+  - pose_estimates
+  - pose_covariance
+  - path
+  - planning_map
+  - safety_grid
+  sources:
+    robot: selected_pose
+    trail: selected_pose
+    map: map
+    encoders: local_observation
+    frames: selected_pose
+    gps: local_observation
+    pose_estimates: player_pose_candidates
+    pose_covariance: selected_pose
+    path: task_reference
+    planning_map: task_reference
+    safety_grid: task_reference
+  preserve_user_settings: false
+  control_feedback:
+    title: 轮驱动调试
+    description: 参考来自玩家规划路径与复用的PathFollower，反馈来自同一带噪编码器；四模块仍通过前批固定提交连接。本关不设顺序检查点。
+    period_ticks: 18
+    history_points: 512
+    precision: 3
+    charts:
+    - id: forward_speed
+      title: 前进速度
+      unit: m/s
+      signals:
+      - signal: command_vx_mps
+        label: 目标
+        color: '#f4cf7e'
+      - signal: encoder_vx_mps
+        label: 编码器反馈
+        color: '#8fe3b5'
+    - id: yaw_rate
+      title: 转向角速度
+      unit: rad/s
+      signals:
+      - signal: command_wz_radps
+        label: 目标
+        color: '#f4cf7e'
+      - signal: encoder_wz_radps
+        label: 编码器反馈
+        color: '#8fe3b5'
+    - id: wheel_rates
+      title: 两轮角速度
+      unit: rad/s
+      signals:
+      - signal: left_wheel_radps
+        label: 左轮
+        color: '#91bcff'
+      - signal: right_wheel_radps
+        label: 右轮
+        color: '#e9a2da'
+    - id: motor_voltage
+      title: 两轮执行电压
+      unit: V
+      signals:
+      - signal: left_voltage_v
+        label: 左轮
+        color: '#91bcff'
+      - signal: right_voltage_v
+        label: 右轮
+        color: '#e9a2da'
+  gps_history_points: 100
+  pose_labels:
+    odometry: 纯里程计
+    ekf: EKF
+  global_planning:
+    route_color: '#f4cf7e'
+    raw_color: '#e9ecef'
+    inflated_color: '#ff9478'
+    start_color: '#8fe3b5'
+    goal_color: '#e9a2da'
+    grid_alpha: 0.18
+    line_width_px: 2.0
+    marker_radius_px: 5.0
+    font_size_px: 12.0
+objectives:
+  target: null
+  time_limit_s: 120
+  timer_start: first_control_commit
+  parameters:
+    movement_m: 0.0
+    turn_rad: 0.0
+    required_hits: 0
+    required_estimates: 0
+  progress:
+    moved:
+      type: displacement
+      parameter: movement_m
+      sticky: true
+    turned:
+      type: heading_change
+      parameter: turn_rad
+      sticky: true
+  success:
+    type: compare
+    metric: planning_complete
+    operator: ==
+    value: true
+  outcomes:
+  - reason: collision
+    result: failure
+    when:
+      type: compare
+      metric: planning_collision
+      operator: ==
+      value: true
+  - reason: controller_error
+    result: failure
+    when:
+      type: compare
+      metric: controller_faulted
+      operator: ==
+      value: true
+  - reason: objective_completed
+    result: success
+    when:
+      type: all
+      conditions:
+      - type: compare
+        metric: objective_complete
+        operator: ==
+        value: true
+      - type: compare
+        metric: elapsed_ticks
+        operator: <=
+        parameter: limit_ticks
+  - reason: timeout
+    result: failure
+    when:
+      type: compare
+      metric: elapsed_ticks
+      operator: '>='
+      parameter: limit_ticks
+  global_planning:
+    type: known_grid_navigation
+    resolution_m: 0.2
+    safety_margin_m: 0.15
+    max_grid_cells: 20000
+    max_search_nodes: 20000
+    max_goal_attempts: 128
+    min_reference_length_m: 12.0
+    max_reference_length_m: 18.0
+    min_endpoint_distance_m: 5.0
+    max_path_points: 512
+    endpoint_tolerance_m: 1.0e-06
+    minimum_segment_m: 1.0e-06
+    max_segment_m: 0.1
+    spacing_tolerance_m: 1.0e-06
+    command_topic: /robot/cmd_vel
+    reference_speed_mps: 0.4
+    position_tolerance_m: 0.35
+    stop_linear_speed_mps: 0.05
+    stop_yaw_rate_radps: 0.1
+    stop_duration_ticks: 30
+    control_limits:
+      min_vx_mps: 0.0
+      max_vx_mps: 0.5
+      max_wz_radps: 1.5
+evaluation:
+  type: terminal_diagnostics
+  publish_on: terminal
+  source: player_pose
+  metrics:
+  - id: rmse_m
+    type: position_rmse
+  - id: yaw_rmse_rad
+    type: yaw_rmse
+  live_feedback:
+  - metric: rmse_m
+    title: 位置 RMSE 对比
+    label: EKF
+    unit: m
+    precision: 3
+    history_points: 300
+    description: 同采样tick的定位RMSE，仅为已授权教学反馈。本关只按无碰撞到达并停稳验收；真实追踪误差仅终局显示。
+    reference_metric: reference_rmse_m
+    reference_label: 纯里程计
+    reference_color: '#74b9ff'
+  - metric: yaw_rmse_rad
+    title: 朝向 RMSE 对比
+    label: EKF
+    unit: rad
+    precision: 3
+    history_points: 300
+    description: 同采样tick的定位RMSE，仅为已授权教学反馈。本关只按无碰撞到达并停稳验收；真实追踪误差仅终局显示。
+    reference_metric: reference_yaw_rmse_rad
+    reference_label: 纯里程计
+    reference_color: '#74b9ff'
+  module_id: ekf
+  reference_module_id: odometry
+randomization:
+  seed: 0
+  reset_on: new_run
+  generator: python_random_v1
+tutorial:
+  problem: 从完整原始占用网格自行膨胀、搜索和后处理，生成安全路径，再复用定位与跟踪器驾驶到目标。
+  hints:
+  - 原始grid是bool(H,W)：True障碍，False自由；列向+x，行向+y。
+  - 格中心为origin_xy+([col,row]+0.5)*resolution_m；world_to_grid向下取整，越界报错。
+  - 总安全半径0.65m，0.20m分辨率向上取整为4格；障碍与场地外横纵各4格方形膨胀，离散扩张0.80m。
+  - map_data.grid不可重新设为可写；用copy()创建工作地图。框架只给坐标转换，不替你膨胀或搜索。
+  - 规划输出不是格索引或相对位移；中间点可不在格中心。仅节点安全不够，整段也必须安全。
+  - 一般折线合法，不要求C4的最小转弯半径；为实际驾驶，可自行平滑或调整PathFollower。
+  - None是确认无解；正式任务保证可达，因此None会失败。异常保留项目行号和Python调用栈。
+  - 规划阶段底盘制动；运行中不重新规划，结束尝试后编辑，重试获得相同地图/终点。
+  testing:
+    checks:
+    - 执行原源码、导入、合同、权限和项目测试检查。
+    - 独立Worker对本次真实地图/起终点完整规划，5秒墙钟并校验路径。
+    - 固定{test_batches}批授权短输入检查，输出不驱动正式物理。
+    meaning: 短测通过不等于到达通关。正式部署的新Worker重新完整规划，不复用测试路径授权；测试不计正式时间、成绩或进度。
+  lesson:
+    title: Navigation C5 · 已知地图全局路径规划
+    summary: 从完整原始占用网格自行膨胀、搜索和后处理，再用既有闭环在{time_limit_s}秒内无碰撞到达并停稳。
+    steps:
+    - 原始grid是bool(H,W)：True障碍，False自由；列向+x，行向+y。
+    - 格中心为origin_xy+([col,row]+0.5)*resolution_m；world_to_grid向下取整，越界报错。
+    - 总安全半径0.65m，0.20m分辨率向上取整为4格；障碍与场地外横纵各4格方形膨胀，离散扩张0.80m。
+    - map_data.grid不可重新设为可写；用copy()创建工作地图。框架只给坐标转换，不替你膨胀或搜索。
+    - 规划输出不是格索引或相对位移；中间点可不在格中心。仅节点安全不够，整段也必须安全。
+    - 一般折线合法，不要求C4的最小转弯半径；为实际驾驶，可自行平滑或调整PathFollower。
+    - None是确认无解；正式任务保证可达，因此None会失败。异常保留项目行号和Python调用栈。
+    - 规划阶段底盘制动；运行中不重新规划，结束尝试后编辑，重试获得相同地图/终点。
+    files:
+    - path: navigation/global_planner.py
+      role: 本关新增玩家规划器，整个文件持久保留
+    - path: navigation/path_follower.py
+      role: 复用C4跟踪器，可自行调整折线拐角与制动策略
+    - path: control/wheel_controller.py
+      role: 复用轮电压控制器
+    - path: localization/odometry.py
+      role: 复用纯里程计对照
+    - path: localization/ekf.py
+      role: 复用EKF位姿反馈
+    - path: navigation/path_module.py
+      role: 系统管理：仅消费已通过Authority校验的静态路径
+    edit_files:
+    - navigation/global_planner.py
+    functions:
+    - path: navigation/global_planner.py
+      name: __init__
+    - path: navigation/global_planner.py
+      name: plan
+    default_type: OccupancyGrid
+    aliases:
+      map_data: OccupancyGrid
+      start_xy: ndarray
+      goal_xy: ndarray
+      robot_radius_m: float
+      safety_margin_m: float
+      np: numpy
+    execution: 准备阶段完整规划一次，包含导入和构造在独立5秒墙钟内；通过Authority校验后启动原周期闭环。测试快照执行独立规划和短输入检查，不驱动车体，也不等于正式通关；正式部署新Worker重新规划。
+    completion: 120仿真秒内无碰撞到达并停稳；不考察路径最短、追踪RMSE、最大偏离或检查点顺序。计时从首次正式轮电压生效开始，规划不扣行驶时间。
+    common_errors:
+    - 把[row,col]当作[x,y]或把行方向当成-y；转换应使用公开原点和格中心公式。
+    - 只考虑车体中心，没有膨胀或没有把地图外当障碍。
+    - 膨胀不足4格，或者只检查节点而没有验证完整线段。
+    - 返回list、float32、索引或相对位移；要求float64 (N,2)绝对map坐标。
+    - 没有保留起终点、存在连续近邻重复点或任一段超过0.10m+1e-6m。
+    - 在周期update或setup/reset搜索，或试图复用测试Worker结果；正式部署必须重新规划。
+    - 拐角过急、末端未提前减速；规划合法不代表已有跟踪器一定能无碰撞执行。
+    - 误以为RMSE、最短路、参考长度12–18m或C4检查点仍是本关通关门槛。
+    type_notes:
+      OccupancyGrid:
+        description: 完整已知原始占用地图；工具只转换坐标，膨胀和搜索由玩家实现。
+        fields:
+          grid: 只读bool(H,W)，True障碍，False自由；行向+y、列向+x。
+          origin_xy: 只读float64(2,)，左下角格左下角，map系米。
+          resolution_m: 每格边长0.20m；坐标转换越界报错，不钳位。
+    calibration:
+      wheel_radius_m:
+        source: wheel_radius_m
+      wheel_separation_m:
+        source: differential_track_m
+      body_mass_kg:
+        source: body_mass_kg
+      body_yaw_inertia_kg_m2:
+        source: body_yaw_inertia_kg_m2
+      drag_x_n_s_per_m:
+        source: drag_x_n_s_per_m
+      drag_yaw_nm_s:
+        source: drag_yaw_nm_s
+      motor:
+        source: wheel_motor
+    ui:
+      state_heading: SELF POSE / GLOBAL PLANNING
+      legend_pose: 选中估计（默认 EKF）
+      view_note: 原始地图、合法玩家路径、安全膨胀可独立显示。车体与轨迹来自EKF；距离终点是UI授权标量，真实追踪误差仅终局。
+      mode_label: Navigation · 已知地图全局路径规划
+      freshness_message: 估计位姿 · 固定提交延迟 · 世界坐标方向固定
+      progress_layout: global_planning
+      default_file: navigation/global_planner.py
+scaffolding:
+  workspace_scope: navigation
+  components:
+  - wheel_controller
+  - wheel_control_adapter
+  - wheel_odometry
+  - wheel_odometry_adapter
+  - ekf_localization
+  - ekf_localization_adapter
+  - path_follower
+  - path_tracking_adapter
+  - global_planner
+  documentation: {}

@@ -422,7 +422,8 @@
                 "checklist",
                 "command_sequence",
                 "waypoint_route",
-                "path_tracking"
+                "path_tracking",
+                "global_planning"
               ]
             },
             "max_origin_distance_m": {

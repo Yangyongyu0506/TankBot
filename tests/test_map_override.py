@@ -51,6 +51,11 @@ class MapOverrideTests(unittest.TestCase):
                 with self.assertRaisesRegex(PathGenerationError,'PATH_GENERATION_FAILED'):
                     Authority(changed,controlled=True)
                 changed=set_override(configure(self.base,lid),'navigation_warehouse')
+            if 'global_planning' in changed['campaign']['levels'][lid]['rules']:
+                from tankbot_host.global_planning import PlanningError
+                with self.assertRaisesRegex(PlanningError,'PLANNING_TASK_GENERATION_FAILED'):
+                    Authority(changed,controlled=True)
+                changed=set_override(configure(self.base,lid),'navigation_warehouse')
             a=Authority(changed,controlled=True)
             try:
                 self.assertEqual(a.public_profile()['walls'],changed['map_override']['walls'])

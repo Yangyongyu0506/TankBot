@@ -6,6 +6,10 @@
 
 物理60Hz、算法dt、采样时刻、固定6tick门、评分、权限和玩家源码保持。每机器人仍共享Worker，update自报耗时不是CPU配额或模块硬隔离。
 
+## 独立规划准备预算
+
+Navigation C5在关卡YAML的runtime.preparation声明5秒一次性规划墙钟，独立于本目录的周期profile和模块声明总上限。解释器加载完成后才发规划请求，计量含规划器构造/导入/搜索/后处理及完整响应往返；Authority验证并冻结路径后，再初始化周期图。准备任务没有6tick输出门，也没有执行器权限；周期激活后恢复原固定门与30/40ms截止。任意遥测或Manifest编辑不能改变可信任务/后端限额。此扩展不将experimental升级为可靠性承诺，具体合同见 [42](42_NAVIGATION_GLOBAL_PLANNING.md)。
+
 ## 配置与兼容合同
 
 config/game.yaml以runtime.profiles_file引用可信config/runtime-profiles.yaml；载入后展开为runtime.profiles，浏览器接收已解析目录。文件只描述运行约束，不包含玩家代码。目录schema_version=1.0，共同module_declared_budget_cap_ms独立于每个后端profile的profile_version、backend、batch_wall_deadline_ms、status。

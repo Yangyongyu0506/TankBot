@@ -104,6 +104,12 @@ ctx.publish("cmd_vel", velocity, frame_id="base_link")
 
 ## 直接调用与 Topic 的混合方案
 
+### 一次性准备任务
+
+Navigation C5的GlobalPlanner是出发前准备任务，不是周期Module，也不加入四模块20ms声明额度。`communication.runtime.preparation`是配置单源，编译后的Manifest派生同名声明；旧Manifest新增该声明须预览显式升级。其输入为授权原始OccupancyGrid、公开起终点及安全参数，输出为map路径或None，原生/Pyodide完整往返均独立5秒。消息绑定run/deployment/task/request/operation，Schema见 [准备消息](schemas/preparation-task.schema.json)，完整合同见 [42](42_NAVIGATION_GLOBAL_PLANNING.md)。
+
+候选Worker先完成解释器/项目测试初始化；收到计时请求后才导入、构造和调用规划器。Authority验证结果后仅交付冻结静态路径，再初始化周期图。系统setup/reset不调用规划器，规划缓存/可变对象不跨阶段授权；任意其他Python计算不产生替代路径提交入口，也没有逐模块硬CPU隔离承诺。测试与正式部署分别新建Worker，各规划一次，关闭/超时清理沿用外部Supervisor；行驶阶段仍执行41的墙钟及6tick门。
+
 同一模块内部的矩阵运算、滤波器对象和工具函数直接调用，便于初学者和单元测试；模块之间通过声明端口连接到类型化 Topic，以便替换系统模块、录制、权限与调度。不得通过直接持有另一个模块实例绕过 Contract。
 
 每个机器人初期一个隔离 worker，按稳定模块 ID 顺序处理同一批待激活模块；所有输入先冻结。输出在固定 `output_commit_tick` 才可见，哪怕计算很快。单写者与模块分组提高可分析性，代价是至少一个调度量子的延迟，不承诺零拷贝或 ROS 级功能。
