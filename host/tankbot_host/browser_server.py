@@ -49,7 +49,7 @@ class BrowserServer:
         ui_files["/editor-bundle.js"] = ROOT/"build/web/editor-bundle.js"
         ui_files.update(shared)
         ui_files.update({"/":ROOT/"web/index.html","/tankbot_core.wasm":wasm,"/authority-bundle.json":assets/"authority-bundle.json"})
-        ui_json={"/authority-config.json":config,"/deployment.json":sources,
+        ui_json={"/authority-config.json":{k:v for k,v in config.items() if k != "private_obstacles"},"/deployment.json":sources,
                  "/browser-profile.json":{"runtime_origin":self.runtime_origin,**config["browser"]}}
         self.ui_json = ui_json
         self.campaign_lock = threading.Lock()
@@ -169,7 +169,7 @@ class BrowserServer:
         self.scene = scene
         self.config = config
         self.workspace = selected_workspace
-        self.ui_json["/authority-config.json"] = config
+        self.ui_json["/authority-config.json"] = {k:v for k,v in config.items() if k != "private_obstacles"}
         self.ui_json["/deployment.json"] = starter(config)
         if self.application:
             self.application.select_level(level_id)

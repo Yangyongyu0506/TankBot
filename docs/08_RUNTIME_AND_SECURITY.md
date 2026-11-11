@@ -93,3 +93,7 @@ Test/import/setup/玩家 unittest 也在独立 Runtime 中执行；原生仍仅�
 ## M5 当前增量
 
 当前每台机器人仍共享一个Worker；模块声明总和用于准入，整批往返墙钟另由冻结后端profile强制执行，见 [41](41_RUNTIME_EXECUTION_PROFILES.md)。没有逐模块硬CPU配额。模块之间不构成安全隔离，候选测试独立缓存不驱动实时执行器。图/连接/公开 Topic 均有 YAML 上限；见 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)。服务端 OS 沙箱仍待实现。
+
+## 局部扫描边界
+
+C6的扫描在可信SensorScheduler执行，玩家只收到当前车体系距离/命中掩码与公开标定；私有障碍位置、原场景句柄及真实速度不进入Runtime。原生与浏览器同用此数据合同，浏览器启动资源去除已解析私有矩形后由可信Authority重建。设备所有者仍可逆向本机仿真，接口隔离不等于Arena强保密。组合局部导航不增加周期提交阶段或放宽30/40ms实验性截止；规划预算仍独立5秒。

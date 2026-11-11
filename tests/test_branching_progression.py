@@ -29,7 +29,7 @@ from tankbot_host.workspace_api import WorkspaceAPI
 from tankbot_protocol.validation import Validator
 
 DEPENDENCIES={'c0':[],'c1':['c0'],'c2':['c1'],'c3':['c2'],'c4':['c3'],'c5':['c4'],
-              'navigation.c0':['c0'],'navigation.c1':['navigation.c0'],'navigation.c2':['navigation.c1'],'navigation.c3':['navigation.c2'],'navigation.c4':['navigation.c3'],'navigation.c5':['navigation.c4']}
+              'navigation.c0':['c0'],'navigation.c1':['navigation.c0'],'navigation.c2':['navigation.c1'],'navigation.c3':['navigation.c2'],'navigation.c4':['navigation.c3'],'navigation.c5':['navigation.c4'],'navigation.c6':['navigation.c5']}
 
 
 class BranchingProgressionTests(unittest.TestCase):

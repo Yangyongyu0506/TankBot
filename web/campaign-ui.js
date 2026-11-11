@@ -131,6 +131,10 @@ export async function mountCampaign(profile,browser,onState,releaseControls){
         if(planning){
           const phase={waiting:"等待完整规划",planning:"正在规划 · 车辆制动",initializing:"路径合法 · 初始化控制",prepared:"准备出发",ready:"路径已冻结",failed:"规划失败"}[planning.phase]??planning.phase;
           $("task-progress").textContent=`${phase}　距公开终点 ${planning.goal_distance_m?.toFixed(3)??"—"} m　规划路径 ${planning.planned_length_m?.toFixed(3)??"—"} m　规划往返墙钟 ${planning.planning_elapsed_ms?.toFixed(2)??"—"} ms　停稳 ${((planning.settled_ticks??0)/profile.physics_hz).toFixed(2)} / ${((planning.required_settle_ticks??0)/profile.physics_hz).toFixed(2)} s`;
+          const local=attempt.local_navigation,feedback=local?.feedback?.payload;
+          if(local){const age=x=>x==null?'缺失':x.toFixed(3)+' s';
+            $("task-progress").textContent+=`　最近调用输入年龄 位姿 ${age(feedback?.pose_age_s)} / 扫描 ${age(feedback?.scan_age_s)} / 轮速 ${age(feedback?.wheel_age_s)}　保护 ${feedback?.protection??'等待输入'}　带噪最近回波 ${local.closest_return_m==null?'无回波':local.closest_return_m.toFixed(3)+' m'}（非车体净空）`;}
+
         }
         if(attempt.result){
           const r=attempt.result;

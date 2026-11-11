@@ -97,7 +97,9 @@
         "wheel_voltage@1",
         "position_fix2d@1",
         "view_snapshot@5",
-        "waypoint_goal@1"
+        "waypoint_goal@1",
+        "scan2d@1",
+        "local_control_feedback@1"
       ]
     },
     "payload": {
@@ -998,6 +1000,50 @@
           },
           "channel": {
             "const": "/robot/navigation/goal"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "scan2d@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "payloads.schema.json#/$defs/scan2d"
+          },
+          "message_type": {
+            "const": "topic"
+          },
+          "frame_id": {
+            "const": "base_link"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "local_control_feedback@1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "payloads.schema.json#/$defs/local_control_feedback"
+          },
+          "message_type": {
+            "const": "topic"
+          },
+          "frame_id": {
+            "const": "base_link"
           }
         }
       }

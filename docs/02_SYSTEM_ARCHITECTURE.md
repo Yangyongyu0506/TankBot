@@ -1,6 +1,6 @@
 # 02 系统架构
 
-当前十二关的声明式入口为 `levels/*.yaml`：公共 c0、Weapons c1–c5、Navigation c0–c5。共享Host加载器发现、严格校验并解析地图、完整底盘和传感器实例，再构造Authority/Core；原生和浏览器共用规则与权限。关卡加载见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)，场景装配见 [32](32_RESOLVED_SCENE_AND_COMPONENTS.md)。当前应用配置为 `2.1`；课程清单与解锁取YAML，不由本页维护注册表。
+当前十三关的声明式入口为 `levels/*.yaml`：公共 c0、Weapons c1–c5、Navigation c0–c6。共享Host加载器发现、严格校验并解析地图、完整底盘和传感器实例，再构造Authority/Core；原生和浏览器共用规则与权限。关卡加载见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)，场景装配见 [32](32_RESOLVED_SCENE_AND_COMPONENTS.md)。当前应用配置为 `2.1`；课程清单与解锁取YAML，不由本页维护注册表。
 
 ## 目的、范围与约束
 

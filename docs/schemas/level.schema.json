@@ -521,7 +521,11 @@
                   "left_wheel_radps",
                   "right_wheel_radps",
                   "left_voltage_v",
-                  "right_voltage_v"
+                  "right_voltage_v",
+                  "nominal_vx_mps",
+                  "nominal_wz_radps",
+                  "final_vx_mps",
+                  "final_wz_radps"
                 ]
               },
               "uniqueItems": true
@@ -652,7 +656,7 @@
             "charts": {
               "type": "array",
               "minItems": 1,
-              "maxItems": 4,
+              "maxItems": 6,
               "items": {
                 "type": "object",
                 "properties": {
@@ -689,7 +693,11 @@
                             "left_wheel_radps",
                             "right_wheel_radps",
                             "left_voltage_v",
-                            "right_voltage_v"
+                            "right_voltage_v",
+                            "nominal_vx_mps",
+                            "nominal_wz_radps",
+                            "final_vx_mps",
+                            "final_wz_radps"
                           ]
                         },
                         "label": {
@@ -885,6 +893,51 @@
             "line_width_px",
             "marker_radius_px",
             "font_size_px"
+          ],
+          "additionalProperties": false
+        },
+        "scan_view": {
+          "type": "object",
+          "properties": {
+            "point_color": {
+              "type": "string"
+            },
+            "ray_color": {
+              "type": "string"
+            },
+            "point_radius_px": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "panel_size_px": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 400
+            },
+            "history_ticks": {
+              "type": "integer",
+              "minimum": 12,
+              "maximum": 600
+            },
+            "history_samples": {
+              "type": "integer",
+              "minimum": 2,
+              "maximum": 512
+            },
+            "fresh_ticks": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 60
+            }
+          },
+          "required": [
+            "point_color",
+            "ray_color",
+            "point_radius_px",
+            "panel_size_px",
+            "history_ticks",
+            "history_samples",
+            "fresh_ticks"
           ],
           "additionalProperties": false
         }
@@ -1188,6 +1241,9 @@
         },
         "global_planning": {
           "$ref": "https://tankbot.example/schemas/v1/global-planning.schema.json#/$defs/task"
+        },
+        "local_navigation": {
+          "$ref": "local-navigation.schema.json#/$defs/task"
         }
       },
       "required": [
@@ -1670,7 +1726,9 @@
               "waypoint_navigation_adapter",
               "path_follower",
               "path_tracking_adapter",
-              "global_planner"
+              "global_planner",
+              "local_controller",
+              "local_navigation_adapter"
             ]
           }
         },
@@ -1732,7 +1790,8 @@
             "radar",
             "intercepted_gps",
             "armor_detector",
-            "gps"
+            "gps",
+            "distance_scan"
           ]
         },
         "topic": {
@@ -1768,6 +1827,9 @@
             },
             {
               "$ref": "#/$defs/encoderErrorParameters"
+            },
+            {
+              "$ref": "local-navigation.schema.json#/$defs/scan_parameters"
             }
           ]
         },
@@ -1932,6 +1994,25 @@
             "properties": {
               "parameters": {
                 "$ref": "#/$defs/encoderErrorParameters"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "distance_scan"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "parameters"
+            ],
+            "properties": {
+              "parameters": {
+                "$ref": "local-navigation.schema.json#/$defs/scan_parameters"
               }
             }
           }

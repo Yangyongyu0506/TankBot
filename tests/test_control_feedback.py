@@ -26,7 +26,7 @@ class ControlFeedbackTests(unittest.TestCase):
         self.assertGreater(len(points),60)
         self.assertEqual(points[0]["elapsed_ticks"],0)
         self.assertTrue(any(p["segment_index"]==1 for p in points))
-        self.assertEqual(set(points[-1]["values"]),set(SIGNALS))
+        self.assertEqual(set(points[-1]["values"]),set(a.campaign.definition["permissions"]["visualization"]["allowed_control_signals"]))
         for p in points:
             v=p["values"];r=a.config["wheels"]["radius_m"];b=a.config["wheels"]["differential_track_m"]
             self.assertAlmostEqual(v["encoder_vx_mps"],r*(v["left_wheel_radps"]+v["right_wheel_radps"])/2)

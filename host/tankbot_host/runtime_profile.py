@@ -35,7 +35,7 @@ def configure_course_runtime(authority,init,workspace):
         if "path_reference" not in grants.get("task_inputs",[]):
             raise ValueError("UNAUTHORIZED_PATH_REFERENCE")
         contract=next(c for c in authority.campaign.definition["runtime"]["contracts"].values()
-                      if c["entry_point"]=="navigation.path_module:PathTrackingModule")
+                      if c["entry_point"] in ("navigation.path_module:PathTrackingModule","navigation.local_module:LocalNavigationModule"))
         reference=route.reference
         init["config"]["path_tracking_parameters"]={
             "reference":{key:copy.deepcopy(reference[key]) for key in ("path_id","points_m","frame_id","seed","parameters","input_sha256")},
@@ -50,7 +50,7 @@ def configure_course_runtime(authority,init,workspace):
         if not {"occupancy_grid", "planning_goal"} <= set(grants.get("task_inputs", [])):
             raise ValueError("UNAUTHORIZED_PLANNING_INPUT")
         contract=next(c for c in authority.campaign.definition["runtime"]["contracts"].values()
-                      if c["entry_point"]=="navigation.path_module:PathTrackingModule")
+                      if c["entry_point"] in ("navigation.path_module:PathTrackingModule","navigation.local_module:LocalNavigationModule"))
         init["preparation"]=copy.deepcopy(authority.campaign.definition["runtime"]["preparation"])
         init["preparation_limits"]={"max_path_points":route.spec["max_path_points"]}
         init["config"]["path_tracking_parameters"]={
@@ -59,6 +59,19 @@ def configure_course_runtime(authority,init,workspace):
             "reference_speed_mps":route.spec["reference_speed_mps"],
             "position_tolerance_m":route.spec["position_tolerance_m"],
             "pose_max_age_ticks":contract["inputs"]["pose"]["max_age_ticks"],
+        }
+    local = authority.campaign.definition['rules'].get('local_navigation')
+    if local:
+        route = authority.campaign.navigation
+        navigator = next(c for c in authority.campaign.definition['runtime']['contracts'].values()
+                         if c['entry_point']=='navigation.local_module:LocalNavigationModule')
+        wheel = next(c for c in authority.campaign.definition['runtime']['contracts'].values()
+                     if c['entry_point']=='navigation_robot:WheelControlModule')
+        delay_ticks = navigator['execution']['deadline_ticks']+wheel['execution']['deadline_ticks']
+        init['config']['local_navigation_parameters'] = {
+            'robot_radius_m':route.task['robot_radius_m'], 'safety_margin_m':route.task['safety_margin_m'],
+            'command_delay_s':delay_ticks/authority.hz, 'tick_duration_s':1/authority.hz,
+            'input_max_age_ticks':round(local['input_max_age_s']*authority.hz),
         }
     if authority.graph_profile() and authority.radar.noise is not None:
         noise = authority.radar.noise

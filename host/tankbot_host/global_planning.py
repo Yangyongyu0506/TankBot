@@ -130,6 +130,8 @@ def prepare_planning(config):
     inputs = {'walls': config['scene']['walls'], 'body': body,
               'model': config['chassis_profiles'][config['scene']['default_chassis']], 'start_xy': start,
               'parameters': spec, 'seed': config['runtime']['seed']}
+    if level['rules'].get('local_navigation'):
+        inputs['local_navigation'] = level['rules']['local_navigation']
     identity = hashlib.sha256(canonical(inputs).encode()).hexdigest()
     safe = SafeGrid(data, radius, spec['safety_margin_m'])
     distances = reference_distances(safe, start, spec['max_search_nodes'])

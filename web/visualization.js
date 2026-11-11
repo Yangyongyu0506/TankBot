@@ -5,13 +5,15 @@ import {WaypointOverlay,drawWaypoints} from "./navigation-view.js";
 import {PathOverlay,drawPath} from "./path-view.js";
 import {PlanningOverlay,drawPlanning} from "./global-planning-view.js";
 
-export const layerLabels={planning_map:"公开原始地图 / 起终点",safety_grid:"规范安全膨胀区域（仅UI）",path:"公开完整路径 / 起终点",checkpoints:"顺序检查点",waypoints:"公开航点与路线",map:"静态地图",robot:"本关授权车体位姿",trail:"授权位姿轨迹",target_estimates:"玩家目标估计",radar:"Radar 观测",imu:"IMU 数据 / 加速度箭头",encoders:"轮编码器数据",turret:"炮台与武器观测",truth_robot:"真实车体与炮台",truth_targets:"真实目标",projectiles:"真实弹丸",frames:"坐标系",velocities:"真实速度向量",colliders:"碰撞外形",gps:"带噪 GPS 点",pose_estimates:"其他玩家位姿估计 / 轨迹",pose_covariance:"选中位姿的 1σ 位置椭圆"};
+import {ScanHistory,drawScan,drawScanPanel} from "./scan-view.js";
+
+export const layerLabels={scan:"车体系距离扫描",scan_points:"扫描投影（同tick玩家EKF）",private_obstacles:"私有静态障碍（开发者）",planning_map:"公开原始地图 / 起终点",safety_grid:"规范安全膨胀区域（仅UI）",path:"公开完整路径 / 起终点",checkpoints:"顺序检查点",waypoints:"公开航点与路线",map:"静态地图",robot:"本关授权车体位姿",trail:"授权位姿轨迹",target_estimates:"玩家目标估计",radar:"Radar 观测",imu:"IMU 数据 / 加速度箭头",encoders:"轮编码器数据",turret:"炮台与武器观测",truth_robot:"真实车体与炮台",truth_targets:"真实目标",projectiles:"真实弹丸",frames:"坐标系",velocities:"真实速度向量",colliders:"碰撞外形",gps:"带噪 GPS 点",pose_estimates:"其他玩家位姿估计 / 轨迹",pose_covariance:"选中位姿的 1σ 位置椭圆"};
 export function allowedLayers(profile,developer){
   const current=profile.campaign?.levels.find(l=>l.level_id===profile.campaign.active_level),caps=current?.capabilities??[];
   const supported=Object.keys(layerLabels).filter(key=>profile.weapons_enabled!==false||!["turret","projectiles","truth_targets"].includes(key));
   if(current?.allowed_layers)return developer?supported:current.allowed_layers.filter(key=>supported.includes(key));
   return supported.filter(key=>{
-    if(["truth_robot","velocities","colliders"].includes(key))return developer;
+    if(["truth_robot","velocities","colliders","private_obstacles"].includes(key))return developer;
     if(key==="truth_targets")return developer||profile.view_mode==="weapons-practice"||caps.includes("view.enemy.truth");
     if(key==="projectiles")return developer||profile.view_mode==="weapons-practice"||caps.includes("view.projectiles.truth");
     if(key==="radar")return Boolean(profile.radar_calibration||profile.armor_calibration);
@@ -37,6 +39,7 @@ export function mountVisualization(profile,settings){
   const navigation=new WaypointOverlay(profile);
   const pathTracking=new PathOverlay(profile);
   const globalPlanning=new PlanningOverlay(profile);
+  const scans=new ScanHistory(profile);
   $("visualization-note").textContent=developer?"开发者图层 · 可独立显示真值、估计和传感器；不会把真值发给玩家代码。":"只列出本关授权图层；显示来源仍由关卡权限决定。";
   $("layer-list").replaceChildren(...[...allowed].map(key=>{
     const label=document.createElement("label"),input=document.createElement("input");input.type="checkbox";input.checked=layers[key];input.dataset.layer=key;input.disabled=Boolean(!developer&&configuration&&!configuration.user_toggleable.includes(key));
@@ -50,6 +53,7 @@ export function mountVisualization(profile,settings){
   }));
   function enabled(key){return allowed.has(key)&&layers[key];}
   function applyPanels(){
+    $("scan-panel").hidden=!enabled("scan");
     $("wheels").hidden=!enabled("encoders");$("imu-panel").hidden=!enabled("imu");
     $("radar-panel").hidden=!enabled("radar");$("turret").hidden=!enabled("turret");$("weapon").hidden=!enabled("turret");
     $("hud-state").querySelector(".state-grid").hidden=!enabled("robot");$("freshness").hidden=!enabled("robot");
@@ -77,8 +81,12 @@ export function mountVisualization(profile,settings){
   $("message-topic").onchange=inspect;$("show-message").onchange=inspect;
   window.addEventListener("tankbot-deployment-status",event=>{robotTopics=event.detail.graph?.topics??[];inspect();});
   applyPanels();
-  return {enabled,developer,localization,navigation,pathTracking,globalPlanning,renderNow:0,get data(){return data;},get message(){return message;},
-    update(view,debug,now){message=view;data=developer?debug:null;if(data)history.push(developerView(data,profile),now);localization.update(view,now);applyPanels();inspect();},
+  return {enabled,developer,localization,navigation,pathTracking,globalPlanning,scans,renderNow:0,get data(){return data;},get message(){return message;},
+    update(view,debug,now){message=view;data=developer?debug:null;if(data)history.push(developerView(data,profile),now);localization.update(view,now);scans.update(view);
+      if(scans.style){drawScanPanel($("scan-canvas"),scans);
+        const returns=scans.scan?.payload.ranges_m.filter((r,i)=>scans.scan.payload.hit_mask[i])??[];
+        $("scan-status").textContent=scans.scan?`sample tick ${scans.scan.simulation_tick} · 带噪最近回波 ${returns.length?Math.min(...returns).toFixed(3)+" m":"无回波"} · ${scans.mapPoints().length?"同tick EKF投影 tick "+scans.projectedTick:"暂无同tick EKF，仅车体系"}`:"扫描缺失或过期";
+      }applyPanels();inspect();},
     sample:now=>data?history.sample(now):null};
 }
 
@@ -94,6 +102,12 @@ export function drawVisualization(ctx,point,frame,debugFrame,panel,profile,scale
   drawWaypoints(ctx,point,panel,scale);
   drawPath(ctx,point,panel,scale);
   drawPlanning(ctx,point,panel);
+  drawScan(ctx,point,panel);
+  if(panel.developer&&panel.enabled("private_obstacles")){
+    ctx.save();ctx.fillStyle="#e76f51";ctx.globalAlpha=.7;
+    for(const w of panel.data?.private_obstacles??[]){const a=point(w.center[0]-w.size[0]/2,w.center[1]-w.size[1]/2),b=point(w.center[0]+w.size[0]/2,w.center[1]+w.size[1]/2);ctx.fillRect(Math.min(a[0],b[0]),Math.min(a[1],b[1]),Math.abs(a[0]-b[0]),Math.abs(a[1]-b[1]));}
+    ctx.restore();
+  }
   const base=panel.enabled("truth_robot")?debugFrame?.pose:frame.pose,data=panel.data;
   if(panel.enabled("frames")){
     const poses=[[0,0,0,"map"],...(base?[[base.x_m,base.y_m,base.yaw_rad,profile.radar_calibration?"base_link / radar_link":"base_link"]]:[])];

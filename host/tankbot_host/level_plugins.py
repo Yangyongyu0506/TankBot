@@ -8,6 +8,7 @@ from .configuration import load_yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 SENSORS = {
+    "distance_scan":("/robot/sensors/scan","scan2d@1","base_link",None),
     "wheel_encoder":("/robot/sensors/joint_states","joint_state@1","base_link","joint_states"),
     "imu":("/robot/sensors/imu","imu@1","base_link","imu"),
     "turret_joint":("/robot/turret/joint_states","joint_state@1","base_link","turret_joint_states"),
@@ -142,6 +143,9 @@ def _validate(value, filename, config, validator):
             fail(path+".control_limits","reference limits exceed chassis limits")
     elif value["communication"]["runtime"].get("preparation"):
         fail("communication.runtime.preparation","preparation contract requires a planning task")
+    local = value['objectives'].get('local_navigation')
+    if local and (not planning or 'distance_scan' not in [s['type'] for s in player['sensors']]):
+        fail('objectives.local_navigation','local navigation requires prior-map planning and a distance scanner')
     if tracking:
         import math
         path="objectives.path_tracking"
@@ -216,6 +220,12 @@ def _validate(value, filename, config, validator):
             p=sensor["parameters"]
             if player["model"]!="differential":fail(path+".parameters","encoder errors currently require an explicit differential model")
             if p["gain_error_min"]>p["gain_error_max"]:fail(path+".parameters.gain_error_max","gain error bounds are reversed")
+        if sensor['type']=='distance_scan':
+            import math
+            p=sensor['parameters']
+            if p['range_min_m']>=p['range_max_m'] or not math.isclose(p['ray_count']*p['angle_increment_rad'],2*math.pi,rel_tol=0,abs_tol=1e-12):
+                fail(path+'.parameters','scan must cover one full circle without a repeated end ray and have ordered limits')
+            if sensor['random_stream']['seed_mode']!='named':fail(path+'.random_stream','scan requires an independent named random stream')
         if sensor["type"]=="radar":
             p = sensor["parameters"]
             if p["update_hz"]!=sensor["update_hz"]:fail(path+".parameters.update_hz","sensor rates disagree")
@@ -288,7 +298,7 @@ def _validate(value, filename, config, validator):
     task_feedback=value["permissions"]["visualization"].get("task_feedback")
     if task_feedback and not (tracking or planning):fail("permissions.visualization.task_feedback","feedback requires a motion task")
     if "projectiles" in layers and not policy["world_effects"]:fail("permissions.visualization.allowed_layers","projectile truth is not authorized")
-    if set(layers)&{"truth_robot","velocities","colliders"}:fail("permissions.visualization.allowed_layers","these components require the separate developer grant")
+    if set(layers)&{"truth_robot","velocities","colliders","private_obstacles"}:fail("permissions.visualization.allowed_layers","these components require the separate developer grant")
     if any(ch not in sensor_topics for ch in policy["local_observation_channels"]):fail("permissions.visualization.view_policy.local_observation_channels","undeclared sensor Topic")
     runtime = value["communication"]["runtime"]
     from .level_templates import COMPONENTS
@@ -327,7 +337,7 @@ def _validate(value, filename, config, validator):
         for path,source in generated.items():
             if path.endswith(".py"):ast.parse(source,filename=path)
     except (ValueError,SyntaxError) as exc:fail("scaffolding",str(exc))
-    player_files={"navigation/global_planner.py","navigation/path_follower.py","localization/ekf.py","localization/odometry.py","control/wheel_controller.py","perception/transforms.py","perception/tracker.py","perception/pose_tracker.py","perception/polar_tracker.py","perception/fusion_tracker.py","perception/armor_tracker.py","weapons/auto_aim.py","weapons/armor_aim.py","weapons/target_prediction.py"}
+    player_files={"navigation/local_controller.py","navigation/global_planner.py","navigation/path_follower.py","localization/ekf.py","localization/odometry.py","control/wheel_controller.py","perception/transforms.py","perception/tracker.py","perception/pose_tracker.py","perception/polar_tracker.py","perception/fusion_tracker.py","perception/armor_tracker.py","weapons/auto_aim.py","weapons/armor_aim.py","weapons/target_prediction.py"}
     registered={p for component in COMPONENTS.values() for p in component}
     managed={p for p in registered|set(generated) if p not in player_files and not p.endswith("__init__.py")}
     if not set(runtime["managed_files"])<=managed:fail("communication.runtime.managed_files","managed files must exclude player algorithms and custom files")
@@ -424,6 +434,21 @@ def _validate(value, filename, config, validator):
                 or runtime["contracts"].get(estimator,{}).get("entry_point")!="localization.ekf_module:EkfLocalizationModule"
                 or {"from":mid+".command","to":tracking["command_topic"]} not in connections):
             fail("communication.runtime.manifest.connections","tracking must use its declared player EKF and body reference")
+    if local:
+        navigators=[(mid,c) for mid,c in runtime['contracts'].items() if c['entry_point']=='navigation.local_module:LocalNavigationModule']
+        if len(navigators)!=1:fail('communication.runtime.contracts','local task needs exactly one local navigation adapter')
+        mid,contract=navigators[0]
+        expected={'pose':'pose2d@1','scan':'scan2d@1','wheels':'joint_state@1'}
+        age=round(local['input_max_age_s']*clock['physics_hz'])
+        if (set(contract['inputs'])!=set(expected) or any(contract['inputs'][p]!={'schema':s,'required':False,'max_age_ticks':age} for p,s in expected.items())
+                or contract['outputs']!={'command':{'schema':'twist@1'},'feedback':{'schema':'local_control_feedback@1'}}):
+            fail('communication.runtime.contracts.'+mid,'local inputs must be optional with explicit protection age and one final Twist plus diagnostics')
+        estimator=value['evaluation'].get('module_id')
+        connections=runtime['manifest']['connections']
+        required=[{'from':f'/robot/estimates/{estimator}/pose','to':mid+'.pose'},
+                  {'from':'/robot/sensors/scan','to':mid+'.scan'}, {'from':'/robot/sensors/joint_states','to':mid+'.wheels'},
+                  {'from':mid+'.command','to':planning['command_topic']}]
+        if any(c not in connections for c in required):fail('communication.runtime.manifest.connections','local navigation must use the declared player EKF, scan and the same noisy encoder')
     for mid,contract in runtime["contracts"].items():
         for direction in ("input","output"):
             for port in contract[direction+"s"]:
@@ -563,7 +588,7 @@ def _compile(value, walls, config):
     if "map" not in layers:policy["public_map"]=None
     observation_layers={"/robot/sensors/joint_states":"encoders","/robot/sensors/imu":"imu",
                         "/robot/turret/joint_states":"turret","/robot/weapons/cannon/state":"turret",
-                        "/robot/sensors/radar":"radar","/robot/sensors/intercepted_gps":"radar","/robot/sensors/armor_detections":"radar","/robot/sensors/gps/fix":"gps"}
+                        "/robot/sensors/radar":"radar","/robot/sensors/intercepted_gps":"radar","/robot/sensors/armor_detections":"radar","/robot/sensors/gps/fix":"gps","/robot/sensors/scan":"scan"}
     policy["local_observation_channels"]=[channel for channel in policy["local_observation_channels"] if observation_layers.get(channel) in layers]
     runtime["grants"]=copy.deepcopy(grants)
     caps=[]

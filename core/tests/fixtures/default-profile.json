@@ -569,6 +569,12 @@
     "max_modules": 8,
     "max_connections": 64,
     "schemas": {
+      "scan2d@1": [
+        "base_link"
+      ],
+      "local_control_feedback@1": [
+        "base_link"
+      ],
       "armor_detections@1": [
         "base_link"
       ],
@@ -625,6 +631,7 @@
       ]
     },
     "internal_schemas": [
+      "local_control_feedback@1",
       "target_polar_estimate@1",
       "pose2d@1",
       "target_estimate@1",
@@ -2211,6 +2218,291 @@
           "localization/ekf_module.py",
           "contracts/ekf.json",
           "navigation/path_module.py",
+          "contracts/path_tracking.json"
+        ]
+      },
+      "scan-local-navigation-v1": {
+        "template_version": "1.0.0",
+        "manifest": {
+          "manifest_version": "1.0",
+          "sdk_version": "0.1.0",
+          "protocol_version": "1.0",
+          "project_id": "navigation-local-avoidance",
+          "entry_point": "navigation_robot:WheelControlModule",
+          "modules": [
+            {
+              "module_id": "wheel_control",
+              "contract": "contracts/wheel_control.json",
+              "config": {}
+            },
+            {
+              "module_id": "odometry",
+              "contract": "contracts/odometry.json",
+              "config": {}
+            },
+            {
+              "module_id": "ekf",
+              "contract": "contracts/ekf.json",
+              "config": {
+                "initial_covariance": [
+                  [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0,
+                    0.0
+                  ]
+                ]
+              }
+            },
+            {
+              "module_id": "path_tracking",
+              "contract": "contracts/path_tracking.json",
+              "config": {}
+            }
+          ],
+          "connections": [
+            {
+              "from": "/robot/cmd_vel",
+              "to": "wheel_control.command"
+            },
+            {
+              "from": "/robot/sensors/joint_states",
+              "to": "wheel_control.wheels"
+            },
+            {
+              "from": "wheel_control.voltage",
+              "to": "/robot/wheels/cmd_voltage"
+            },
+            {
+              "from": "/robot/sensors/joint_states",
+              "to": "odometry.wheels"
+            },
+            {
+              "from": "odometry.pose",
+              "to": "/robot/estimates/odometry/pose"
+            },
+            {
+              "from": "/robot/sensors/joint_states",
+              "to": "ekf.wheels"
+            },
+            {
+              "from": "/robot/sensors/gps/fix",
+              "to": "ekf.gps"
+            },
+            {
+              "from": "ekf.pose",
+              "to": "/robot/estimates/ekf/pose"
+            },
+            {
+              "from": "/robot/estimates/ekf/pose",
+              "to": "path_tracking.pose"
+            },
+            {
+              "from": "path_tracking.command",
+              "to": "/robot/cmd_vel"
+            },
+            {
+              "from": "/robot/sensors/scan",
+              "to": "path_tracking.scan"
+            },
+            {
+              "from": "/robot/sensors/joint_states",
+              "to": "path_tracking.wheels"
+            },
+            {
+              "from": "path_tracking.feedback",
+              "to": "/robot/modules/path_tracking/feedback"
+            }
+          ],
+          "dependencies": [],
+          "pose_source": {
+            "mode": "player",
+            "module_id": "ekf",
+            "fallback": "none"
+          },
+          "preparation": {
+            "contract_version": "1.0",
+            "task_type": "known_grid_planner",
+            "task_name": "global_planner",
+            "entry_point": "navigation.global_planner:GlobalPlanner",
+            "wall_deadline_ms": 5000,
+            "max_calls": 1,
+            "inputs": [
+              "occupancy_grid",
+              "start_xy",
+              "goal_xy",
+              "robot_radius_m",
+              "safety_margin_m"
+            ],
+            "output": "map_path_or_none"
+          }
+        },
+        "contracts": {
+          "wheel_control": {
+            "contract_version": "1.0",
+            "module_id": "wheel_control",
+            "entry_point": "navigation_robot:WheelControlModule",
+            "inputs": {
+              "command": {
+                "schema": "twist@1",
+                "required": true,
+                "max_age_ticks": 12
+              },
+              "wheels": {
+                "schema": "joint_state@1",
+                "required": true,
+                "max_age_ticks": 12
+              }
+            },
+            "outputs": {
+              "voltage": {
+                "schema": "wheel_voltage@1"
+              }
+            },
+            "execution": {
+              "mode": "periodic",
+              "period_ticks": 6,
+              "deadline_ticks": 6,
+              "budget_ms": 4
+            },
+            "dependencies": [],
+            "state_version": "1"
+          },
+          "odometry": {
+            "contract_version": "1.0",
+            "module_id": "odometry",
+            "entry_point": "localization.odometry_module:WheelOdometryModule",
+            "inputs": {
+              "wheels": {
+                "schema": "joint_state@1",
+                "required": true,
+                "max_age_ticks": 12
+              }
+            },
+            "outputs": {
+              "pose": {
+                "schema": "pose2d@1"
+              }
+            },
+            "execution": {
+              "mode": "periodic",
+              "period_ticks": 6,
+              "deadline_ticks": 6,
+              "budget_ms": 2
+            },
+            "dependencies": [],
+            "state_version": "1"
+          },
+          "ekf": {
+            "contract_version": "1.0",
+            "module_id": "ekf",
+            "entry_point": "localization.ekf_module:EkfLocalizationModule",
+            "inputs": {
+              "wheels": {
+                "schema": "joint_state@1",
+                "required": true,
+                "max_age_ticks": 12
+              },
+              "gps": {
+                "schema": "position_fix2d@1",
+                "required": false,
+                "max_age_ticks": 12
+              }
+            },
+            "outputs": {
+              "pose": {
+                "schema": "pose2d@1"
+              }
+            },
+            "execution": {
+              "mode": "periodic",
+              "period_ticks": 6,
+              "deadline_ticks": 6,
+              "budget_ms": 4
+            },
+            "dependencies": [],
+            "state_version": "1"
+          },
+          "path_tracking": {
+            "contract_version": "1.0",
+            "module_id": "path_tracking",
+            "entry_point": "navigation.local_module:LocalNavigationModule",
+            "inputs": {
+              "pose": {
+                "schema": "pose2d@1",
+                "required": false,
+                "max_age_ticks": 12
+              },
+              "scan": {
+                "schema": "scan2d@1",
+                "required": false,
+                "max_age_ticks": 12
+              },
+              "wheels": {
+                "schema": "joint_state@1",
+                "required": false,
+                "max_age_ticks": 12
+              }
+            },
+            "outputs": {
+              "command": {
+                "schema": "twist@1"
+              },
+              "feedback": {
+                "schema": "local_control_feedback@1"
+              }
+            },
+            "execution": {
+              "mode": "periodic",
+              "period_ticks": 6,
+              "deadline_ticks": 6,
+              "budget_ms": 10
+            },
+            "dependencies": [
+              "ekf"
+            ],
+            "state_version": "1"
+          }
+        },
+        "grants": {
+          "inputs": {
+            "/robot/sensors/joint_states": "joint_state@1",
+            "/robot/sensors/gps/fix": "position_fix2d@1",
+            "/robot/sensors/scan": "scan2d@1"
+          },
+          "outputs": [
+            "pose2d@1"
+          ],
+          "actuators": {
+            "/robot/wheels/cmd_voltage": "wheel_voltage@1"
+          },
+          "references": {
+            "/robot/cmd_vel": "twist@1"
+          },
+          "task_inputs": [
+            "occupancy_grid",
+            "planning_goal"
+          ]
+        },
+        "target_source": "wheel_control",
+        "managed_files": [
+          "navigation_robot.py",
+          "tankbot.json",
+          "contracts/wheel_control.json",
+          "localization/odometry_module.py",
+          "contracts/odometry.json",
+          "localization/ekf_module.py",
+          "contracts/ekf.json",
+          "navigation/local_module.py",
           "contracts/path_tracking.json"
         ]
       }
@@ -12827,6 +13119,1232 @@
             "navigation.c4"
           ]
         }
+      },
+      "navigation.c6": {
+        "title": "Navigation C6 · 局部感知与静态障碍避让",
+        "problem": "沿先验地图规划的路线行驶，通过带噪距离扫描发现未标出的静态障碍，自主减速、绕行并到达原目标。",
+        "hints": [
+          "规划器只见先验地图；途中可能有未标出的静态障碍。全局规划不重做，使用局部扫描自主绕行。",
+          "每帧180条射线，0 rad朝前、正向向左逆时针；angles_rad与ranges_m/hit_mask逐项对应。",
+          "hit_mask=False表示6m内无回波，不表示射线间或量程外自由。True且ranges_m=6m仍可能是边界命中。",
+          "命中距离加σ=0.02m噪声并截断到[0.05,6]m；最近回波不是车体净空。",
+          "公开车体外接圆0.50m，加0.15m安全余量共0.65m。局部预测可用圆形膨胀，不强制四格方形模型。",
+          "轮速是带噪实测；nominal_command是PathFollower期望，不可当作实际速度。可用FK估算速度。",
+          "pose_age_s、scan_age_s、wheel_age_s来自原始采样tick。扫描属于采样时车体系，不保证与位姿同步。",
+          "command_delay_s由两次6tick提交推导为0.20仿真秒，另加扫描年龄。预测制动距离，提前减速。",
+          "缺失、错误帧或年龄>0.20秒时框架主动发零参考；恰好0.20秒有效。计时不暂停，不回退名义速度或真值。",
+          "自行选择减速、停车、绕行方向与接回路线；允许原地转向，不允许负vx，不限制停车次数。",
+          "地图扫描投影只用同sample tick的合法玩家EKF；没有匹配位姿时仅显示车体系扫描，不补真值。",
+          "无碰撞到原目标并停稳通关；相对原路径偏离与RMSE仅终局诊断，不因合理绕行扣分。"
+        ],
+        "chapter_id": "navigation",
+        "capabilities": [
+          "control.robot.wheel_voltage",
+          "module.graph.manage"
+        ],
+        "target": null,
+        "objective": {
+          "movement_m": 0.0,
+          "turn_rad": 0.0,
+          "required_hits": 0,
+          "required_estimates": 0,
+          "kind": "global_planning"
+        },
+        "time_limit_s": 120,
+        "timer_start": "first_control_commit",
+        "player_health": null,
+        "control_sources": {
+          "chassis": "robot",
+          "turret": "disabled",
+          "weapon": "disabled"
+        },
+        "robot_profile": "scan-local-navigation-v1",
+        "armor_mode": false,
+        "weapons_enabled": false,
+        "drive": "wheel_voltage",
+        "radar_profile": null,
+        "scene": {
+          "default_chassis": "differential",
+          "initial_pose": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "initial_velocity": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "player_health": null,
+          "walls": [
+            {
+              "center": [
+                12.1,
+                0.0
+              ],
+              "size": [
+                0.2,
+                18.4
+              ]
+            },
+            {
+              "center": [
+                -12.1,
+                0.0
+              ],
+              "size": [
+                0.2,
+                18.4
+              ]
+            },
+            {
+              "center": [
+                0.0,
+                9.1
+              ],
+              "size": [
+                24,
+                0.2
+              ]
+            },
+            {
+              "center": [
+                0.0,
+                -9.1
+              ],
+              "size": [
+                24,
+                0.2
+              ]
+            },
+            {
+              "center": [
+                -7.0,
+                -4.0
+              ],
+              "size": [
+                2.0,
+                4.0
+              ]
+            },
+            {
+              "center": [
+                -7.0,
+                4.0
+              ],
+              "size": [
+                2.0,
+                4.0
+              ]
+            },
+            {
+              "center": [
+                0.0,
+                -4.0
+              ],
+              "size": [
+                2.0,
+                4.0
+              ]
+            },
+            {
+              "center": [
+                0.0,
+                4.0
+              ],
+              "size": [
+                2.0,
+                4.0
+              ]
+            },
+            {
+              "center": [
+                7.0,
+                -4.0
+              ],
+              "size": [
+                2.0,
+                4.0
+              ]
+            },
+            {
+              "center": [
+                7.0,
+                4.0
+              ],
+              "size": [
+                2.0,
+                4.0
+              ]
+            }
+          ],
+          "public_initial_pose": true,
+          "public_map": true
+        },
+        "world_simulation": {
+          "physics_hz": 60,
+          "substeps": 4,
+          "sensor_hz": 30,
+          "algorithm_hz": 10
+        },
+        "radar": null,
+        "runtime": {
+          "template_version": "1.0.0",
+          "mode": "graph",
+          "profile_id": "scan-local-navigation-v1",
+          "processing": "modules",
+          "logical_module": {
+            "module_id": "wheel_control",
+            "entry_point": "navigation_robot:WheelControlModule"
+          },
+          "target_source": "wheel_control",
+          "managed_files": [
+            "navigation_robot.py",
+            "tankbot.json",
+            "contracts/wheel_control.json",
+            "localization/odometry_module.py",
+            "contracts/odometry.json",
+            "localization/ekf_module.py",
+            "contracts/ekf.json",
+            "navigation/local_module.py",
+            "contracts/path_tracking.json"
+          ],
+          "manifest": {
+            "manifest_version": "1.0",
+            "sdk_version": "0.1.0",
+            "protocol_version": "1.0",
+            "project_id": "navigation-local-avoidance",
+            "entry_point": "navigation_robot:WheelControlModule",
+            "modules": [
+              {
+                "module_id": "wheel_control",
+                "contract": "contracts/wheel_control.json",
+                "config": {}
+              },
+              {
+                "module_id": "odometry",
+                "contract": "contracts/odometry.json",
+                "config": {}
+              },
+              {
+                "module_id": "ekf",
+                "contract": "contracts/ekf.json",
+                "config": {
+                  "initial_covariance": [
+                    [
+                      0.0,
+                      0.0,
+                      0.0
+                    ],
+                    [
+                      0.0,
+                      0.0,
+                      0.0
+                    ],
+                    [
+                      0.0,
+                      0.0,
+                      0.0
+                    ]
+                  ]
+                }
+              },
+              {
+                "module_id": "path_tracking",
+                "contract": "contracts/path_tracking.json",
+                "config": {}
+              }
+            ],
+            "connections": [
+              {
+                "from": "/robot/cmd_vel",
+                "to": "wheel_control.command"
+              },
+              {
+                "from": "/robot/sensors/joint_states",
+                "to": "wheel_control.wheels"
+              },
+              {
+                "from": "wheel_control.voltage",
+                "to": "/robot/wheels/cmd_voltage"
+              },
+              {
+                "from": "/robot/sensors/joint_states",
+                "to": "odometry.wheels"
+              },
+              {
+                "from": "odometry.pose",
+                "to": "/robot/estimates/odometry/pose"
+              },
+              {
+                "from": "/robot/sensors/joint_states",
+                "to": "ekf.wheels"
+              },
+              {
+                "from": "/robot/sensors/gps/fix",
+                "to": "ekf.gps"
+              },
+              {
+                "from": "ekf.pose",
+                "to": "/robot/estimates/ekf/pose"
+              },
+              {
+                "from": "/robot/estimates/ekf/pose",
+                "to": "path_tracking.pose"
+              },
+              {
+                "from": "path_tracking.command",
+                "to": "/robot/cmd_vel"
+              },
+              {
+                "from": "/robot/sensors/scan",
+                "to": "path_tracking.scan"
+              },
+              {
+                "from": "/robot/sensors/joint_states",
+                "to": "path_tracking.wheels"
+              },
+              {
+                "from": "path_tracking.feedback",
+                "to": "/robot/modules/path_tracking/feedback"
+              }
+            ],
+            "dependencies": [],
+            "pose_source": {
+              "mode": "player",
+              "module_id": "ekf",
+              "fallback": "none"
+            },
+            "preparation": {
+              "contract_version": "1.0",
+              "task_type": "known_grid_planner",
+              "task_name": "global_planner",
+              "entry_point": "navigation.global_planner:GlobalPlanner",
+              "wall_deadline_ms": 5000,
+              "max_calls": 1,
+              "inputs": [
+                "occupancy_grid",
+                "start_xy",
+                "goal_xy",
+                "robot_radius_m",
+                "safety_margin_m"
+              ],
+              "output": "map_path_or_none"
+            }
+          },
+          "contracts": {
+            "wheel_control": {
+              "contract_version": "1.0",
+              "module_id": "wheel_control",
+              "entry_point": "navigation_robot:WheelControlModule",
+              "inputs": {
+                "command": {
+                  "schema": "twist@1",
+                  "required": true,
+                  "max_age_ticks": 12
+                },
+                "wheels": {
+                  "schema": "joint_state@1",
+                  "required": true,
+                  "max_age_ticks": 12
+                }
+              },
+              "outputs": {
+                "voltage": {
+                  "schema": "wheel_voltage@1"
+                }
+              },
+              "execution": {
+                "mode": "periodic",
+                "period_ticks": 6,
+                "deadline_ticks": 6,
+                "budget_ms": 4
+              },
+              "dependencies": [],
+              "state_version": "1"
+            },
+            "odometry": {
+              "contract_version": "1.0",
+              "module_id": "odometry",
+              "entry_point": "localization.odometry_module:WheelOdometryModule",
+              "inputs": {
+                "wheels": {
+                  "schema": "joint_state@1",
+                  "required": true,
+                  "max_age_ticks": 12
+                }
+              },
+              "outputs": {
+                "pose": {
+                  "schema": "pose2d@1"
+                }
+              },
+              "execution": {
+                "mode": "periodic",
+                "period_ticks": 6,
+                "deadline_ticks": 6,
+                "budget_ms": 2
+              },
+              "dependencies": [],
+              "state_version": "1"
+            },
+            "ekf": {
+              "contract_version": "1.0",
+              "module_id": "ekf",
+              "entry_point": "localization.ekf_module:EkfLocalizationModule",
+              "inputs": {
+                "wheels": {
+                  "schema": "joint_state@1",
+                  "required": true,
+                  "max_age_ticks": 12
+                },
+                "gps": {
+                  "schema": "position_fix2d@1",
+                  "required": false,
+                  "max_age_ticks": 12
+                }
+              },
+              "outputs": {
+                "pose": {
+                  "schema": "pose2d@1"
+                }
+              },
+              "execution": {
+                "mode": "periodic",
+                "period_ticks": 6,
+                "deadline_ticks": 6,
+                "budget_ms": 4
+              },
+              "dependencies": [],
+              "state_version": "1"
+            },
+            "path_tracking": {
+              "contract_version": "1.0",
+              "module_id": "path_tracking",
+              "entry_point": "navigation.local_module:LocalNavigationModule",
+              "inputs": {
+                "pose": {
+                  "schema": "pose2d@1",
+                  "required": false,
+                  "max_age_ticks": 12
+                },
+                "scan": {
+                  "schema": "scan2d@1",
+                  "required": false,
+                  "max_age_ticks": 12
+                },
+                "wheels": {
+                  "schema": "joint_state@1",
+                  "required": false,
+                  "max_age_ticks": 12
+                }
+              },
+              "outputs": {
+                "command": {
+                  "schema": "twist@1"
+                },
+                "feedback": {
+                  "schema": "local_control_feedback@1"
+                }
+              },
+              "execution": {
+                "mode": "periodic",
+                "period_ticks": 6,
+                "deadline_ticks": 6,
+                "budget_ms": 10
+              },
+              "dependencies": [
+                "ekf"
+              ],
+              "state_version": "1"
+            }
+          },
+          "preparation": {
+            "contract_version": "1.0",
+            "task_type": "known_grid_planner",
+            "task_name": "global_planner",
+            "entry_point": "navigation.global_planner:GlobalPlanner",
+            "wall_deadline_ms": 5000,
+            "max_calls": 1,
+            "inputs": [
+              "occupancy_grid",
+              "start_xy",
+              "goal_xy",
+              "robot_radius_m",
+              "safety_margin_m"
+            ],
+            "output": "map_path_or_none"
+          },
+          "grants": {
+            "inputs": {
+              "/robot/sensors/joint_states": "joint_state@1",
+              "/robot/sensors/gps/fix": "position_fix2d@1",
+              "/robot/sensors/scan": "scan2d@1"
+            },
+            "outputs": [
+              "pose2d@1"
+            ],
+            "actuators": {
+              "/robot/wheels/cmd_voltage": "wheel_voltage@1"
+            },
+            "references": {
+              "/robot/cmd_vel": "twist@1"
+            },
+            "task_inputs": [
+              "occupancy_grid",
+              "planning_goal"
+            ]
+          }
+        },
+        "sensors": [
+          {
+            "id": "wheel_encoder",
+            "robot_id": "player",
+            "type": "wheel_encoder",
+            "period_ticks": 2,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": {
+              "id": "navigation-encoder",
+              "seed_mode": "named"
+            },
+            "topic": "/robot/sensors/joint_states",
+            "schema": "joint_state@1",
+            "frame_id": "base_link",
+            "parameters": {
+              "velocity_stddev_radps": 0.2,
+              "gain_error_min": -0.03,
+              "gain_error_max": 0.03,
+              "position_model": "integrated_rate_noise"
+            },
+            "update_hz": 30
+          },
+          {
+            "id": "gps",
+            "robot_id": "player",
+            "type": "gps",
+            "period_ticks": 30,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": {
+              "id": "navigation-gps",
+              "seed_mode": "named"
+            },
+            "topic": "/robot/sensors/gps/fix",
+            "schema": "position_fix2d@1",
+            "frame_id": "map",
+            "parameters": {
+              "noise": {
+                "position_stddev_m": 0.2,
+                "bias_m": [
+                  0.0,
+                  0.0
+                ],
+                "drop_probability": 0.0
+              },
+              "latency_ticks": 0,
+              "wall_occlusion": false
+            },
+            "update_hz": 2
+          },
+          {
+            "id": "scan",
+            "robot_id": "player",
+            "type": "distance_scan",
+            "period_ticks": 6,
+            "mount": {
+              "parent_frame": "base_link",
+              "translation_m": [
+                0.0,
+                0.0
+              ],
+              "yaw_rad": 0.0
+            },
+            "random_stream": {
+              "id": "navigation-scan",
+              "seed_mode": "named"
+            },
+            "topic": "/robot/sensors/scan",
+            "schema": "scan2d@1",
+            "frame_id": "base_link",
+            "parameters": {
+              "ray_count": 180,
+              "angle_min_rad": 0.0,
+              "angle_increment_rad": 0.03490658503988659,
+              "range_min_m": 0.05,
+              "range_max_m": 6.0,
+              "noise_stddev_m": 0.02
+            },
+            "update_hz": 10
+          }
+        ],
+        "rules": {
+          "target": null,
+          "time_limit_s": 120,
+          "timer_start": "first_control_commit",
+          "parameters": {
+            "movement_m": 0.0,
+            "turn_rad": 0.0,
+            "required_hits": 0,
+            "required_estimates": 0
+          },
+          "progress": {
+            "moved": {
+              "type": "displacement",
+              "parameter": "movement_m",
+              "sticky": true
+            },
+            "turned": {
+              "type": "heading_change",
+              "parameter": "turn_rad",
+              "sticky": true
+            }
+          },
+          "success": {
+            "type": "compare",
+            "metric": "planning_complete",
+            "operator": "==",
+            "value": true
+          },
+          "outcomes": [
+            {
+              "reason": "collision",
+              "result": "failure",
+              "when": {
+                "type": "compare",
+                "metric": "planning_collision",
+                "operator": "==",
+                "value": true
+              }
+            },
+            {
+              "reason": "controller_error",
+              "result": "failure",
+              "when": {
+                "type": "compare",
+                "metric": "controller_faulted",
+                "operator": "==",
+                "value": true
+              }
+            },
+            {
+              "reason": "objective_completed",
+              "result": "success",
+              "when": {
+                "type": "all",
+                "conditions": [
+                  {
+                    "type": "compare",
+                    "metric": "objective_complete",
+                    "operator": "==",
+                    "value": true
+                  },
+                  {
+                    "type": "compare",
+                    "metric": "elapsed_ticks",
+                    "operator": "<=",
+                    "parameter": "limit_ticks"
+                  }
+                ]
+              }
+            },
+            {
+              "reason": "timeout",
+              "result": "failure",
+              "when": {
+                "type": "compare",
+                "metric": "elapsed_ticks",
+                "operator": ">=",
+                "parameter": "limit_ticks"
+              }
+            }
+          ],
+          "global_planning": {
+            "type": "known_grid_navigation",
+            "resolution_m": 0.2,
+            "safety_margin_m": 0.15,
+            "max_grid_cells": 20000,
+            "max_search_nodes": 20000,
+            "max_goal_attempts": 128,
+            "min_reference_length_m": 12.0,
+            "max_reference_length_m": 18.0,
+            "min_endpoint_distance_m": 5.0,
+            "max_path_points": 512,
+            "endpoint_tolerance_m": 1e-06,
+            "minimum_segment_m": 1e-06,
+            "max_segment_m": 0.1,
+            "spacing_tolerance_m": 1e-06,
+            "command_topic": "/robot/cmd_vel",
+            "reference_speed_mps": 0.4,
+            "position_tolerance_m": 0.35,
+            "stop_linear_speed_mps": 0.05,
+            "stop_yaw_rate_radps": 0.1,
+            "stop_duration_ticks": 30,
+            "control_limits": {
+              "min_vx_mps": 0.0,
+              "max_vx_mps": 0.5,
+              "max_wz_radps": 1.5
+            }
+          },
+          "local_navigation": {
+            "type": "scan_local_navigation",
+            "obstacle": {
+              "size_m": 0.6,
+              "min_endpoint_clearance_m": 1.5,
+              "max_attempts": 256,
+              "max_search_nodes": 20000,
+              "random_stream": "navigation-hidden-obstacle",
+              "generation_version": "1"
+            },
+            "input_max_age_s": 0.2
+          }
+        },
+        "evaluation": {
+          "type": "terminal_diagnostics",
+          "publish_on": "terminal",
+          "source": "player_pose",
+          "metrics": [
+            {
+              "id": "rmse_m",
+              "type": "position_rmse"
+            },
+            {
+              "id": "yaw_rmse_rad",
+              "type": "yaw_rmse"
+            }
+          ],
+          "live_feedback": [
+            {
+              "metric": "rmse_m",
+              "title": "位置 RMSE 对比",
+              "label": "EKF",
+              "unit": "m",
+              "precision": 3,
+              "history_points": 300,
+              "description": "同采样tick的定位RMSE，仅为已授权教学反馈。本关只按无碰撞到达并停稳验收；真实追踪误差仅终局显示。",
+              "reference_metric": "reference_rmse_m",
+              "reference_label": "纯里程计",
+              "reference_color": "#74b9ff"
+            },
+            {
+              "metric": "yaw_rmse_rad",
+              "title": "朝向 RMSE 对比",
+              "label": "EKF",
+              "unit": "rad",
+              "precision": 3,
+              "history_points": 300,
+              "description": "同采样tick的定位RMSE，仅为已授权教学反馈。本关只按无碰撞到达并停稳验收；真实追踪误差仅终局显示。",
+              "reference_metric": "reference_yaw_rmse_rad",
+              "reference_label": "纯里程计",
+              "reference_color": "#74b9ff"
+            }
+          ],
+          "module_id": "ekf",
+          "reference_module_id": "odometry"
+        },
+        "randomization": {
+          "seed": 0,
+          "reset_on": "new_run",
+          "generator": "python_random_v1"
+        },
+        "permissions": {
+          "data_access": {
+            "inputs": {
+              "/robot/sensors/joint_states": "joint_state@1",
+              "/robot/sensors/gps/fix": "position_fix2d@1",
+              "/robot/sensors/scan": "scan2d@1"
+            },
+            "outputs": [
+              "pose2d@1"
+            ],
+            "actuators": {
+              "/robot/wheels/cmd_voltage": "wheel_voltage@1"
+            },
+            "references": {
+              "/robot/cmd_vel": "twist@1"
+            },
+            "task_inputs": [
+              "occupancy_grid",
+              "planning_goal"
+            ]
+          },
+          "public_initial_pose": true,
+          "public_map": true,
+          "visualization": {
+            "allowed_layers": [
+              "robot",
+              "trail",
+              "map",
+              "encoders",
+              "frames",
+              "gps",
+              "pose_estimates",
+              "pose_covariance",
+              "path",
+              "planning_map",
+              "safety_grid",
+              "scan",
+              "scan_points"
+            ],
+            "allowed_metrics": [
+              "rmse_m",
+              "yaw_rmse_rad",
+              "reference_rmse_m",
+              "reference_yaw_rmse_rad"
+            ],
+            "allowed_control_signals": [
+              "command_vx_mps",
+              "encoder_vx_mps",
+              "command_wz_radps",
+              "encoder_wz_radps",
+              "left_wheel_radps",
+              "right_wheel_radps",
+              "left_voltage_v",
+              "right_voltage_v",
+              "nominal_vx_mps",
+              "final_vx_mps",
+              "nominal_wz_radps",
+              "final_wz_radps"
+            ],
+            "view_policy": {
+              "policy_id": "navigation-local-avoidance",
+              "system_pose_allowed": false,
+              "player_pose_allowed": true,
+              "allowed_pose_frames": [
+                "map"
+              ],
+              "public_map": "navigation-warehouse",
+              "local_observation_channels": [
+                "/robot/sensors/joint_states",
+                "/robot/sensors/gps/fix",
+                "/robot/sensors/scan"
+              ],
+              "true_enemy_objects": false,
+              "world_effects": false,
+              "camera_source": "selected_pose_or_manual",
+              "pose_fresh_ticks": 12,
+              "pose_hide_after_ticks": 60,
+              "robot_topics_allowed": false,
+              "target_estimates_allowed": false,
+              "pose_estimate_channels": [
+                "/robot/estimates/odometry/pose",
+                "/robot/estimates/ekf/pose"
+              ]
+            },
+            "task_feedback": {
+              "live": [
+                "goal_distance_m",
+                "planning_elapsed_ms",
+                "planned_length_m"
+              ],
+              "terminal": [
+                "tracking_rmse_m",
+                "max_deviation_m",
+                "scored_duration_s",
+                "tracking_samples",
+                "path_length_m"
+              ]
+            }
+          }
+        },
+        "visualization": {
+          "trail_points": 1800,
+          "initial_enabled": [
+            "robot",
+            "trail",
+            "map",
+            "encoders",
+            "frames",
+            "gps",
+            "pose_estimates",
+            "pose_covariance",
+            "path",
+            "planning_map",
+            "safety_grid",
+            "scan",
+            "scan_points"
+          ],
+          "user_toggleable": [
+            "trail",
+            "encoders",
+            "frames",
+            "gps",
+            "pose_estimates",
+            "pose_covariance",
+            "path",
+            "planning_map",
+            "safety_grid",
+            "scan",
+            "scan_points"
+          ],
+          "sources": {
+            "robot": "selected_pose",
+            "trail": "selected_pose",
+            "map": "map",
+            "encoders": "local_observation",
+            "frames": "selected_pose",
+            "gps": "local_observation",
+            "pose_estimates": "player_pose_candidates",
+            "pose_covariance": "selected_pose",
+            "path": "task_reference",
+            "planning_map": "task_reference",
+            "safety_grid": "task_reference",
+            "scan": "local_observation",
+            "scan_points": "local_observation"
+          },
+          "preserve_user_settings": false,
+          "control_feedback": {
+            "title": "局部导航与轮驱动调试",
+            "description": "名义与最终曲线均为指令，不是真实速度。轮反馈来自同一带噪编码器；局部避障与跟踪在同一模块，合计仍经12 tick执行延迟。",
+            "period_ticks": 18,
+            "history_points": 512,
+            "precision": 3,
+            "charts": [
+              {
+                "id": "forward_speed",
+                "title": "前进速度",
+                "unit": "m/s",
+                "signals": [
+                  {
+                    "signal": "command_vx_mps",
+                    "label": "目标",
+                    "color": "#f4cf7e"
+                  },
+                  {
+                    "signal": "encoder_vx_mps",
+                    "label": "编码器反馈",
+                    "color": "#8fe3b5"
+                  }
+                ]
+              },
+              {
+                "id": "yaw_rate",
+                "title": "转向角速度",
+                "unit": "rad/s",
+                "signals": [
+                  {
+                    "signal": "command_wz_radps",
+                    "label": "目标",
+                    "color": "#f4cf7e"
+                  },
+                  {
+                    "signal": "encoder_wz_radps",
+                    "label": "编码器反馈",
+                    "color": "#8fe3b5"
+                  }
+                ]
+              },
+              {
+                "id": "wheel_rates",
+                "title": "两轮角速度",
+                "unit": "rad/s",
+                "signals": [
+                  {
+                    "signal": "left_wheel_radps",
+                    "label": "左轮",
+                    "color": "#91bcff"
+                  },
+                  {
+                    "signal": "right_wheel_radps",
+                    "label": "右轮",
+                    "color": "#e9a2da"
+                  }
+                ]
+              },
+              {
+                "id": "motor_voltage",
+                "title": "两轮执行电压",
+                "unit": "V",
+                "signals": [
+                  {
+                    "signal": "left_voltage_v",
+                    "label": "左轮",
+                    "color": "#91bcff"
+                  },
+                  {
+                    "signal": "right_voltage_v",
+                    "label": "右轮",
+                    "color": "#e9a2da"
+                  }
+                ]
+              },
+              {
+                "id": "local_vx",
+                "title": "名义 / 最终前进指令",
+                "unit": "m/s",
+                "signals": [
+                  {
+                    "signal": "nominal_vx_mps",
+                    "label": "名义指令",
+                    "color": "#f4cf7e"
+                  },
+                  {
+                    "signal": "final_vx_mps",
+                    "label": "最终指令",
+                    "color": "#8fe3b5"
+                  }
+                ]
+              },
+              {
+                "id": "local_wz",
+                "title": "名义 / 最终转向指令",
+                "unit": "rad/s",
+                "signals": [
+                  {
+                    "signal": "nominal_wz_radps",
+                    "label": "名义指令",
+                    "color": "#f4cf7e"
+                  },
+                  {
+                    "signal": "final_wz_radps",
+                    "label": "最终指令",
+                    "color": "#8fe3b5"
+                  }
+                ]
+              }
+            ]
+          },
+          "gps_history_points": 100,
+          "pose_labels": {
+            "odometry": "纯里程计",
+            "ekf": "EKF"
+          },
+          "global_planning": {
+            "route_color": "#f4cf7e",
+            "raw_color": "#e9ecef",
+            "inflated_color": "#ff9478",
+            "start_color": "#8fe3b5",
+            "goal_color": "#e9a2da",
+            "grid_alpha": 0.18,
+            "line_width_px": 2.0,
+            "marker_radius_px": 5.0,
+            "font_size_px": 12.0
+          },
+          "scan_view": {
+            "point_color": "#8fe3b5",
+            "ray_color": "#74b9ff",
+            "point_radius_px": 2.0,
+            "panel_size_px": 180,
+            "history_ticks": 60,
+            "history_samples": 32,
+            "fresh_ticks": 12
+          }
+        },
+        "tutorial": {
+          "problem": "沿先验地图规划的路线行驶，通过带噪距离扫描发现未标出的静态障碍，自主减速、绕行并到达原目标。",
+          "hints": [
+            "规划器只见先验地图；途中可能有未标出的静态障碍。全局规划不重做，使用局部扫描自主绕行。",
+            "每帧180条射线，0 rad朝前、正向向左逆时针；angles_rad与ranges_m/hit_mask逐项对应。",
+            "hit_mask=False表示6m内无回波，不表示射线间或量程外自由。True且ranges_m=6m仍可能是边界命中。",
+            "命中距离加σ=0.02m噪声并截断到[0.05,6]m；最近回波不是车体净空。",
+            "公开车体外接圆0.50m，加0.15m安全余量共0.65m。局部预测可用圆形膨胀，不强制四格方形模型。",
+            "轮速是带噪实测；nominal_command是PathFollower期望，不可当作实际速度。可用FK估算速度。",
+            "pose_age_s、scan_age_s、wheel_age_s来自原始采样tick。扫描属于采样时车体系，不保证与位姿同步。",
+            "command_delay_s由两次6tick提交推导为0.20仿真秒，另加扫描年龄。预测制动距离，提前减速。",
+            "缺失、错误帧或年龄>0.20秒时框架主动发零参考；恰好0.20秒有效。计时不暂停，不回退名义速度或真值。",
+            "自行选择减速、停车、绕行方向与接回路线；允许原地转向，不允许负vx，不限制停车次数。",
+            "地图扫描投影只用同sample tick的合法玩家EKF；没有匹配位姿时仅显示车体系扫描，不补真值。",
+            "无碰撞到原目标并停稳通关；相对原路径偏离与RMSE仅终局诊断，不因合理绕行扣分。"
+          ],
+          "testing": {
+            "checks": [
+              "执行原源码、导入、合同、权限和项目测试检查。",
+              "独立Worker对本次真实地图/起终点完整规划，5秒墙钟并校验路径。",
+              "固定{test_batches}批授权短输入检查，输出不驱动正式物理。"
+            ],
+            "meaning": "短测通过不等于到达通关。正式部署的新Worker重新完整规划，不复用测试路径授权；测试不计正式时间、成绩或进度。"
+          },
+          "lesson": {
+            "title": "Navigation C6 · 局部感知与静态障碍避让",
+            "summary": "复用五项旧算法，使用车体系距离扫描发现先验地图之外的静态障碍，在{time_limit_s}秒内绕行到原终点并停稳。",
+            "steps": [
+              "规划器只见先验地图；途中可能有未标出的静态障碍。全局规划不重做，使用局部扫描自主绕行。",
+              "每帧180条射线，0 rad朝前、正向向左逆时针；angles_rad与ranges_m/hit_mask逐项对应。",
+              "hit_mask=False表示6m内无回波，不表示射线间或量程外自由。True且ranges_m=6m仍可能是边界命中。",
+              "命中距离加σ=0.02m噪声并截断到[0.05,6]m；最近回波不是车体净空。",
+              "公开车体外接圆0.50m，加0.15m安全余量共0.65m。局部预测可用圆形膨胀，不强制四格方形模型。",
+              "轮速是带噪实测；nominal_command是PathFollower期望，不可当作实际速度。可用FK估算速度。",
+              "pose_age_s、scan_age_s、wheel_age_s来自原始采样tick。扫描属于采样时车体系，不保证与位姿同步。",
+              "command_delay_s由两次6tick提交推导为0.20仿真秒，另加扫描年龄。预测制动距离，提前减速。",
+              "缺失、错误帧或年龄>0.20秒时框架主动发零参考；恰好0.20秒有效。计时不暂停，不回退名义速度或真值。",
+              "自行选择减速、停车、绕行方向与接回路线；允许原地转向，不允许负vx，不限制停车次数。",
+              "地图扫描投影只用同sample tick的合法玩家EKF；没有匹配位姿时仅显示车体系扫描，不补真值。",
+              "无碰撞到原目标并停稳通关；相对原路径偏离与RMSE仅终局诊断，不因合理绕行扣分。"
+            ],
+            "files": [
+              {
+                "path": "navigation/local_controller.py",
+                "role": "本关新增：玩家自主局部避障，整个文件持久保留"
+              },
+              {
+                "path": "navigation/global_planner.py",
+                "role": "本关新增玩家规划器，整个文件持久保留"
+              },
+              {
+                "path": "navigation/path_follower.py",
+                "role": "复用C4跟踪器，可自行调整折线拐角与制动策略"
+              },
+              {
+                "path": "control/wheel_controller.py",
+                "role": "复用轮电压控制器"
+              },
+              {
+                "path": "localization/odometry.py",
+                "role": "复用纯里程计对照"
+              },
+              {
+                "path": "localization/ekf.py",
+                "role": "复用EKF位姿反馈"
+              },
+              {
+                "path": "navigation/local_module.py",
+                "role": "系统管理：名义跟踪→局部控制→一份最终Twist，缺测主动零参考"
+              }
+            ],
+            "edit_files": [
+              "navigation/local_controller.py"
+            ],
+            "functions": [
+              {
+                "path": "navigation/local_controller.py",
+                "name": "__init__"
+              },
+              {
+                "path": "navigation/local_controller.py",
+                "name": "update"
+              }
+            ],
+            "default_type": "LocalControlInput",
+            "aliases": {
+              "observation": "LocalControlInput",
+              "scan": "Scan2D",
+              "model": "DifferentialDriveParameters",
+              "dt": "float",
+              "np": "numpy"
+            },
+            "execution": "出发前独立5秒完整规划；正式Runtime重新规划并冻结路径。周期同模块先跟踪后避障，10Hz、导航6tick再轮控制6tick。缺测主动零参考；短测不驱动正式世界，也不等于避障通关。",
+            "completion": "120仿真秒内无碰撞到原终点并连续停稳0.5秒；不增加检查点、偏离/RMSE、停车次数或绕行方向门槛。规划不扣行驶时间。",
+            "common_errors": [
+              "把无回波当作量程外自由，或把最近测距当作车体净空。",
+              "忽略噪声、安全半径、输入年龄和0.20秒控制延迟，等太近才制动。",
+              "把名义Twist当实测速度，或使用未来/异时位姿投影扫描。",
+              "只停车不绕行最终仍超时；一直照搬名义速度可能碰到未标出的障碍。",
+              "局部绕行后不接回路径，或在周期update重新调用全局规划。",
+              "把终局路径误差当作通关门槛：本关只要求无碰撞到点停稳。"
+            ],
+            "type_notes": {
+              "LocalControlInput": {
+                "description": "同次跟踪名义指令与授权传感器输入；不含真值、地图隐藏几何或宿主句柄。",
+                "fields": {
+                  "estimated_pose": "只读float64(3,) map[x,y,yaw]，玩家EKF",
+                  "reference_path": "只读float64(N,2)，已校验先验路径，map米",
+                  "scan": "Scan2D，扫描原采样时的base_link",
+                  "nominal_command": "Twist，期望而非实测速度",
+                  "wheel_rates_radps": "只读float64(2,)，同一带噪编码器[left,right]",
+                  "pose_age_s": "EKF原采样tick到当前调用的仿真秒。",
+                  "scan_age_s": "扫描原采样tick到当前调用的仿真秒。",
+                  "wheel_age_s": "同一带噪编码器原采样tick到当前调用的仿真秒。"
+                }
+              },
+              "Scan2D": {
+                "description": "不可变瞬时整帧距离扫描；输入数组无法重新打开写权限。",
+                "fields": {
+                  "angles_rad": "只读float64(180,)；0朝前，2°递增，正向逆时针",
+                  "ranges_m": "只读float64(180,)，米，范围[0.05,6]",
+                  "hit_mask": "只读bool(180,)，False为无回波且距离6m",
+                  "noise_stddev_m": "命中射线独立高斯σ=0.02m",
+                  "sample_tick": "整帧原始物理采样tick，无帧内时间差",
+                  "angle_min_rad": "首条射线0 rad，朝车头。",
+                  "angle_increment_rad": "相邻射线间隔π/90 rad，即2°，末端不重复。",
+                  "range_min_m": "0.05m；近距饱和，仍为命中。",
+                  "range_max_m": "6m；无回波同为6m但hit_mask=False。"
+                }
+              }
+            },
+            "calibration": {
+              "wheel_radius_m": {
+                "source": "wheel_radius_m"
+              },
+              "wheel_separation_m": {
+                "source": "differential_track_m"
+              },
+              "body_mass_kg": {
+                "source": "body_mass_kg"
+              },
+              "body_yaw_inertia_kg_m2": {
+                "source": "body_yaw_inertia_kg_m2"
+              },
+              "drag_x_n_s_per_m": {
+                "source": "drag_x_n_s_per_m"
+              },
+              "drag_yaw_nm_s": {
+                "source": "drag_yaw_nm_s"
+              },
+              "motor": {
+                "source": "wheel_motor"
+              }
+            },
+            "ui": {
+              "state_heading": "SELF POSE / LOCAL NAVIGATION",
+              "legend_pose": "选中估计（默认 EKF）",
+              "view_note": "公开先验地图；未知障碍仅由扫描观察。投影仅用同tick玩家EKF，缺匹配时只显示车体系。指令曲线不是真实速度。",
+              "mode_label": "Navigation · 局部感知与静态障碍避让",
+              "freshness_message": "估计位姿 · 固定提交延迟 · 世界坐标方向固定",
+              "progress_layout": "global_planning",
+              "default_file": "navigation/local_controller.py"
+            }
+          }
+        },
+        "scaffolding": {
+          "workspace_scope": "navigation",
+          "components": [
+            "wheel_controller",
+            "wheel_control_adapter",
+            "wheel_odometry",
+            "wheel_odometry_adapter",
+            "ekf_localization",
+            "ekf_localization_adapter",
+            "path_follower",
+            "global_planner",
+            "local_controller",
+            "local_navigation_adapter"
+          ],
+          "documentation": {}
+        },
+        "metadata": {
+          "id": "navigation.c6",
+          "name": "Navigation C6 · 局部感知与静态障碍避让",
+          "description": "沿先验地图规划的路线行驶，通过带噪距离扫描发现未标出的静态障碍，自主减速、绕行并到达原目标。",
+          "chapter": {
+            "chapter_id": "navigation",
+            "title": "Navigation",
+            "description": "只保留底盘，从轮驱动与运动控制逐步学习导航。"
+          },
+          "order": 12,
+          "version": "1.0.0",
+          "learning_objectives": [
+            "区分先验地图与真实场景，利用带噪局部扫描、输入年龄和控制延迟完成静态避障，复用定位、全局规划与轮控制。"
+          ],
+          "recommended_algorithms": [
+            "Dynamic Window Approach",
+            "有状态几何绕行"
+          ],
+          "prerequisites": [
+            "navigation.c5"
+          ]
+        }
       }
     },
     "lessons": {
@@ -14368,6 +15886,146 @@
           "progress_layout": "global_planning",
           "default_file": "navigation/global_planner.py"
         }
+      },
+      "navigation.c6": {
+        "title": "Navigation C6 · 局部感知与静态障碍避让",
+        "summary": "复用五项旧算法，使用车体系距离扫描发现先验地图之外的静态障碍，在{time_limit_s}秒内绕行到原终点并停稳。",
+        "steps": [
+          "规划器只见先验地图；途中可能有未标出的静态障碍。全局规划不重做，使用局部扫描自主绕行。",
+          "每帧180条射线，0 rad朝前、正向向左逆时针；angles_rad与ranges_m/hit_mask逐项对应。",
+          "hit_mask=False表示6m内无回波，不表示射线间或量程外自由。True且ranges_m=6m仍可能是边界命中。",
+          "命中距离加σ=0.02m噪声并截断到[0.05,6]m；最近回波不是车体净空。",
+          "公开车体外接圆0.50m，加0.15m安全余量共0.65m。局部预测可用圆形膨胀，不强制四格方形模型。",
+          "轮速是带噪实测；nominal_command是PathFollower期望，不可当作实际速度。可用FK估算速度。",
+          "pose_age_s、scan_age_s、wheel_age_s来自原始采样tick。扫描属于采样时车体系，不保证与位姿同步。",
+          "command_delay_s由两次6tick提交推导为0.20仿真秒，另加扫描年龄。预测制动距离，提前减速。",
+          "缺失、错误帧或年龄>0.20秒时框架主动发零参考；恰好0.20秒有效。计时不暂停，不回退名义速度或真值。",
+          "自行选择减速、停车、绕行方向与接回路线；允许原地转向，不允许负vx，不限制停车次数。",
+          "地图扫描投影只用同sample tick的合法玩家EKF；没有匹配位姿时仅显示车体系扫描，不补真值。",
+          "无碰撞到原目标并停稳通关；相对原路径偏离与RMSE仅终局诊断，不因合理绕行扣分。"
+        ],
+        "files": [
+          {
+            "path": "navigation/local_controller.py",
+            "role": "本关新增：玩家自主局部避障，整个文件持久保留"
+          },
+          {
+            "path": "navigation/global_planner.py",
+            "role": "本关新增玩家规划器，整个文件持久保留"
+          },
+          {
+            "path": "navigation/path_follower.py",
+            "role": "复用C4跟踪器，可自行调整折线拐角与制动策略"
+          },
+          {
+            "path": "control/wheel_controller.py",
+            "role": "复用轮电压控制器"
+          },
+          {
+            "path": "localization/odometry.py",
+            "role": "复用纯里程计对照"
+          },
+          {
+            "path": "localization/ekf.py",
+            "role": "复用EKF位姿反馈"
+          },
+          {
+            "path": "navigation/local_module.py",
+            "role": "系统管理：名义跟踪→局部控制→一份最终Twist，缺测主动零参考"
+          }
+        ],
+        "edit_files": [
+          "navigation/local_controller.py"
+        ],
+        "functions": [
+          {
+            "path": "navigation/local_controller.py",
+            "name": "__init__"
+          },
+          {
+            "path": "navigation/local_controller.py",
+            "name": "update"
+          }
+        ],
+        "default_type": "LocalControlInput",
+        "aliases": {
+          "observation": "LocalControlInput",
+          "scan": "Scan2D",
+          "model": "DifferentialDriveParameters",
+          "dt": "float",
+          "np": "numpy"
+        },
+        "execution": "出发前独立5秒完整规划；正式Runtime重新规划并冻结路径。周期同模块先跟踪后避障，10Hz、导航6tick再轮控制6tick。缺测主动零参考；短测不驱动正式世界，也不等于避障通关。",
+        "completion": "120仿真秒内无碰撞到原终点并连续停稳0.5秒；不增加检查点、偏离/RMSE、停车次数或绕行方向门槛。规划不扣行驶时间。",
+        "common_errors": [
+          "把无回波当作量程外自由，或把最近测距当作车体净空。",
+          "忽略噪声、安全半径、输入年龄和0.20秒控制延迟，等太近才制动。",
+          "把名义Twist当实测速度，或使用未来/异时位姿投影扫描。",
+          "只停车不绕行最终仍超时；一直照搬名义速度可能碰到未标出的障碍。",
+          "局部绕行后不接回路径，或在周期update重新调用全局规划。",
+          "把终局路径误差当作通关门槛：本关只要求无碰撞到点停稳。"
+        ],
+        "type_notes": {
+          "LocalControlInput": {
+            "description": "同次跟踪名义指令与授权传感器输入；不含真值、地图隐藏几何或宿主句柄。",
+            "fields": {
+              "estimated_pose": "只读float64(3,) map[x,y,yaw]，玩家EKF",
+              "reference_path": "只读float64(N,2)，已校验先验路径，map米",
+              "scan": "Scan2D，扫描原采样时的base_link",
+              "nominal_command": "Twist，期望而非实测速度",
+              "wheel_rates_radps": "只读float64(2,)，同一带噪编码器[left,right]",
+              "pose_age_s": "EKF原采样tick到当前调用的仿真秒。",
+              "scan_age_s": "扫描原采样tick到当前调用的仿真秒。",
+              "wheel_age_s": "同一带噪编码器原采样tick到当前调用的仿真秒。"
+            }
+          },
+          "Scan2D": {
+            "description": "不可变瞬时整帧距离扫描；输入数组无法重新打开写权限。",
+            "fields": {
+              "angles_rad": "只读float64(180,)；0朝前，2°递增，正向逆时针",
+              "ranges_m": "只读float64(180,)，米，范围[0.05,6]",
+              "hit_mask": "只读bool(180,)，False为无回波且距离6m",
+              "noise_stddev_m": "命中射线独立高斯σ=0.02m",
+              "sample_tick": "整帧原始物理采样tick，无帧内时间差",
+              "angle_min_rad": "首条射线0 rad，朝车头。",
+              "angle_increment_rad": "相邻射线间隔π/90 rad，即2°，末端不重复。",
+              "range_min_m": "0.05m；近距饱和，仍为命中。",
+              "range_max_m": "6m；无回波同为6m但hit_mask=False。"
+            }
+          }
+        },
+        "calibration": {
+          "wheel_radius_m": {
+            "source": "wheel_radius_m"
+          },
+          "wheel_separation_m": {
+            "source": "differential_track_m"
+          },
+          "body_mass_kg": {
+            "source": "body_mass_kg"
+          },
+          "body_yaw_inertia_kg_m2": {
+            "source": "body_yaw_inertia_kg_m2"
+          },
+          "drag_x_n_s_per_m": {
+            "source": "drag_x_n_s_per_m"
+          },
+          "drag_yaw_nm_s": {
+            "source": "drag_yaw_nm_s"
+          },
+          "motor": {
+            "source": "wheel_motor"
+          }
+        },
+        "ui": {
+          "state_heading": "SELF POSE / LOCAL NAVIGATION",
+          "legend_pose": "选中估计（默认 EKF）",
+          "view_note": "公开先验地图；未知障碍仅由扫描观察。投影仅用同tick玩家EKF，缺匹配时只显示车体系。指令曲线不是真实速度。",
+          "mode_label": "Navigation · 局部感知与静态障碍避让",
+          "freshness_message": "估计位姿 · 固定提交延迟 · 世界坐标方向固定",
+          "progress_layout": "global_planning",
+          "default_file": "navigation/local_controller.py"
+        }
       }
     },
     "chapters": [
@@ -14401,7 +16059,8 @@
           "navigation.c2",
           "navigation.c3",
           "navigation.c4",
-          "navigation.c5"
+          "navigation.c5",
+          "navigation.c6"
         ]
       }
     ],

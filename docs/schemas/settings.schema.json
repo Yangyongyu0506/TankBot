@@ -146,6 +146,15 @@
         },
         "safety_grid": {
           "type": "boolean"
+        },
+        "scan": {
+          "type": "boolean"
+        },
+        "scan_points": {
+          "type": "boolean"
+        },
+        "private_obstacles": {
+          "type": "boolean"
         }
       },
       "required": [

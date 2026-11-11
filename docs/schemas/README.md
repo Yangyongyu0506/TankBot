@@ -2,7 +2,7 @@
 
 ## 当前版本与已支持范围
 
-应用配置为 `config_version: 2.1`，课程源 `schema_version: 1.0`，完整底盘profile为2.0，运行profile目录为1.0；Protocol 1.0和SDK 0.1.0仍是未发布的仓库profile。版本属于不同接口，不能一起升级或由旧报告推断。当前十二关、模块图、编辑部署、设置/进度、C2实验与工程备份已使用相应Schema；字段语义和平台证据以领域规范为准。
+应用配置为 `config_version: 2.1`，课程源 `schema_version: 1.0`，完整底盘profile为2.0，运行profile目录为1.0；Protocol 1.0和SDK 0.1.0仍是未发布的仓库profile。版本属于不同接口，不能一起升级或由旧报告推断。当前十三关、模块图、编辑部署、设置/进度、C2实验与工程备份已使用相应Schema；字段语义和平台证据以领域规范为准。
 
 所有Schema使用JSON Schema Draft 2020-12；`tankbot.example`的$id只是命名标识，离线注册本地引用，不是下载地址。源YAML先安全解析/引用展开，再验证生成的内部配置；Schema合法不代表获得权限、算法正确或平台已支持。
 
@@ -41,7 +41,7 @@
 
 view_snapshot@1保留空objects/effects；@2增加获授权弹丸/目标，@3增加目标估计，@4增加图输出，@5增加白名单自身位姿候选。旧版本结构不自动接受新字段，当前Web已解码这些版本；图层、候选与指标仍分别授权，见 [04](../04_STATE_AND_VIEW_MODEL.md)。
 
-negotiate等结构夹具不证明正式远程会话服务已发布；局部scan、地图瓦片、通用动态TF/选源服务、任意异步融合仍未实现。intercepted_gps兼容组件存在，但当前正式Weapons不启用；不能由Schema枚举推断某关开放该数据。
+negotiate等结构夹具不证明正式远程会话服务已发布；地图瓦片、通用动态TF/选源服务、任意异步融合仍未实现。intercepted_gps兼容组件存在，但当前正式Weapons不启用；不能由Schema枚举推断某关开放该数据。
 
 runtime.profiles_file只存在于可信YAML引用阶段，解析后为runtime.profiles；与旧batch_budget_ms互斥。旧字段独用时准入/墙钟仍同值。共同声明上限不等于墙钟，timing.budget_ms只保留为墙钟诊断别名；数值、冻结与后端选择以 [41](../41_RUNTIME_EXECUTION_PROFILES.md) 为准。
 
@@ -77,4 +77,8 @@ python3 tools/export_profile.py --check --offline
 | Navigation与工程 | 追加轮电压、GPS/候选对照、航点、路径与工程Schema；未重定义旧消息 |
 | 后端profile | 在2.1配置内拆分准入/墙钟，旧单字段独立模式仍兼容，见ADR-0053 |
 
-各阶段原始验收计数、配置和失败保留在reports，不将旧20ms或旧单模块范围作为当前限制。C5新增原始地图/一次性规划准备合同，见42；未来scan/SLAM、多机器人与远程沙箱仍须独立设计和验证。
+各阶段原始验收计数、配置和失败保留在reports，不将旧20ms或旧单模块范围作为当前限制。C5新增原始地图/一次性规划准备合同，见42；scan增量见43；未来SLAM、多机器人与远程沙箱仍须独立设计和验证。
+
+## C6扫描与局部导航
+
+`local-navigation.schema.json`约束私有静态障碍生成参数与输入年龄；`level.schema.json`注册distance_scan、局部适配器、扫描显示及指令曲线。payloads/envelope注册scan2d@1与local_control_feedback@1，SDK/Authority补等长、量程、原采样tick等语义检查。simulation-profile仅内部保存private_obstacles；普通启动/管理投影不得包含它。参数和验收见 [43](../43_NAVIGATION_LOCAL_AVOIDANCE.md)。

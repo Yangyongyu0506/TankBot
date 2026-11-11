@@ -96,3 +96,9 @@ Navigation C2 又增加中心自GPS和带误差编码器，仍通过同一 Senso
 ResolvedScene可选path_reference保存不可变ResolvedPath(identity, definition_json)。解引用/校验地图、底盘及初态之后、创建物理世界之前完成有界生成；私有兼容DTO通过navigation_path携带已冻结结果。浏览器验证输入摘要、完整参考摘要、线段安全、指标与检查点，不重新采样路径。canonical摘要允许JSON往返对0.0/0的表示规范化，不量化物理坐标。
 
 SceneResolver对相同关卡定义复用路径，重试新建世界；configure切换关卡清除上一关静态参考及接触观测开关，避免状态污染。路径参数来自本关YAML，无预存答案或按ID选择的生成分支；详见 [40](40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)。
+
+## C6先验与私有场景增量
+
+`ResolvedScene.world.walls`是完整物理几何；内部兼容DTO的`scene.walls`保留公开先验，`private_obstacles`独立保存生成结果。先准备C5先验任务，再按独立随机流有界生成障碍并检查完整场景可达，最后冻结场景；重试使用同一定义创建新状态。Core适配器与distance_scan后端组合完整几何，规划输入与普通地图不组合。浏览器启动/切换资源去除私有DTO，由可信Authority重建。
+
+`distance_scan`新增Python后端，但create/reset/sample/close、整数周期、命名随机流和重复tick保护仍由SensorScheduler统一执行；不会消费GPS/编码器随机流。具体参数、Topic与权限见 [43](43_NAVIGATION_LOCAL_AVOIDANCE.md)，不支持任意安装或多机器人扫描的承诺不变。

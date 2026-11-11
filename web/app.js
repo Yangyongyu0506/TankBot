@@ -164,6 +164,12 @@ async function poll() {
       if(response.ok)developerData=await response.json();
     }
     visualization.update(message,developerData,performance.now());
+    if(visualization.scans.style){
+      const points=visualization.scans.mapPoints();
+      canvas.dataset.scanProjectionPoints=points.length;
+      canvas.dataset.scanProjectionTick=points.length?visualization.scans.projectedTick:'';
+      canvas.dataset.scanSampleTick=visualization.scans.scan?.simulation_tick??'';
+    }
     if (result.accepted) {
       if (result.reset || result.poseJump) trail = [];
       if (result.clearCamera) camera.reset();

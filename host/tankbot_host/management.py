@@ -6,7 +6,7 @@ UI_RESOURCES = (
     'visualization.js','localization-view.js','navigation-view.js','runtime-logs.js',
     'robot-graph.js','map-preview.js','experiment-ui.js','timing-ui.js','storage-ui.js',
     'path-view.js',
-    'global-planning-view.js',
+    'global-planning-view.js','scan-view.js',
 )
 CORE_RESOURCES = ('core-worker.js','wasm-core.js','python-loader.js','python-bootstrap.js')
 ROBOT_RESOURCES = ('runtime-frame.html','runtime-frame.js','robot-worker.js','python-bootstrap.js')

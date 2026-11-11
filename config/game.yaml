@@ -331,6 +331,10 @@ robot_graph:
   max_modules: 8
   max_connections: 64
   schemas:
+    scan2d@1:
+    - base_link
+    local_control_feedback@1:
+    - base_link
     armor_detections@1:
     - base_link
     position_fix2d@1:
@@ -368,6 +372,7 @@ robot_graph:
     wheel_voltage@1:
     - base_link
   internal_schemas:
+  - local_control_feedback@1
   - target_polar_estimate@1
   - pose2d@1
   - target_estimate@1

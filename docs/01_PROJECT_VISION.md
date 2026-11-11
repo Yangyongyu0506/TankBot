@@ -10,7 +10,7 @@ TankBot 将 `Robot Algorithms Learning + Simulation + Programming + Competition`
 
 | 模式 | 主要职责 | 共享基础 |
 | --- | --- | --- |
-| Campaign（当前十二关） | 能力逐步接管、提示、问题驱动关卡 | Core、传感器、Runtime、SDK、协议、View Policy |
+| Campaign（当前十三关） | 能力逐步接管、提示、问题驱动关卡 | Core、传感器、Runtime、SDK、协议、View Policy |
 | Algorithm Lab（C2滤波试点） | 已有授权录制/双版本回放；通用参数/控制实验仍为计划 | 相同模块 Contract 与 Replay；真值只供授权评估 |
 | Arena（Planned） | 服务器执行机器人、赛制、公平性和赛后回放 | 同一规则库与协议语义；更强隔离和版本锁定 |
 

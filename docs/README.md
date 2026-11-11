@@ -2,7 +2,7 @@
 
 ## 阅读方式与规范状态
 
-当前更新日期：2026-11-11；应用配置2.1，关卡Schema 1.0。前一轮文档核对基于HEAD `7c065ab`；本次C5开发从干净HEAD `3531d80`开始，新增实现尚未提交，证据见 [规划验收](reports/NAVIGATION_GLOBAL_PLANNING_VALIDATION.md)。前轮逐项事实见 [文档核对表](reports/DOCUMENTATION_STATE_SYNC_20261110.md)。已完成 M1/M1b、M2 本机浏览器/Transport、M3 编辑部署和 M4 C0–C2 教学闭环验收：实现与限制见 [运行入口](../README.md)、[M4 验证报告](reports/M4_VALIDATION.md)；模型由用户逐项确认，见 [13](13_PHYSICS_MODEL_DECISIONS.md)、[18](18_CAMPAIGN_DESIGN.md)。M5 已实现模块图、角加速度与装甲；现按用户要求调整为 C3 极坐标滤波、C4 中心预测与自瞄、C5 小陀螺自瞄，当前边界及验收见 [28](28_WEAPONS_PROGRESSIVE_ESTIMATION.md)、[新课程报告](reports/WEAPONS_REDESIGN_VALIDATION.md)。关卡使用独立 YAML 插件，现有 C0–C5 与 Navigation C0–C5 十二关，见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)。Navigation 已实现双轮电压控制、控制曲线、理想里程计、GPS/EKF定位、航点位置闭环、仓储连续路径追踪和已知地图全局规划；局部避障、IMU融合、建图与Arena尚未实现。进度现为公共c0后同时开放Weapons与Navigation，两条主线可交替推进；当前规则与实测见 [36](36_BRANCHING_PROGRESSION.md)、[双主线验收](reports/BRANCHING_PROGRESSION_VALIDATION.md)。
+当前更新日期：2026-11-11；应用配置2.1，关卡Schema 1.0。前一轮文档核对基于HEAD `7c065ab`；C5开发从干净HEAD `3531d80`开始，现由`435adcd`记录；本轮C6新增实现仍在工作区，证据见 [规划验收](reports/NAVIGATION_GLOBAL_PLANNING_VALIDATION.md)。前轮逐项事实见 [文档核对表](reports/DOCUMENTATION_STATE_SYNC_20261110.md)。已完成 M1/M1b、M2 本机浏览器/Transport、M3 编辑部署和 M4 C0–C2 教学闭环验收：实现与限制见 [运行入口](../README.md)、[M4 验证报告](reports/M4_VALIDATION.md)；模型由用户逐项确认，见 [13](13_PHYSICS_MODEL_DECISIONS.md)、[18](18_CAMPAIGN_DESIGN.md)。M5 已实现模块图、角加速度与装甲；现按用户要求调整为 C3 极坐标滤波、C4 中心预测与自瞄、C5 小陀螺自瞄，当前边界及验收见 [28](28_WEAPONS_PROGRESSIVE_ESTIMATION.md)、[新课程报告](reports/WEAPONS_REDESIGN_VALIDATION.md)。关卡使用独立 YAML 插件，现有 C0–C5 与 Navigation C0–C6 十三关，见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)。Navigation 已实现双轮电压控制、控制曲线、理想里程计、GPS/EKF定位、航点位置闭环、仓储连续路径追踪和已知地图全局规划；C6局部扫描与静态避障已接入，验收范围见43与本轮报告。IMU融合、建图与Arena尚未实现。进度现为公共c0后同时开放Weapons与Navigation，两条主线可交替推进；当前规则与实测见 [36](36_BRANCHING_PROGRESSION.md)、[双主线验收](reports/BRANCHING_PROGRESSION_VALIDATION.md)。
 
 工程增量已交付统一检查、Weapons C2授权滤波实验、原生/Pyodide耗时诊断与可恢复工程保留；实际证据与限制见 [验收](reports/ENGINEERING_QUALITY_VALIDATION_20261105.md)。这是Algorithm Lab的单关试点，控制器成对重跑和其他课程实验尚未实现。后端运行profile已由ADR-0053接受配置/截止合同：20ms声明上限、原生30ms与Pyodide40ms墙钟均取可信目录，后两项仍为experimental，固定6tick门不变。Linux/Firefox候选对照不证明其他平台、强沙箱或整局截止失败率<1%。
 
@@ -18,6 +18,8 @@
 | [工程验收](reports/ENGINEERING_QUALITY_VALIDATION_20261105.md) | 统一回归、原生/Pyodide实际实验/恢复、截止证据与范围 |
 | [评估跟进](reports/PROJECT_REVIEW_FOLLOWUP_20261105.md) | 对2026-11-04历史评估逐项落实、Serena职责核查和待办 |
 | [40 连续路径追踪](40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md) | Navigation C4：自动安全路径、只读数组、顺序检查点与真实轨迹评分 |
+| [43 局部感知与避障](43_NAVIGATION_LOCAL_AVOIDANCE.md) | Navigation C6：先验/私有场景、带噪扫描、同模块局部控制、缺测零参考与同tick投影 |
+| [局部避障验收](reports/NAVIGATION_LOCAL_AVOIDANCE_VALIDATION.md) | 两参考/三seed、原生/Pyodide、扫描/权限、截止失败与重跑、源码保留和截图 |
 | [42 已知地图全局规划](42_NAVIGATION_GLOBAL_PLANNING.md) | Navigation C5：原始占用网格、玩家膨胀/搜索、一次性5秒准备及静态路径交付 |
 | [规划验收](reports/NAVIGATION_GLOBAL_PLANNING_VALIDATION.md) | A*/Dijkstra、多seed、准备/周期边界、源码兼容与原生/Firefox流程 |
 | [41 Runtime运行profile](41_RUNTIME_EXECUTION_PROFILES.md) | 后端冻结profile、声明准入与完整往返截止、流式基准和兼容合同 |
@@ -46,7 +48,7 @@
 | [Weapons 重设计验收](reports/WEAPONS_REDESIGN_VALIDATION.md) | 原三关基线、新三关闭环、权限、工作区和真实网页 |
 | [26 多模块与 Weapons](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md) | M5 图、调度、章节、C3/C4 控制与装甲边界 |
 | [C2/C3 实时 RMSE 验收](reports/LIVE_RMSE_VALIDATION.md) | 授权累计指标、采样时间、生命周期和两种玩家 UI |
-| [27 YAML关卡插件](27_LEVEL_PLUGIN_ARCHITECTURE.md) | 当前十二关加载/场景/组件/权限与原五关迁移历史 |
+| [27 YAML关卡插件](27_LEVEL_PLUGIN_ARCHITECTURE.md) | 当前十三关加载/场景/组件/权限与原五关迁移历史 |
 | [关卡编写指南](../levels/README.md) | 配置来源、已有组件、校验、启动与扩展流程 |
 | [关卡插件验收](reports/LEVEL_PLUGINS_VALIDATION.md) | 冻结基线、旧源码/存档、临时插件和两种 Runtime 五关通关 |
 | [01 项目愿景](01_PROJECT_VISION.md) | 目标、范围、假设、模式与成功标准 |

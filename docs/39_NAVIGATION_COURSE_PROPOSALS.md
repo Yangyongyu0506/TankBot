@@ -2,7 +2,7 @@
 
 ## 目的与状态
 
-本篇最初为工程改进轮次的Planned建议。阶段一已由后续用户确认并实现为navigation.c4，当前规范见 [40](40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)；阶段二现由用户逐项确认并实现为navigation.c5，规范见 [42](42_NAVIGATION_GLOBAL_PLANNING.md)。局部感知与后续独立扩展仍为Planned，不预先接受物理、传感器或评分阈值。navigation.c0–c3继续承担轮控、里程计、GPS/EKF和航点闭环。新增关卡仍由YAML组合通用组件；不跨入Weapons工程或重置旧源码。
+本篇最初为工程改进轮次的Planned建议。阶段一已由后续用户确认并实现为navigation.c4，当前规范见 [40](40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)；阶段二现由用户逐项确认并实现为navigation.c5，规范见 [42](42_NAVIGATION_GLOBAL_PLANNING.md)。阶段三已由用户逐项确认并接入navigation.c6，见 [43](43_NAVIGATION_LOCAL_AVOIDANCE.md)；IMU、建图、SLAM等后续独立扩展仍为Planned。navigation.c0–c3继续承担轮控、里程计、GPS/EKF和航点闭环。新增关卡仍由YAML组合通用组件；不跨入Weapons工程或重置旧源码。
 
 ## 阶段一：连续路径跟踪（已确认并实施）
 
@@ -18,15 +18,13 @@ navigation.c5前置C4，复用WheelController、Odometry、EkfLocalization和Pat
 
 地图、保守安全近似、任务选择、接口、错误和明确UI反馈权限以 [42](42_NAVIGATION_GLOBAL_PLANNING.md) 为准；验收证据见 [本关报告](reports/NAVIGATION_GLOBAL_PLANNING_VALIDATION.md)。无解仅作独立测试，正式任务有界生成并保证可达；不新增在线重规划、动态障碍或局部避障。
 
-## 阶段三：局部感知与避障
+## 阶段三：局部感知与避障（已确认并接入）
 
-学习目标是面对有限感知和不完整信息，区分全局计划、局部安全动作及感知延迟。复用已知地图规划、路径跟踪、EKF、传感器实例生命周期和固定tick接口；先在静态局部障碍中验证，再独立设计动态障碍。
+navigation.c6前置C5，复用五项既有算法，只新增LocalController。先验地图用于规划；可信场景解析在玩家规划前固定一个未标出的静态方障碍，完整场景仍按四格安全模型可达。扫描使用独立SensorScheduler和随机流，程序只收到不可变车体系距离与命中掩码。
 
-拟议新增局部距离扫描及`LocalController.update(estimated_pose, local_scan, reference_path, dt) -> Twist`。扫描的无回波、近距盲区和安装变换必须明确；缓存和坐标变换由玩家或已学模块处理，不把未观测区域当自由空间。全局地图是否继续公开，应在关卡权限中显式说明；隐藏的障碍真值只供仿真/评分。
+PathFollower与LocalController同模块组合，不增加一级Topic提交；输入年龄、缺测主动零参考和两级固定延迟见 [43](43_NAVIGATION_LOCAL_AVOIDANCE.md)。正式成功仍为120秒内无碰撞到原目标并停稳，不增加停车次数、最大偏离或RMSE门槛。DWA和几何绕行是隔离验收参考，不是正式模板答案。
 
-验收包含前方阻挡、贴近墙面、拐角遮挡、完全堵塞和连续缺测。碰撞、无法安全停车、超时或非法输出可判失败，但不能以某一种局部算法作为唯一解。用相同场景/seed重新运行控制实验，不能回放旧scan来评价新控制器的避障效果。
-
-需重新确认：scan束数、视场、量程、频率、噪声/偏置/延迟/丢失、扫描对象、遮挡和无回波编码；障碍物生成/移动规则、制动距离、接触容忍度、执行预算和通关门槛。此前被撤回的C4建图讨论不构成本阶段模型授权。
+本轮不引入动态障碍、在线全局重规划、自动建图或SLAM；后续这些模型与评分须另行确认。实际原生/Firefox证据及失败重跑记录以本轮验收报告为准，不由Schema或设计接受推断可靠性。
 
 ## 独立扩展：IMU融合、建图与SLAM
 

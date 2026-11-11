@@ -401,3 +401,4 @@ class Module:
 from .diagnostics import diagnostic
 from .paths import readonly_path
 from .maps import OccupancyGrid
+from .local_navigation import Scan2D, LocalControlInput, LocalControlFeedback

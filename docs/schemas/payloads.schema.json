@@ -243,7 +243,8 @@
                       "joint_state@1",
                       "weapon_state@1",
                       "gps_fix@1",
-                      "armor_detections@1"
+                      "armor_detections@1",
+                      "scan2d@1"
                     ]
                   }
                 }
@@ -848,7 +849,8 @@
                       "joint_state@1",
                       "weapon_state@1",
                       "gps_fix@1",
-                      "armor_detections@1"
+                      "armor_detections@1",
+                      "scan2d@1"
                     ]
                   }
                 }
@@ -1069,7 +1071,8 @@
                       "joint_state@1",
                       "weapon_state@1",
                       "gps_fix@1",
-                      "armor_detections@1"
+                      "armor_detections@1",
+                      "scan2d@1"
                     ]
                   }
                 }
@@ -1353,7 +1356,8 @@
                       "weapon_state@1",
                       "gps_fix@1",
                       "armor_detections@1",
-                      "position_fix2d@1"
+                      "position_fix2d@1",
+                      "scan2d@1"
                     ]
                   }
                 }
@@ -1695,7 +1699,8 @@
                       "weapon_state@1",
                       "gps_fix@1",
                       "armor_detections@1",
-                      "position_fix2d@1"
+                      "position_fix2d@1",
+                      "scan2d@1"
                     ]
                   }
                 }
@@ -1978,6 +1983,118 @@
       "required": [
         "modules",
         "diagnostics"
+      ],
+      "additionalProperties": false
+    },
+    "scan2d": {
+      "type": "object",
+      "properties": {
+        "angle_min_rad": {
+          "type": "number"
+        },
+        "angle_increment_rad": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "range_min_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "range_max_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "noise_stddev_m": {
+          "type": "number",
+          "minimum": 0
+        },
+        "ranges_m": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": 0
+          },
+          "minItems": 1,
+          "maxItems": 180,
+          "$comment": "tankbot-scan-primitive-array-v1"
+        },
+        "hit_mask": {
+          "type": "array",
+          "items": {
+            "type": "boolean"
+          },
+          "minItems": 1,
+          "maxItems": 180,
+          "$comment": "tankbot-scan-primitive-array-v1"
+        },
+        "sample_tick": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "angle_min_rad",
+        "angle_increment_rad",
+        "range_min_m",
+        "range_max_m",
+        "noise_stddev_m",
+        "ranges_m",
+        "hit_mask",
+        "sample_tick"
+      ],
+      "additionalProperties": false
+    },
+    "local_control_feedback": {
+      "type": "object",
+      "properties": {
+        "nominal_vx_mps": {
+          "type": "number"
+        },
+        "nominal_wz_radps": {
+          "type": "number"
+        },
+        "final_vx_mps": {
+          "type": "number"
+        },
+        "final_wz_radps": {
+          "type": "number"
+        },
+        "pose_age_s": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "scan_age_s": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "wheel_age_s": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "protection": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        }
+      },
+      "required": [
+        "nominal_vx_mps",
+        "nominal_wz_radps",
+        "final_vx_mps",
+        "final_wz_radps",
+        "pose_age_s",
+        "scan_age_s",
+        "wheel_age_s",
+        "protection"
       ],
       "additionalProperties": false
     }

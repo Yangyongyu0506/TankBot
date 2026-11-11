@@ -8,6 +8,7 @@ SIGNALS = {
     "command_wz_radps": "rad/s", "encoder_wz_radps": "rad/s",
     "left_wheel_radps": "rad/s", "right_wheel_radps": "rad/s",
     "left_voltage_v": "V", "right_voltage_v": "V",
+    "nominal_vx_mps":"m/s", "nominal_wz_radps":"rad/s", "final_vx_mps":"m/s", "final_wz_radps":"rad/s",
 }
 
 
@@ -19,6 +20,7 @@ class ControlFeedback:
         self.spec = level["visualization"].get("control_feedback")
         self.points = deque(maxlen=self.spec["history_points"] if self.spec else 0)
         self.voltage = None
+        self.local = None
         self.last_tick = None
 
     def command(self, message):
@@ -51,6 +53,8 @@ class ControlFeedback:
                   "command_wz_radps":target["angular"]["z"], "encoder_wz_radps":radius*(right-left)/track,
                   "left_wheel_radps":left, "right_wheel_radps":right,
                   "left_voltage_v":volts[0], "right_voltage_v":volts[1]}
+        if self.local:
+            values.update({key:self.local['payload'][key] for key in ('nominal_vx_mps','nominal_wz_radps','final_vx_mps','final_wz_radps')})
         self.points.append({"simulation_tick": tick, "elapsed_ticks": elapsed,
                             **(campaign.sequence_phase(tick) if campaign.sequence else campaign.navigation.phase()), "values": values})
         self.last_tick = tick

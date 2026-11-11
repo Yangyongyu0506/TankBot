@@ -19,6 +19,7 @@ def main():
     parser.add_argument('--url',required=True);parser.add_argument('--port',type=int,required=True)
     parser.add_argument('--mode',choices=('native','browser'),required=True)
     parser.add_argument('--output',type=Path,required=True)
+    parser.add_argument('--local-controller',choices=('geometric','dwa'))
     parser.add_argument('--planner',choices=('astar','dijkstra'),default='astar')
     parser.add_argument('--seed',type=int,default=0)
     parser.add_argument('--planning-faults',action='store_true')
@@ -27,7 +28,12 @@ def main():
     from tankbot_host.campaign import configure
     from planning_support import standalone_source
     planner_source=standalone_source(args.planner)
-    browser=Browser(args.port);evidence={'mode':args.mode,'url':args.url,'planner':args.planner,'seed':args.seed}
+    if args.local_controller:
+        planner_source=(ROOT/'tests/fixtures'/f'local_{args.local_controller}.py').read_text()
+    edited_file='navigation/local_controller.py' if args.local_controller else 'navigation/global_planner.py'
+    level_id='navigation.c6' if args.local_controller else 'navigation.c5'
+    previous_level='navigation.c5' if args.local_controller else 'navigation.c4'
+    browser=Browser(args.port);evidence={'mode':args.mode,'url':args.url,'planner':args.planner,'seed':args.seed,'local_controller':args.local_controller}
     control_cursor={}
     def script(code):return browser.script(code)
     def ready():browser.until("return document.getElementById('workspace-panel').dataset.ready==='true';",120)
@@ -57,9 +63,10 @@ def main():
         if args.mode=='native':return request('/api/view')
         script("window.__pathView=null;(window.wrappedJSObject?.tankbotQA??window.tankbotQA).view().then(raw=>window.__pathView=JSON.parse(raw));return true;")
         return browser.until('return window.__pathView;')
-    def switch(level_id="navigation.c5"):
+    def switch(selected_id=None):
+        selected_id=selected_id or level_id
         click('open-level-tree')
-        script("const n=document.querySelector('.level-node[data-level-id=\""+level_id+"\"]');n.scrollIntoView({block:'nearest'});n.click();return true;")
+        script("const n=document.querySelector('.level-node[data-level-id=\""+selected_id+"\"]');n.scrollIntoView({block:'nearest'});n.click();return true;")
         origin=script('return performance.timeOrigin;');click('start-selected-level')
         browser.until('return performance.timeOrigin!=='+str(origin)+';',60);ready()
     def shot(name):
@@ -70,16 +77,17 @@ def main():
         evidence['environment']={'user_agent':script('return navigator.userAgent;'),
                                  'host_python':sys.version.split()[0],'platform':sys.platform}
         before=request('/api/workspace')['snapshot'];preserved=('control/wheel_controller.py','localization/odometry.py','localization/ekf.py','navigation/path_follower.py')
+        if args.local_controller:preserved+=('navigation/global_planner.py',)
         switch();workspace=request('/api/workspace');snapshot=workspace['snapshot']
         assert workspace['learning']['upgrade_required']
         for name in preserved:assert snapshot['files'][name]==before['files'][name]
         click('open-workspace')
-        assert script("return [...document.querySelectorAll('#file-list .task-file')].some(n=>n.title==='navigation/global_planner.py');")
+        assert script("return [...document.querySelectorAll('#file-list .task-file')].some(n=>n.title==="+json.dumps(edited_file)+");")
         script("const e=document.querySelector('.cm-content');e.focus();document.execCommand('selectAll');document.execCommand('insertText',false,"+json.dumps(planner_source)+');return true;')
         click('save-workspace');click('test-workspace')
         browser.until("return !document.getElementById('migration-panel').hidden;",90)
         entries=script("return [...document.querySelectorAll('#migration-list summary')].map(n=>n.textContent.split(' · ')[0]);")
-        assert not set(preserved+('navigation/global_planner.py',))&set(entries)
+        assert not set(preserved+(edited_file,))&set(entries)
         click('upgrade-and-test')
         browser.until("return !document.getElementById('deploy-workspace').disabled||document.getElementById('deploy-help').textContent.includes('测试失败');",120)
         assert script("return !document.getElementById('deploy-workspace').disabled;"), 'Snapshot test failed; see captured deployment diagnostics'
@@ -117,7 +125,11 @@ def main():
         click('deploy-workspace')
         browser.until("return !document.getElementById('workspace-dialog').open&&document.getElementById('open-workspace').disabled;",120)
         browser.until("const p=JSON.parse(document.getElementById('arena').dataset.globalPlanning||'null');return p&&p.route;",90)
-        current=view();assert current['payload']['selected_pose']['source_id']=='ekf'
+        deadline=time.monotonic()+10
+        current=view()
+        while current['payload']['selected_pose'] is None and time.monotonic()<deadline:
+            time.sleep(.1);current=view()
+        assert current['payload']['selected_pose'] and current['payload']['selected_pose']['source_id']=='ekf'
         assert current['payload']['objects']==[] and 'wall_contact' not in json.dumps(current)
         active=request('/api/campaign',runtime=True)['attempt']
         assert 'goal_distance_m' in active['global_planning'] and 'tracking_rmse_m' not in active['global_planning']
@@ -127,6 +139,19 @@ def main():
             script('document.querySelector("input[data-layer='+hidden+']").click();return true;')
             browser.until('const s=JSON.parse(document.getElementById("arena").dataset.visibleLayers);return !s.includes('+json.dumps(hidden)+')&&s.includes('+json.dumps(shown)+');')
             script('document.querySelector("input[data-layer='+hidden+']").click();return true;')
+        if args.local_controller:
+            for key in ('scan','scan_points'):
+                script('document.querySelector("input[data-layer='+key+']").click();return true;')
+                script('document.querySelector("input[data-layer='+key+']").click();return true;')
+            click('tab-sensors');browser.until("return !document.getElementById('scan-panel').hidden&&document.getElementById('scan-status').textContent.includes('sample tick');",30)
+            browser.until("return Number(document.getElementById('arena').dataset.scanProjectionPoints)>0;",30)
+            evidence['scan_projection']=script("const d=document.getElementById('arena').dataset;return {sample_tick:Number(d.scanSampleTick),projection_tick:Number(d.scanProjectionTick),points:Number(d.scanProjectionPoints)};")
+            assert evidence['scan_projection']['projection_tick']<=evidence['scan_projection']['sample_tick']
+            evidence['scan_screenshot']=shot('scan')
+            click('tab-control');browser.until("return document.getElementById('hud-control').textContent.includes('名义')&&document.getElementById('hud-control').textContent.includes('最终');",30)
+            evidence['control_screenshot']=shot('control')
+            assert script("return !document.querySelector('input[data-layer=private_obstacles]');")
+            evidence['local_running']=request('/api/campaign',runtime=True)['attempt'].get('local_navigation')
         click('tab-task');deadline=time.monotonic()+150
         ended=None
         while time.monotonic()<deadline:
@@ -135,6 +160,7 @@ def main():
             time.sleep(.5)
         assert ended,'No terminal outcome within acceptance deadline'
         result=ended['attempt']['result'];evidence['result']=result
+        if args.local_controller:evidence['local_terminal']=ended['attempt'].get('local_navigation')
         runtime=request('/api/deployment',runtime=True);evidence['runtime']=runtime
         if args.mode=='browser':evidence['health']=script("return JSON.parse(document.getElementById('arena').dataset.runtimeHealth||'{}');")
         assert result['passed'],result
@@ -153,8 +179,8 @@ def main():
         evidence['finished_screenshot']=shot('finished')
         after=request('/api/workspace')['snapshot']
         for name in preserved:assert after['files'][name]==before['files'][name]
-        assert after['files']['navigation/global_planner.py']==planner_source
-        progress=request('/api/progress');assert not progress['developer_mode'] and 'navigation.c5' in progress['completed_levels']
+        assert after['files'][edited_file]==planner_source
+        progress=request('/api/progress');assert not progress['developer_mode'] and level_id in progress['completed_levels']
         evidence['progress']=progress
         switch();retry=request('/api/campaign',runtime=True)
         assert retry['run_id']!=ended['run_id']
@@ -162,17 +188,20 @@ def main():
         assert retry['attempt']['global_planning']['task_id']==identity
         assert 'route' not in retry['attempt']['global_planning']
         assert request('/api/workspace')['snapshot']['revision']==after['revision']
-        switch('navigation.c4')
+        switch(previous_level)
         returned=request('/api/workspace')['snapshot']
         for name in preserved+('my_notes.py',):assert returned['files'][name]==after['files'][name]
-        assert returned['files']['navigation/global_planner.py']==planner_source
-        evidence['returned_c4']=True
+        assert returned['files'][edited_file]==planner_source
+        evidence['returned_previous_level']=previous_level
         assert script('return document.scrollingElement.scrollHeight<=innerHeight&&document.scrollingElement.scrollWidth<=innerWidth;')
         evidence.update(passed=True,player_mode=True,old_sources_preserved=True,managed_upgrade_only=True,
                         editor_closed_and_locked=True,independent_path_layers=True,retry_same_reference=True)
         args.output.write_text(json.dumps(evidence,ensure_ascii=False,indent=2)+'\n')
-        print('PASS: '+args.mode+' real C4 -> C5 edit, preview upgrade, full plan test, replan deploy, complete, retry and return C4')
+        print('PASS: '+args.mode+' real '+previous_level+' -> '+level_id+' edit, preview upgrade, full plan test, replan deploy, complete, retry and return')
     except BaseException as error:
+        evidence['ui_health']=script("return document.getElementById('arena').dataset.runtimeHealth;")
+        try:evidence['failure_view']=view()
+        except Exception as diagnostic_error:evidence['view_error']=str(diagnostic_error)
         try:evidence['failure_runtime']=request('/api/deployment',runtime=True)
         except Exception as diagnostic_error:evidence['diagnostic_error']=str(diagnostic_error)
         evidence['error']=str(error)[:6000];evidence['failure_screenshot']=shot('failure')

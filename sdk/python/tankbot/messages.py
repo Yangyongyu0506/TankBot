@@ -2,7 +2,7 @@
 from . import (PositionFix2D, ImuData, RadarData, ArmorDetections, Pose2D, TargetEstimate,
                TargetPoseEstimate, TargetPoints, GpsFixData, PolarTargetEstimate,
                TurretAcceleration, TurretVelocity, WaypointGoal, Twist, Vector3,
-               JointState, WeaponState, WheelVoltage)
+               JointState, WeaponState, WheelVoltage, Scan2D, LocalControlFeedback)
 
 MESSAGE_TYPES = {
     'position_fix2d@1': (PositionFix2D, False), 'imu@1': (ImuData, False),
@@ -14,6 +14,7 @@ MESSAGE_TYPES = {
     'waypoint_goal@1': (WaypointGoal, False), 'twist@1': (Twist, True),
     'joint_state@1': (JointState, False), 'weapon_state@1': (WeaponState, False),
     'wheel_voltage@1': (WheelVoltage, True),
+    'scan2d@1': (Scan2D, False), 'local_control_feedback@1': (LocalControlFeedback, True),
 }
 OUTPUT_SCHEMAS = {kind: schema for schema, (kind, publishable) in MESSAGE_TYPES.items() if publishable}
 

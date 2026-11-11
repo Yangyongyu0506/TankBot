@@ -21,7 +21,11 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def core_configuration(config):
     # Level discovery/tutorials belong to Host. Preserve the existing private physics DTO.
-    return {key:value for key,value in config.items() if key not in ("campaign","level_plugins","robot_graph","map_override","navigation_planning")}
+    import copy
+    from .local_scene import physical_walls
+    value = {key: item for key,item in config.items() if key not in ("campaign","level_plugins","robot_graph","map_override","navigation_planning","private_obstacles")}
+    value["scene"] = {**copy.deepcopy(config["scene"]), "walls": copy.deepcopy(physical_walls(config))}
+    return value
 
 
 def load_config(path):
@@ -582,6 +586,8 @@ class Authority:
                     self._target_estimate = copy.deepcopy(message)
                     if self.campaign:
                         self.campaign.estimate(message,self._target_history.get(message["simulation_tick"]))
+        elif schema == 'local_control_feedback@1':
+            self.control_feedback.local = copy.deepcopy(message)
         elif channel == "/robot/cmd_vel":
             if self.config.get("wheel_drive"):
                 # This drive consumes wheel voltage only. Twist remains a reference Topic.
@@ -720,6 +726,15 @@ class Authority:
         attempt=self.campaign.public() if self.campaign is not None else None
         if attempt is not None and self.control_feedback.spec:
             attempt["control_feedback"]=self.control_feedback.public(control_after_tick if run_id==self.run_id else None)
+        local = self.campaign.definition['rules'].get('local_navigation') if self.campaign else None
+        if local and attempt is not None and 'scan' in self.campaign.definition['permissions']['visualization']['allowed_layers']:
+            from .runtime_timing import distribution
+            sample = self._sensors.get('/robot/sensors/scan')
+            report = self.control_feedback.local
+            attempt['local_navigation'] = {'feedback':copy.deepcopy(report),
+                'scan_sampling_wall_ms':distribution(self.sensor_scheduler.backend('distance_scan').costs_ms),
+                'scan_tick':sample['simulation_tick'] if sample else None,
+                'closest_return_m':min((r for r,h in zip(sample['payload']['ranges_m'],sample['payload']['hit_mask']) if h), default=None) if sample else None}
         return {"run_id": self.run_id, "attempt": attempt}
 
     def developer_snapshot(self):
@@ -741,6 +756,7 @@ class Authority:
         return {"version": 1, "run_id": self.run_id, "simulation_tick": self.tick,
                 "truth": copy.deepcopy(self._private), "sensors": copy.deepcopy(self._sensors),
                 "target_visuals": target_visuals,
+                "private_obstacles":copy.deepcopy(self.config.get("private_obstacles",{}).get("walls",[])),
                 "pose_candidates": copy.deepcopy(self._candidates),
                 "selected_pose": copy.deepcopy(self.selector.canonical),
                 "target_estimate": copy.deepcopy(self._target_estimate),

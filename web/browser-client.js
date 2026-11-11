@@ -53,7 +53,7 @@ export async function connectBrowser(){
         const current=await (await fetch("/api/settings")).json();
         if(!session.developer_mode||!current.settings.developer_mode)return {ok:false,json:async()=>({error:"UNAUTHORIZED"})};
       }
-      if(failed||pending.size>=options.max_pending_requests)return Promise.resolve({ok:false,json:async()=>({})});
+      if(failed||pending.size>=options.max_pending_requests)return Promise.resolve({ok:false,json:async()=>({error:failed||"MANAGEMENT_BACKPRESSURE"})});
       return new Promise(resolve=>{const id=serial++;const timer=setTimeout(()=>{pending.delete(id);resolve({ok:false,json:async()=>({})});},options.startup_timeout_s*1000);
         pending.set(id,{resolve,timer});worker.postMessage({op:"command",path,value,id});});
     },

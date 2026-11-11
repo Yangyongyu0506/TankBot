@@ -48,6 +48,7 @@ def configure(config, level_id):
     c=copy.deepcopy(config)
     c.pop("navigation_path",None)
     c.pop("navigation_planning",None)
+    c.pop("private_obstacles",None)
     c.pop("observe_wall_contacts",None)
     campaign=c["campaign"];campaign["active_level"]=level_id
     level=campaign["levels"][level_id]

@@ -169,3 +169,7 @@ C3/C4 的 PolarTracker 输入与 C2 一致使用类型化观测元组：`measure
 `PathFollower.update(estimated_pose: NDArray[np.float64], path_xy: NDArray[np.float64], dt: float) -> Twist`用于Navigation C4。estimated_pose是只读map系(3,) `[x,y,yaw]`，path_xy是只读map系(N,2)米制坐标；使用SDK `readonly_path(points)`构造后，不能重新打开写权限。缺少、过期或错误帧的玩家位姿时，受管适配器输出零参考。
 
 PathTrackingModule只订阅玩家EKF候选，公开路径一次经受权启动配置提供，不每批复制或引入新中间件。四模块仍按既有冻结输入和6tick提交，Twist先进入原轮控制器，Authority独立拒绝负vx及非平面输入。旧WaypointController/Goal和其他课程接口保留；合同样例见 [path-follower-contract.json](examples/path-follower-contract.json)，完整教材见 [40](40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)。
+
+## 局部导航组合合同
+
+C6同一周期导航模块先调用PathFollower，再调用LocalController，仅发布一份最终Twist参考；另有显式内部指令诊断。pose/scan/wheels均为可缺失端口，适配器必须运行零参考保护，不能因缺失输入跳过后保留旧指令。采样年龄与命令链延迟分别计算；不使用真值补齐。具体接口与生命周期见 [43](43_NAVIGATION_LOCAL_AVOIDANCE.md)。C6声明分配为轮控制4、里程计2、EKF4、组合导航10ms，总额仍20ms；这是准入分配，非独立CPU硬配额。旧关合同保持原值。

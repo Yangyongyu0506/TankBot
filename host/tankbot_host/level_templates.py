@@ -17,6 +17,8 @@ COMPONENTS = {
     "waypoint_navigation_adapter":{"navigation/waypoint_module.py":navigation.WAYPOINT_ADAPTER},
     "path_follower":{"navigation/__init__.py":"","navigation/path_follower.py":navigation.PATH_FOLLOWER},
     "path_tracking_adapter":{"navigation/path_module.py":navigation.PATH_ADAPTER},
+    "local_controller":{"navigation/local_controller.py":(Path(__file__).resolve().parents[2]/"templates/navigation/local_controller.py").read_text()},
+    "local_navigation_adapter":{"navigation/local_module.py":(Path(__file__).resolve().parents[2]/"templates/navigation/local_module.py").read_text()},
     "global_planner":{"navigation/__init__.py":"", "navigation/global_planner.py":
                       (Path(__file__).resolve().parents[2]/"templates/navigation/global_planner.py").read_text()},
     "armor_tracker":{"perception/__init__.py":"","perception/armor_tracker.py":curriculum.ARMOR_TRACKER},

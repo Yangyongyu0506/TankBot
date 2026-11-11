@@ -2413,6 +2413,53 @@
     },
     "navigation_planning": {
       "$ref": "https://tankbot.example/schemas/v1/global-planning.schema.json#/$defs/reference"
+    },
+    "private_obstacles": {
+      "type": "object",
+      "properties": {
+        "walls": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "center": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 2,
+                "maxItems": 2
+              },
+              "size": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 2,
+                "maxItems": 2
+              }
+            },
+            "required": [
+              "center",
+              "size"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "identity": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "generation_version": {
+          "const": "1"
+        }
+      },
+      "required": [
+        "walls",
+        "identity",
+        "generation_version"
+      ],
+      "additionalProperties": false
     }
   },
   "required": [

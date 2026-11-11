@@ -36,7 +36,22 @@ def _discriminated_all_of(validator, clauses, instance, schema):
         yield from validator.descend(instance,clause,schema_path=index)
 
 
-_StructuralValidator = validators.extend(Draft202012Validator, {'allOf':_discriminated_all_of})
+def _scan_primitive_items(validator, item_schema, instance, schema):
+    """Equivalent primitive-array check for the two bounded scan arrays only.
+
+    Keep all container/size and semantic checks. Invalid or unfamiliar values
+    take the standard path, preserving JSON Schema error locations.
+    """
+    if schema.get('$comment') == 'tankbot-scan-primitive-array-v1' and type(instance) is list:
+        if item_schema == {'type':'boolean'} and all(type(v) is bool for v in instance):
+            return
+        if item_schema == {'type':'number','minimum':0} and all(type(v) in (int,float) and v >= 0 for v in instance):
+            return
+    yield from Draft202012Validator.VALIDATORS['items'](validator,item_schema,instance,schema)
+
+
+_StructuralValidator = validators.extend(Draft202012Validator, {
+    'allOf':_discriminated_all_of, 'items':_scan_primitive_items})
 
 
 class Validator:
@@ -109,6 +124,14 @@ class Validator:
                 raise Rejected("OUT_OF_ORDER")
             if msg["schema"] == "twist@1" and not self.config["chassis"][self.config["scene"]["default_chassis"]]["lateral_actuation"] and msg["payload"]["linear"]["y"] != 0:
                 raise Rejected("UNSUPPORTED_MOTION")
+        if msg["schema"] == "scan2d@1":
+            p = msg["payload"]
+            if (len(p["ranges_m"]) != len(p["hit_mask"]) or p["range_min_m"] >= p["range_max_m"]
+                    or any(not p["range_min_m"] <= r <= p["range_max_m"] or (not hit and r != p["range_max_m"])
+                           for r,hit in zip(p["ranges_m"],p["hit_mask"]))):
+                raise Rejected("INVALID_SCAN")
+            if p["sample_tick"] != tick:
+                raise Rejected("INVALID_TIMESTAMP")
         if msg["schema"] == "joint_state@1":
             p = msg["payload"]
             if any(len(p[k]) not in (0, len(p["name"])) for k in ("velocity", "effort")) or len(p["position"]) != len(p["name"]):

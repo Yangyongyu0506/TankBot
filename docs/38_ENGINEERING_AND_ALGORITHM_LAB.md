@@ -4,7 +4,7 @@
 
 依据2026-11-04评估和当前源码，按以下验证边界推进：统一检查入口→Weapons C2固定输入实验→原生/Pyodide耗时诊断→项目备份/保留→局部职责提取→当前文档及未来课程建议。评估原文保留于 [原报告](reports/PROJECT_REVIEW_20261104.md)，本轮结果独立记录，不把历史实测当作新证据。
 
-本文首轮交付不新增关卡或物理；当时十关、20ms墙钟、6tick提交及玩家源码保持。后续Navigation C4、C5增加后当前十二关，课程合同分别见40/42；当前墙钟与声明准入的独立profile修订见 [41](41_RUNTIME_EXECUTION_PROFILES.md)，本文实验权限和源码保留合同继续有效。新增工程配额集中于 [engineering.yaml](../config/engineering.yaml)，经过 [Schema](schemas/engineering.schema.json) 校验；课程授权仍来自YAML。架构取舍见 [ADR-0051](adr/0051-engineering-experiments-and-retention.md)。
+本文首轮交付不新增关卡或物理；当时十关、20ms墙钟、6tick提交及玩家源码保持。后续Navigation C4、C5增加后当前十三关，课程合同分别见40/42；当前墙钟与声明准入的独立profile修订见 [41](41_RUNTIME_EXECUTION_PROFILES.md)，本文实验权限和源码保留合同继续有效。新增工程配额集中于 [engineering.yaml](../config/engineering.yaml)，经过 [Schema](schemas/engineering.schema.json) 校验；课程授权仍来自YAML。架构取舍见 [ADR-0051](adr/0051-engineering-experiments-and-retention.md)。
 
 ## 本地和CI检查合同
 

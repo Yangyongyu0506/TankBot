@@ -14,6 +14,16 @@ from .campaign_templates import template_version, TRANSFORMS, TRACKER, MANAGED_F
 
 
 TYPE_TEXT: dict[str, tuple[str, dict[str, str]]] = {
+    "Scan2D": ("不可变瞬时车体系距离扫描；0朝前，角度向左逆时针，angles_rad按angle_min_rad+i*angle_increment_rad生成。", {
+        "ranges_m":"只读float64(180,)米；截断到公开量程。", "hit_mask":"只读bool(180,)；False为无回波，不代表量程外或射线间自由。",
+        "angle_min_rad":"第0条射线角度，rad。", "angle_increment_rad":"相邻射线角度，rad；首尾不重复。",
+        "range_min_m":"近距离饱和下限，m。", "range_max_m":"无回波与远距截断，m；需结合hit_mask区分。",
+        "noise_stddev_m":"命中射线独立零均值高斯距离噪声σ，m。", "sample_tick":"整帧真实原始采样tick，不是接收或控制生效tick。"}),
+    "LocalControlInput": ("同次调用中的名义跟踪命令与授权观测；不含真实速度、系统位姿或私有障碍。", {
+        "estimated_pose":"只读float64(3,) map[x,y,yaw]，玩家EKF。", "reference_path":"只读float64(N,2)，冻结的map系全局路径。",
+        "scan":"Scan2D，属于扫描原采样tick时的base_link。", "nominal_command":"PathFollower本次生成的期望Twist，不是实测运动。",
+        "pose_age_s":"EKF原采样tick至本次调用的仿真秒。", "scan_age_s":"扫描原采样tick至本次调用的仿真秒。",
+        "wheel_rates_radps":"只读float64(2,)[left,right]，与EKF共用带噪编码器，rad/s。", "wheel_age_s":"编码器原采样tick至本次调用的仿真秒。"}),
     "OccupancyGrid": ("明确授权的完整已知静态地图；原始网格不包含膨胀结果、裁判路线或机器人真值。", {
         "grid":"不可重新开启写权限的bool (H,W) NumPy数组；True障碍，False自由，row递增为map +y，col递增为+x。",
         "origin_xy":"只读float64 (2,)地图坐标；左下角栅格的左下角，m。",

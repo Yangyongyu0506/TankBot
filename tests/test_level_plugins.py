@@ -104,7 +104,7 @@ class LevelPluginTests(unittest.TestCase):
     def test_all_five_match_frozen_pre_refactoring_runtime_baselines(self):
         baseline=json.loads((ROOT/'tests/fixtures/level-behavior-before.json').read_text())
         config=load_config(self.path)
-        self.assertEqual(list(config['campaign']['levels']),[*baseline['levels'],'c5','navigation.c0','navigation.c1','navigation.c2','navigation.c3','navigation.c4','navigation.c5'])
+        self.assertEqual(list(config['campaign']['levels']),[*baseline['levels'],'c5','navigation.c0','navigation.c1','navigation.c2','navigation.c3','navigation.c4','navigation.c5','navigation.c6'])
         for lid,expected in baseline['levels'].items():
             # User explicitly redesigned C3/C4 and added C5. Freeze the unchanged C0-C2 here;
             # new sensor/control/goal semantics have dedicated curriculum acceptance tests.

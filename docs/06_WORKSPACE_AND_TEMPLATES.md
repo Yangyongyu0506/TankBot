@@ -132,3 +132,7 @@ M5已扩展多模块Manifest、整图测试与回滚，见 [26](26_MODULE_GRAPH_
 ## 当前项目维护实现
 
 当前Store提供完整项目备份、容量分类、固定revision和预览式历史保留。沿用文件锁/CAS；清理先备份并写恢复日志，再移动不可变对象，中断回滚，显式清空前验证备份。恢复先预览源码差异并备份当前HEAD，再导入历史，最后原子发布；不自动覆盖算法。旧迁移保留备份/固定项/恢复区，接口及限制见 [38](38_ENGINEERING_AND_ALGORITHM_LAB.md)。
+
+## C6增量与已有工程
+
+`navigation/local_controller.py`是玩家文件，非覆盖追加；GlobalPlanner、PathFollower及三项控制/定位算法和自建文件保持。`navigation/local_module.py`、Manifest与受管Contract走升级预览及显式应用，沿用不可变revision、ledger/history与恢复机制。C6不会将参考避障器写入正式模板。接口和教材见 [43](43_NAVIGATION_LOCAL_AVOIDANCE.md)。

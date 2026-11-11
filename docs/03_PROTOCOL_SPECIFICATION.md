@@ -244,3 +244,9 @@ runtime_step_result@1.payload可携带telemetry，包含有界modules（module_i
 Navigation C4不新增Topic或替换现有Envelope。`permissions.data_access.task_inputs: [path_reference]`显式授权启动配置 `path_tracking_parameters.reference`；其中 `frame_id/points_m/path_id/seed/input_sha256/parameters` 描述公开静态路径，不含真实运动状态。参考解析后固定，部署和短测复用相同身份；重试以同一定义建立新run_id。
 
 SDK通过readonly_path将points_m变为不可写的float64 (N,2)；`PathFollower.update`只收到该数组、玩家EKF位姿和dt，输出仍为twist@1，经Authority参考限幅与轮电压链提交。公开任务反馈不自动变成程序订阅权限；接口及参数见 [40](40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)。
+
+## 局部扫描与指令诊断增量
+
+`/robot/sensors/scan` 使用 `scan2d@1`、`base_link`、米/弧度，`sample_tick` 必须等于 Envelope 的原 `simulation_tick`。紧凑角度为 `angle_min_rad+i*angle_increment_rad`，最大180条；`ranges_m`/`hit_mask`等长。当前距离扫描组件的具体量程、角度、噪声和周期由关卡YAML声明，C6合同见 [43](43_NAVIGATION_LOCAL_AVOIDANCE.md)、[扫描夹具](examples/scan-message.json)。无回波必须为最大距离且False；最大距离命中为True。SDK数组不可重新打开写权限。
+
+`local_control_feedback@1` 是同一导航模块的有界指令/输入年龄诊断，发布到内部 `/robot/modules/<module_id>/feedback`；不形成第二级控制链，不包含真实速度或障碍几何。只有最终Twist进入现有`/robot/cmd_vel`，普通数据访问与UI反馈授权仍独立。

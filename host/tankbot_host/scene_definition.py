@@ -74,7 +74,11 @@ def resolve_scene(config):
     hz=c['clock']['physics_hz']
     if hz%c['clock']['sensor_hz'] or hz%c['clock']['algorithm_hz'] or c['solver']['dt']!=1/(hz*c['clock']['substeps']):
         raise ValueError('Invalid resolved scene clock/solver')
-    world=ResolvedWorld(tuple(ResolvedWall(tuple(w['center']),tuple(w['size'])) for w in c['scene']['walls']),hz,c['clock']['substeps'],canonical(c['solver']))
+    from .local_scene import prepare_local_scene,physical_walls
+    path_reference=prepare_path(c)
+    planning_task=prepare_planning(c)
+    prepare_local_scene(c)
+    world=ResolvedWorld(tuple(ResolvedWall(tuple(w['center']),tuple(w['size'])) for w in physical_walls(c)),hz,c['clock']['substeps'],canonical(c['solver']))
     def robot_model(name,target=None):
         # Record effective per-instance parameters, including trusted legacy DTO
         # overrides, rather than claiming the asset alone describes the runtime.
@@ -94,8 +98,6 @@ def resolve_scene(config):
         robots.append(ResolvedRobot(target['target_id'],'target',robot_model(name,target),tuple(target['pose']),tuple(motion.get('initial_velocity',[0.,0.,0.]))))
     instances=definitions(c)
     if any(s.robot_id not in {r.id for r in robots} for s in instances):raise ValueError('Unknown sensor owner')
-    path_reference=prepare_path(c)
-    planning_task=prepare_planning(c)
     encoded=canonical(c)
     return ResolvedScene(hashlib.sha256(encoded.encode()).hexdigest(),active(c),world,tuple(robots),instances,encoded,path_reference,planning_task)
 

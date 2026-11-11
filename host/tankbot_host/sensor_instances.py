@@ -85,7 +85,7 @@ def normalize_sensors(value, source):
             stream=s['random_stream']
             if not stochastic and stream is not None:fail('random_stream','ideal Rust sensor does not consume a random stream')
             if stochastic and stream is None:fail('random_stream','stochastic backend needs an explicit random stream')
-            if (s['type']=='gps' or (s['type']=='wheel_encoder' and stochastic)) and isinstance(stream,dict) and stream.get('seed_mode')!='named':
+            if (s['type'] in ('gps','distance_scan') or (s['type']=='wheel_encoder' and stochastic)) and isinstance(stream,dict) and stream.get('seed_mode')!='named':
                 fail('random_stream.seed_mode','navigation measurement errors require an independent named stream')
             if s['type'] in ('armor_detector','intercepted_gps') and isinstance(stream,dict):
                 if 'random_stream' in p and p['random_stream']!=stream['id']:fail('parameters.random_stream','random stream definitions disagree')
@@ -145,6 +145,11 @@ class SensorScheduler:
             if instance.type=='gps':self._backends[instance.type]=GpsSimulator(instance)
             elif instance.type=='wheel_encoder' and instance.backend=='python':
                 self._backends[instance.type]=EncoderMeasurement(instance,config['clock']['physics_hz'])
+        from .distance_scan import DistanceScanSimulator
+        from .local_scene import physical_walls
+        for instance in self.instances:
+            if instance.type=='distance_scan':
+                self._backends[instance.type]=DistanceScanSimulator(instance,physical_walls(config),config['runtime']['history_limit_ticks'])
         self._native={kind:entry[3] for kind,entry in SENSORS.items()}
         self.closed=False;self.reset()
 
@@ -177,4 +182,6 @@ class SensorScheduler:
         return tuple(result)
 
     def close(self):
+        for backend in self._backends.values():
+            if hasattr(backend,'close'):backend.close()
         self.closed=True;self._backends={};self._last_tick=None
