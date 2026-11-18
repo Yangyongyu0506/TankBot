@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tankbot.example/schemas/desktop.schema.json",
+  "title": "Godot desktop client configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "desktop_version",
+    "engine",
+    "client"
+  ],
+  "properties": {
+    "desktop_version": {
+      "const": "1.0"
+    },
+    "engine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "linux_x86_64"
+      ],
+      "properties": {
+        "version": {
+          "type": "string",
+          "pattern": "^4\\.[0-9]+\\.[0-9]+$"
+        },
+        "linux_x86_64": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "url",
+            "archive_sha512",
+            "executable",
+            "max_archive_bytes"
+          ],
+          "properties": {
+            "url": {
+              "type": "string",
+              "pattern": "^https://github.com/godotengine/godot-builds/releases/download/"
+            },
+            "archive_sha512": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{128}$"
+            },
+            "executable": {
+              "type": "string",
+              "pattern": "^Godot_[A-Za-z0-9._-]+$"
+            },
+            "max_archive_bytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 268435456
+            }
+          }
+        }
+      }
+    },
+    "client": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "window_width",
+        "window_height",
+        "request_timeout_s",
+        "max_response_bytes",
+        "max_inflight",
+        "status_poll_ms",
+        "log_height",
+        "file_tree_width",
+        "font_size",
+        "shutdown_timeout_s"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "window_width": {
+          "type": "integer",
+          "minimum": 800,
+          "maximum": 7680
+        },
+        "window_height": {
+          "type": "integer",
+          "minimum": 600,
+          "maximum": 4320
+        },
+        "request_timeout_s": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 60
+        },
+        "max_response_bytes": {
+          "type": "integer",
+          "minimum": 1024,
+          "maximum": 16777216
+        },
+        "max_inflight": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 32
+        },
+        "status_poll_ms": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 5000
+        },
+        "log_height": {
+          "type": "integer",
+          "minimum": 80,
+          "maximum": 500
+        },
+        "file_tree_width": {
+          "type": "integer",
+          "minimum": 150,
+          "maximum": 500
+        },
+        "font_size": {
+          "type": "integer",
+          "minimum": 12,
+          "maximum": 32
+        },
+        "shutdown_timeout_s": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 30
+        }
+      }
+    }
+  }
+}

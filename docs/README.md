@@ -2,7 +2,7 @@
 
 ## 阅读方式与规范状态
 
-当前更新日期：2026-11-11；应用配置2.1，关卡Schema 1.0。前一轮文档核对基于HEAD `7c065ab`；C5开发从干净HEAD `3531d80`开始，现由`435adcd`记录；本轮C6新增实现仍在工作区，证据见 [规划验收](reports/NAVIGATION_GLOBAL_PLANNING_VALIDATION.md)。前轮逐项事实见 [文档核对表](reports/DOCUMENTATION_STATE_SYNC_20261110.md)。已完成 M1/M1b、M2 本机浏览器/Transport、M3 编辑部署和 M4 C0–C2 教学闭环验收：实现与限制见 [运行入口](../README.md)、[M4 验证报告](reports/M4_VALIDATION.md)；模型由用户逐项确认，见 [13](13_PHYSICS_MODEL_DECISIONS.md)、[18](18_CAMPAIGN_DESIGN.md)。M5 已实现模块图、角加速度与装甲；现按用户要求调整为 C3 极坐标滤波、C4 中心预测与自瞄、C5 小陀螺自瞄，当前边界及验收见 [28](28_WEAPONS_PROGRESSIVE_ESTIMATION.md)、[新课程报告](reports/WEAPONS_REDESIGN_VALIDATION.md)。关卡使用独立 YAML 插件，现有 C0–C5 与 Navigation C0–C6 十三关，见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)。Navigation 已实现双轮电压控制、控制曲线、理想里程计、GPS/EKF定位、航点位置闭环、仓储连续路径追踪和已知地图全局规划；C6局部扫描与静态避障已接入，验收范围见43与本轮报告。IMU融合、建图与Arena尚未实现。进度现为公共c0后同时开放Weapons与Navigation，两条主线可交替推进；当前规则与实测见 [36](36_BRANCHING_PROGRESSION.md)、[双主线验收](reports/BRANCHING_PROGRESSION_VALIDATION.md)。
+当前更新日期：2026-11-17；应用配置2.1，关卡Schema 1.0。前一轮文档核对基于HEAD `7c065ab`；C5/C6实现已分别由`435adcd`/`57f5e90`记录；本轮新增Godot桌面原型见44，尚未提交，证据见 [规划验收](reports/NAVIGATION_GLOBAL_PLANNING_VALIDATION.md)。前轮逐项事实见 [文档核对表](reports/DOCUMENTATION_STATE_SYNC_20261110.md)。已完成 M1/M1b、M2 本机浏览器/Transport、M3 编辑部署和 M4 C0–C2 教学闭环验收：实现与限制见 [运行入口](../README.md)、[M4 验证报告](reports/M4_VALIDATION.md)；模型由用户逐项确认，见 [13](13_PHYSICS_MODEL_DECISIONS.md)、[18](18_CAMPAIGN_DESIGN.md)。M5 已实现模块图、角加速度与装甲；现按用户要求调整为 C3 极坐标滤波、C4 中心预测与自瞄、C5 小陀螺自瞄，当前边界及验收见 [28](28_WEAPONS_PROGRESSIVE_ESTIMATION.md)、[新课程报告](reports/WEAPONS_REDESIGN_VALIDATION.md)。关卡使用独立 YAML 插件，现有 C0–C5 与 Navigation C0–C6 十三关，见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)。Navigation 已实现双轮电压控制、控制曲线、理想里程计、GPS/EKF定位、航点位置闭环、仓储连续路径追踪和已知地图全局规划；C6局部扫描与静态避障已接入，验收范围见43与本轮报告。IMU融合、建图与Arena尚未实现。进度现为公共c0后同时开放Weapons与Navigation，两条主线可交替推进；当前规则与实测见 [36](36_BRANCHING_PROGRESSION.md)、[双主线验收](reports/BRANCHING_PROGRESSION_VALIDATION.md)。
 
 工程增量已交付统一检查、Weapons C2授权滤波实验、原生/Pyodide耗时诊断与可恢复工程保留；实际证据与限制见 [验收](reports/ENGINEERING_QUALITY_VALIDATION_20261105.md)。这是Algorithm Lab的单关试点，控制器成对重跑和其他课程实验尚未实现。后端运行profile已由ADR-0053接受配置/截止合同：20ms声明上限、原生30ms与Pyodide40ms墙钟均取可信目录，后两项仍为experimental，固定6tick门不变。Linux/Firefox候选对照不证明其他平台、强沙箱或整局截止失败率<1%。
 
@@ -14,6 +14,8 @@
 
 | 文档 | 负责的设计与接口 |
 | --- | --- |
+| [44 Godot桌面原型](44_GODOT_DESKTOP_CLIENT.md) | 统一启动、授权原生渲染、CodeEdit、CPython编辑部署及兼容边界 |
+| [Godot原型验收](reports/GODOT_DESKTOP_VALIDATION.md) | 隔离工程、实际Godot流程、源码/进度保留与截图；非完整迁移 |
 | [38 工程与算法实验台](38_ENGINEERING_AND_ALGORITHM_LAB.md) | 统一检查、C2授权回放对照、耗时诊断与可恢复项目保留 |
 | [工程验收](reports/ENGINEERING_QUALITY_VALIDATION_20261105.md) | 统一回归、原生/Pyodide实际实验/恢复、截止证据与范围 |
 | [评估跟进](reports/PROJECT_REVIEW_FOLLOWUP_20261105.md) | 对2026-11-04历史评估逐项落实、Serena职责核查和待办 |

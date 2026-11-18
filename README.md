@@ -8,6 +8,8 @@ TankBot 将二维坦克运动、机器人算法学习与多文件 Python 编程�
 
 ## 构建与运行
 
+Godot 桌面原型可直接运行 `python3 tools/tankbot.py godot --level c0`：统一启动 Godot GUI、现有 Rust/Python 后端与独立 CPython 玩家 Worker，使用原源码/进度库。Linux x86_64 首次自动准备锁定的 Godot 便携包，已有 Godot 可用 `--godot-binary /path/to/godot`；缺 Core 时只构建核心，不需要 npm/Pyodide。F2 打开全屏多文件编辑，保存→测试→部署，日志显示 Python 调用栈。当前是原型，完整编辑器/图层/发行包尚未迁移；Web 入口继续保留，范围与证据见 [44](docs/44_GODOT_DESKTOP_CLIENT.md)。单独验收运行 `python3 tools/check.py --suite godot --offline`，无显示环境加 `-- --headless`；测试使用隔离存档和工程。
+
 需要 Rust **1.99.1**、Python **3.11+**（本机实测 3.14.4）、Node.js **22+** 与 npm；WASM 探针另需 `wasm32-unknown-unknown`。编辑器构建会自动安装锁定的 npm 依赖，游戏启动器会自动准备 Python 依赖：
 
 ```bash

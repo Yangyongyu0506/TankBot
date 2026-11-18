@@ -8,3 +8,4 @@ build/
 *.log
 node_modules/
 userdata/
+clients/godot/.godot/

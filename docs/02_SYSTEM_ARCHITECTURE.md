@@ -65,11 +65,11 @@ flowchart TB
 | --- | --- | --- | --- | --- |
 | 本机开发/无头 | 原生 Core Host | 隔离 CPython worker | CLI/浏览器；IPC、loopback WebSocket | 同机边界，隔离能力依宿主 |
 | 浏览器单机 | Core WASM 的独立 Worker | 另一 Pyodide Worker | 主线程 UI；MessagePort | 教学隔离；无法对设备所有者防作弊 |
-| 桌面应用 | 原生 Host sidecar 或浏览器方案 | 独立受限 Runtime | WebView；受控 IPC | Windows/macOS 隔离需专项验证 |
+| 桌面应用 | Godot原型复用原生Host/权威Core | 独立CPython Worker | Godot原生GUI；受控loopback管理API | 原型仅Linux实测；发行包与强隔离待验证 |
 | 远程单人/多人 | 服务器 Core Host | 服务器沙箱，每机器人隔离 | 浏览器仅授权 DTO；WebSocket | 服务器执行权限；客户端不可信 |
 | 批量测试/Replay | 无头 Host | 受控 Runtime 或记录输出 | Replay/Test Transport | 固定构建与输入的可复现范围 |
 
-桌面壳建议研究 Tauri，也可先用浏览器连接本机 Host，不把桌面打包阻塞在首个闭环之前。浏览器不用 `SharedArrayBuffer` 共享 World；MessagePort 接口首先满足可审查性，再测是否值得优化。
+桌面客户端现按用户确认采用Godot原型，见 [44](44_GODOT_DESKTOP_CLIENT.md)；早期Tauri建议未实施，完整打包仍待验证。浏览器不用 `SharedArrayBuffer` 共享 World；MessagePort 接口首先满足可审查性，再测是否值得优化。
 
 ## 核心语言比较与建议
 
@@ -114,7 +114,7 @@ M3 接受现有 ES module JavaScript/Canvas + CodeMirror 6 + 可选 Vim 的本�
 | 执行约束与观测 | `execution_profiles.py`、两种Supervisor、`runtime_timing.py`；独立声明准入与往返截止，见 [41](41_RUNTIME_EXECUTION_PROFILES.md) |
 | 项目与实验 | `workspace_maintenance.py` 提供备份/固定版本/恢复；`experiments.py` 仅提供C2滤波回放试点，见 [38](38_ENGINEERING_AND_ALGORITHM_LAB.md) |
 
-本机已接受Rust/Rapier（ADR-0002）、Canvas/ES module/CodeMirror/Vim（ADR-0021，替代0003）及共享Authority浏览器拓扑（ADR-0020）。完整平台隔离组合ADR-0013仍为Proposed；桌面壳、远程服务器和Arena部署仍是计划。
+本机已接受Rust/Rapier（ADR-0002）、Canvas/ES module/CodeMirror/Vim（ADR-0021，替代0003）及共享Authority浏览器拓扑（ADR-0020）。ADR-0056新增Godot桌面原型：复用原生Authority与独立CPython，以现有授权HTTP管理接口驱动原生GUI，Web继续保留；原型范围见 [44](44_GODOT_DESKTOP_CLIENT.md)。完整桌面发行、远程服务器和Arena部署仍是计划；平台隔离组合ADR-0013仍为Proposed。
 
 ## 历史：M1 实施映射
 

@@ -2,7 +2,7 @@
 
 ## 目的与执行原则
 
-当前状态更新于2026-11-11：应用配置2.1，十三关；C5已由435adcd记录，本轮C6增量仍在工作区。公共c0后Weapons/Navigation并列开放，里程碑依赖表示工程开发顺序，不是玩家解锁链。后端profile拆分已实现，默认仍experimental；下表区分已交付子项与未来范围，历史阶段不由当前测试重写。证据层次见 [核对表](reports/DOCUMENTATION_STATE_SYNC_20261110.md)。
+当前状态更新于2026-11-17：应用配置2.1，十三关；C5/C6分别由435adcd/57f5e90记录，本轮Godot桌面原型仍在工作区。公共c0后Weapons/Navigation并列开放，里程碑依赖表示工程开发顺序，不是玩家解锁链。后端profile拆分已实现，默认仍experimental；下表区分已交付子项与未来范围，历史阶段不由当前测试重写。证据层次见 [核对表](reports/DOCUMENTATION_STATE_SYNC_20261110.md)。
 
 先验证本项目独特的端到端数据流，再扩展内容。M0、M1/M1b 已交付并完成[收尾复核](reports/M1_CLOSEOUT.md)；M2 已完成浏览器双 Worker、Adapter 一致性及本机资源验收，见 [M2 报告](reports/M2_VALIDATION.md)。其他 OS/浏览器验证仍待执行；M3 编辑部署和 M4 C0–C2 本机教学闭环已完成，见 [M3](reports/M3_VALIDATION.md)、[M4 报告](reports/M4_VALIDATION.md)。M5 多模块和 Weapons C3/C4 已完成本机验收，见 [M5 报告](reports/M5_VALIDATION.md)；M6a–M6g 已接入 Navigation 双轮控制、控制调试、里程计、GPS/EKF、航点闭环、连续路径追踪、已知地图规划和局部静态避障；其他导航课程尚未实施。Accepted 安全/状态边界从 M1 开始，不把三层状态分离推迟到画面完成以后。
 
@@ -75,6 +75,8 @@ M1 验收场景包括：正常估计、故意偏移 2 m 的合法估计、没有
 开放项与技术准入门见 [12](12_VALIDATION_AND_OPEN_QUESTIONS.md)。每阶段结束复审风险、实际性能和教学反馈，更新路线图与相关 ADR；不以修改验收阈值掩盖边界失效。
 
 ## 当前完成状态与下一任务
+
+2026-11-17用户确认增量：增加Godot桌面显示/编辑原型，统一安装启动现有后端和CPython，玩家Worker继续独立，Web保留回归。此项不新增课程或改变物理/评分，完整桌面发行仍属M9；范围及剩余项见 [44](44_GODOT_DESKTOP_CLIENT.md)、[ADR-0056](adr/0056-godot-desktop-presentation.md)。
 
 M1/M1b 本机功能、最新配置测量和回归已完成，见收尾表。M2 已实现 Rust 显式 init/step WASM ABI、共享 Authority 的 Core Worker、独立 origin 的 Pyodide Robot Worker、双向 MessagePort、固定提交/截止强制终止及同 SDK 武器程序。49 个协议夹具经过 IPC/WebSocket/In-Process/Replay 与浏览器 Authority，具备本机真实运行证据。
 

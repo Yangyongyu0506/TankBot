@@ -99,6 +99,7 @@ def main():
     profile = load_config(ROOT / "config/game.yaml")
     from tankbot_host.configuration import load_yaml
     validators[("runtime-benchmark.schema.json", None)].validate(load_yaml(ROOT / "config/runtime-benchmark.yaml"))
+    validators[("desktop.schema.json", None)].validate(load_yaml(ROOT / "config/desktop.yaml"))
     validators[("simulation-profile.schema.json", None)].validate(profile)
     if strict_json((ROOT/"core/tests/fixtures/default-profile.json").read_text()) != profile:
         raise ValueError("Generated profile is stale; run tools/export_profile.py")

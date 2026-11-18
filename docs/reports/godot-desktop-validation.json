@@ -1,0 +1,531 @@
+{
+  "report_version": "1.0",
+  "date": "2026-11-17",
+  "head": "7440e75",
+  "changes": "uncommitted Godot prototype",
+  "environment": {
+    "platform": "Linux",
+    "architecture": "x86_64",
+    "python": "3.14.4",
+    "numpy": "2.3.3"
+  },
+  "flows": [
+    {
+      "mode": "headless",
+      "raw_evidence": ".m1-cache/godot-qa/20261117T151904653325",
+      "godot": {
+        "build": "official",
+        "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+        "hex": 263938,
+        "major": 4,
+        "minor": 7,
+        "patch": 2,
+        "status": "stable",
+        "string": "4.7.2-stable (official)",
+        "timestamp": 0
+      },
+      "display": "headless",
+      "passed": true,
+      "checks": [
+        {
+          "check": "native Host connection",
+          "passed": true
+        },
+        {
+          "check": "authorized pose interpolation",
+          "passed": true
+        },
+        {
+          "check": "no extrapolation",
+          "passed": true
+        },
+        {
+          "check": "old response rejected",
+          "passed": true
+        },
+        {
+          "check": "missing pose hidden without truth fallback",
+          "passed": true
+        },
+        {
+          "check": "native profile; no Pyodide",
+          "passed": true
+        },
+        {
+          "check": "native experimental 30ms deadline unchanged",
+          "passed": true
+        },
+        {
+          "check": "F2 full-screen editor",
+          "passed": true
+        },
+        {
+          "check": "editor has opaque background over game view",
+          "passed": true
+        },
+        {
+          "check": "invalid Python rejected",
+          "passed": true
+        },
+        {
+          "check": "Python source diagnostic visible",
+          "passed": true
+        },
+        {
+          "check": "C1 snapshot Ready in isolated CPython",
+          "passed": true
+        },
+        {
+          "check": "deployment button enabled after test",
+          "passed": true
+        },
+        {
+          "check": "real deployment Active",
+          "passed": true
+        },
+        {
+          "check": "deployment closes editor",
+          "passed": true
+        },
+        {
+          "check": "running attempt blocks editor",
+          "passed": true
+        },
+        {
+          "check": "player estimate reaches authorized renderer",
+          "passed": true
+        },
+        {
+          "check": "C1 actual authoritative pass using authorized estimates",
+          "passed": true
+        },
+        {
+          "check": "custom source preserved after retry",
+          "passed": true
+        },
+        {
+          "check": "original revision and ledger preserved",
+          "passed": true
+        },
+        {
+          "check": "retry resets attempt lifecycle",
+          "passed": true
+        },
+        {
+          "check": "C0 keyboard driving moves the authoritative body",
+          "passed": true
+        },
+        {
+          "check": "Navigation scope switches to unarmed native scene",
+          "passed": true
+        },
+        {
+          "check": "Navigation never copies Weapons algorithms",
+          "passed": true
+        },
+        {
+          "check": "returning to Weapons preserves all existing source bytes",
+          "passed": true
+        },
+        {
+          "check": "returning preserves prior ledger entries; new unlock may append provenance",
+          "passed": true
+        },
+        {
+          "check": "authored revision remains readable after C0 and Navigation visits",
+          "passed": true
+        },
+        {
+          "check": "retry restores editor access",
+          "passed": true
+        }
+      ],
+      "terminal": {
+        "enemy_hp": null,
+        "enemy_max_hp": null,
+        "level_id": "c1",
+        "phase": "finished",
+        "player_hp": null,
+        "player_max_hp": null,
+        "progress": {
+          "has_estimate": true,
+          "hit": true,
+          "moved": true,
+          "turned": true
+        },
+        "result": {
+          "estimate_samples": 38.0,
+          "finished_tick": 452.0,
+          "hits": 1.0,
+          "passed": true,
+          "reason": "objective_completed",
+          "rmse_m": 1.10083407782554e-15,
+          "scored_samples": 38.0,
+          "yaw_rmse_rad": null
+        },
+        "status": "passed",
+        "timing": {
+          "elapsed_ticks": 230.0,
+          "remaining_s": 56.1666666666667,
+          "start_on": "first_deployment",
+          "started_tick": 222.0,
+          "time_limit_s": 60.0
+        }
+      },
+      "runtime": {
+        "backend": "native",
+        "execution_profile": {
+          "backend": "native",
+          "batch_wall_deadline_ms": 30.0,
+          "module_declared_budget_cap_ms": 20.0,
+          "profile_id": "native_local_v1",
+          "profile_version": "1.0",
+          "sha256": "a5e3f4d126ff75a877e0703ff4dec5048efd2295f947df0bfa5500059ce41c32",
+          "source": "profiles",
+          "status": "experimental"
+        },
+        "total_batches": 39.0,
+        "wall_timeouts": 0.0,
+        "missed_commit_gates": 0.0
+      },
+      "round_trip_ms": {
+        "count": 38.0,
+        "max_ms": 3.363626,
+        "p50_ms": 1.746522,
+        "p95_ms": 2.184635,
+        "p99_9_ms": 3.363626,
+        "p99_ms": 3.363626
+      },
+      "launcher_smoke": {
+        "exit_code": 0,
+        "backend_closed": true,
+        "log_sha256": "c9a95c3efc99ff05e329c9bcd33395f25421555e7c4d71d3acc28325079e86d1"
+      }
+    },
+    {
+      "mode": "window",
+      "raw_evidence": ".m1-cache/godot-qa/20261117T152053913799",
+      "godot": {
+        "build": "official",
+        "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+        "hex": 263938,
+        "major": 4,
+        "minor": 7,
+        "patch": 2,
+        "status": "stable",
+        "string": "4.7.2-stable (official)",
+        "timestamp": 0
+      },
+      "display": "X11",
+      "passed": true,
+      "checks": [
+        {
+          "check": "native Host connection",
+          "passed": true
+        },
+        {
+          "check": "authorized pose interpolation",
+          "passed": true
+        },
+        {
+          "check": "no extrapolation",
+          "passed": true
+        },
+        {
+          "check": "old response rejected",
+          "passed": true
+        },
+        {
+          "check": "missing pose hidden without truth fallback",
+          "passed": true
+        },
+        {
+          "check": "native profile; no Pyodide",
+          "passed": true
+        },
+        {
+          "check": "native experimental 30ms deadline unchanged",
+          "passed": true
+        },
+        {
+          "check": "F2 full-screen editor",
+          "passed": true
+        },
+        {
+          "check": "editor has opaque background over game view",
+          "passed": true
+        },
+        {
+          "check": "invalid Python rejected",
+          "passed": true
+        },
+        {
+          "check": "Python source diagnostic visible",
+          "passed": true
+        },
+        {
+          "check": "C1 snapshot Ready in isolated CPython",
+          "passed": true
+        },
+        {
+          "check": "deployment button enabled after test",
+          "passed": true
+        },
+        {
+          "check": "real deployment Active",
+          "passed": true
+        },
+        {
+          "check": "deployment closes editor",
+          "passed": true
+        },
+        {
+          "check": "running attempt blocks editor",
+          "passed": true
+        },
+        {
+          "check": "player estimate reaches authorized renderer",
+          "passed": true
+        },
+        {
+          "check": "C1 actual authoritative pass using authorized estimates",
+          "passed": true
+        },
+        {
+          "check": "custom source preserved after retry",
+          "passed": true
+        },
+        {
+          "check": "original revision and ledger preserved",
+          "passed": true
+        },
+        {
+          "check": "retry resets attempt lifecycle",
+          "passed": true
+        },
+        {
+          "check": "C0 keyboard driving moves the authoritative body",
+          "passed": true
+        },
+        {
+          "check": "Navigation scope switches to unarmed native scene",
+          "passed": true
+        },
+        {
+          "check": "Navigation never copies Weapons algorithms",
+          "passed": true
+        },
+        {
+          "check": "returning to Weapons preserves all existing source bytes",
+          "passed": true
+        },
+        {
+          "check": "returning preserves prior ledger entries; new unlock may append provenance",
+          "passed": true
+        },
+        {
+          "check": "authored revision remains readable after C0 and Navigation visits",
+          "passed": true
+        },
+        {
+          "check": "retry restores editor access",
+          "passed": true
+        }
+      ],
+      "terminal": {
+        "enemy_hp": null,
+        "enemy_max_hp": null,
+        "level_id": "c1",
+        "phase": "finished",
+        "player_hp": null,
+        "player_max_hp": null,
+        "progress": {
+          "has_estimate": true,
+          "hit": true,
+          "moved": true,
+          "turned": true
+        },
+        "result": {
+          "estimate_samples": 109.0,
+          "finished_tick": 950.0,
+          "hits": 1.0,
+          "passed": true,
+          "reason": "objective_completed",
+          "rmse_m": 1.29193349967537e-15,
+          "scored_samples": 109.0,
+          "yaw_rmse_rad": null
+        },
+        "status": "passed",
+        "timing": {
+          "elapsed_ticks": 656.0,
+          "remaining_s": 49.0666666666667,
+          "start_on": "first_deployment",
+          "started_tick": 294.0,
+          "time_limit_s": 60.0
+        }
+      },
+      "runtime": {
+        "backend": "native",
+        "execution_profile": {
+          "backend": "native",
+          "batch_wall_deadline_ms": 30.0,
+          "module_declared_budget_cap_ms": 20.0,
+          "profile_id": "native_local_v1",
+          "profile_version": "1.0",
+          "sha256": "a5e3f4d126ff75a877e0703ff4dec5048efd2295f947df0bfa5500059ce41c32",
+          "source": "profiles",
+          "status": "experimental"
+        },
+        "total_batches": 110.0,
+        "wall_timeouts": 0.0,
+        "missed_commit_gates": 0.0
+      },
+      "round_trip_ms": {
+        "count": 110.0,
+        "max_ms": 3.149908,
+        "p50_ms": 1.742957,
+        "p95_ms": 2.34017,
+        "p99_9_ms": 3.149908,
+        "p99_ms": 2.519452
+      },
+      "launcher_smoke": {
+        "exit_code": 0,
+        "backend_closed": true,
+        "log_sha256": "a477d97a3b734025f30319c49f23f9c596f79cd0198f0c4a1e8c60c657eeddcd"
+      }
+    }
+  ],
+  "checks": {
+    "standard": {
+      "exit_code": 0,
+      "python_tests": 398,
+      "frontend_scripts": 21,
+      "frontend_tap_tests": 87,
+      "rust_tests": 18,
+      "docs_and_generated_config": true
+    },
+    "desktop_targeted": {
+      "tests": 8,
+      "passed": true,
+      "note": "5 of these were already included when the standard run imported its suite; 3 additional download cases were run separately"
+    },
+    "wasm": {
+      "exit_code": 0,
+      "summary": "native/WASM existing ABI and scene snapshots passed"
+    },
+    "git_diff_check": true
+  },
+  "limits": [
+    "Linux/Godot desktop prototype only",
+    "No full thirteen-course Godot certification",
+    "No Windows/macOS, IME, controller hardware or standalone release packaging validation",
+    "No strong sandbox or Runtime reliability guarantee",
+    "Web client retained; full feature parity not implemented"
+  ],
+  "source_sha256": {
+    "clients/godot/world_view.gd": "944c53cdc31e8d3e006577e2bec7f98cc701e7b0512287706b9801fa490eb352",
+    "clients/godot/timeline.gd": "e3dde0f3d7f50b0914ce612df691b6dcdb01e9eebe77a55b750c45749d19d291",
+    "clients/godot/backend.gd": "9af05e1884ca5454ae1ea851364e2ba84d60c8c7d8f4593b37141aa496e466c8",
+    "clients/godot/main.gd": "d58b1b557b2d1d1f96767f08f9d077274a9aebe16afb61f624b2018ded28abbb",
+    "clients/godot/tests/integration.gd": "b0363661040435297e0dcc2048f338fcc9261015bab6953db34cba18f244630c",
+    "host/tankbot_host/global_planning.py": "648ee7f1caa6309982f4b20ec3ed3317157a447973f83ac62f376510b6962053",
+    "host/tankbot_host/campaign_templates.py": "12622605d19c064b5bb650272f9dfee381e5ce6091d3453ba093b75ae1bddf1e",
+    "host/tankbot_host/application.py": "70af6c00c6554f83d8085b319ac5bb980ffcfa9d3e7011cefafe62bc82bf91e9",
+    "host/tankbot_host/path_tracking.py": "531ae96d323563051cbc58b4d300c7ce38d62d7abef6f7455216844b55284210",
+    "host/tankbot_host/planning_navigation.py": "43a77e7b202393c0f297b7ef5307d99b620ea9ecd17f0a655e433b9ea2749ecd",
+    "host/tankbot_host/scene_definition.py": "68b4922425394b3c8206cc5b2863f14567fc3b6401e50073b81f66661c66f68b",
+    "host/tankbot_host/local_scene.py": "23ec0503bac8869725f673f484f61eccd018c30a3ee9d4c3827d22c0b17b21bd",
+    "host/tankbot_host/campaign.py": "9a54e17d39d981ed7638fdeacd91809f60e7092fcf0b9b56faf4a64be80c5faf",
+    "host/tankbot_host/server.py": "c03248c5d734e098aa65a4ce82774fface145abeeb9e68eff4cc39825af5d84e",
+    "host/tankbot_host/supervisor.py": "57aef8b36ba2516f970864ccb70bca7c3949c7fdcf3bcd23c68bd8658a791193",
+    "host/tankbot_host/runtime_timing.py": "0a1867681f47cdc4aa0cf7828a34599c16088255d570ddbc4001f74e9adb674d",
+    "host/tankbot_host/management.py": "abb7e80fd5810b92c0e45e0bd05ae21bb2734b483868acf2d12d781eca76ee84",
+    "host/tankbot_host/progression.py": "21993dd14981e0a5aef4ef49b07a565f06a9a5ad20e5e88ec6470e3c5ceec2fa",
+    "host/tankbot_host/navigation_templates.py": "53b341305d562e3fec5ff9bf1a58a4f81af90e4a337ca1e32c17bd4a7d9cbeaf",
+    "host/tankbot_host/weapon_templates.py": "4d9f7ba2025b6c56b3c59078070b3d62357eb0b5dc39b3877698803fec8abd89",
+    "host/tankbot_host/desktop.py": "7a9273ca00e6aa6bdf8a37b5eb0c7ef586891e3352857553d947a5803c67757e",
+    "host/tankbot_host/configuration.py": "5f47a070a0a587a0d4476b233723ce257f0b629321203a12c3d544010efb92b9",
+    "host/tankbot_host/experiments.py": "f9986d73bcc318b9f91d03b1c9c1a1bae1db7ee4cc2ae09caa95e2e0170a5d2f",
+    "host/tankbot_host/robot_graph.py": "235ffd29bece9582fadcfda705719b55c8da8eba3ba6bcb1a53a03703086c5d8",
+    "host/tankbot_host/weapon_sensors.py": "b8762a971e9f465d6d8914a27805f2e5fde585903e05bceb456bef743e7148b2",
+    "host/tankbot_host/wheel_geometry.py": "428f2662224b4a5c641a43ecce10a1f7c7c693f4540acadd89baa8edc85690e9",
+    "host/tankbot_host/__init__.py": "763c3b1f903b5ac960ac4b176ab5ddcc41c8f58601260a13b553d6193e7a9be4",
+    "host/tankbot_host/weapon_curriculum.py": "a254a51f0352e5a728c8af84f344b28a286ea6acbc4d740b4567d214736f47f4",
+    "host/tankbot_host/module_profile.py": "1eb5bd0ee4abb755c28a5d7f7444c7e47ba82319d1978778173906f839698400",
+    "host/tankbot_host/browser_server.py": "4e61fec6beee2a36a54c25aff9793123e53cd63901744b6a8ae0de497f05ad23",
+    "host/tankbot_host/template_resources.py": "76ecc7f3784ac9ba7169dda40712c4784be9ce7f7d0e738e782a7305c0a79554",
+    "host/tankbot_host/workspace_maintenance.py": "98d91e140072a7dbc388b86d4fb5246f8bf8100f2f94dfd2af81e8870ea5bd62",
+    "host/tankbot_host/control_feedback.py": "3571bc9c7a5751cb2f336da7a1d3e60c006b440e6a51b917971256cfc8235578",
+    "host/tankbot_host/planning_preparation.py": "ed5fb1699dcef738554158e8ea54a862f18d7a0f0ec51a87312839eaa6a41eb0",
+    "host/tankbot_host/execution_profiles.py": "d6a52a4a9d2622fe6f9cac648f1d8c7693a2c988c635a97f1d1097fd7f2aa724",
+    "host/tankbot_host/workspace.py": "b1c57da74e19e9e7f0aba94177e428e41ac674eb57f50c5df61abc02ece29228",
+    "host/tankbot_host/runtime_profile.py": "daea4d1e11ecdfacb645661cbeff267cf468cffe7ac3d13bf6c32209d858e031",
+    "host/tankbot_host/logs.py": "4b6399b42be3b343ab6b5940da0cd33f0e61d37e5f70999b1ff15bd2508f814d",
+    "host/tankbot_host/level_plugins.py": "f43376bd718abb38e316fe9d65100dbf8acb343e123f3ed95136fe33fdd9b506",
+    "host/tankbot_host/maps.py": "5e8c97a23c4fa15f0ed69e71f226cb0733f286f49d898591e0fd6e4d09a97614",
+    "host/tankbot_host/workspace_api.py": "cc84123948583da7aea9ee4a65f70db6b7789f67392fa9ad0f2920d8eaa99188",
+    "host/tankbot_host/chassis_profiles.py": "f3ddfbed79011b88b5e264844233f69e2ebc1b430eb87a1967d7c835a273efac",
+    "host/tankbot_host/view.py": "6d992608e3b5fd1a7c2148aedcfc71b02f104f421efddd133fc43303241e28ae",
+    "host/tankbot_host/authority.py": "f1d5061da31e7bc30c3a9098173d4a7877a0bcaf8920cd9aa01aee064395a2ff",
+    "host/tankbot_host/level_rules.py": "631e5edeec82aab780c2b54404ba94389ce810c12ed6a3f8b3f19ffb48b05a25",
+    "host/tankbot_host/runtime_benchmark.py": "0f5084b00405d5872ab8a33cb1c101eea4da731cfc4867e383fc0c76907644a0",
+    "host/tankbot_host/navigation.py": "d6702a39fe09316568a4ed2af710a9828eb2ac63cc7599d15124e885edb0d6ce",
+    "host/tankbot_host/sensor_instances.py": "f2bb64e064d8e6ebaf40da42449c245507804482529a28c7afaa6f675c86d41f",
+    "host/tankbot_host/navigation_sensors.py": "9b1ed65bd3e36b147a267eb4767e5ced71edd9253ff727fcca86c3a3c79943be",
+    "host/tankbot_host/engineering.py": "afb7605df0910877d5bae8707d22f4216f9b7b3548be0d79383ef84d7464386b",
+    "host/tankbot_host/cli.py": "63aef9c94f92cf6df4375b58c285dce37fc18f8fc624d5d574ec1e37a39ab18d",
+    "host/tankbot_host/path_generation.py": "d359848559c1689ea692daed6826dae23438990a87ac1ec595f28d199fe2ad2d",
+    "host/tankbot_host/level_templates.py": "c7edd862621f4fa3542aa925669ea71e30d40b0eec0dae53033bf2d9c0f3deda",
+    "host/tankbot_host/deployment.py": "37c051c357822840eb0a7dc6798b9e4e9756dd52bd845f3428b99b07871f3ed1",
+    "host/tankbot_host/learning.py": "bf61784e6ccb063811a39cfd55fbefba380fa24221c10f859f498ae42d1d0582",
+    "host/tankbot_host/navigation_task.py": "ebd6b9380724b02a8df6eccd3540363956fa34a58008157de70d913c2719b23d",
+    "host/tankbot_host/distance_scan.py": "7a7aae29262a1d12f30b1df523d84b3b4f820049031460cbb542c43569fcb206"
+  },
+  "failure_records": [
+    {
+      "path": ".m1-cache/godot-qa/20261117T145949653071/flow.json",
+      "checks": [
+        {
+          "check": "F2 full-screen editor",
+          "passed": false
+        }
+      ]
+    },
+    {
+      "path": ".m1-cache/godot-qa/20261117T150229712973/flow.json",
+      "checks": [
+        {
+          "check": "Python source diagnostic visible",
+          "passed": false
+        }
+      ]
+    },
+    {
+      "path": ".m1-cache/godot-qa/20261117T150431392707/flow.json",
+      "checks": [
+        {
+          "check": "C1 actual authoritative pass using authorized estimates",
+          "passed": false
+        }
+      ]
+    },
+    {
+      "path": ".m1-cache/godot-qa/20261117T151002885707/flow.json",
+      "checks": [
+        {
+          "check": "C1 actual authoritative pass using authorized estimates",
+          "passed": false
+        }
+      ]
+    },
+    {
+      "path": ".m1-cache/godot-qa/20261117T151253033970/flow.json",
+      "checks": [
+        {
+          "check": "returning to Weapons preserves exact source revision and ledger",
+          "passed": false
+        }
+      ]
+    }
+  ]
+}

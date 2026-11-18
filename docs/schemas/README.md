@@ -34,6 +34,7 @@
 | [workspace-backup](workspace-backup.schema.json) | 工程备份结构，摘要/引用/CAS/安全路径及实际配额由Store验证 |
 | [runtime-execution](runtime-execution.schema.json) | 可信后端目录、共同声明上限、独立整批墙钟和版本/状态 |
 | [runtime-benchmark](runtime-benchmark.schema.json) | 隔离基准候选、工作负载/校准、样本与磁盘限额 |
+| [desktop](desktop.schema.json) | Godot原型便携包锁、客户端窗口/HTTP容量与轮询；不包含物理或玩家权限 |
 
 ## 消息、配置与运行能力的区别
 

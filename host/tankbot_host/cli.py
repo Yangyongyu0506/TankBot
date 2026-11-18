@@ -6,7 +6,8 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def make_parser():
     parser = argparse.ArgumentParser(description="TankBot trusted-local simulation and teaching levels")
-    parser.add_argument("mode", nargs="?", choices=("serve", "browser", "headless", "probe"))
+    parser.add_argument("mode", nargs="?", choices=("serve", "browser", "godot", "headless", "probe"))
+    parser.add_argument("--godot-binary", type=Path, help="Godot 4 executable (desktop prototype only)")
     parser.add_argument("--config", type=Path, default=ROOT / "config/game.yaml")
     parser.add_argument("--level", help="Start a teaching level with its authorized capabilities")
     parser.add_argument("--map", help="Override the scene map with an assets/maps name or relative path")
@@ -35,7 +36,7 @@ def parse_args(argv=None):
     parser = make_parser()
     args = parser.parse_args(argv)
     if args.mode is None and not (args.list_maps or args.level_tree):
-        parser.error("需要运行模式 serve/browser/headless/probe，或使用 --list-maps / --level-tree")
+        parser.error("需要运行模式 serve/browser/godot/headless/probe，或使用 --list-maps / --level-tree")
     if args.level and (args.view or args.robot_demo):
         parser.error("--level 不可与 --view 或 --robot-demo 合用")
     return parser, args
@@ -68,14 +69,14 @@ def main():
             print(f"{item['path']}  ({len(item['walls'])} walls)")
         return
     application = None
-    if args.mode in ("serve", "browser") or args.level is not None:
+    if args.mode in ("serve", "browser", "godot") or args.level is not None:
         from .application import ApplicationState
         try:
             application = ApplicationState(config, args.settings_file, args.save_file)
             if args.developer_mode is not None:
                 value = application.public_settings()
                 value["settings"]["developer_mode"] = args.developer_mode
-                if args.mode in ("serve","browser"):
+                if args.mode in ("serve","browser","godot"):
                     application.update_settings({"revision": value["revision"], "settings": value["settings"]})
                 else:
                     application.settings=value["settings"]  # Diagnostic overrides do not rewrite personal settings.
@@ -86,7 +87,7 @@ def main():
                     parser.error("真值练习和机器人演示需要开发者模式；请使用 --developer 或在设置中开启。")
                 args.level = args.level or application.progress()["current_level"] or application.initial_level
             if args.level:
-                if args.mode in ("serve","browser"):
+                if args.mode in ("serve","browser","godot"):
                     application.select_level(args.level)
                 else:
                     application.require_level(args.level)
@@ -140,13 +141,25 @@ def main():
             ensure_native_numpy()
         except ValueError as error:
             parser.error(str(error))
+    desktop_binary = None
+    if args.mode == "godot":
+        from .desktop import prepare_desktop
+        try:
+            desktop_binary = prepare_desktop(args.godot_binary, offline=args.offline, core_binary=args.core_binary)
+        except (OSError, ValueError) as error:
+            parser.error(str(error))
     authority = Authority(config, workspace=args.workspace, binary=args.core_binary, controlled=args.mode=="headless",
                           developer_mode=bool(application and application.developer))
     try:
-        if args.mode == "serve":
+        if args.mode in ("serve", "godot"):
             from .server import LocalServer
             try:
-                LocalServer(authority, args.workspace, args.workspace_store, application=application).serve()
+                server = LocalServer(authority, args.workspace, args.workspace_store, application=application)
+                if args.mode == "godot":
+                    from .desktop import run_desktop
+                    run_desktop(server, desktop_binary)
+                else:
+                    server.serve()
             except KeyboardInterrupt:
                 pass
         else:
@@ -157,4 +170,7 @@ def main():
                               "rejections": [e for e in authority.audit if e["event"]=="rejected"],
                               "campaign": authority.campaign_status()}, indent=2))
     finally:
+        # Switching lessons replaces the Authority; close the current instance too.
+        if args.mode in ("serve", "godot") and "server" in locals():
+            server.authority.close()
         authority.close()

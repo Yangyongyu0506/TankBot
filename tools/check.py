@@ -12,12 +12,12 @@ sys.path.insert(0,str(ROOT/"tools"))
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--suite',choices=('standard','frontend','python','wasm','browser'),default='standard')
+    parser.add_argument('--suite',choices=('standard','frontend','python','wasm','browser','godot'),default='standard')
     parser.add_argument('--offline',action='store_true')
     parser.add_argument('arguments',nargs=argparse.REMAINDER)
     args=parser.parse_args()
     extra=args.arguments[1:] if args.arguments[:1]==['--'] else args.arguments
-    if extra and args.suite!='browser':parser.error('Only --suite browser accepts forwarded arguments')
+    if extra and args.suite not in ('browser','godot'):parser.error('Only --suite browser/godot accepts forwarded arguments')
     if args.suite in ('standard','python'):
         from python_env import relaunch_if_needed
         relaunch_if_needed(Path(__file__).resolve(),offline=args.offline)
@@ -26,6 +26,7 @@ def main():
         'python':[[sys.executable,'-m','unittest','discover','-s','tests','-v']],
         'wasm':[['node','tools/test_frontend.mjs','--wasm']],
         'browser':[[sys.executable,'tools/test_browser.py',*(['--offline'] if args.offline else []),*extra]],
+        'godot':[[sys.executable,'tools/test_godot.py',*(['--offline'] if args.offline else []),*extra]],
     }
     standard=[*commands['frontend'],*commands['python'],['cargo','test','--locked'],
               [sys.executable,'docs/tools/check_design.py'],[sys.executable,'tools/export_profile.py','--check']]
