@@ -32,7 +32,7 @@ class RuntimeLogTests(unittest.TestCase):
         return a.deployment.status()
 
     def test_failed_c2_snapshot_exposes_actual_python_exception_and_location(self):
-        config=configure(load_config(ROOT/"config/game.yaml"),"c2")
+        config=configure(load_config(ROOT/"assets/config/game.yaml"),"c2")
         a=Authority(config,controlled=True);self.addCleanup(a.close)
         a.deployment=DeploymentManager(a)
         files=starter(config);files["perception/transforms.py"]=TRANSFORMS
@@ -52,7 +52,7 @@ class RuntimeLogTests(unittest.TestCase):
         self.assertFalse(a._faulted)
 
     def test_all_unittest_failures_and_stdout_are_preserved(self):
-        config=load_config(ROOT/"config/game.yaml")
+        config=load_config(ROOT/"assets/config/game.yaml")
         a=Authority(config,controlled=True);self.addCleanup(a.close)
         a.deployment=DeploymentManager(a)
         files=starter(config)
@@ -75,7 +75,7 @@ class FeedbackTests(unittest.TestCase):
         self.assertNotIn('PlayerTestsFailed:',text)
 
     def test_syntax_error_feedback_has_python_source_and_caret(self):
-        config=load_config(ROOT/"config/game.yaml")
+        config=load_config(ROOT/"assets/config/game.yaml")
         a=Authority(config,controlled=True);self.addCleanup(a.close)
         a.deployment=DeploymentManager(a)
         files=starter(config);files['bad.py']='def broken(:\n'
@@ -97,7 +97,7 @@ class FeedbackTests(unittest.TestCase):
         self.assertEqual(logs.public()["next_sequence"],1000)
 
     def test_native_print_exception_and_candidate_errors_reach_management_status(self):
-        config=load_config(ROOT/"config/game.yaml")
+        config=load_config(ROOT/"assets/config/game.yaml")
         sources=starter(config)
         sources["localization/odometry.py"]='''from tankbot import Module
 class Odometry(Module):

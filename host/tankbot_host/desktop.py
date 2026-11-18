@@ -17,16 +17,17 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def settings():
     from .configuration import load_yaml
+    from .resources import repository_path
     from jsonschema import Draft202012Validator
-    value = load_yaml(ROOT / 'config/desktop.yaml')
-    schema = json.loads((ROOT / 'docs/schemas/desktop.schema.json').read_text())
+    value = load_yaml(ROOT / 'assets/config/desktop.yaml')
+    schema = json.loads((ROOT / 'assets/schemas/desktop.schema.json').read_text())
     Draft202012Validator(schema).validate(value)
-    appearance = load_yaml(ROOT / value.get('theme_file', 'config/desktop-theme.yaml'))
-    theme_schema = json.loads((ROOT / 'docs/schemas/desktop-theme.schema.json').read_text())
+    appearance = load_yaml(repository_path(value.get('theme_file', 'assets/config/desktop-theme.yaml')))
+    theme_schema = json.loads((ROOT / 'assets/schemas/desktop-theme.schema.json').read_text())
     Draft202012Validator(theme_schema).validate(appearance)
     value['client']['appearance'] = appearance
-    sprites = load_yaml(ROOT / value.get('sprites_file', 'config/desktop-sprites.yaml'))
-    sprite_schema = json.loads((ROOT / 'docs/schemas/desktop-sprites.schema.json').read_text())
+    sprites = load_yaml(repository_path(value.get('sprites_file', 'assets/config/desktop-sprites.yaml')))
+    sprite_schema = json.loads((ROOT / 'assets/schemas/desktop-sprites.schema.json').read_text())
     Draft202012Validator(sprite_schema).validate(sprites)
     for name, definition in sprites['assets'].items():
         relative = definition['path']
@@ -37,6 +38,10 @@ def settings():
             raise ValueError(f'SPRITE_ASSET_TOO_LARGE: {name}: {relative}')
         definition['path'] = str(asset)
     value['client']['sprites'] = sprites
+    controls = load_yaml(repository_path(value.get('tools_file', 'assets/config/desktop-tools.yaml')))
+    controls_schema = json.loads((ROOT / 'assets/schemas/desktop-tools.schema.json').read_text())
+    Draft202012Validator(controls_schema).validate(controls)
+    value['client']['tools'] = controls
     return value
 
 

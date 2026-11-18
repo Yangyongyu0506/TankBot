@@ -6,11 +6,11 @@
 
 Godot显示名每章从C0编号：Hello Robot.C0、Weapons.C0–C4、Navigation.C0–C6。显示名与稳定ID分离，Weapons.C0–C4对应原c1–c5；文档/API/YAML中的原编号保留兼容含义，映射见 [44](44_GODOT_DESKTOP_CLIENT.md)。
 
-当前唯一玩家GUI是Godot，运行 `python3 tools/tankbot.py`；Rust/Rapier继续权威物理，独立CPython继续运行玩家代码。Web GUI、CodeMirror/npm、Pyodide及浏览器专用工具已按用户确认删除，见 [ADR-0057](adr/0057-godot-only-player-entry.md)、[44](44_GODOT_DESKTOP_CLIENT.md)。headless/probe、Rust WASM开发构建/对照和Godot所需本机API保留。标准检查不依赖Node/npm；WASM单独检查需要Node。
+当前唯一玩家GUI是Godot，运行 `python3 main.py`；Rust/Rapier继续权威物理，独立CPython继续运行玩家代码。Web GUI、CodeMirror/npm、Pyodide及浏览器专用工具已按用户确认删除，见 [ADR-0057](adr/0057-godot-only-player-entry.md)、[44](44_GODOT_DESKTOP_CLIENT.md)。headless/probe、Rust WASM开发构建/对照和Godot所需本机API保留。标准检查不依赖Node/npm；WASM单独检查需要Node。
 
 原生profile仍为20ms声明准入、30ms整批墙钟、6tick提交，状态experimental；不因删除浏览器宣称可靠性提升。历史双Runtime报告、原始JSON和当期测试计数保留，不能作为当前浏览器支持或完整Godot功能等价的证据。历史浏览器源链接指向删除前提交。
 
-Godot提供渲染、键鼠、VS Code入口、Start、日志及关卡操作；内置源码编辑与手动测试/部署按钮已由 [ADR-0058](adr/0058-external-editor-and-single-start.md) 移除。VS Code保存真实文件，Start冻结版本并自动完成原检查与启动，见 [45](45_EXTERNAL_EDITOR_AND_START.md)、[当前验收](reports/EXTERNAL_EDITOR_AND_START_VALIDATION.md)。曲线、实验台、工程维护、完整图层及手柄/设置界面仍待移植。旧报告按各自时期阅读，不作为当前菜单说明。
+Godot提供渲染、键鼠、VS Code入口、Start、日志及关卡操作；内置源码编辑与手动测试/部署按钮已由 [ADR-0058](adr/0058-external-editor-and-single-start.md) 移除。VS Code保存真实文件，Start冻结版本并自动检查/启动，见 [45](45_EXTERNAL_EDITOR_AND_START.md)。设置/改键、独立开发者/导航图层和只读数据查看器已按 [0059](adr/0059-godot-settings-and-developer-displays.md) 恢复；曲线、实验台、工程维护、手柄、完整关卡树和地图资产预览仍待移植。旧报告按各自时期阅读，不作为当前菜单说明。
 
 “必须／不得”为设计约束；“建议／拟采用”为待验证方案。Accepted ADR 表示接受设计原则或接口方向，不表示实现或平台验证完成；Proposed 技术不得当作既成依赖。协议 `1.0` 是**未发布草案**，首次发布前由兼容性审查冻结；发布后执行版本规则。
 
@@ -20,10 +20,14 @@ Godot提供渲染、键鼠、VS Code入口、Start、日志及关卡操作；内
 
 | 文档 | 负责的设计与接口 |
 | --- | --- |
+| [46 静态资源与根入口](46_STATIC_ASSETS_AND_ENTRYPOINT.md) | assets资源边界、完整模板、main.py及旧配置兼容/缓存清理 |
+| [静态资源与根入口验收](reports/RESOURCE_LAYOUT_AND_ENTRYPOINT_VALIDATION.md) | 源码/物理摘要、Python/uv启动、浏览器缓存清理及兼容回归 |
 | [45 外部编辑与Start](45_EXTERNAL_EDITOR_AND_START.md) | VS Code真实文件、保存/快照、冲突保护和单次Start自动检查/运行 |
 | [外部编辑与Start验收](reports/EXTERNAL_EDITOR_AND_START_VALIDATION.md) | 磁盘/历史保护、自动启动、隔离编辑器及真实流程证据 |
 | [Godot唯一入口验收](reports/GODOT_ONLY_ENTRY_VALIDATION.md) | 默认启动、Web/Pyodide清理、数据兼容与保留的开发能力 |
 | [44 Godot桌面客户端](44_GODOT_DESKTOP_CLIENT.md) | 统一启动、授权渲染、外部编辑与Start、桌面主题及兼容边界 |
+| [Godot设置与开发者验收](reports/GODOT_SETTINGS_AND_DEVELOPER_VALIDATION.md) | 改键/YAML、独立图层和查看器、C5/C6、撤权及源码/进度保留 |
+| [Godot透明度与诊断顺序验收](reports/GODOT_DEVELOPER_RENDERING_VALIDATION.md) | 整体半透明实体、顶层坐标轴/观测点、动态生成顺序与真实窗口像素检查 |
 | [Godot主题验收](reports/GODOT_UI_CONTRAST_VALIDATION.md) | 浅色按钮、Start/停止配色、可读性与实际窗口回归 |
 | [Sprite资源](../assets/sprites/README.md) | 工业风预制PNG、分层装配、原模型标定与美术提示词 |
 | [Godot Sprite验收](reports/GODOT_SPRITES_VALIDATION.md) | 图片加载、双底盘与靶标、变换/清理和原生窗口流程 |
@@ -63,7 +67,7 @@ Godot提供渲染、键鼠、VS Code入口、Start、日志及关卡操作；内
 | [26 多模块与 Weapons](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md) | M5 图、调度、章节、C3/C4 控制与装甲边界 |
 | [C2/C3 实时 RMSE 验收](reports/LIVE_RMSE_VALIDATION.md) | 授权累计指标、采样时间、生命周期和两种玩家 UI |
 | [27 YAML关卡插件](27_LEVEL_PLUGIN_ARCHITECTURE.md) | 当前十三关加载/场景/组件/权限与原五关迁移历史 |
-| [关卡编写指南](../levels/README.md) | 配置来源、已有组件、校验、启动与扩展流程 |
+| [关卡编写指南](../assets/levels/README.md) | 配置来源、已有组件、校验、启动与扩展流程 |
 | [关卡插件验收](reports/LEVEL_PLUGINS_VALIDATION.md) | 冻结基线、旧源码/存档、临时插件和两种 Runtime 五关通关 |
 | [01 项目愿景](01_PROJECT_VISION.md) | 目标、范围、假设、模式与成功标准 |
 | [02 系统架构](02_SYSTEM_ARCHITECTURE.md) | 模块依赖、三种架构视角、技术选型、部署 |
@@ -109,7 +113,7 @@ Godot提供渲染、键鼠、VS Code入口、Start、日志及关卡操作；内
 | [M1 验证报告](reports/M1_VALIDATION.md) | 当前实现范围、实际命令、证据与平台限制 |
 | [M1b 验证报告](reports/M1B_VALIDATION.md) | 武器、SDK、浏览器与原生/WASM 证据及限制 |
 | [ADR 索引](adr/README.md) | 决策状态、替代方案与变更流程 |
-| [Schema与样例](schemas/README.md) | 当前结构、已支持子集、版本演进与正反夹具；结构不等于运行验证 |
+| [Schema与样例](../assets/schemas/README.md) | 当前结构、已支持子集、版本演进与正反夹具；结构不等于运行验证 |
 | [2026-11-10文档核对](reports/DOCUMENTATION_STATE_SYNC_20261110.md) | 提交基线、逐项事实/证据、修订与本轮检查范围 |
 
 建议先读 01 → 02 → 04 → 03 → 05，再按任务阅读其他领域。开始实现前阅读对应 Accepted ADR 和验收条件。

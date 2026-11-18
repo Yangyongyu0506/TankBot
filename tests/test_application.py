@@ -24,7 +24,7 @@ class ApplicationTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.directory = Path(self.temporary.name)
-        self.config = load_config(ROOT / "config/game.yaml")
+        self.config = load_config(ROOT / "assets/config/game.yaml")
         self.state = ApplicationState(self.config, self.directory / "settings.yaml", self.directory / "progress.json")
 
     def mode(self, enabled):
@@ -82,7 +82,7 @@ class ApplicationTests(unittest.TestCase):
     def test_default_files_match_documented_schemas_and_cli_cannot_skip(self):
         from jsonschema import Draft202012Validator
         for filename, value in (("settings.schema.json", self.state.settings), ("progress.schema.json", self.state.read_progress())):
-            Draft202012Validator(json.loads((ROOT / "docs/schemas" / filename).read_text())).validate(value)
+            Draft202012Validator(json.loads((ROOT / "assets/schemas" / filename).read_text())).validate(value)
         from tankbot_host.cli import main
         with mock.patch.object(sys, "argv", ["tankbot.py", "--level", "c2", "--settings-file", str(self.state.settings_path), "--save-file", str(self.state.progress_path)]), mock.patch("sys.stderr", new_callable=io.StringIO) as errors:
             with self.assertRaises(SystemExit) as result: main()

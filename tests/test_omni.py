@@ -8,14 +8,14 @@ import tempfile
 import unittest
 
 ROOT=Path(__file__).resolve().parents[1]
-sys.path[:0]=[str(ROOT/'host'),str(ROOT/'protocol'),str(ROOT/'sdk/python'),str(ROOT/'examples/robot')]
+sys.path[:0]=[str(ROOT/'host'),str(ROOT/'protocol'),str(ROOT/'sdk/python'),str(ROOT/'assets/examples/robot')]
 from tankbot_host.authority import CoreAdapter,load_config
 from localization.kinematics import body_increment
 
 
 class OmniTests(unittest.TestCase):
     def setUp(self):
-        self.config=load_config(ROOT/'config/game.yaml')
+        self.config=load_config(ROOT/'assets/config/game.yaml')
 
     def core(self,config=None):
         c=CoreAdapter(config or self.config,'omnidirectional');self.addCleanup(c.close);return c

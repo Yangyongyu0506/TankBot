@@ -56,7 +56,7 @@ _StructuralValidator = validators.extend(Draft202012Validator, {
 
 class Validator:
     def __init__(self, config, run_id):
-        schemas = [strict_loads(p.read_bytes()) for p in (ROOT / "docs/schemas").glob("*.schema.json")]
+        schemas = [strict_loads(p.read_bytes()) for p in (ROOT / "assets/schemas").glob("*.schema.json")]
         # All local resources declare 2020-12. Carry that dialect explicitly so
         # following a recursive $ref does not replace our equivalent dispatch
         # with the library's slower default class. No validation keyword changes.

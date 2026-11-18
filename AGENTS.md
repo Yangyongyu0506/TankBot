@@ -2,7 +2,7 @@
 
 ## 项目状态与阅读入口
 
-TankBot 已有Rust权威仿真、独立CPython及Godot客户端，无参数启动 `python3 tools/tankbot.py`。F2调用VS Code编辑真实文件，保存后Start自动快照/检查/启动，见 [45](docs/45_EXTERNAL_EDITOR_AND_START.md)；无内置源码编辑器。Web/Pyodide已退役，headless/probe与独立Rust WASM验证保留。课程由 `levels/*.yaml` 自动发现；范围和限制以 [文档索引](docs/README.md)、[路线图](docs/10_DEVELOPMENT_ROADMAP.md) 为准。新任务先读设计和 [ADR状态](docs/adr/README.md)，检查git status并保留已有修改；不把Proposed或历史报告视为当前已验证能力。
+TankBot 已有Rust权威仿真、独立CPython及Godot客户端，无参数启动 `python3 main.py`。F2调用VS Code编辑真实文件，保存后Start自动快照/检查/启动，见 [45](docs/45_EXTERNAL_EDITOR_AND_START.md)；无内置源码编辑器。Web/Pyodide已退役，headless/probe与独立Rust WASM验证保留。课程由 `assets/levels/*.yaml` 自动发现；范围和限制以 [文档索引](docs/README.md)、[路线图](docs/10_DEVELOPMENT_ROADMAP.md) 为准。新任务先读设计和 [ADR状态](docs/adr/README.md)，检查git status并保留已有修改；不把Proposed或历史报告视为当前已验证能力。
 
 ## 开发中的交互确认
 
@@ -28,7 +28,9 @@ TankBot 已有Rust权威仿真、独立CPython及Godot客户端，无参数启�
 
 ## 组织、检查与贡献
 
-文档使用中文，标识符/文件名用英文；设计在 `docs/`，决策在 `docs/adr/`，Schema/夹具在 `docs/schemas/` 和 `docs/examples/`。实现位于 `core/`、`host/`、`runtime/`、`sdk/python/`、`clients/godot/`；课程在 `levels/`，公共模型和参数在 `config/`，地图在 `assets/maps/`。新增参数写入对应 YAML。使用空格缩进及现有风格；Rust 使用 rustfmt。
+文档使用中文，标识符/文件名用英文；设计在 `docs/`，决策在 `docs/adr/`，Schema/夹具在 `assets/schemas/` 和 `assets/protocol/examples/`。实现位于 `core/`、`host/`、`runtime/`、`sdk/python/`、`clients/godot/`；课程在 `assets/levels/`，公共模型和参数在 `assets/config/`，地图在 `assets/maps/`。新增参数写入对应 YAML。使用空格缩进及现有风格；Rust 使用 rustfmt。
+
+与玩家存档或运行状态无关的游戏静态资源统一放入 `assets/`：关卡、各章节源码模板、公共配置、协议Schema/示例及美术资源。不得把玩家模板继续嵌入Python字符串或另建根目录资源树；协议编解码/传输实现是代码，留在 `protocol/`。文档、构建元数据、冻结测试证据分别保留原职责目录。真实启动入口是根目录 `main.py`，支持 `python3 main.py` / `uv run main.py`；不恢复 `tools/tankbot.py` 或用链接/跳转脚本代替迁移，见 [46](docs/46_STATIC_ASSETS_AND_ENTRYPOINT.md)。
 
 本地与CI共用 `python3 tools/check.py`，自动发现Python回归；Godot流程另跑 `python3 tools/check.py --suite godot`，构建后WASM对照另跑 `python3 tools/check.py --suite wasm`。标准构建/检查不需要Node/npm。构建和运行命令见根 README；文档检查不代替权限、调度、迁移或玩家流程回归。收尾运行 `git diff --check`。使用隔离存档/工作区验收，勿操作日常 `userdata/`。
 

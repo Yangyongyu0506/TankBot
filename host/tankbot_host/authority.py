@@ -30,7 +30,12 @@ def core_configuration(config):
 
 def load_config(path):
     from .configuration import load_yaml
+    from .resources import repository_path
+    path = repository_path(Path(path).resolve())
     config = load_yaml(path) if Path(path).suffix in (".yaml", ".yml") else strict_loads(Path(path).read_bytes())
+    if config.get("level_plugins"):
+        directory = repository_path(config["level_plugins"]["directory"])
+        config["level_plugins"]["directory"] = directory.relative_to(ROOT).as_posix() if directory.is_relative_to(ROOT) else str(directory)
     if "map" in config.get("scene",{}):
         from .level_plugins import resolve_map, LevelValidationError
         if "walls" in config["scene"]:
@@ -181,7 +186,7 @@ class Authority:
         if not config["scene"]["public_initial_pose"]:
             self.core.close()
             raise ValueError("M1 example requires a task-authorized initial pose")
-        init = {"workspace": str(Path(workspace or ROOT / "examples/robot").resolve()), "config": {
+        init = {"workspace": str(Path(workspace or ROOT / "assets/examples/robot").resolve()), "config": {
             "initial_pose": config["scene"]["initial_pose"], "wheels": config["wheels"], "module": config["module"]},
             "contract": self.contract, "physics_hz": self.hz, "run_id": self.run_id,
             "publisher_id": self.publisher_id, "input_channels": self.input_channels, "output_channels": self.output_channels}

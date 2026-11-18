@@ -2,7 +2,7 @@
 
 ## 范围、环境与结论
 
-2026-10-25，Linux x86_64、Rust 1.99.1、CPython 3.14.4、Node 22.22.1、Firefox 157.0.1、Pyodide 0.29.5。本机完成用户修订后的 M5：多模块运行图、Hello Robot / Weapons 章节、C3 自动瞄准、C4 敌车 x/y/yaw 与有效装甲。参数版本 1.8，来源 [game.yaml](../../config/game.yaml)；规范见 [26](../26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)。自身定位课程、scan、建图并未实现，已移至后续章节。
+2026-10-25，Linux x86_64、Rust 1.99.1、CPython 3.14.4、Node 22.22.1、Firefox 157.0.1、Pyodide 0.29.5。本机完成用户修订后的 M5：多模块运行图、Hello Robot / Weapons 章节、C3 自动瞄准、C4 敌车 x/y/yaw 与有效装甲。参数版本 1.8，来源 [game.yaml](../../assets/config/game.yaml)；规范见 [26](../26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)。自身定位课程、scan、建图并未实现，已移至后续章节。
 
 ## 自动化与真实 UI 证据
 

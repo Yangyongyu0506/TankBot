@@ -23,7 +23,7 @@ def launcher_smoke(binary, isolated, out, env, offline):
     with socket.socket() as reservation:
         reservation.bind(('127.0.0.1', 0))
         port = reservation.getsockname()[1]
-    config = load_yaml(ROOT / 'config/game.yaml')
+    config = load_yaml(ROOT / 'assets/config/game.yaml')
     config['host']['port'] = port
     # Keep JSON's exponent numbers in JSON parsing; YAML 1.1 treats 1e-09 as text.
     path = isolated / 'launcher.json'
@@ -32,7 +32,7 @@ def launcher_smoke(binary, isolated, out, env, offline):
     wrapper = isolated / 'godot-auto-close.sh'
     wrapper.write_text('#!/bin/sh\nexec ' + shlex.quote(str(binary)) + ' --headless --max-fps 60 --quit-after 240 "$@"\n')
     wrapper.chmod(0o755)
-    command = [sys.executable, str(ROOT / 'tools/tankbot.py'), '--config', str(path),
+    command = [sys.executable, str(ROOT / 'main.py'), '--config', str(path),
                '--godot-binary', str(wrapper), '--workspace-store', str(isolated / 'launcher-workspace'),
                '--settings-file', str(isolated / 'launcher-settings.yaml'), '--save-file', str(isolated / 'launcher-progress.json'),
                *(['--offline'] if offline else [])]
@@ -67,7 +67,7 @@ def main():
     binary = prepare_desktop(args.godot_binary, offline=args.offline)
     out = ROOT / '.m1-cache/godot-qa' / datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%f')
     out.mkdir(parents=True)
-    config = load_config(ROOT / 'config/game.yaml')
+    config = load_config(ROOT / 'assets/config/game.yaml')
     config['host']['port'] = 0
     with tempfile.TemporaryDirectory(prefix='tankbot-godot-flow-') as temporary:
         isolated = Path(temporary)
@@ -107,6 +107,7 @@ def main():
         visuals = {}
         for chassis in config['chassis']:
             visual = copy.deepcopy(authority.public_profile())
+            visual['campaign']['active_level'] = 'c0'
             visual['chassis'] = chassis
             visual['chassis_visual'] = copy.deepcopy(authority.config['rendering']['chassis_models'][chassis])
             visual['body'] = {key: value for key, value in body_for(authority.config, chassis).items()

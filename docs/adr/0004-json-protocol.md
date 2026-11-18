@@ -24,4 +24,4 @@
 
 ## Validation / Open Questions
 
-Schema 正反例、权限/时序负例与兼容性回归为发布门。频道注册表和例子见 [03](../03_PROTOCOL_SPECIFICATION.md) 与 [Schema](../schemas/README.md)；编码优化由实际负载决定。
+Schema 正反例、权限/时序负例与兼容性回归为发布门。频道注册表和例子见 [03](../03_PROTOCOL_SPECIFICATION.md) 与 [Schema](../../assets/schemas/README.md)；编码优化由实际负载决定。

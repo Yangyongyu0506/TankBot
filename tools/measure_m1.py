@@ -62,11 +62,11 @@ def measure(config):
 
 
 def main():
-    config = load_config(ROOT/"config/game.yaml")
+    config = load_config(ROOT/"assets/config/game.yaml")
     report = {"date":date.today().isoformat(), "os":platform.platform(), "python":platform.python_version(),
               "cpu":next((line.split(":",1)[1].strip() for line in Path('/proc/cpuinfo').read_text().splitlines() if line.startswith('model name')),platform.processor()) if sys.platform=="linux" else platform.processor(),
               "native_binary_sha256":digest(ROOT/"target/debug/core_worker"), "cargo_lock_sha256":digest(ROOT/"Cargo.lock"),
-              "config_sha256":digest(ROOT/"config/game.yaml"), "scene":{"dynamic_bodies":1+int(config["weapons"]["enabled"]),"static_walls":len(config["scene"]["walls"])}, "runs":[]}
+              "config_sha256":digest(ROOT/"assets/config/game.yaml"), "scene":{"dynamic_bodies":1+int(config["weapons"]["enabled"]),"static_walls":len(config["scene"]["walls"])}, "runs":[]}
     for name in config["chassis"]:
         candidate = copy.deepcopy(config);candidate["scene"]["default_chassis"] = name
         report["runs"].append(measure(candidate))
@@ -74,7 +74,7 @@ def main():
     wasm = json.loads(subprocess.check_output(["node",str(ROOT/"tools/wasm_probe.mjs")],cwd=ROOT))
     wasm["cold_instantiate_and_run_ms"] = (time.monotonic()-start)*1000
     wasm["sha256"] = digest(ROOT/"target/wasm32-unknown-unknown/debug/tankbot_core.wasm")
-    native = json.loads(subprocess.check_output([sys.executable,str(ROOT/"tools/tankbot.py"),"probe"],cwd=ROOT))
+    native = json.loads(subprocess.check_output([sys.executable,str(ROOT/"main.py"),"probe"],cwd=ROOT))
     report["wasm_probe"] = wasm
     report["native_probe_x_m"] = native
     report["native_wasm_probe_equal"] = native==wasm["final_x_m"]

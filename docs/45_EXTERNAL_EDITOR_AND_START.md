@@ -56,7 +56,7 @@ flowchart LR
 
 均是原Host/Origin/token保护的loopback管理接口，不是机器人Topic；不新增玩家数据权限。原底层test/deploy管理接口保留供工具兼容，Godot不再暴露这组操作按钮。普通运行时不能通过源码/请求配置VS Code程序或任意目录。
 
-`config/desktop.yaml.editor`提供executable（默认code）、arguments、working_directory、max_scan_entries和max_scan_depth，结构见desktop Schema。未安装VS Code时显示VSCODE_NOT_FOUND与目录，不恢复内置编辑器。外部启动不使用shell，不等待窗口关闭，不自动安装Python扩展或启用Workspace Trust。缺失的.vscode设置只提供当前专用Python与SDK分析路径，现有设置保持。
+`assets/config/desktop.yaml.editor`提供executable（默认code）、arguments、working_directory、max_scan_entries和max_scan_depth，结构见desktop Schema。未安装VS Code时显示VSCODE_NOT_FOUND与目录，不恢复内置编辑器。外部启动不使用shell，不等待窗口关闭，不自动安装Python扩展或启用Workspace Trust。缺失的.vscode设置只提供当前专用Python与SDK分析路径，现有设置保持。
 
 命令行文件/目录行为参照 [VS Code官方CLI](https://code.visualstudio.com/docs/configure/command-line)，默认不强制替换用户最近活动窗口；窗口策略可在可信YAML arguments中配置。游戏退出不关闭玩家编辑器。
 

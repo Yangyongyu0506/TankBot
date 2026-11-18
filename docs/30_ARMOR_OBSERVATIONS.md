@@ -6,7 +6,7 @@ C5 不再使用敌车中心 Radar 与车头 GPS。根据用户逐项确认，只
 
 ## 传感器、可见性与随机流
 
-关卡通过通用 `armor_detector` 组件声明传感器，不按关卡 ID 选择行为。唯一可编辑源为 `levels/weapons.C5.yaml`：
+关卡通过通用 `armor_detector` 组件声明传感器，不按关卡 ID 选择行为。唯一可编辑源为 `assets/levels/weapons.C5.yaml`：
 
 | 参数 | 确认基线 |
 | --- | --- |
@@ -24,7 +24,7 @@ Authority 由真实目标姿态及公开安装几何生成候选装甲中心；�
 
 ## 消息、SDK 与权限
 
-Topic 为 `/robot/sensors/armor_detections`，schema 为 `armor_detections@1`，frame 为 `base_link`。使用既有 Envelope、时间和发布权限；新增的是类型，不改变已有消息。完整消息见 [样例](examples/armor-detections-message.json)，payload 示例：
+Topic 为 `/robot/sensors/armor_detections`，schema 为 `armor_detections@1`，frame 为 `base_link`。使用既有 Envelope、时间和发布权限；新增的是类型，不改变已有消息。完整消息见 [样例](../assets/protocol/examples/armor-detections-message.json)，payload 示例：
 
 ```json
 {

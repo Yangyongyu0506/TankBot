@@ -34,7 +34,7 @@ DEPENDENCIES={'c0':[],'c1':['c0'],'c2':['c1'],'c3':['c2'],'c4':['c3'],'c5':['c4'
 
 class BranchingProgressionTests(unittest.TestCase):
     @classmethod
-    def setUpClass(cls):cls.config=load_config(ROOT/'config/game.yaml')
+    def setUpClass(cls):cls.config=load_config(ROOT/'assets/config/game.yaml')
 
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
@@ -113,7 +113,7 @@ class BranchingProgressionTests(unittest.TestCase):
             for field in ('prerequisites','order','description'):self.assertEqual(level[field],metadata[field])
         frozen=json.loads((ROOT/'tests/fixtures/progression-gameplay-before.json').read_text())
         seen=set()
-        for path in (ROOT/'levels').glob('*.yaml'):
+        for path in (ROOT/'assets/levels').glob('*.yaml'):
             # ADR-0058 changes only explicit editor operation text; keep the old
             # fixture/hash intact and compare every other field exactly.
             value=legacy_editor_instructions(yaml.safe_load(path.read_text()));lid=value['metadata']['id'];value['metadata'].pop('prerequisites')
@@ -127,8 +127,8 @@ class BranchingProgressionTests(unittest.TestCase):
         self.assertEqual(seen,set(frozen))
 
     def test_unknown_and_cyclic_prerequisites_fail_but_display_order_is_independent(self):
-        directory=self.directory/'levels';shutil.copytree(ROOT/'levels',directory)
-        base=yaml.safe_load((ROOT/'config/game.yaml').read_text());base['level_plugins']['directory']=str(directory)
+        directory=self.directory/'levels';shutil.copytree(ROOT/'assets/levels',directory)
+        base=yaml.safe_load((ROOT/'assets/config/game.yaml').read_text());base['level_plugins']['directory']=str(directory)
         path=self.directory/'game.yaml';path.write_text(yaml.safe_dump(base))
         source=directory/'hello_robot.C0.yaml';original=yaml.safe_load(source.read_text())
         for prerequisites in (['absent'],['c1']):

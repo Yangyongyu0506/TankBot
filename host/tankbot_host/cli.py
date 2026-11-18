@@ -8,7 +8,7 @@ def make_parser():
     parser = argparse.ArgumentParser(description="TankBot: launch Godot by default; headless/probe are developer tools")
     parser.add_argument("mode", nargs="?", choices=("headless", "probe"), help="Optional developer mode; omit to launch the game")
     parser.add_argument("--godot-binary", type=Path, help="Godot 4 executable (desktop prototype only)")
-    parser.add_argument("--config", type=Path, default=ROOT / "config/game.yaml")
+    parser.add_argument("--config", type=Path, default=ROOT / "assets/config/game.yaml")
     parser.add_argument("--level", help="Start a teaching level with its authorized capabilities")
     parser.add_argument("--map", help="Override the scene map with an assets/maps name or relative path")
     inspect = parser.add_mutually_exclusive_group()

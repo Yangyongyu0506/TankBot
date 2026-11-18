@@ -19,7 +19,7 @@ from tankbot_host.progression import LevelProgression, format_level_tree
 class LevelTreeCliTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.config = load_config(ROOT / "config/game.yaml")
+        cls.config = load_config(ROOT / "assets/config/game.yaml")
 
     def setUp(self):
         temporary = tempfile.TemporaryDirectory()

@@ -26,7 +26,7 @@ from navigation_support import solution
 
 class NavigationLocalizationTests(unittest.TestCase):
     @classmethod
-    def setUpClass(cls):cls.base=load_config(ROOT/'config/game.yaml')
+    def setUpClass(cls):cls.base=load_config(ROOT/'assets/config/game.yaml')
 
     def setUp(self):self.config=configure(self.base,'navigation.c2')
 
@@ -165,10 +165,10 @@ class NavigationLocalizationTests(unittest.TestCase):
 
     def test_invalid_scored_source_alignment_and_initial_covariance_fail_at_load(self):
         with tempfile.TemporaryDirectory() as directory:
-            path=Path(directory);shutil.copytree(ROOT/'levels',path/'levels')
-            base=yaml.safe_load((ROOT/'config/game.yaml').read_text());base['level_plugins']['directory']=str(path/'levels')
+            path=Path(directory);shutil.copytree(ROOT/'assets/levels',path/'levels')
+            base=yaml.safe_load((ROOT/'assets/config/game.yaml').read_text());base['level_plugins']['directory']=str(path/'levels')
             (path/'game.yaml').write_text(yaml.safe_dump(base))
-            original=yaml.safe_load((ROOT/'levels/navigation.C2.yaml').read_text())
+            original=yaml.safe_load((ROOT/'assets/levels/navigation.C2.yaml').read_text())
             for field in ('source','alignment','covariance','reference','candidate'):
                 value=copy.deepcopy(original)
                 if field=='source':value['evaluation']['module_id']='unknown'

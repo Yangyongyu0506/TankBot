@@ -81,9 +81,9 @@ def main():
             raise ValueError(f"严格解析未拒绝非法数据: {invalid}")
     schemas = {
         path.name: strict_json(path.read_text(encoding="utf-8"))
-        for path in sorted((DOCS / "schemas").glob("*.schema.json"))
+        for path in sorted((ROOT / "assets/schemas").glob("*.schema.json"))
     }
-    for path in (DOCS / "schemas").glob("*.json"):
+    for path in (ROOT / "assets/schemas").glob("*.json"):
         value = strict_json(path.read_text(encoding="utf-8"))
         assert path.read_text(encoding="utf-8") == json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + "\n", f"非规范 JSON 格式: {path}"
     registry = Registry().with_resources(
@@ -96,12 +96,13 @@ def main():
         validators[(filename, None)] = Draft202012Validator(schema, registry=registry)
     sys.path[:0]=[str(ROOT/p) for p in ("host","protocol","sdk/python")]
     from tankbot_host.authority import load_config
-    profile = load_config(ROOT / "config/game.yaml")
+    profile = load_config(ROOT / "assets/config/game.yaml")
     from tankbot_host.configuration import load_yaml
-    validators[("runtime-benchmark.schema.json", None)].validate(load_yaml(ROOT / "config/runtime-benchmark.yaml"))
-    validators[("desktop.schema.json", None)].validate(load_yaml(ROOT / "config/desktop.yaml"))
-    validators[("desktop-theme.schema.json", None)].validate(load_yaml(ROOT / "config/desktop-theme.yaml"))
-    validators[("desktop-sprites.schema.json", None)].validate(load_yaml(ROOT / "config/desktop-sprites.yaml"))
+    validators[("runtime-benchmark.schema.json", None)].validate(load_yaml(ROOT / "assets/config/runtime-benchmark.yaml"))
+    validators[("desktop.schema.json", None)].validate(load_yaml(ROOT / "assets/config/desktop.yaml"))
+    validators[("desktop-theme.schema.json", None)].validate(load_yaml(ROOT / "assets/config/desktop-theme.yaml"))
+    validators[("desktop-sprites.schema.json", None)].validate(load_yaml(ROOT / "assets/config/desktop-sprites.yaml"))
+    validators[("desktop-tools.schema.json", None)].validate(load_yaml(ROOT / "assets/config/desktop-tools.yaml"))
     validators[("simulation-profile.schema.json", None)].validate(profile)
     if strict_json((ROOT/"core/tests/fixtures/default-profile.json").read_text()) != profile:
         raise ValueError("Generated profile is stale; run tools/export_profile.py")
@@ -112,7 +113,7 @@ def main():
         )
 
     examples = {}
-    for path in sorted((DOCS / "examples").glob("*.json")):
+    for path in sorted((ROOT / "assets/protocol/examples").glob("*.json")):
         value = strict_json(path.read_text(encoding="utf-8"))
         examples[path.name] = value
         assert path.read_text(encoding="utf-8") == json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + "\n", f"非规范 JSON 格式: {path}"
@@ -141,7 +142,7 @@ def main():
             assert not errors, f"领域负例被结构层提前拒绝: {case['case_id']}"
             domain_cases += 1
 
-    markdown = sorted(DOCS.rglob("*.md")) + [ROOT / "README.md", ROOT / "AGENTS.md", ROOT / "levels/README.md"]
+    markdown = sorted(DOCS.rglob("*.md")) + sorted((ROOT / "assets").rglob("*.md")) + [ROOT / "README.md", ROOT / "AGENTS.md"]
     json_blocks = python_blocks = local_links = 0
     canonical = {
         "03_PROTOCOL_SPECIFICATION.md": [("pose-message.json", None), ("cmd-vel-message.json", "payload"), ("chassis-controller.json", None)],

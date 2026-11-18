@@ -38,4 +38,4 @@
 
 ## Acceptance Criteria
 
-Schema 接受 vx/vy/wz 形状，拒绝旧起止字段与非平面轴；SDK 示例无底层调度字段。未来 Host 测试覆盖最新值替换、旧消息不覆盖新目标、按生成时间超时、租约撤回、差速拒绝 vy、全向适配不改公共消息，以及录制重放。设计与夹具见 [03](../03_PROTOCOL_SPECIFICATION.md)、[07](../07_SIMULATION_DESIGN.md)、[Schema 索引](../schemas/README.md)。
+Schema 接受 vx/vy/wz 形状，拒绝旧起止字段与非平面轴；SDK 示例无底层调度字段。未来 Host 测试覆盖最新值替换、旧消息不覆盖新目标、按生成时间超时、租约撤回、差速拒绝 vy、全向适配不改公共消息，以及录制重放。设计与夹具见 [03](../03_PROTOCOL_SPECIFICATION.md)、[07](../07_SIMULATION_DESIGN.md)、[Schema 索引](../../assets/schemas/README.md)。

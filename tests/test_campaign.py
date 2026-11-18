@@ -23,7 +23,7 @@ from campaign_support import solutions, EMA, WINDOW, AimHarness
 
 class CampaignTests(unittest.TestCase):
     def config(self, level):
-        return configure(load_config(ROOT / "config/game.yaml"), level)
+        return configure(load_config(ROOT / "assets/config/game.yaml"), level)
 
     def authority(self, level, tracker=EMA):
         config = self.config(level)
@@ -51,7 +51,7 @@ class CampaignTests(unittest.TestCase):
         config = self.config("c1")
         # Occlusion fixture uses the preserved obstacle map; teaching levels
         # now deliberately use open_training without the internal wall.
-        config["scene"]["walls"] = load_config(ROOT/"config/game.yaml")["scene"]["walls"]
+        config["scene"]["walls"] = load_config(ROOT/"assets/config/game.yaml")["scene"]["walls"]
         radar = RadarSimulator(config)
         private["targets"][0].update(pose=[3, 0, 0], alive=True)
         self.assertEqual(radar.sample(private, 0)["detections"], [])  # center wall occludes

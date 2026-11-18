@@ -1,6 +1,6 @@
 # 桌面 Sprite 资产
 
-当前工业风资源位于`industrial/`，由 [desktop-sprites.yaml](../../config/desktop-sprites.yaml) 显式引用。运行前验证路径与文件大小，Godot首次加载时验证可解码性和像素上限，生成共享纹理和mipmap。运行游戏不需要图片生成服务、Pillow或额外素材下载。
+当前工业风资源位于`industrial/`，由 [desktop-sprites.yaml](../config/desktop-sprites.yaml) 显式引用。运行前验证路径与文件大小，Godot首次加载时验证可解码性和像素上限，生成共享纹理和mipmap。运行游戏不需要图片生成服务、Pillow或额外素材下载。
 
 ## 分层与几何
 

@@ -63,14 +63,17 @@ ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评
 | [0055](0055-prior-map-local-navigation.md) | 先验/私有场景、扫描与同模块局部避障、同tick估计投影 | Accepted |
 | [0056](0056-godot-desktop-presentation.md) | Godot桌面原型、统一启动及独立CPython，保留Web回归 | Accepted |
 | [0057](0057-godot-only-player-entry.md) | Godot唯一玩家GUI、默认启动及浏览器退役，保留原生/WASM开发能力 | Accepted |
-
 | [0058](0058-external-editor-and-single-start.md) | VS Code真实编辑副本与单次Start自动检查/启动，保留历史和固定门 | Accepted |
+| [0059](0059-godot-settings-and-developer-displays.md) | Godot设置/改键、独立开发者图层与查看器、撤权清理和源码/进度保留 | Accepted |
+| [0060](0060-static-assets-and-root-entrypoint.md) | 静态游戏资源归assets、完整模板提取、根main.py入口及安全缓存清理 | Accepted |
 
 ## 后续局部修订与历史状态
 
 旧ADR的Context、原参数和验收计数保留。当前解读需合并后续记录：0021替代0003；0043扩展0036完整模型；0049修订0026/0046的全局章节入口；0050/0052扩展Navigation任务；0053局部修订0010/0020/0031/0051/0052的共享预算与截止表达。0034及0047/0048/0051分别扩展实时指标和实验反馈，不能将早期“仅C2/仅终局”当作当前全局限制。
 
 ADR-0053的Accepted针对可信配置、冻结与截止合同；目录中的30/40ms默认仍为experimental，未证明整局截止失败率<1%。ADR-0013仍Proposed；0054新增C5准备合同，状态与本关验收单独记录。当前实现与历史证据对照见 [核对记录](../reports/DOCUMENTATION_STATE_SYNC_20261110.md)。
+
+ADR-0060统一静态资源到assets并将真实启动入口迁为根main.py；0057/0058/0059及更早记录中的旧目录/工具入口按历史阅读，授权、独立Worker、模板保护和固定提交合同保持。
 
 ## 变更流程与完成条件
 

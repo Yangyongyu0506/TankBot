@@ -43,7 +43,7 @@ flowchart LR
 
 连接形式为 `module.port → /topic` 与 `/topic → module.port`。内部频道限定 `/robot/modules/<module_id>/<port>`，位姿候选为 `/robot/estimates/<module_id>/pose`；目标候选按类型使用 `target`、`target_pose`、`target_polar`。每个 Topic 一个发布者，每个端口一个连线，所有端口须绑定；离散 fire 只能输出，通过 weapon_state 读取反馈。
 
-`dependencies` 只决定 setup/reset 拓扑顺序。控制反馈 Topic 可成环，不会在同一回调递归调用。初始化按依赖拓扑与稳定 ID，批次按稳定 ID，关闭按反向初始化顺序尽力执行。共享 Worker 内模块不构成安全隔离。结构样例 [Manifest](examples/m5-workspace.json) 与 [Contract](examples/m5-module-contract.json) 保留原三模块示意；当前关卡权威定义是各 YAML，不从样例生成初始化。
+`dependencies` 只决定 setup/reset 拓扑顺序。控制反馈 Topic 可成环，不会在同一回调递归调用。初始化按依赖拓扑与稳定 ID，批次按稳定 ID，关闭按反向初始化顺序尽力执行。共享 Worker 内模块不构成安全隔离。结构样例 [Manifest](../assets/protocol/examples/m5-workspace.json) 与 [Contract](../assets/protocol/examples/m5-module-contract.json) 保留原三模块示意；当前关卡权威定义是各 YAML，不从样例生成初始化。
 
 ## 时间、状态与失败
 

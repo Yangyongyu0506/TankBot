@@ -1,6 +1,6 @@
 # Navigation GPS/EKF 定位验收
 
-日期：2026-11-03。范围为用户确认的 Navigation C2，见 [设计](../35_NAVIGATION_GPS_LOCALIZATION.md)、[ADR-0048](../adr/0048-navigation-gps-localization.md) 与 [关卡 YAML](../../levels/navigation.C2.yaml)。未改旧八关的玩法或物理，没有增加外部算法依赖。
+日期：2026-11-03。范围为用户确认的 Navigation C2，见 [设计](../35_NAVIGATION_GPS_LOCALIZATION.md)、[ADR-0048](../adr/0048-navigation-gps-localization.md) 与 [关卡 YAML](../../assets/levels/navigation.C2.yaml)。未改旧八关的玩法或物理，没有增加外部算法依赖。
 
 ## 同采样时刻的闭环结果
 

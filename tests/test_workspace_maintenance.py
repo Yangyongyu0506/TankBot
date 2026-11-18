@@ -17,7 +17,7 @@ from tankbot_host.workspace_maintenance import WorkspaceMaintenance
 class WorkspaceMaintenanceTests(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
-        self.root=Path(self.temp.name);self.limits=load_config(ROOT/'config/game.yaml')['workspace']
+        self.root=Path(self.temp.name);self.limits=load_config(ROOT/'assets/config/game.yaml')['workspace']
         self.store=WorkspaceStore(self.root/'project',{'main.py':'VALUE: int = 0\n'},self.limits)
         self.m=WorkspaceMaintenance(self.store);self.revisions=[self.store.read()['revision']]
         for i in range(1,6):self.revisions.append(self.store.edit(self.store.read()['revision'],{'main.py':f'VALUE: int = {i}\n'})['revision'])

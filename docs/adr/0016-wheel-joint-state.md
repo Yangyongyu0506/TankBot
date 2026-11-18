@@ -24,7 +24,7 @@ Odometry 需要获授轮组标定；轮速来自实际运动，差速横滑仍�
 
 ## Evidence / Acceptance Criteria
 
-两底盘轮速反算和多文件 SDK 里程计均经 600 tick 探针，Schema 正例见 [joint-state-message.json](../examples/joint-state-message.json)，实现及限制见 [M1 报告](../reports/M1_VALIDATION.md)。此决定不引入 ROS2/DDS 运行时。
+两底盘轮速反算和多文件 SDK 里程计均经 600 tick 探针，Schema 正例见 [joint-state-message.json](../../assets/protocol/examples/joint-state-message.json)，实现及限制见 [M1 报告](../reports/M1_VALIDATION.md)。此决定不引入 ROS2/DDS 运行时。
 
 ## 后续布局修订
 

@@ -2,7 +2,7 @@
 
 ## 目的与范围
 
-实现 C0 手动熟悉、C1 理想 Radar 的 SE(3) 矩阵坐标变换、C2 噪声下跟踪与击杀。复用同一 Authority、固定提交门、Python Runtime、Workspace 和 View Policy；M5 的模块图与 C3/C4 已实现，当前章节/控制边界以 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md) 为准。Radar、巡逻、血量及销毁规则已由用户逐项确认。当前应用配置版本为 `2.1`，完整底盘在 `config/chassis/*.yaml`，世界/武器与平台参数在 `config/game.yaml`，关卡数据在独立 `levels/*.yaml`，由加载器生成内部 `campaign` DTO，见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)；仍能读取不含 Campaign 的 `1.5` 沙盒配置。计时、玩家生命和 YAML 迁移以 [25](25_ATTEMPT_RULES_AND_CONFIGURATION.md) 为准。
+实现 C0 手动熟悉、C1 理想 Radar 的 SE(3) 矩阵坐标变换、C2 噪声下跟踪与击杀。复用同一 Authority、固定提交门、Python Runtime、Workspace 和 View Policy；M5 的模块图与 C3/C4 已实现，当前章节/控制边界以 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md) 为准。Radar、巡逻、血量及销毁规则已由用户逐项确认。当前应用配置版本为 `2.1`，完整底盘在 `assets/config/chassis/*.yaml`，世界/武器与平台参数在 `assets/config/game.yaml`，关卡数据在独立 `assets/levels/*.yaml`，由加载器生成内部 `campaign` DTO，见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)；仍能读取不含 Campaign 的 `1.5` 沙盒配置。计时、玩家生命和 YAML 迁移以 [25](25_ATTEMPT_RULES_AND_CONFIGURATION.md) 为准。
 
 ## 关卡与数据流
 

@@ -17,7 +17,7 @@ from tankbot_protocol.validation import Rejected, envelope
 class NavigationReferenceTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.base = load_config(ROOT / "config/game.yaml")
+        cls.base = load_config(ROOT / "assets/config/game.yaml")
 
     def authority(self):
         authority = Authority(configure(self.base, "navigation.c2"), controlled=True)

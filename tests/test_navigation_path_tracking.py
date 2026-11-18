@@ -26,7 +26,7 @@ from path_tracking_support import solution
 class NavigationPathTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.base=load_config(ROOT/'config/game.yaml')
+        cls.base=load_config(ROOT/'assets/config/game.yaml')
         cls.config=configure(cls.base,'navigation.c4')
 
     def authority(self,files=None,config=None):

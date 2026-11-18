@@ -16,7 +16,7 @@
 
 ## 课程依赖白名单
 
-[config/player-dependencies.yaml](../config/player-dependencies.yaml) 是受信策略，结构由 [Schema](schemas/player-dependencies.schema.json) 定义。玩家 Manifest 不能改变它：
+[assets/config/player-dependencies.yaml](../assets/config/player-dependencies.yaml) 是受信策略，结构由 [Schema](../assets/schemas/player-dependencies.schema.json) 定义。玩家 Manifest 不能改变它：
 
 | 范围 | 当前允许内容 |
 | --- | --- |

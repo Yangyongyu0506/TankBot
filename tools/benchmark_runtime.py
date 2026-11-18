@@ -68,7 +68,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--backend',choices=('native',),default='native')
     parser.add_argument('--output',type=Path,default=ROOT/'.m1-cache/runtime-native-benchmark')
-    parser.add_argument('--config',type=Path,default=ROOT/'config/runtime-benchmark.yaml')
+    parser.add_argument('--config',type=Path,default=ROOT/'assets/config/runtime-benchmark.yaml')
     parser.add_argument('--workloads',nargs='+');parser.add_argument('--deadlines',nargs='+',type=int)
     parser.add_argument('--conditions',nargs='+');parser.add_argument('--batches-per-cell',type=int)
     parser.add_argument('--slice-attempts',action='store_true',help='Only a short smoke/calibration slice; never an entire-attempt reliability trial')
@@ -94,18 +94,18 @@ def main():
     output=args.output.resolve()
     if not (output.is_relative_to(ROOT/'.m1-cache') or output.is_relative_to(Path('/tmp'))):parser.error('Output must be isolated under .m1-cache or /tmp')
     output.mkdir(parents=True,exist_ok=True)
-    base=load_config(ROOT/'config/game.yaml')
+    base=load_config(ROOT/'assets/config/game.yaml')
     backends=(args.backend,)
     workloads=args.workloads or list(options['workloads']);conditions=args.conditions or list(options['conditions'])
     if set(workloads)-set(options['workloads']) or set(conditions)-set(options['conditions']):parser.error('Unknown workload/condition')
     if any(options['workloads'][name]['kind']=='controlled_compute' for name in workloads) and not (args.calibration_file or args.iterations or args.plan):
         parser.error('near_cap requires a frozen calibration: run tools/calibrate_runtime_benchmark.py, then pass --calibration-file')
     hashes={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest()
-            for folder,pattern in [('host','*.py'),('runtime','*.py'),('protocol','*.py'),('sdk/python','*.py'),('templates','*.py')]
+            for folder,pattern in [('host','*.py'),('runtime','*.py'),('protocol','*.py'),('sdk/python','*.py'),('assets/templates','*.py')]
             for p in (ROOT/folder).rglob(pattern)}
     environment=machine();reports=[];plan=[]
     guarded=[ROOT/p for p in hashes]
-    for folder,pattern in [('config','*.yaml'),('levels','*.yaml'),('assets/maps','*.yaml'),('docs/schemas','*.json')]:
+    for folder,pattern in [('assets/config','*.yaml'),('assets/levels','*.yaml'),('assets/maps','*.yaml'),('assets/schemas','*.json')]:
         guarded+=list((ROOT/folder).rglob(pattern))
     guarded += [ROOT/p for p in ('tools/benchmark_runtime.py','tools/runtime_budget_support.py','requirements.txt')]
     guarded += [ROOT/'target/debug/core_worker']

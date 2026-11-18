@@ -70,13 +70,16 @@ func bracket(samples: Array, time: float) -> Array:
 func pose_between(a: Dictionary, b: Dictionary, t: float) -> Dictionary:
 	return {"x_m": lerp(float(a.x_m), float(b.x_m), t), "y_m": lerp(float(a.y_m), float(b.y_m), t), "yaw_rad": lerp_angle(float(a.yaw_rad), float(b.yaw_rad), t)}
 
-func sample(now_ms: float) -> Dictionary:
+func sample(now_ms: float, display_time_ms: Variant = null) -> Dictionary:
 	if latest.is_empty():
 		return {"pose": null, "objects": [], "turret": 0.0}
 	var selected = latest.payload.selected_pose
 	var delay = float(options.estimate_interpolation_delay_ms) if (selected and selected.source_id != "system") or not latest.payload.get("target_estimates", []).is_empty() else float(options.interpolation_delay_ms)
 	var newest = float(latest.simulation_tick) * 1000.0 / hz
-	render_ms = min(newest, max(render_ms, min(newest, newest + max(0.0, now_ms - received_ms) - delay)))
+	if display_time_ms != null and is_finite(float(display_time_ms)):
+		render_ms = min(newest, float(display_time_ms))
+	else:
+		render_ms = min(newest, max(render_ms, min(newest, newest + max(0.0, now_ms - received_ms) - delay)))
 	var pair = bracket(frames, render_ms)
 	var objects: Array = []
 	for item in pair[0].objects:

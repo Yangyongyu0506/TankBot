@@ -77,7 +77,7 @@ class ApplicationState(LevelProgression):
         super().__init__(config)
         self.lock = threading.RLock()
         self.tickets = {}
-        self.defaults = load_settings(ROOT / "config/settings.yaml")
+        self.defaults = load_settings(ROOT / "assets/config/settings.yaml")
         with self.transaction(self.settings_path):
             if not self.settings_path.exists():
                 self.write_settings(self.defaults)

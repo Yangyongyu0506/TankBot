@@ -31,7 +31,7 @@ def drive_job(a,timeout=15):
 class NavigationPlanningTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.base=load_config(ROOT/'config/game.yaml')
+        cls.base=load_config(ROOT/'assets/config/game.yaml')
         cls.config=configure(cls.base,'navigation.c5')
 
     def authority(self,config=None):

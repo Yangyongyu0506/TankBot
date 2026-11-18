@@ -95,7 +95,7 @@ tick、序号和纳秒计数字段限制在 `0..9007199254740991`，防止 JavaS
 
 `/system/pose` **不是公共频道**。System Pose Provider 在 Authority 私有接口内向 Selector 提供许可候选。`/robot/sensors/pose_fix`、局部 scan、建图瓦片、选源服务等是后续频道，须补 Schema、授权与验收后注册；不能因出现在概念图中就自动开放。
 
-M4 注册 `target_estimate@1`，使用 `map` 中的 `x_m/y_m` 和可空、行优先 2×2 `covariance`；有限性、历史时间窗、对称及 PSD 在 Authority 验证。样例见 [目标估计](examples/target-estimate-message.json)。`view_snapshot@3` 在严格 v2 结构上新增最多一个 `target_estimates` Envelope，旧 v1/v2 不接收该字段。协议仍为未发布 1.0 草案；新类型在对应 profile 注册，既有沙盒继续输出 v1/v2。
+M4 注册 `target_estimate@1`，使用 `map` 中的 `x_m/y_m` 和可空、行优先 2×2 `covariance`；有限性、历史时间窗、对称及 PSD 在 Authority 验证。样例见 [目标估计](../assets/protocol/examples/target-estimate-message.json)。`view_snapshot@3` 在严格 v2 结构上新增最多一个 `target_estimates` Envelope，旧 v1/v2 不接收该字段。协议仍为未发布 1.0 草案；新类型在对应 profile 注册，既有沙盒继续输出 v1/v2。
 
 公共C0与Weapons C1–C5授权系统自定位时，System Pose Provider 仍先进入 Pose Selector，后者作为唯一写者发布 `/robot/localization/pose`，并提供给模块 `self_pose` 端口。`radar@1` 的标签仅在单次采样内有效；C1/C2 的标定与噪声模型见 [18](18_CAMPAIGN_DESIGN.md)。
 
@@ -165,7 +165,7 @@ interface Transport {
 
 ## Schema、版本与兼容
 
-结构定义见 [Schema 索引](schemas/README.md)，采用 [JSON Schema Draft 2020-12](https://json-schema.org/draft/2020-12)。Schema 不能验证主体权限、PSD、坐标变换或实际截止；必须有领域验证器与负例。
+结构定义见 [Schema 索引](../assets/schemas/README.md)，采用 [JSON Schema Draft 2020-12](https://json-schema.org/draft/2020-12)。Schema 不能验证主体权限、PSD、坐标变换或实际截止；必须有领域验证器与负例。
 
 Envelope 核心与 payload `@1` 均禁止未知字段。扩展先放 `extensions.x_*` 并忽略未知键；增加可选频道或功能以 minor 协商，不改变旧 profile。修改单位、字段含义、必填项或现有校验范围必须新 payload 版本，并在无法共存时升级协议 major。禁止“新增必填字段但版本不变”。旧客户端继续选 `1.0`，不得收到只属于新 profile 的 Schema。SDK Version、Protocol Version、Manifest Version、Content Version 分别管理。
 
@@ -179,7 +179,7 @@ ROS2/DDS 超出部署和学习负担；直接函数调用只允许在模块内�
 
 ## M1 新增的轮组消息与实施范围
 
-`/robot/sensors/joint_states` 使用新增 `joint_state@1`，形状参考 ROS JointState，字段 `name/position/velocity/effort` 均为数组。position 是自 run 重置以来累计轮角（rad），velocity 是采样边界角速度（rad/s），effort 为空表示未建模。位置数组长度必须等于 name；velocity/effort 长度为零或与 name 相同，由领域层校验，不能假设 Schema 已完成跨数组关联。M1 固定车体系 `base_link`；差速 wheel name 为 left/right，全向为 front_left/front_right/rear_left/rear_right。见 [完整样例](examples/joint-state-message.json) 和 [ADR-0016](adr/0016-wheel-joint-state.md)。不修改旧 encoder@1 的米单位与左右轮含义。
+`/robot/sensors/joint_states` 使用新增 `joint_state@1`，形状参考 ROS JointState，字段 `name/position/velocity/effort` 均为数组。position 是自 run 重置以来累计轮角（rad），velocity 是采样边界角速度（rad/s），effort 为空表示未建模。位置数组长度必须等于 name；velocity/effort 长度为零或与 name 相同，由领域层校验，不能假设 Schema 已完成跨数组关联。M1 固定车体系 `base_link`；差速 wheel name 为 left/right，全向为 front_left/front_right/rear_left/rear_right。见 [完整样例](../assets/protocol/examples/joint-state-message.json) 和 [ADR-0016](adr/0016-wheel-joint-state.md)。不修改旧 encoder@1 的米单位与左右轮含义。
 
 M1 实现严格 JSON、Schema、源/频道 grant、run/序号/时间/帧、PSD 和固定提交门；候选为 `/robot/estimates/odometry/pose`，Selector 生成 `/robot/localization/pose`，Gateway 生成 `/view/snapshot`。当时只开放单机器人、单周期模块和键盘控制租约。通用协商、任意订阅/服务、event、动态 TF 仍不能因 Schema 已存在而宣称可用。早期 M1 Runtime 帧上限为 64 KiB；当前多文件课程的私有 Runtime/管理帧预算为 YAML `runtime.max_message_bytes`，默认 256 KiB，见 [29](29_CHASSIS_PROFILES.md)。消息形状和权限不因容量预算变化而扩宽。M1 源码入口与历史验证见 [报告](reports/M1_VALIDATION.md)。
 
@@ -195,7 +195,7 @@ M1 实现严格 JSON、Schema、源/频道 grant、run/序号/时间/帧、PSD �
 
 ## 全向轮几何版本修订
 
-当前全向轮为 radial_omni@1：轮序 FL/FR/RL/RR 对应方位 45°/315°/135°/225°，正轴径向向内，正轮转驱动逆时针切向。JointState 数组/单位/频道不变，但不得将旧平行麦轮的符号与反解套到新模型。Host 初始化授予公开轮组标定，UI 的 wheel_calibration 使用同一配置派生；结构/样例见 [Schema](schemas/wheel-calibration.schema.json) 与 [标定夹具](examples/omni-wheel-calibration.json)。不提供真值。内部配置升为 1.3，旧 Workspace 源码不自动改写。
+当前全向轮为 radial_omni@1：轮序 FL/FR/RL/RR 对应方位 45°/315°/135°/225°，正轴径向向内，正轮转驱动逆时针切向。JointState 数组/单位/频道不变，但不得将旧平行麦轮的符号与反解套到新模型。Host 初始化授予公开轮组标定，UI 的 wheel_calibration 使用同一配置派生；结构/样例见 [Schema](../assets/schemas/wheel-calibration.schema.json) 与 [标定夹具](../assets/protocol/examples/omni-wheel-calibration.json)。不提供真值。内部配置升为 1.3，旧 Workspace 源码不自动改写。
 
 ## M2 Adapter 实现与验证
 
@@ -207,7 +207,7 @@ M1 实现严格 JSON、Schema、源/频道 grant、run/序号/时间/帧、PSD �
 
 当前 C5 另注册 `armor_detections@1`，Topic `/robot/sensors/armor_detections`、frame `base_link`。payload 为 `{"measurements_rt":[[r,theta],...]}`，当前至多两行，缺测为 []；距离非负，方位在 [-π,π)，无装甲/实体 ID、中心位置或真实 yaw。SDK 转成只读 `(N,2)` NumPy，普通玩家只能订阅本关 grant，不可发布或伪造系统观测。C5 不再授予中心 Radar/GPS 输入；C4 沿用 C3 中心 Radar/极坐标估计，不启用 GPS，既有消息类型保留兼容；语义与版本迁移见 [30](30_ARMOR_OBSERVATIONS.md)。
 
-M5 增加 `target_points@1`（Nx2）、`target_pose_estimate@1`（敌车 x/y/yaw 和可空行优先 3×3 协方差）、`turret_acceleration@1`（`acceleration_radps2`），以及允许目标 yaw 的 `view_snapshot@4`；旧类型不变。多模块请求提供新增可选 `origin_tick`，它是调度元数据，执行器负载仍无起止字段。权限/帧/单位见 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)、[角加速度样例](examples/turret-acceleration-message.json)、[目标位姿样例](examples/target-pose-message.json)。
+M5 增加 `target_points@1`（Nx2）、`target_pose_estimate@1`（敌车 x/y/yaw 和可空行优先 3×3 协方差）、`turret_acceleration@1`（`acceleration_radps2`），以及允许目标 yaw 的 `view_snapshot@4`；旧类型不变。多模块请求提供新增可选 `origin_tick`，它是调度元数据，执行器负载仍无起止字段。权限/帧/单位见 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)、[角加速度样例](../assets/protocol/examples/turret-acceleration-message.json)、[目标位姿样例](../assets/protocol/examples/target-pose-message.json)。
 
 ## 渐进 Weapons 的兼容增量
 
@@ -223,13 +223,13 @@ Navigation 的 /robot/cmd_vel 仍为相同 Twist，不过由受信 twist_sequenc
 
 新增可选输入 `position_fix2d@1`，payload 为 `position_m`（map 系 `[x_m,y_m]`）及非空行优先 2×2 `covariance`（m²）；SDK 对应只读 NumPy `PositionFix2D`。二维协方差验证对称性及 PSD，测量时间仍由 Envelope/`Sample` 承载。玩家不通过 ModuleContext 发布此传感器类型，订阅仍须关卡授权。
 
-用于我方 `/robot/sensors/gps/fix`；这是已投影的游戏平面位置，不是 WGS84 NavSatFix，不给 yaw。既有敌车截获 `gps_fix@1` / `GpsFixData` 不变。[示例](examples/position-fix2d-message.json) 说明接口形状；C2 的 2 Hz/σ=0.20 m 采样器、共享带噪编码器、去重/对齐及课程参数见 [35](35_NAVIGATION_GPS_LOCALIZATION.md)。
+用于我方 `/robot/sensors/gps/fix`；这是已投影的游戏平面位置，不是 WGS84 NavSatFix，不给 yaw。既有敌车截获 `gps_fix@1` / `GpsFixData` 不变。[示例](../assets/protocol/examples/position-fix2d-message.json) 说明接口形状；C2 的 2 Hz/σ=0.20 m 采样器、共享带噪编码器、去重/对齐及课程参数见 [35](35_NAVIGATION_GPS_LOCALIZATION.md)。
 
-新增可选 `view_snapshot@5`，保留 V4 字段并要求 `pose_estimates` 数组（最多16条 pose2d@1 Envelope），仅投影 View Policy `pose_estimate_channels` 白名单中的玩家候选，检查允许帧与样本年龄。示例见 [多源位姿视图](examples/pose-comparison-view.json)。只有配置此能力的关卡使用 V5，旧 V1–V4 类型不增加必填字段；当前 Web 客户端支持新版本，旧客户端不应把未认识的 Schema 当 V4 解码。候选只用于对照，Selector 标准出口与物理权威不变。
+新增可选 `view_snapshot@5`，保留 V4 字段并要求 `pose_estimates` 数组（最多16条 pose2d@1 Envelope），仅投影 View Policy `pose_estimate_channels` 白名单中的玩家候选，检查允许帧与样本年龄。示例见 [多源位姿视图](../assets/protocol/examples/pose-comparison-view.json)。只有配置此能力的关卡使用 V5，旧 V1–V4 类型不增加必填字段；当前 Web 客户端支持新版本，旧客户端不应把未认识的 Schema 当 V4 解码。候选只用于对照，Selector 标准出口与物理权威不变。
 
 ## Navigation 航点与速度参考增量
 
-`waypoint_goal@1`为Authority发布的map系Topic `/robot/navigation/goal`，payload只有非负整数`goal_index`和两个米制数值组成的`position_m`。SDK读取为`WaypointGoal`，坐标是只读float64 NumPy (2,)；玩家控制函数直接获得该数组。它表示公开任务目标，含义区别于GPS测量或位姿估计，不能携带真实机器人状态。见 [样例](examples/waypoint-goal-message.json) 与 [C3](37_NAVIGATION_WAYPOINT_CONTROL.md)。
+`waypoint_goal@1`为Authority发布的map系Topic `/robot/navigation/goal`，payload只有非负整数`goal_index`和两个米制数值组成的`position_m`。SDK读取为`WaypointGoal`，坐标是只读float64 NumPy (2,)；玩家控制函数直接获得该数组。它表示公开任务目标，含义区别于GPS测量或位姿估计，不能携带真实机器人状态。见 [样例](../assets/protocol/examples/waypoint-goal-message.json) 与 [C3](37_NAVIGATION_WAYPOINT_CONTROL.md)。
 
 `permissions.data_access.references`只增加宿主授权角色，不新增协议操作。C3轮电压模式中，玩家位置控制器发布已有`twist@1`到`/robot/cmd_vel`，frame为base_link；轮控制器订阅后发布实际电压。参考限幅在图缓存前完成，不能被当作Core速度伺服输入。原速度伺服关卡的同名执行器语义、Envelope和旧消息版本保持。
 
@@ -247,6 +247,6 @@ SDK通过readonly_path将points_m变为不可写的float64 (N,2)；`PathFollower
 
 ## 局部扫描与指令诊断增量
 
-`/robot/sensors/scan` 使用 `scan2d@1`、`base_link`、米/弧度，`sample_tick` 必须等于 Envelope 的原 `simulation_tick`。紧凑角度为 `angle_min_rad+i*angle_increment_rad`，最大180条；`ranges_m`/`hit_mask`等长。当前距离扫描组件的具体量程、角度、噪声和周期由关卡YAML声明，C6合同见 [43](43_NAVIGATION_LOCAL_AVOIDANCE.md)、[扫描夹具](examples/scan-message.json)。无回波必须为最大距离且False；最大距离命中为True。SDK数组不可重新打开写权限。
+`/robot/sensors/scan` 使用 `scan2d@1`、`base_link`、米/弧度，`sample_tick` 必须等于 Envelope 的原 `simulation_tick`。紧凑角度为 `angle_min_rad+i*angle_increment_rad`，最大180条；`ranges_m`/`hit_mask`等长。当前距离扫描组件的具体量程、角度、噪声和周期由关卡YAML声明，C6合同见 [43](43_NAVIGATION_LOCAL_AVOIDANCE.md)、[扫描夹具](../assets/protocol/examples/scan-message.json)。无回波必须为最大距离且False；最大距离命中为True。SDK数组不可重新打开写权限。
 
 `local_control_feedback@1` 是同一导航模块的有界指令/输入年龄诊断，发布到内部 `/robot/modules/<module_id>/feedback`；不形成第二级控制链，不包含真实速度或障碍几何。只有最终Twist进入现有`/robot/cmd_vel`，普通数据访问与UI反馈授权仍独立。

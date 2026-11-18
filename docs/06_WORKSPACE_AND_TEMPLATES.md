@@ -35,7 +35,7 @@ workspace/
 
 ## Manifest
 
-`tankbot.json` 是可编辑的声明，不是权限来源。当前受管Manifest/Contract由关卡生成，单模块类入口和模块图格式分别见 [m3-workspace.json](examples/m3-workspace.json)、[m5-workspace.json](examples/m5-workspace.json)；实际模块与连接以课程YAML为准。下面保留早期高级组装目标示例，`main:build_robot` 尚不能作为当前受管项目入口：
+`tankbot.json` 是可编辑的声明，不是权限来源。当前受管Manifest/Contract由关卡生成，单模块类入口和模块图格式分别见 [m3-workspace.json](../assets/protocol/examples/m3-workspace.json)、[m5-workspace.json](../assets/protocol/examples/m5-workspace.json)；实际模块与连接以课程YAML为准。下面保留早期高级组装目标示例，`main:build_robot` 尚不能作为当前受管项目入口：
 
 ```json
 {
@@ -64,6 +64,8 @@ SDK `0.1.0` 是当前仓库本地profile，尚未发布到pip。M3历史单模�
 玩家依赖按 [23](23_PLAYER_CODE_AND_LIBRARIES.md) 的课程白名单开放：当前仅 NumPy、SDK、指定基础标准库和自建模块，测试文件另可使用 unittest。Manifest dependencies 必须为空，不提供自由 pip 安装。允许库由游戏自动准备并纳入部署环境摘要；新增基础库需维护者审查教学影响及两平台兼容。sdk_version 不等于 Protocol 或模板版本。
 
 ## 模板元数据与非覆盖式生成
+
+当前模板源码全部放在 [assets/templates](../assets/templates/README.md)，覆盖common、Weapons及Navigation；Host保留注册/组合和版本识别逻辑，不再内嵌整段Python程序。资源路径不是玩家编辑路径，目录迁移不修改已生成源码、ledger或历史，见 [46](46_STATIC_ASSETS_AND_ENTRYPOINT.md)。
 
 模板元数据至少为：`template_id`、`template_version`、`required_sdk_profile`、`module_contract`、`files`（相对路径、内容摘要、用途）、`migration_from`。模板包只包含文本与声明，不能执行任意安装钩子。Host ledger 记录来源版本、首次生成摘要和生成 revision；工作区内 ledger 只是可导出的镜像，不信任玩家修改后的哈希声明。
 

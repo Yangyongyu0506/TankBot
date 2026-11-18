@@ -4,7 +4,7 @@
 
 2026-10-24 用户反馈直接启动 C0 报缺少 NumPy，要求首次运行自动解决外部依赖。此前 CLI 仅检查 NumPy；系统 Python 可能同时没有 pip/ensurepip，不能把安装任务继续转交玩家。
 
-本设计覆盖 `tools/tankbot.py` 的 serve/browser/headless/probe。启动器在创建 Authority、运行玩家源码和启动仿真前，自动准备仓库 `requirements.txt` 所声明的应用依赖；现有 npm 构建由 `tools/build.py` 管理，Pyodide 文件仍由 `prepare_browser.py` 按锁准备。Rust、Node.js 和 CPython/标准库属于宿主工具前提。
+当前入口为根目录`main.py`，无子命令启动Godot，并保留headless/probe。启动器在创建Authority、运行玩家源码和启动仿真前，自动准备仓库requirements.txt声明的应用依赖。serve/browser、npm编辑器构建和Pyodide准备已退役；Node仅用于独立Rust WASM对照，不是启动游戏的前提。源码运行需要CPython/标准库、Rust及现有Godot准备机制；也可用`uv run main.py`进入同一流程，见 [46](46_STATIC_ASSETS_AND_ENTRYPOINT.md)。
 
 ## 启动顺序与接口
 
@@ -21,13 +21,13 @@ flowchart TD
 
 `tools/python_env.py` 仅使用标准库。`ensure_environment(root, offline=False)` 返回需要切换的 Python 路径；当前解释器已经满足固定版本与导入检查时返回 None。`relaunch_if_needed(entry, offline=False)` 使用参数列表重新启动，保留原命令、工作目录和退出语义；不使用 shell 拼接，也不要求手动激活环境。
 
-依赖检查用 `python -I` 子进程读取 distribution 版本并真实导入关键模块，避免 PYTHONPATH 掩盖缺包或 NumPy 扩展加载错误。Host 延后导入第三方代码，`--help` 和无效参数始终可以仅靠标准库显示。SDK 路径优先于 tools，防止入口文件 `tools/tankbot.py` 遮蔽 `tankbot` 包。
+依赖检查用 `python -I` 子进程读取 distribution 版本并真实导入关键模块，避免 PYTHONPATH 掩盖缺包或 NumPy 扩展加载错误。Host 延后导入第三方代码，`--help` 和无效参数始终可以仅靠标准库显示。SDK 路径优先于 tools，防止入口文件 `main.py` 遮蔽 `tankbot` 包。
 
 ## 环境、缓存与安装器
 
 专用环境位于 `.m1-cache/python/envs/<key>/`。key 绑定仓库绝对路径、解释器版本/基础路径、平台/ABI、requirements 和安装器锁；依赖更新使用另一环境，保留正在运行的旧版本。Unix 使用 bin/python，Windows 使用 Scripts/python.exe。
 
-启动器通过 stdlib venv 创建无 pip、无系统 site-packages 的环境。pip 从 [PyPI 官方发行 wheel](https://pypi.org/project/pip/26.2.2/) 准备，URL、版本、字节数与 SHA-256 固定在 `config/python-bootstrap.lock.json`；校验后按 [CPython ensurepip](https://github.com/python/cpython/blob/3.14/Lib/ensurepip/__init__.py) 使用 wheel 的方式引导安装。无需宿主预装 pip、ensurepip 或 uv；不执行远程 get-pip 脚本。
+启动器通过 stdlib venv 创建无 pip、无系统 site-packages 的环境。pip 从 [PyPI 官方发行 wheel](https://pypi.org/project/pip/26.2.2/) 准备，URL、版本、字节数与 SHA-256 固定在 `assets/config/python-bootstrap.lock.json`；校验后按 [CPython ensurepip](https://github.com/python/cpython/blob/3.14/Lib/ensurepip/__init__.py) 使用 wheel 的方式引导安装。无需宿主预装 pip、ensurepip 或 uv；不执行远程 get-pip 脚本。
 
 首次联网下载 requirements 及传递依赖的可用 wheel 到 `.m1-cache/python/wheels/`，随后从本地目录安装。安装器只使用 binary wheel，不触发源码编译；pip 使用隔离模式、专用缓存和 require-virtualenv，并清除目标目录类环境覆盖。完成后重新验证版本/导入，原子写入 `ready.json` 记录版本与解释器；不单凭 ready 标记跳过检查。
 
@@ -44,8 +44,8 @@ flowchart TD
 ## 使用方式、取舍与未决项
 
 ```bash
-python3 tools/tankbot.py --level c0
-python3 tools/tankbot.py headless --level c0 --ticks 12 --offline
+python3 main.py --level c0
+python3 main.py headless --level c0 --ticks 12 --offline
 ```
 
 玩家使用原命令。开发者仍可使用已安装 requirements 的自有虚拟环境，独立测试工具需要相应解释器；专用解释器与版本可在 ready.json 中查看。

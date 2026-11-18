@@ -2,7 +2,7 @@
 
 ## 范围与结论
 
-2026-10-25，基线为提交 `ba2b5f8`。只迁移原有 C0–C4，正式目录仍有五个 YAML，没有开发新关卡或修改 Rust 物理实现。应用配置 1.9、关卡 Schema 1.0、现有协议/Topic/存档版本保持。架构、审计及迁移表见 [27](../27_LEVEL_PLUGIN_ARCHITECTURE.md)，编写流程见 [关卡指南](../../levels/README.md)，决策见 [ADR-0033](../adr/0033-declarative-level-plugins.md)。
+2026-10-25，基线为提交 `ba2b5f8`。只迁移原有 C0–C4，正式目录仍有五个 YAML，没有开发新关卡或修改 Rust 物理实现。应用配置 1.9、关卡 Schema 1.0、现有协议/Topic/存档版本保持。架构、审计及迁移表见 [27](../27_LEVEL_PLUGIN_ARCHITECTURE.md)，编写流程见 [关卡指南](../../assets/levels/README.md)，决策见 [ADR-0033](../adr/0033-declarative-level-plugins.md)。
 
 实测环境：Linux x86_64、CPython 3.14.4、Rust 1.99.1、Node 22.22.1、Firefox 157.0.1、Pyodide 0.29.5。Accepted 只覆盖本文范围，不代表其他平台或未来组件已验证。
 
@@ -22,11 +22,11 @@ Schema 顶层为 metadata、world、robots、communication、permissions、visua
 
 | 关卡 | 配置 | 保持的行为与结果 |
 | --- | --- | --- |
-| C0 认识坦克与坐标 | [hello_robot.C0.yaml](../../levels/hello_robot.C0.yaml) | 人工驾驶、真值练习；移动/转向/命中清单；60秒首次操作起算 |
-| C1 用 SE(3) 矩阵变换坐标 | [weapons.C1.yaml](../../levels/weapons.C1.yaml) | 理想 Radar、实际 NumPy 矩阵乘法、人工武器；估计并命中；60秒首次部署起算 |
-| C2 噪声下跟踪 | [weapons.C2.yaml](../../levels/weapons.C2.yaml) | 带噪中心观测、差速巡逻、人工武器、双方3HP；120秒内存活击杀 |
-| C3 让炮台自己瞄准 | [weapons.C3.yaml](../../levels/weapons.C3.yaml) | 三模块、程序角加速度/开火、无人工武器；120秒内存活自动击杀 |
-| C4 从底盘中心推算装甲瞄准点 | [weapons.C4.yaml](../../levels/weapons.C4.yaml) | 中心观测、敌车姿态估计、四面装甲、非装甲吸弹；180秒内存活击杀 |
+| C0 认识坦克与坐标 | [hello_robot.C0.yaml](../../assets/levels/hello_robot.C0.yaml) | 人工驾驶、真值练习；移动/转向/命中清单；60秒首次操作起算 |
+| C1 用 SE(3) 矩阵变换坐标 | [weapons.C1.yaml](../../assets/levels/weapons.C1.yaml) | 理想 Radar、实际 NumPy 矩阵乘法、人工武器；估计并命中；60秒首次部署起算 |
+| C2 噪声下跟踪 | [weapons.C2.yaml](../../assets/levels/weapons.C2.yaml) | 带噪中心观测、差速巡逻、人工武器、双方3HP；120秒内存活击杀 |
+| C3 让炮台自己瞄准 | [weapons.C3.yaml](../../assets/levels/weapons.C3.yaml) | 三模块、程序角加速度/开火、无人工武器；120秒内存活自动击杀 |
+| C4 从底盘中心推算装甲瞄准点 | [weapons.C4.yaml](../../assets/levels/weapons.C4.yaml) | 中心观测、敌车姿态估计、四面装甲、非装甲吸弹；180秒内存活击杀 |
 
 五关地图、玩家零初态、目标初态/路径、底盘、动力学、噪声及传感器结构保持。C1–C4 仍禁止驾驶，C3/C4 继续公开系统自身位姿。没有引入定位、scan 或建图课程。原诊断是位置/yaw RMSE 与采样/命中计数，无星级、加权评分或额外误差通关门槛；本次未增加。
 
@@ -92,23 +92,23 @@ git diff --check
 以下记录插件迁移与后续 Weapons 炮弹显示修订涉及的文件；之后的日志改进另见 [Python 测试日志验收](PYTHON_TEST_LOG_VALIDATION.md)。AGENTS.md、Rust 实现、SDK 公共消息及用户数据没有改写。
 
 - [README.md](../../README.md)
-- [config/game.yaml](../../config/game.yaml)
+- [config/game.yaml](../../assets/config/game.yaml)
 - [core/tests/fixtures/default-profile.json](../../core/tests/fixtures/default-profile.json)
-- [docs/02_SYSTEM_ARCHITECTURE.md](../../docs/02_SYSTEM_ARCHITECTURE.md)
-- [docs/04_STATE_AND_VIEW_MODEL.md](../../docs/04_STATE_AND_VIEW_MODEL.md)
-- [docs/09_LEVEL_DESIGN.md](../../docs/09_LEVEL_DESIGN.md)
-- [docs/10_DEVELOPMENT_ROADMAP.md](../../docs/10_DEVELOPMENT_ROADMAP.md)
-- [docs/18_CAMPAIGN_DESIGN.md](../../docs/18_CAMPAIGN_DESIGN.md)
-- [docs/25_ATTEMPT_RULES_AND_CONFIGURATION.md](../../docs/25_ATTEMPT_RULES_AND_CONFIGURATION.md)
-- [docs/26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md](../../docs/26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)
-- [docs/README.md](../../docs/README.md)
-- [docs/adr/0022-campaign-capabilities-and-evaluation.md](../../docs/adr/0022-campaign-capabilities-and-evaluation.md)
-- [docs/adr/0030-yaml-parameter-source.md](../../docs/adr/0030-yaml-parameter-source.md)
-- [docs/adr/README.md](../../docs/adr/README.md)
-- [docs/schemas/README.md](../../docs/schemas/README.md)
-- [docs/schemas/campaign.schema.json](../../docs/schemas/campaign.schema.json)
-- [docs/schemas/simulation-profile.schema.json](../../docs/schemas/simulation-profile.schema.json)
-- [docs/tools/check_design.py](../../docs/tools/check_design.py)
+- [docs/02_SYSTEM_ARCHITECTURE.md](../02_SYSTEM_ARCHITECTURE.md)
+- [docs/04_STATE_AND_VIEW_MODEL.md](../04_STATE_AND_VIEW_MODEL.md)
+- [docs/09_LEVEL_DESIGN.md](../09_LEVEL_DESIGN.md)
+- [docs/10_DEVELOPMENT_ROADMAP.md](../10_DEVELOPMENT_ROADMAP.md)
+- [docs/18_CAMPAIGN_DESIGN.md](../18_CAMPAIGN_DESIGN.md)
+- [docs/25_ATTEMPT_RULES_AND_CONFIGURATION.md](../25_ATTEMPT_RULES_AND_CONFIGURATION.md)
+- [docs/26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md](../26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)
+- [docs/README.md](../README.md)
+- [docs/adr/0022-campaign-capabilities-and-evaluation.md](../adr/0022-campaign-capabilities-and-evaluation.md)
+- [docs/adr/0030-yaml-parameter-source.md](../adr/0030-yaml-parameter-source.md)
+- [docs/adr/README.md](../adr/README.md)
+- [docs/schemas/README.md](../../assets/schemas/README.md)
+- [docs/schemas/campaign.schema.json](../../assets/schemas/campaign.schema.json)
+- [docs/schemas/simulation-profile.schema.json](../../assets/schemas/simulation-profile.schema.json)
+- [docs/tools/check_design.py](../tools/check_design.py)
 - [host/tankbot_host/application.py](../../host/tankbot_host/application.py)
 - [host/tankbot_host/authority.py](../../host/tankbot_host/authority.py)
 - [host/tankbot_host/campaign.py](../../host/tankbot_host/campaign.py)
@@ -133,23 +133,23 @@ git diff --check
 - [web/campaign-ui.js](https://github.com/Yangyongyu0506/TankBot/blob/292cad36c31ad6a822c573c2faf7496f6a96e17a/web/campaign-ui.js)
 - [web/visualization.js](https://github.com/Yangyongyu0506/TankBot/blob/292cad36c31ad6a822c573c2faf7496f6a96e17a/web/visualization.js)
 - [web/workspace-ui.js](https://github.com/Yangyongyu0506/TankBot/blob/292cad36c31ad6a822c573c2faf7496f6a96e17a/web/workspace-ui.js)
-- [docs/27_LEVEL_PLUGIN_ARCHITECTURE.md](../../docs/27_LEVEL_PLUGIN_ARCHITECTURE.md)
-- [docs/adr/0033-declarative-level-plugins.md](../../docs/adr/0033-declarative-level-plugins.md)
-- [docs/reports/LEVEL_PLUGINS_VALIDATION.md](../../docs/reports/LEVEL_PLUGINS_VALIDATION.md)
-- [docs/reports/level-plugins-native-c0-c2.json](../../docs/reports/level-plugins-native-c0-c2.json)
-- [docs/reports/level-plugins-native-c3-c4.json](../../docs/reports/level-plugins-native-c3-c4.json)
-- [docs/reports/level-plugins-wasm-c0-c2.json](../../docs/reports/level-plugins-wasm-c0-c2.json)
-- [docs/reports/level-plugins-wasm-c3-c4.json](../../docs/reports/level-plugins-wasm-c3-c4.json)
-- [docs/schemas/level.schema.json](../../docs/schemas/level.schema.json)
+- [docs/27_LEVEL_PLUGIN_ARCHITECTURE.md](../27_LEVEL_PLUGIN_ARCHITECTURE.md)
+- [docs/adr/0033-declarative-level-plugins.md](../adr/0033-declarative-level-plugins.md)
+- [docs/reports/LEVEL_PLUGINS_VALIDATION.md](LEVEL_PLUGINS_VALIDATION.md)
+- [docs/reports/level-plugins-native-c0-c2.json](level-plugins-native-c0-c2.json)
+- [docs/reports/level-plugins-native-c3-c4.json](level-plugins-native-c3-c4.json)
+- [docs/reports/level-plugins-wasm-c0-c2.json](level-plugins-wasm-c0-c2.json)
+- [docs/reports/level-plugins-wasm-c3-c4.json](level-plugins-wasm-c3-c4.json)
+- [docs/schemas/level.schema.json](../../assets/schemas/level.schema.json)
 - [host/tankbot_host/level_plugins.py](../../host/tankbot_host/level_plugins.py)
 - [host/tankbot_host/level_rules.py](../../host/tankbot_host/level_rules.py)
 - [host/tankbot_host/level_templates.py](../../host/tankbot_host/level_templates.py)
-- [levels/README.md](../../levels/README.md)
-- [levels/hello_robot.C0.yaml](../../levels/hello_robot.C0.yaml)
-- [levels/weapons.C1.yaml](../../levels/weapons.C1.yaml)
-- [levels/weapons.C2.yaml](../../levels/weapons.C2.yaml)
-- [levels/weapons.C3.yaml](../../levels/weapons.C3.yaml)
-- [levels/weapons.C4.yaml](../../levels/weapons.C4.yaml)
+- [levels/README.md](../../assets/levels/README.md)
+- [levels/hello_robot.C0.yaml](../../assets/levels/hello_robot.C0.yaml)
+- [levels/weapons.C1.yaml](../../assets/levels/weapons.C1.yaml)
+- [levels/weapons.C2.yaml](../../assets/levels/weapons.C2.yaml)
+- [levels/weapons.C3.yaml](../../assets/levels/weapons.C3.yaml)
+- [levels/weapons.C4.yaml](../../assets/levels/weapons.C4.yaml)
 - [tests/fixtures/level-behavior-before.json](../../tests/fixtures/level-behavior-before.json)
 - [tests/level_baseline_support.py](../../tests/level_baseline_support.py)
 - [tests/test_level_plugins.py](../../tests/test_level_plugins.py)

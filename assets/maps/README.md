@@ -16,7 +16,7 @@
 
 ## 引用与格式
 
-关卡在 `world.map` 引用，默认自由试验场在 `config/game.yaml` 的 `scene.map` 引用：
+关卡在 `world.map` 引用，默认自由试验场在 `assets/config/game.yaml` 的 `scene.map` 引用：
 
 ```yaml
 source: asset
@@ -41,7 +41,7 @@ C5复用navigation_warehouse.yaml，地图墙体未改动。可信准备从同�
 
 ## 启动覆盖与游戏内预览
 
-使用 `python3 tools/tankbot.py --list-maps` 查看可用地图，`python3 tools/tankbot.py serve --level c0 --map open_large` 覆盖关卡绑定；browser/headless 同样支持。覆盖在重试与切关时保留，省略参数重启服务恢复默认。自定义地图仅作练习，不写正式完成记录或解锁后续关卡。
+使用 `python3 main.py --list-maps` 查看可用地图，`python3 main.py --level c0 --map open_large` 覆盖关卡绑定；headless/probe同样支持。覆盖在重试与切关时保留，省略参数重启恢复默认。自定义地图仅作练习，不写正式完成记录或解锁后续关卡；浏览器入口已退役。
 
 顶部「地图预览」提供全景、刻度、外包尺寸及坐标方向；开发者可浏览全部地图，玩家只查看本关授权地图。选择预览不改变当前仿真，关闭使用 Esc 或 ×。初态与墙重叠时启动会明确拒绝，尤其注意绕行地图的原点墙。详细接口与限制见 [31](../../docs/31_MAP_OVERRIDE_AND_PREVIEW.md)。
 

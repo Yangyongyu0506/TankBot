@@ -2,7 +2,7 @@
 
 ## 目的与当前范围
 
-Godot 4标准版/GDScript是当前唯一玩家GUI，使用原生CPython和Rust权威Core。无参数 `python3 tools/tankbot.py` 直接打开游戏；Web GUI、CodeMirror/npm、Pyodide/双Worker和专用浏览器工具已移除。用户确认的退役范围见 [ADR-0057](adr/0057-godot-only-player-entry.md)；[ADR-0056](adr/0056-godot-desktop-presentation.md)记录先前原型阶段，不再要求保留Web入口。
+Godot 4标准版/GDScript是当前唯一玩家GUI，使用原生CPython和Rust权威Core。无参数 `python3 main.py` 直接打开游戏；Web GUI、CodeMirror/npm、Pyodide/双Worker和专用浏览器工具已移除。用户确认的退役范围见 [ADR-0057](adr/0057-godot-only-player-entry.md)；[ADR-0056](adr/0056-godot-desktop-presentation.md)记录先前原型阶段，不再要求保留Web入口。
 
 现有十三关的物理、算法接口、评分、权限和Workspace数据不变；客户端仍未具备所有历史Web界面功能，不能把保留后端能力说成完成Godot移植。
 
@@ -30,11 +30,11 @@ Godot使用既有 `GET /api/profile`、`/api/view`、`/api/workspace`、`/api/de
 
 ### 预制 Sprite
 
-实体外观加载 [assets/sprites](../assets/sprites/README.md) 下的图片，由 [desktop-sprites.yaml](../config/desktop-sprites.yaml) 和 [Schema](schemas/desktop-sprites.schema.json) 管理引用、文件/像素限额及弹丸最小显示直径。启动器验证后将可信绝对路径只传给Godot，不进入公共profile或玩家Runtime。旧desktop配置省略sprites_file时使用同一默认配置；缺文件或非法图像明确失败，不悄悄退回几何占位。
+实体外观加载 [assets/sprites](../assets/sprites/README.md) 下的图片，由 [desktop-sprites.yaml](../assets/config/desktop-sprites.yaml) 和 [Schema](../assets/schemas/desktop-sprites.schema.json) 管理引用、文件/像素限额及弹丸最小显示直径。启动器验证后将可信绝对路径只传给Godot，不进入公共profile或玩家Runtime。旧desktop配置省略sprites_file时使用同一默认配置；缺文件或非法图像明确失败，不悄悄退回几何占位。
 
 `sprite_library.gd`首次解码图片、建立共享ImageTexture/AtlasTexture和mipmap；`vehicle_sprite.gd`按现有底盘、轮标定、装甲壳与炮口尺寸装配Sprite2D。底盘、炮台和炮管分层；四轮保持90°对称、主滚动方向切向。靶标采用圆角/倒角底板、同心圆与十字纹。图片是美术轮廓，权威碰撞继续由Rust模型判定。
 
-`world_view.gd`每帧只更新实体Sprite变换，保留授权时间插值和相机语义；同ID复用节点，消失/切关时清理，无合法位姿则隐藏。墙体、网格、路径与雷达/估计标记仍是诊断几何。没有新增敌车真值权限或开发者数据旁路；完整敌车开发者图层仍待移植。现有已授权target占位改为靶板Sprite，不以资源推断未授权敌车的位置/朝向。
+`world_view.gd`每帧只更新实体Sprite变换，保留授权时间插值和相机语义；同ID复用节点，消失/切关时清理，无合法位姿则隐藏。墙体、网格、路径与雷达/估计标记仍是诊断几何。普通已授权target使用靶板Sprite；开发者敌车通过独立target_visuals选择其自身底盘，不能由资源推断未授权敌车的位置/朝向。
 
 当前从源码仓库目录读取资产，不依赖Godot导入缓存或图片生成服务。独立Godot导出包的资源打包仍待专门验收。实际C0、双底盘夹具和清理验证见 [Sprite验收](reports/GODOT_SPRITES_VALIDATION.md)。
 
@@ -46,24 +46,42 @@ Start自动生成原Workspace CAS快照，执行原独立检查，再创建全�
 
 文件保存在原userdata版本库的files目录，不迁移或清空原工程、ledger、revision或进度；游戏退出不关闭玩家VS Code。缺失编辑器时说明安装/PATH和实际目录，不恢复内置编辑器。选择课程载入准备场景，Start才运行保存代码。
 
+## 设置、图层与数据查看
+
+顶部“设置”或默认F10打开/收起固定视口面板，×/取消/Esc关闭；捕获键位时Esc先取消捕获。键位、恢复默认、模式和图层使用原GET/POST settings及revision，存储格式和路径不变；保存冲突保留草稿并提示重开，不静默覆盖。物理键支持字母、数字、方向、空格、F1–F12和小键盘，拒绝重复/组合键。保存后的工具栏快捷键标签同步更新，输入仍走既有人工执行器接口。设置开启期间释放操作，正式尝试继续计时。
+
+运行或Start检查期间锁定模式切换，先结束尝试再切换。服务重建Authority/Worker，开发者任意选关不奖正式通关；退出后恢复正式current_level。VS Code磁盘文件及原revision/ledger/history保留。结束尝试后，同run旧状态响应也会被UI世代拒绝，避免重新锁住选关。
+
+`display_policy.gd`统一处理关卡的allowed_layers、user_toggleable、initial_enabled和preserve_user_settings；普通玩家不能用保存偏好开启禁用图层。设置面板列全量可用开关，侧栏保留快捷开关，修改经同一YAML持久化。Navigation按关卡初态重建，Weapons按配置保留偏好。
+
+已接入授权轨迹、坐标轴、IMU箭头/原始传感器反馈、Radar/匿名装甲局部视图、GPS点、玩家估计轨迹、1σ椭圆、航点、完整路径、检查点、公开栅格/安全膨胀及局部scan。栅格纹理只在场景准备时创建；所有历史有界，旧run/revision/source/frame不串用。扫描地图投影只显示当前有效scan，并要求同sample tick的合法玩家EKF；缺配对时只画车体系，即使开发者真值存在也不补齐。
+
+开发者通过独立GET `/api/developer`获得真值车体/炮台、敌车、弹丸、速度、圆角碰撞外形、全局Radar及私有障碍图层。`developer_overlay.gd`使用独立时间线，与普通显示时刻同步且不外推，不改写Pose Selector；目标使用自身底盘标定。授权关闭、run变更、请求失败时清理私有缓存/节点，迟到响应按grant世代丢弃；开发者流断开超过显示history_ms后隐藏。相机仍使用原获选位姿。
+
+开发者模式中，己方授权车体/真值车体、差速/全向敌车、靶标和弹丸统一50%不透明度；墙体、私有障碍和地图填充保留原样。车辆使用CanvasGroup先合成底盘、轮组、装甲与炮台，再对整个实体应用self_modulate，避免零件重叠区变得更不透明。若获选位姿来自system且真值车体已显示，普通车体不重复绘制；玩家估计与真值仍可分别显示。回到玩家模式恢复正常不透明实体。
+
+绘制顺序由desktop-tools中的`rendering.draw_order`管理：地图填充在底层，实体居中，诊断线、坐标轴和各类观测点在场景最上层；设置与数据对话框继续在场景外。公开和开发者诊断均使用独立绘制节点，不依赖动态实体创建顺序。栅格填充与点线分离，不能为把坐标轴放到顶层而让整张膨胀网格盖住实体。统一透明度取`rendering.developer_entity_opacity`，不改变纹理、物理、数据授权或相机来源。
+
+“数据查看”按Topic选择当前授权消息/任务反馈；开发者另有truth、位姿候选、选中估计、目标估计、Runtime和有界审计。隐藏内容、保留滚动及字符上限由只读查看器处理；关闭模式后立即清掉私有类别与文本。查看许可不等于Python订阅许可。组件标签、显示限额和诊断样式集中在 [desktop-tools.yaml](../assets/config/desktop-tools.yaml)，经 [Schema](../assets/schemas/desktop-tools.schema.json)校验；不传入玩家Runtime。决策见 [0059](adr/0059-godot-settings-and-developer-displays.md)，实测与截图见 [验收](reports/GODOT_SETTINGS_AND_DEVELOPER_VALIDATION.md)。
+
 ## 配置与入口
 
-`config/desktop.yaml` 和 [desktop Schema](schemas/desktop.schema.json) 管理Godot版本/官方包摘要、窗口、轮询及HTTP容量。仿真/模型/课程仍取原YAML，原生profile见 [41](41_RUNTIME_EXECUTION_PROFILES.md)。Linux x86_64首次缺Godot时在 `.m1-cache/godot/<version>/` 准备固定SHA-512便携包；离线须缓存完整或指定二进制。Python依赖使用原专用环境；缺Core时仅构建Rust，不调用Node/npm。
+`assets/config/desktop.yaml` 和 [desktop Schema](../assets/schemas/desktop.schema.json) 管理Godot版本/官方包摘要、窗口、轮询及HTTP容量。仿真/模型/课程仍取原YAML，原生profile见 [41](41_RUNTIME_EXECUTION_PROFILES.md)。Linux x86_64首次缺Godot时在 `.m1-cache/godot/<version>/` 准备固定SHA-512便携包；离线须缓存完整或指定二进制。Python依赖使用原专用环境；缺Core时仅构建Rust，不调用Node/npm。
 
 ### 桌面主题
 
-`theme_file` 引用 [desktop-theme.yaml](../config/desktop-theme.yaml)，由 [主题Schema](schemas/desktop-theme.schema.json) 验证后仅传给Godot；旧桌面配置省略此字段时使用同一默认主题。色值为不透明RGB，配色、边距、圆角、字体层级及滚动条尺寸集中配置。`ui_theme.gd` 生成统一Theme，主界面与说明/升级对话框共享，避免各控件重复定义颜色。
+`theme_file` 引用 [desktop-theme.yaml](../assets/config/desktop-theme.yaml)，由 [主题Schema](../assets/schemas/desktop-theme.schema.json) 验证后仅传给Godot；旧桌面配置省略此字段时使用同一默认主题。色值为不透明RGB，配色、边距、圆角、字体层级及滚动条尺寸集中配置。`ui_theme.gd` 生成统一Theme，主界面与说明/升级对话框共享，避免各控件重复定义颜色。
 
 保留深色场景；普通按钮使用浅色实心背景和深色文字，Start使用青色，结束尝试使用红色。悬停、按下、禁用分别有独立样式，禁用状态仍保持文字可读。图层按钮同时显示“开/关”和选中颜色，显示开关仍只作用于已获授权的数据。工具栏使用流式排列，任务、场景和日志独立分区。
 
 当前配色的按钮文字（含禁用状态）对比度至少4.5:1，按钮填充对相邻面板至少3:1，由Python回归核对；这些是本主题的可读性目标，不代表完整无障碍认证。按钮保持不获取游戏键盘焦点，点击后Space和F2沿用原输入规则。主题不改变Start、快照、Worker、View Policy或物理参数。实际窗口及交互证据见 [主题验收](reports/GODOT_UI_CONTRAST_VALIDATION.md)。
 
 ```sh
-python3 tools/tankbot.py
-python3 tools/tankbot.py --level c1
-python3 tools/tankbot.py --godot-binary /path/to/godot --offline
-python3 tools/tankbot.py headless --level c0 --ticks 600
-python3 tools/tankbot.py probe --level c0
+python3 main.py
+python3 main.py --level c1
+python3 main.py --godot-binary /path/to/godot --offline
+python3 main.py headless --level c0 --ticks 600
+python3 main.py probe --level c0
 python3 tools/check.py --suite godot --offline -- --headless
 python3 tools/check.py --suite godot --offline
 ```
@@ -74,7 +92,7 @@ python3 tools/check.py --suite godot --offline
 
 标准入口自动发现Python回归，并检查Rust、文档/Schema和生成配置；不需要Node。Godot真实流程单列 `--suite godot`，使用临时设置/进度/工程/XDG和随机端口。Rust WASM构建/ABI对照为独立开发能力，`--suite wasm`才需要Node，不提供浏览器显示或Pyodide。
 
-待移植界面：游戏专用矩阵实验（编辑能力交由VS Code）；控制/定位曲线；算法实验台；项目导出/备份/历史/清理管理；设置/改键、手柄与完整关卡树；完整开发者图层及导航专用可视化。有关后端API和数据仍保留，旧教材中的网页菜单/快捷键不代表已在Godot实现。用户明确选择本轮先清理，不同时补齐这些功能。
+待移植界面：游戏专用矩阵实验（编辑能力交由VS Code）；控制/定位曲线；算法实验台；项目导出/备份/历史/清理管理；手柄、完整关卡树及地图资产预览。当前设置/改键、已有导航与开发者图层、只读数据查看器已经恢复；这不表示全部历史Web工具等价或任意RViz插件生态。旧教材中的其他网页菜单不代表Godot已实现。
 
 历史原型证据见 [2026-11-17报告](reports/GODOT_DESKTOP_VALIDATION.md)，本轮证据见 [退役验收](reports/GODOT_ONLY_ENTRY_VALIDATION.md)。Linux窗口证据不推断Windows/macOS、输入法、全部课程或正式发行能力。普通CPython子进程仍非OS强沙箱；30ms profile保持experimental，不因删除浏览器提高预算或可靠性等级。
 

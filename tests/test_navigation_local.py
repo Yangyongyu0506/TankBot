@@ -19,7 +19,7 @@ from local_navigation_support import solution
 class NavigationLocalTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.base=load_config(ROOT/'config/game.yaml')
+        cls.base=load_config(ROOT/'assets/config/game.yaml')
         cls.config=configure(cls.base,'navigation.c6')
 
     def create(self,config=None):

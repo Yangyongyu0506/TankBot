@@ -18,7 +18,7 @@ static func buttons(result: Theme, spec: Dictionary, type_name: String, prefix: 
 	for state in ["normal", "hover", "pressed", "disabled", "hover_pressed"]:
 		var fill = "button_disabled" if state == "disabled" else prefix + ("pressed" if state == "hover_pressed" else state)
 		result.set_stylebox(state, type_name, box(spec, fill, padding, false))
-	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color"]:
+	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color", "font_focus_color"]:
 		result.set_color(state, type_name, Color(spec.colors[text_key]))
 	result.set_color("font_disabled_color", type_name, Color(spec.colors.disabled_text))
 	# OptionButton arrows use these colors as well as text.

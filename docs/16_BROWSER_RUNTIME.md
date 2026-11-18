@@ -66,7 +66,7 @@ iframe在自己的时钟域执行局部timer和结果到达复核，超限 `Work
 
 ## 构建、配置与替代方案
 
-`tools/prepare_browser.py` 校验 `config/browser-assets.lock.json` 的每个 SHA-256，首次下载固定文件，之后可 `--offline` 重建两份 bundle；不运行浏览器时联网安装包。底层资源和生成 bundle 放在忽略的 `build/browser/`，不提交第三方二进制。
+`tools/prepare_browser.py` 校验 `assets/config/browser-assets.lock.json` 的每个 SHA-256，首次下载固定文件，之后可 `--offline` 重建两份 bundle；不运行浏览器时联网安装包。底层资源和生成 bundle 放在忽略的 `build/browser/`，不提交第三方二进制。
 
 当前应用配置为 `2.1`，浏览器接收同一加载器解析的场景与runtime.profiles目录，不接收可由玩家请求改写的预算。历史M2从1.3升为1.4引入browser段、M3在1.5加入workspace；这些是演进记录，不能代替当前配置。旧文件支持范围由加载器/Schema明确验证，工具不自动覆盖。Protocol仍为 `1.0` 未发布草案。
 

@@ -31,7 +31,7 @@ class PolarTracker:
 class GeneratedAlgorithmUpgradeTests(unittest.TestCase):
     def test_lesson_help_only_changes_do_not_force_algorithm_replacement(self):
         from tankbot_host.campaign_templates import generated_algorithm_updates
-        config=configure(load_config(ROOT/'config/game.yaml'),'c3')
+        config=configure(load_config(ROOT/'assets/config/game.yaml'),'c3')
         files=starter(config)
         source=files[PATH].replace('"""','"""Additional lesson help. ',1)
         files[PATH]=source
@@ -39,7 +39,7 @@ class GeneratedAlgorithmUpgradeTests(unittest.TestCase):
         self.assertEqual(generated_algorithm_updates(config,files,ledger),[])
 
     def project(self,folder,level):
-        config=configure(load_config(ROOT/'config/game.yaml'),level)
+        config=configure(load_config(ROOT/'assets/config/game.yaml'),level)
         api=WorkspaceAPI(config,directory=folder)
         before=api.store.read();old=starter(config);old[PATH]=OLD
         plan=api.store.plan('campaign-'+level+'-unlock','3.0.0',old,before['revision'])

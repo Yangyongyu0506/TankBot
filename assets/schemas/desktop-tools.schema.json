@@ -1,0 +1,477 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tankbot.example/schemas/desktop-tools.schema.json",
+  "title": "Godot settings and authorized displays",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tools_version",
+    "dialog_ratio",
+    "settings_poll_ms",
+    "inspector_max_chars",
+    "history_limit",
+    "scan_history_limit",
+    "scan_max_age_s",
+    "quick_layers",
+    "actions",
+    "layers",
+    "rendering",
+    "embed_subwindows"
+  ],
+  "properties": {
+    "tools_version": {
+      "const": "1.0"
+    },
+    "dialog_ratio": {
+      "type": "number",
+      "minimum": 0.5,
+      "maximum": 0.95
+    },
+    "settings_poll_ms": {
+      "type": "integer",
+      "minimum": 100,
+      "maximum": 10000
+    },
+    "inspector_max_chars": {
+      "type": "integer",
+      "minimum": 1024,
+      "maximum": 262144
+    },
+    "history_limit": {
+      "type": "integer",
+      "minimum": 2,
+      "maximum": 10000
+    },
+    "scan_history_limit": {
+      "type": "integer",
+      "minimum": 2,
+      "maximum": 1000
+    },
+    "scan_max_age_s": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 2
+    },
+    "quick_layers": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "map",
+          "robot",
+          "trail",
+          "target_estimates",
+          "radar",
+          "imu",
+          "encoders",
+          "turret",
+          "truth_robot",
+          "truth_targets",
+          "projectiles",
+          "frames",
+          "velocities",
+          "colliders",
+          "gps",
+          "pose_estimates",
+          "pose_covariance",
+          "waypoints",
+          "path",
+          "checkpoints",
+          "planning_map",
+          "safety_grid",
+          "scan",
+          "scan_points",
+          "private_obstacles"
+        ]
+      }
+    },
+    "actions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "forward",
+        "backward",
+        "left",
+        "right",
+        "turn_left",
+        "turn_right",
+        "turret_left",
+        "turret_right",
+        "fire",
+        "editor",
+        "help",
+        "settings"
+      ],
+      "properties": {
+        "forward": {
+          "type": "string",
+          "minLength": 1
+        },
+        "backward": {
+          "type": "string",
+          "minLength": 1
+        },
+        "left": {
+          "type": "string",
+          "minLength": 1
+        },
+        "right": {
+          "type": "string",
+          "minLength": 1
+        },
+        "turn_left": {
+          "type": "string",
+          "minLength": 1
+        },
+        "turn_right": {
+          "type": "string",
+          "minLength": 1
+        },
+        "turret_left": {
+          "type": "string",
+          "minLength": 1
+        },
+        "turret_right": {
+          "type": "string",
+          "minLength": 1
+        },
+        "fire": {
+          "type": "string",
+          "minLength": 1
+        },
+        "editor": {
+          "type": "string",
+          "minLength": 1
+        },
+        "help": {
+          "type": "string",
+          "minLength": 1
+        },
+        "settings": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "layers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "map",
+        "robot",
+        "trail",
+        "target_estimates",
+        "radar",
+        "imu",
+        "encoders",
+        "turret",
+        "truth_robot",
+        "truth_targets",
+        "projectiles",
+        "frames",
+        "velocities",
+        "colliders",
+        "gps",
+        "pose_estimates",
+        "pose_covariance",
+        "waypoints",
+        "path",
+        "checkpoints",
+        "planning_map",
+        "safety_grid",
+        "scan",
+        "scan_points",
+        "private_obstacles"
+      ],
+      "properties": {
+        "map": {
+          "type": "string",
+          "minLength": 1
+        },
+        "robot": {
+          "type": "string",
+          "minLength": 1
+        },
+        "trail": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target_estimates": {
+          "type": "string",
+          "minLength": 1
+        },
+        "radar": {
+          "type": "string",
+          "minLength": 1
+        },
+        "imu": {
+          "type": "string",
+          "minLength": 1
+        },
+        "encoders": {
+          "type": "string",
+          "minLength": 1
+        },
+        "turret": {
+          "type": "string",
+          "minLength": 1
+        },
+        "truth_robot": {
+          "type": "string",
+          "minLength": 1
+        },
+        "truth_targets": {
+          "type": "string",
+          "minLength": 1
+        },
+        "projectiles": {
+          "type": "string",
+          "minLength": 1
+        },
+        "frames": {
+          "type": "string",
+          "minLength": 1
+        },
+        "velocities": {
+          "type": "string",
+          "minLength": 1
+        },
+        "colliders": {
+          "type": "string",
+          "minLength": 1
+        },
+        "gps": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pose_estimates": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pose_covariance": {
+          "type": "string",
+          "minLength": 1
+        },
+        "waypoints": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "checkpoints": {
+          "type": "string",
+          "minLength": 1
+        },
+        "planning_map": {
+          "type": "string",
+          "minLength": 1
+        },
+        "safety_grid": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scan": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scan_points": {
+          "type": "string",
+          "minLength": 1
+        },
+        "private_obstacles": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "rendering": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "line_width_px",
+        "point_radius_px",
+        "frame_length_m",
+        "velocity_scale_s",
+        "acceleration_scale_s2",
+        "observation_radius_px",
+        "observation_origin_px",
+        "observation_ring_segments",
+        "ellipse_segments",
+        "truth_tint",
+        "truth_target_tint",
+        "trail",
+        "reference",
+        "gps",
+        "frame_x",
+        "frame_y",
+        "velocity",
+        "collider",
+        "scan",
+        "checkpoint",
+        "goal",
+        "safety",
+        "occupied",
+        "private_obstacle",
+        "modal_shade",
+        "developer_entity_opacity",
+        "draw_order"
+      ],
+      "properties": {
+        "line_width_px": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 4096
+        },
+        "point_radius_px": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 4096
+        },
+        "frame_length_m": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 4096
+        },
+        "velocity_scale_s": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 4096
+        },
+        "acceleration_scale_s2": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 4096
+        },
+        "observation_radius_px": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 4096
+        },
+        "observation_origin_px": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 4096
+          }
+        },
+        "observation_ring_segments": {
+          "type": "integer",
+          "minimum": 8,
+          "maximum": 256,
+          "multipleOf": 4
+        },
+        "ellipse_segments": {
+          "type": "integer",
+          "minimum": 8,
+          "maximum": 256,
+          "multipleOf": 4
+        },
+        "truth_tint": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$"
+        },
+        "truth_target_tint": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$"
+        },
+        "trail": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$"
+        },
+        "reference": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$"
+        },
+        "gps": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$"
+        },
+        "frame_x": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$"
+        },
+        "frame_y": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$"
+        },
+        "velocity": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$"
+        },
+        "collider": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$"
+        },
+        "scan": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$"
+        },
+        "checkpoint": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$"
+        },
+        "goal": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$"
+        },
+        "safety": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$"
+        },
+        "occupied": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$"
+        },
+        "private_obstacle": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$"
+        },
+        "modal_shade": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{8}$"
+        },
+        "developer_entity_opacity": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "exclusiveMaximum": 1
+        },
+        "draw_order": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "map",
+            "entities",
+            "annotations"
+          ],
+          "properties": {
+            "map": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9
+            },
+            "entities": {
+              "type": "integer",
+              "minimum": 10,
+              "maximum": 19
+            },
+            "annotations": {
+              "type": "integer",
+              "minimum": 20,
+              "maximum": 49
+            }
+          }
+        }
+      }
+    },
+    "embed_subwindows": {
+      "type": "boolean"
+    }
+  }
+}

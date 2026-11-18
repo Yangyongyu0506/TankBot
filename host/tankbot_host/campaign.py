@@ -11,7 +11,7 @@ def active(config):
 
 def ensure_native_numpy() -> None:
     if importlib.util.find_spec("numpy") is None:
-        raise ValueError("教学 Runtime 缺少 NumPy；请使用 python3 tools/tankbot.py 启动，启动器会自动准备 Python 依赖。")
+        raise ValueError("教学 Runtime 缺少 NumPy；请使用 python3 main.py 启动，启动器会自动准备 Python 依赖。")
 
 
 def validate_profile(config):

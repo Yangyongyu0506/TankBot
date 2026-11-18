@@ -23,7 +23,7 @@ class PlayerPolicyTests(unittest.TestCase):
     def test_only_numpy_external_and_static_imports_include_tests_and_unused_code(self):
         policy = load_policy()
         from jsonschema import Draft202012Validator
-        Draft202012Validator(json.loads((ROOT / "docs/schemas/player-dependencies.schema.json").read_text())).validate(policy)
+        Draft202012Validator(json.loads((ROOT / "assets/schemas/player-dependencies.schema.json").read_text())).validate(policy)
         self.assertEqual(policy["external_packages"], ["numpy"])
         allowed = {"robot/__init__.py": "", "robot/helper.py": "from math import sin\n",
                    "robot/main.py": "from .helper import sin\nimport numpy as np\nfrom numpy.typing import NDArray\nfrom tankbot import Pose2D\nfrom tankbot.transforms import target_positions\n",
@@ -92,7 +92,7 @@ else:
         np.testing.assert_array_equal(target_positions((TargetEstimate(1, 2), TargetEstimate(3, 4))), np.array([[1, 2], [3, 4]]))
 
     def test_real_test_worker_rejects_dynamic_import_and_preserves_active_runtime(self):
-        config = load_config(ROOT / "config/game.yaml")
+        config = load_config(ROOT / "assets/config/game.yaml")
         a = Authority(config, controlled=True)
         self.addCleanup(a.close)
         a.deployment = DeploymentManager(a)

@@ -80,7 +80,7 @@ def main():
     parser.add_argument('--input',type=Path,default=ROOT/'.m1-cache/runtime-profile-matrix')
     parser.add_argument('--output',type=Path,required=True)
     args=parser.parse_args()
-    limits=load_yaml(ROOT/'config/runtime-benchmark.yaml')['limits']
+    limits=load_yaml(ROOT/'assets/config/runtime-benchmark.yaml')['limits']
     cells=[];totals=defaultdict(lambda:{'batches':0,'wall_timeouts':0,'missed_gates':0,'trials':0,'runtime_failed_trials':0})
     comparisons=defaultdict(lambda:{'builds':set(),'runtime_sources':set(),'algorithm_sources':set(),'seeds':set()})
     for directory in sorted({p.parent for p in args.input.glob('**/metadata.json')}):
@@ -95,7 +95,7 @@ def main():
         sanitized['machine']=metadata['machine']
         sanitized['config_sha256_kind']=metadata.get('config_sha256_kind','prepared source config before ephemeral port assignment (R1)')
         cells.append({'cell':str(directory.relative_to(args.input)),'metadata':sanitized,'result':result})
-    profiles=load_yaml(ROOT/'config/runtime-profiles.yaml')
+    profiles=load_yaml(ROOT/'assets/config/runtime-profiles.yaml')
     report={'report_version':'1.0','analysis_version':'1.1','counts_from':'unique timing_id + step_id in raw JSONL, including cancelled/censored batches',
         'primary_workload_minimum_applies_to':'each backend/workload total across measured conditions and actual watchdog candidates; not 10000 per cell',
         'selected_defaults':{backend:{'profile_id':identity,'module_declared_budget_cap_ms':profiles['module_declared_budget_cap_ms'],**profiles['profiles'][identity]}

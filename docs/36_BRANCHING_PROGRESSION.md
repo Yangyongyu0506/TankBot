@@ -45,8 +45,8 @@ metadata.prerequisites数组表示全部前置完成。ApplicationState统一判
 ## 启动前查看依赖树
 
 ```bash
-python3 tools/tankbot.py --level-tree
-python3 tools/tankbot.py --level-tree --save-file /path/to/progress.json
+python3 main.py --level-tree
+python3 main.py --level-tree --save-file /path/to/progress.json
 ```
 
 无需serve/browser运行模式。命令加载同一关卡目录，按YAML前置生成文本树，标出已通关/可挑战/未解锁、当前关卡及缺少的前置。默认读取userdata/progress.json；缺失时只在内存生成新玩家预览，不创建用户数据目录、设置、存档、锁文件或Workspace，也不启动Core、Python玩家程序或Web服务。开发者开关不影响展示的正式通关记录，查看不会更改模式。

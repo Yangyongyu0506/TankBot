@@ -5,10 +5,10 @@
 在既有地图资产加载器上增加启动覆盖与只读预览，不添加新关卡或地图热切换。决策见 [ADR-0042](adr/0042-map-override-and-preview.md)，地图与布局见 [资产目录](../assets/maps/README.md)。
 
 ```bash
-python3 tools/tankbot.py --list-maps
-python3 tools/tankbot.py --level c0 --map open_large
-python3 tools/tankbot.py --level c0 --map maps/navigation_warehouse.yaml
-python3 tools/tankbot.py headless --level c0 --map open_large --ticks 600
+python3 main.py --list-maps
+python3 main.py --level c0 --map open_large
+python3 main.py --level c0 --map maps/navigation_warehouse.yaml
+python3 main.py headless --level c0 --map open_large --ticks 600
 ```
 
 `--map` 接受资产名称（可省略 .yaml）、`maps/…yaml` 或 `assets/maps/…yaml`；文件必须在 assets/maps 内。禁止绝对路径、路径穿越和目录外符号链接。`--list-maps` 自动发现 YAML，验证后输出路径及墙体数量，不启动仿真或修改用户存档。

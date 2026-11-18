@@ -4,7 +4,7 @@
 
 根据 2026-10-26 用户确认，保留 C0–C2 的玩法、观测、控制、目标和参数，重做 C3/C4，新增 C5。取代原 C3 自动瞄准、原 C4 仅凭中心运动推断朝向的课程安排；[26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md) 的调度、隔离与模块契约继续适用。初版决策见 [ADR-0035](adr/0035-progressive-weapons-estimation.md)；当前 C4 课程以 [ADR-0038](adr/0038-center-target-auto-aim.md) 为准，C5 观测以 [30](30_ARMOR_OBSERVATIONS.md) 为准，当前验收见 [报告](reports/CENTER_AUTO_AIM_VALIDATION.md)。
 
-所有关卡仍由独立 `levels/*.yaml` 声明，不按 ID 在引擎中选择行为。新增的是可复用的传感器、适配器、模板及巡逻控制能力；不引入 ROS2、外部算法库或关卡脚本。当前正式关卡均不使用车头 GPS，通用组件保留兼容。
+所有关卡仍由独立 `assets/levels/*.yaml` 声明，不按 ID 在引擎中选择行为。新增的是可复用的传感器、适配器、模板及巡逻控制能力；不引入 ROS2、外部算法库或关卡脚本。当前正式关卡均不使用车头 GPS，通用组件保留兼容。
 
 ## 课程与控制权
 

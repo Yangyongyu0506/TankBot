@@ -4,7 +4,7 @@
 
 把渐进失去信息转化为渐进建立能力，而非指定算法题库。关卡复用Core、SDK、Runtime、Protocol与View Policy，不按关卡复制引擎。Weapons见 [18](18_CAMPAIGN_DESIGN.md)、[28](28_WEAPONS_PROGRESSIVE_ESTIMATION.md)；Navigation C0–C6已实现轮控制、里程计、GPS/EKF、航点闭环、连续路径追踪、已知地图规划与局部静态避障，接口分别见 [33](33_NAVIGATION_MOTION_CONTROL.md)、[34](34_NAVIGATION_ODOMETRY_AND_FEEDBACK.md)、[35](35_NAVIGATION_GPS_LOCALIZATION.md)、[37](37_NAVIGATION_WAYPOINT_CONTROL.md)、[40](40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)、[42](42_NAVIGATION_GLOBAL_PLANNING.md)、[43](43_NAVIGATION_LOCAL_AVOIDANCE.md)。
 
-现有十三关使用独立levels/*.yaml，统一发现、校验、加载和解释，不按ID选择行为；源格式见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)。公共c0后分为Weapons和Navigation两条独立主线，各自内部保留真实代码依赖，见 [36](36_BRANCHING_PROGRESSION.md)。
+现有十三关使用独立assets/levels/*.yaml，统一发现、校验、加载和解释，不按ID选择行为；源格式见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)。公共c0后分为Weapons和Navigation两条独立主线，各自内部保留真实代码依赖，见 [36](36_BRANCHING_PROGRESSION.md)。
 
 关卡必须同时声明：问题、撤回的系统能力、新授权输入、前置技能、可保留代码、反馈与可达成的验收标准。撤回能力前先给替代输入/模板和安全试验场。每次引入尽量只改变一个主要认知负担。
 
@@ -33,7 +33,7 @@ C0与Weapons使用共享空旷场地，Navigation C0–C3亦为空旷场地，C4
 
 ## 当前LevelDefinition与能力接管
 
-正式源是 [level.schema.json](schemas/level.schema.json) 约束的独立YAML，具体字段和现有组件见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md) 与 [关卡编写指南](../levels/README.md)。加载器把声明编译为Core场景、Runtime grants、Selector资格、View Policy与规则；这些不是UI布尔开关。系统模块与玩家模块通过已声明端口接管功能，不修改Core算法分支。
+正式源是 [level.schema.json](../assets/schemas/level.schema.json) 约束的独立YAML，具体字段和现有组件见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md) 与 [关卡编写指南](../assets/levels/README.md)。加载器把声明编译为Core场景、Runtime grants、Selector资格、View Policy与规则；这些不是UI布尔开关。系统模块与玩家模块通过已声明端口接管功能，不修改Core算法分支。
 
 ### 历史：早期Locomotion内容草案（不作为配置输入）
 

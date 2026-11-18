@@ -14,7 +14,7 @@ import time
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path[:0] = [str(ROOT/"host"), str(ROOT/"protocol"), str(ROOT/"sdk/python"), str(ROOT/"examples/robot")]
+sys.path[:0] = [str(ROOT/"host"), str(ROOT/"protocol"), str(ROOT/"sdk/python"), str(ROOT/"assets/examples/robot")]
 from tankbot_host.authority import Authority, CoreAdapter, load_config
 from tankbot_host.server import LocalServer
 from tankbot_protocol.validation import envelope, Validator, Rejected
@@ -30,7 +30,7 @@ def twist(v):
 class M1Tests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.config = load_config(ROOT/"config/game.yaml")
+        cls.config = load_config(ROOT/"assets/config/game.yaml")
         cls.config["weapons"]["enabled"] = False  # Preserve the M1 bare-chassis regression profile.
 
     def core(self, config=None, chassis=None):

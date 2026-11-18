@@ -24,6 +24,25 @@ class DesktopTests(unittest.TestCase):
         self.assertEqual(value['desktop_version'], '1.0')
         self.assertEqual(len(value['engine']['linux_x86_64']['archive_sha512']), 128)
 
+    def test_tools_registry_matches_persisted_actions_and_layers(self):
+        from tankbot_host.application import ACTIONS, LAYERS
+        controls = settings()['client']['tools']
+        self.assertEqual(set(controls['actions']), set(ACTIONS))
+        self.assertEqual(set(controls['layers']), set(LAYERS))
+        self.assertTrue(set(controls['quick_layers']) <= set(LAYERS))
+
+    def test_developer_opacity_and_render_bands_are_validated(self):
+        from jsonschema import Draft202012Validator, ValidationError
+        import json
+        spec = settings()['client']['tools']
+        self.assertEqual(spec['rendering']['developer_entity_opacity'], .5)
+        validator = Draft202012Validator(json.loads((ROOT / 'assets/schemas/desktop-tools.schema.json').read_text()))
+        for key, value in (('developer_entity_opacity', 1), ('developer_entity_opacity', 0), ('draw_order', {'map': 0, 'entities': 20, 'annotations': 10})):
+            invalid = copy.deepcopy(spec)
+            invalid['rendering'][key] = value
+            with self.subTest(key=key, value=value), self.assertRaises(ValidationError):
+                validator.validate(invalid)
+
     def test_theme_readability_including_disabled_controls(self):
         appearance = settings()['client']['appearance']
         colors = appearance['colors']
@@ -51,23 +70,26 @@ class DesktopTests(unittest.TestCase):
 
     def test_legacy_desktop_configuration_gets_the_same_validated_theme(self):
         from tankbot_host.configuration import load_yaml
-        raw = load_yaml(ROOT / 'config/desktop.yaml')
+        raw = load_yaml(ROOT / 'assets/config/desktop.yaml')
         raw.pop('theme_file')
         raw.pop('sprites_file')
-        appearance = load_yaml(ROOT / 'config/desktop-theme.yaml')
-        sprites = load_yaml(ROOT / 'config/desktop-sprites.yaml')
-        with patch('tankbot_host.configuration.load_yaml', side_effect=[raw, appearance, sprites]) as load:
+        raw.pop('tools_file')
+        appearance = load_yaml(ROOT / 'assets/config/desktop-theme.yaml')
+        sprites = load_yaml(ROOT / 'assets/config/desktop-sprites.yaml')
+        controls = load_yaml(ROOT / 'assets/config/desktop-tools.yaml')
+        with patch('tankbot_host.configuration.load_yaml', side_effect=[raw, appearance, sprites, controls]) as load:
             actual = settings()
-        self.assertEqual(load.call_args_list[1].args[0], ROOT / 'config/desktop-theme.yaml')
-        self.assertEqual(load.call_args_list[2].args[0], ROOT / 'config/desktop-sprites.yaml')
+        self.assertEqual(load.call_args_list[1].args[0], ROOT / 'assets/config/desktop-theme.yaml')
+        self.assertEqual(load.call_args_list[2].args[0], ROOT / 'assets/config/desktop-sprites.yaml')
+        self.assertEqual(load.call_args_list[3].args[0], ROOT / 'assets/config/desktop-tools.yaml')
         self.assertEqual(actual['client']['appearance'], appearance)
         self.assertNotIn('appearance', actual['engine'])
 
     def test_invalid_theme_or_theme_path_is_rejected_before_launch(self):
         from jsonschema import ValidationError
         from tankbot_host.configuration import load_yaml
-        raw = load_yaml(ROOT / 'config/desktop.yaml')
-        appearance = load_yaml(ROOT / 'config/desktop-theme.yaml')
+        raw = load_yaml(ROOT / 'assets/config/desktop.yaml')
+        appearance = load_yaml(ROOT / 'assets/config/desktop-theme.yaml')
         appearance['colors']['button_normal'] = 'transparent'
         with patch('tankbot_host.configuration.load_yaml', side_effect=[raw, appearance]):
             with self.assertRaises(ValidationError):
@@ -95,9 +117,9 @@ class DesktopTests(unittest.TestCase):
 
     def test_missing_sprite_fails_before_launch(self):
         from tankbot_host.configuration import load_yaml
-        raw = load_yaml(ROOT / 'config/desktop.yaml')
-        appearance = load_yaml(ROOT / 'config/desktop-theme.yaml')
-        sprites = load_yaml(ROOT / 'config/desktop-sprites.yaml')
+        raw = load_yaml(ROOT / 'assets/config/desktop.yaml')
+        appearance = load_yaml(ROOT / 'assets/config/desktop-theme.yaml')
+        sprites = load_yaml(ROOT / 'assets/config/desktop-sprites.yaml')
         sprites['assets']['target']['path'] = 'assets/sprites/industrial/missing.png'
         with patch('tankbot_host.configuration.load_yaml', side_effect=[raw, appearance, sprites]):
             with self.assertRaisesRegex(ValueError, 'SPRITE_ASSET_MISSING: target'):

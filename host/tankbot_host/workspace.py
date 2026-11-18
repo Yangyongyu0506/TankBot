@@ -144,7 +144,7 @@ def starter(config):
                 "connections": [{"from": channel, "to": f"{module_id}.{port}"} for port, channel in inputs.items()] +
                                [{"from": f"{module_id}.{port}", "to": channel} for port, channel in outputs.items()],
                 "dependencies": [], "pose_source": {"mode": "player", "module_id": module_id, "fallback": "none"}}
-    files = read_sources(ROOT / "examples/robot", config["workspace"])
+    files = read_sources(ROOT / "assets/examples/robot", config["workspace"])
     files["tankbot.json"] = json.dumps(manifest, indent=2) + "\n"
     files[f"contracts/{module_id}.json"] = json.dumps(contract, indent=2) + "\n"
     if not level:
@@ -220,7 +220,7 @@ def open_store(config, seed=None, directory=None):
     if storage is None:
         # Older profiles use the current documented application storage policy.
         from .configuration import load_yaml
-        storage = load_yaml(ROOT / "config/game.yaml")["workspace"]["storage"]
+        storage = load_yaml(ROOT / "assets/config/game.yaml")["workspace"]["storage"]
     parent = ROOT / storage["directory"]
     legacy = ROOT / storage["legacy_directory"]
     destination = parent / key

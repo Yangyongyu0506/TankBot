@@ -16,12 +16,12 @@ from tankbot_protocol.validation import Validator,Rejected
 
 class EngineeringContractTests(unittest.TestCase):
     @classmethod
-    def setUpClass(cls):cls.validator=Validator(load_config(ROOT/'config/game.yaml'),'contracts')
+    def setUpClass(cls):cls.validator=Validator(load_config(ROOT/'assets/config/game.yaml'),'contracts')
 
     def test_examples_and_old_runtime_results_have_valid_formal_schemas(self):
         for name,schema in [('engineering-settings','engineering'),('workspace-backup','workspace-backup'),('experiment-empty-record','experiment'),('experiment-empty-package','experiment-package'),('runtime-execution-profiles','runtime-execution')]:
-            with self.subTest(name=name):self.validator.structure(json.loads((ROOT/'docs/examples'/ (name+'.json')).read_text()),schema+'.schema.json')
-        sample=json.loads((ROOT/'docs/examples/runtime-telemetry.json').read_text())
+            with self.subTest(name=name):self.validator.structure(json.loads((ROOT/'assets/protocol/examples'/ (name+'.json')).read_text()),schema+'.schema.json')
+        sample=json.loads((ROOT/'assets/protocol/examples/runtime-telemetry.json').read_text())
         self.assertTrue(self.validator.schemas['payloads.schema.json'].evolve(schema={'$ref':'#/$defs/runtime_step_result'}).is_valid(sample))
         old={k:v for k,v in sample.items() if k!='telemetry'}
         self.assertTrue(self.validator.schemas['payloads.schema.json'].evolve(schema={'$ref':'#/$defs/runtime_step_result'}).is_valid(old))
@@ -43,8 +43,8 @@ class EngineeringContractTests(unittest.TestCase):
     def test_course_diagnostic_declaration_obeys_configured_engineering_limit(self):
         from tankbot_host.engineering import settings
         from tankbot_host.level_plugins import _validate,read_definition,LevelValidationError
-        config=load_config(ROOT/'config/game.yaml')
-        value=read_definition(ROOT/'levels/weapons.C2.yaml',config['level_plugins']['limits'])
+        config=load_config(ROOT/'assets/config/game.yaml')
+        value=read_definition(ROOT/'assets/levels/weapons.C2.yaml',config['level_plugins']['limits'])
         limits=copy.deepcopy(settings());limits['lab']['diagnostic_max_values']=1
         with patch('tankbot_host.engineering.settings',return_value=limits):
             with self.assertRaisesRegex(LevelValidationError,'evaluation.experiment.diagnostics.innovation'):

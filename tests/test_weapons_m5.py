@@ -22,7 +22,7 @@ from weapons_curriculum_support import solutions, ManualAimHarness
 
 class WeaponsM5Tests(unittest.TestCase):
     def config(self, level):
-        return configure(load_config(ROOT / "config/game.yaml"), level)
+        return configure(load_config(ROOT / "assets/config/game.yaml"), level)
 
     def test_revised_curriculum_completes_c3_c4_c5_from_authorized_inputs(self):
         evidence = []
@@ -123,7 +123,7 @@ class WeaponsM5Tests(unittest.TestCase):
 
     def test_config_rejects_inconsistent_chapters_armor_and_actuator_grants(self):
         from tankbot_host.campaign import validate_profile
-        config = load_config(ROOT / "config/game.yaml")
+        config = load_config(ROOT / "assets/config/game.yaml")
         for case in ("duplicate_chapter_member","armor","grant","profile"):
             c = copy.deepcopy(config)
             if case == "duplicate_chapter_member":c["campaign"]["chapters"][1]["levels"].append("c1")

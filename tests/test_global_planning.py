@@ -22,7 +22,7 @@ def wire(points):
 class GlobalPlanningGeometryTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.config=configure(load_config(ROOT/'config/game.yaml'),'navigation.c5')
+        cls.config=configure(load_config(ROOT/'assets/config/game.yaml'),'navigation.c5')
         cls.spec=cls.config['campaign']['levels']['navigation.c5']['rules']['global_planning']
 
     def test_grid_axes_floor_centres_bounds_and_irrevocable_readonly(self):

@@ -16,7 +16,7 @@ from tankbot_host.workspace_api import WorkspaceAPI
 
 class WorkspaceStorageTests(unittest.TestCase):
     def setUp(self):
-        self.config = configure(load_config(ROOT / "config/game.yaml"), "c1")
+        self.config = configure(load_config(ROOT / "assets/config/game.yaml"), "c1")
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)

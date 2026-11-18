@@ -22,7 +22,7 @@ from tankbot_host.server import LocalServer
 
 class MapOverrideTests(unittest.TestCase):
     def setUp(self):
-        self.base=load_config(ROOT/'config/game.yaml')
+        self.base=load_config(ROOT/'assets/config/game.yaml')
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
         self.directory=Path(self.temp.name)
 

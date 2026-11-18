@@ -17,7 +17,7 @@ from tankbot_host.level_plugins import resolve_map,LevelValidationError
 
 class MapAssetTests(unittest.TestCase):
     def setUp(self):
-        self.config=load_config(ROOT/'config/game.yaml')
+        self.config=load_config(ROOT/'assets/config/game.yaml')
 
     def test_shared_teaching_map_and_unchanged_legacy_scene(self):
         legacy=load_yaml(ROOT/'assets/maps/training_legacy.yaml')['walls']
@@ -25,7 +25,7 @@ class MapAssetTests(unittest.TestCase):
         self.assertEqual(self.config['scene']['walls'],legacy)
         self.assertEqual(opened,legacy[:4])
         self.assertEqual(set(self.config['campaign']['levels']),{'c0','c1','c2','c3','c4','c5','navigation.c0','navigation.c1','navigation.c2','navigation.c3','navigation.c4','navigation.c5','navigation.c6'})
-        definitions={value['metadata']['id']:value for path in (ROOT/'levels').glob('*.yaml') for value in [load_yaml(path)]}
+        definitions={value['metadata']['id']:value for path in (ROOT/'assets/levels').glob('*.yaml') for value in [load_yaml(path)]}
         for lid in self.config['campaign']['levels']:
             source=definitions[lid]
             expected_map='navigation_warehouse.yaml' if lid in ('navigation.c4','navigation.c5','navigation.c6') else 'open_training.yaml'
@@ -97,7 +97,7 @@ class MapAssetTests(unittest.TestCase):
             self.assertEqual(error.exception.path,'scene.map.path')
 
     def test_standalone_map_and_legacy_inline_configuration(self):
-        raw=load_yaml(ROOT/'config/game.yaml')
+        raw=load_yaml(ROOT/'assets/config/game.yaml')
         with tempfile.TemporaryDirectory() as folder:
             path=Path(folder)/'game.yaml'
             raw['scene']['map']['path']='maps/open_large.yaml'

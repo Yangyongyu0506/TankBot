@@ -2498,7 +2498,7 @@
     "max_view_topic_bytes": 32768
   },
   "level_plugins": {
-    "directory": "levels",
+    "directory": "assets/levels",
     "limits": {
       "max_files": 128,
       "max_file_bytes": 131072,

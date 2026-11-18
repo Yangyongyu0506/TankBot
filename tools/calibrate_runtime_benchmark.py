@@ -17,7 +17,7 @@ def main():
     from python_env import relaunch_if_needed
     relaunch_if_needed(Path(__file__).resolve(),offline=args.offline)
     from runtime_budget_support import benchmark_options
-    options=benchmark_options(ROOT/'config/runtime-benchmark.yaml')['calibration']
+    options=benchmark_options(ROOT/'assets/config/runtime-benchmark.yaml')['calibration']
     n=options['initial_iterations'][args.backend];rounds=[]
     for number in range(options['max_rounds']):
         output=args.output/f'round-{number}'

@@ -2,7 +2,7 @@
 
 ## 目的、范围与确认
 
-用户逐项确认传感器模型、函数接口、课程阈值与显示方案。新增 [navigation.C2.yaml](../levels/navigation.C2.yaml)，稳定 ID `navigation.c2`，在 C1 后解锁。本关复用 [C0 控制器](33_NAVIGATION_MOTION_CONTROL.md) 和 [C1 里程计](34_NAVIGATION_ODOMETRY_AND_FEEDBACK.md)，不包含武器、IMU、打滑或新运动模型。[ADR-0048](adr/0048-navigation-gps-localization.md) 已 Accepted；真实原生/浏览器结果及平台边界见 [验收报告](reports/NAVIGATION_GPS_LOCALIZATION_VALIDATION.md)。
+用户逐项确认传感器模型、函数接口、课程阈值与显示方案。新增 [navigation.C2.yaml](../assets/levels/navigation.C2.yaml)，稳定 ID `navigation.c2`，在 C1 后解锁。本关复用 [C0 控制器](33_NAVIGATION_MOTION_CONTROL.md) 和 [C1 里程计](34_NAVIGATION_ODOMETRY_AND_FEEDBACK.md)，不包含武器、IMU、打滑或新运动模型。[ADR-0048](adr/0048-navigation-gps-localization.md) 已 Accepted；真实原生/浏览器结果及平台边界见 [验收报告](reports/NAVIGATION_GPS_LOCALIZATION_VALIDATION.md)。
 
 问题是“轮式里程计累积漂移，低频 GPS 本身又抖动”，而不是强制提交某一种滤波公式。玩家维护自己的状态和协方差；框架处理文件、消息、时间对齐与发布。所有课程/模型参数均来自 YAML；参考解只用于测试，不写入玩家工程。
 
@@ -41,7 +41,7 @@ Core 继续只消费合法轮电压，估计绝不修改物理。真实位姿及
 
 轮速 ω̃ᵢ=(1+gᵢ)ωᵢ+εᵢ；累计轮角 φ̃ᵢ=(1+gᵢ)φᵢ+Σ εᵢΔtᵢ。首样本 Δt=0，后续把本次速率噪声积分在前一采样间隔；这是一致的离散误差约定，不声称加速时的瞬时轮速等于累计轮角的精确差分。传感器只保留噪声积分、增益和最新缓存，不积累无界历史。
 
-GPS 的 position_m 是只读 float64 NumPy (2,)，covariance 是只读 (2,2)；线上协方差按行优先四元素编码，分别为 m / m²。类型为 PositionFix2D，见 [消息样例](examples/position-fix2d-message.json)。它是投影到游戏平面的米制定位，不假装完整 NavSatFix。既有敌车 gps_fix@1 / GpsFixData / intercepted_gps 保持兼容。
+GPS 的 position_m 是只读 float64 NumPy (2,)，covariance 是只读 (2,2)；线上协方差按行优先四元素编码，分别为 m / m²。类型为 PositionFix2D，见 [消息样例](../assets/protocol/examples/position-fix2d-message.json)。它是投影到游戏平面的米制定位，不假装完整 NavSatFix。既有敌车 gps_fix@1 / GpsFixData / intercepted_gps 保持兼容。
 
 ## 玩家合同与脚手架
 

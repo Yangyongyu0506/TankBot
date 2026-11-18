@@ -24,8 +24,9 @@ def load_execution_profiles(config):
     if 'profiles_file' in runtime:
         if 'profiles' in runtime or 'batch_budget_ms' in runtime:
             raise ValueError('RUNTIME_PROFILE_CONFLICT: profiles_file cannot coexist with profiles or batch_budget_ms')
-        path=(ROOT/runtime['profiles_file']).resolve()
-        if not path.is_relative_to(ROOT/'config') or path.suffix not in ('.yaml','.yml'):
+        from .resources import repository_path
+        path=repository_path(runtime['profiles_file'])
+        if not path.is_relative_to(ROOT/'assets/config') or path.suffix not in ('.yaml','.yml'):
             raise ValueError('RUNTIME_PROFILE_PATH: expected a trusted config YAML asset')
         from .configuration import load_yaml
         runtime['profiles']=load_yaml(path)

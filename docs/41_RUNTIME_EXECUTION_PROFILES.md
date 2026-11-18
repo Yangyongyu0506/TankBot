@@ -4,11 +4,11 @@
 
 当前唯一玩家Runtime是独立原生CPython，Godot只负责GUI。[ADR-0057](adr/0057-godot-only-player-entry.md)已删除Pyodide后端；本规范继续执行 [ADR-0053](adr/0053-backend-runtime-execution-profiles.md) 的预算拆分、尝试内冻结、完整解码截止及固定门。历史浏览器测量保留于报告，不表示当前仍有浏览器运行入口。
 
-当前默认目录 `config/runtime-profiles.yaml`：模块声明准入总上限20ms；`native_local_v1`整批墙钟30ms，状态experimental。物理60Hz、算法dt、原始采样时刻、固定activation+6tick、权限和课程评分保持。玩家update自报耗时不是可信CPU配额，也没有逐模块硬隔离。
+当前默认目录 `assets/config/runtime-profiles.yaml`：模块声明准入总上限20ms；`native_local_v1`整批墙钟30ms，状态experimental。物理60Hz、算法dt、原始采样时刻、固定activation+6tick、权限和课程评分保持。玩家update自报耗时不是可信CPU配额，也没有逐模块硬隔离。
 
 ## 配置、冻结与兼容
 
-`config/game.yaml` 的runtime.profiles_file只引用可信config目录；加载后展开为runtime.profiles。目录schema_version=1.0，共同声明上限独立于profile版本、backend、墙钟与状态。可信Worker工厂只选择native，Authority保存不可变有效profile，候选测试/部署继承，玩家请求/源码/遥测均不能改额。
+`assets/config/game.yaml` 的runtime.profiles_file只引用可信config目录；加载后展开为runtime.profiles。目录schema_version=1.0，共同声明上限独立于profile版本、backend、墙钟与状态。可信Worker工厂只选择native，Authority保存不可变有效profile，候选测试/部署继承，玩家请求/源码/遥测均不能改额。
 
 旧runtime.batch_budget_ms单独存在时保持原义：准入与墙钟均等于该值；与profiles_file/profiles混用拒绝，不猜优先级。修改可信配置须新建尝试，不静默迁移玩家文件。
 
@@ -16,7 +16,7 @@
 
 ```yaml
 runtime:
-  profiles_file: config/runtime-profiles.yaml
+  profiles_file: assets/config/runtime-profiles.yaml
 ```
 
 public_profile.runtime_execution_profile和timing.execution_profile公开ID、版本、实际参数、来源及摘要。timing.budget_ms只保留为墙钟诊断别名；模块准入只能读取module_declared_budget_cap_ms。
@@ -44,7 +44,7 @@ Navigation C5/C6的5秒规划准备独立于周期profile和声明额度。从�
 
 窗口观测提供批次/模块/编解码等p50/p95/p99/p99.9/max、profile和失败位置。可消费的有界事件流由基准保存JSONL分片，不以512批窗口冒充长测。每批先求模块update总和再计算分位数；不能相加模块p99或相减两个分位数推算通信开销。首次激活、稳态、缺失响应和截断样本分开记录，内部遥测仅作不可信墙钟诊断。
 
-`tools/benchmark_runtime.py`和校准工具现在只执行native。参数取config/runtime-benchmark.yaml，支持空update、Weapons KF/EKF、Navigation四模块路径追踪、接近声明额度的受控负载及不返回update；隔离目录、源/配置/构建摘要、seed、正常/宿主负载条件和固定提交语义保持。near_cap先校准后冻结，不改变玩家时限。--plan只输出计划，--slice-attempts是短测，不作为完整尝试可靠性证据。
+`tools/benchmark_runtime.py`和校准工具现在只执行native。参数取assets/config/runtime-benchmark.yaml，支持空update、Weapons KF/EKF、Navigation四模块路径追踪、接近声明额度的受控负载及不返回update；隔离目录、源/配置/构建摘要、seed、正常/宿主负载条件和固定提交语义保持。near_cap先校准后冻结，不改变玩家时限。--plan只输出计划，--slice-attempts是短测，不作为完整尝试可靠性证据。
 
 每片JSONL及汇总容量均受YAML限制；--resume验证身份，不覆盖旧格或混合不同源码。`tools/summarize_runtime_benchmark.py`可只读分析原有native/浏览器记录，不安装已删除的Pyodide资源；历史版本取原始元数据/报告，缺失信息不编造。
 

@@ -15,7 +15,7 @@ class DependencyNotAllowed(ImportError):
 
 
 def load_policy():
-    directory = Path(__file__).resolve().parents[3] / "config"
+    directory = Path(__file__).resolve().parents[3] / "assets/config"
     compiled = directory / "player-dependencies.json"
     if compiled.exists():
         value = json.loads(compiled.read_text(encoding="utf-8"))

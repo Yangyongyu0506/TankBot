@@ -1,6 +1,6 @@
 # 02 系统架构
 
-当前十三关的声明式入口为 `levels/*.yaml`：公共 c0、Weapons c1–c5、Navigation c0–c6。共享Host加载器发现、严格校验并解析地图、完整底盘和传感器实例，再构造Authority/Core；Godot和无头工具共用原生规则与权限。关卡加载见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)，场景装配见 [32](32_RESOLVED_SCENE_AND_COMPONENTS.md)。当前应用配置为 `2.1`；课程清单与解锁取YAML，不由本页维护注册表。
+当前十三关的声明式入口为 `assets/levels/*.yaml`：公共 c0、Weapons c1–c5、Navigation c0–c6。共享Host加载器发现、严格校验并解析地图、完整底盘和传感器实例，再构造Authority/Core；Godot和无头工具共用原生规则与权限。关卡加载见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)，场景装配见 [32](32_RESOLVED_SCENE_AND_COMPONENTS.md)。当前应用配置为 `2.1`；课程清单与解锁取YAML，不由本页维护注册表。
 
 ## 目的、范围与约束
 
@@ -55,7 +55,7 @@ flowchart TB
 | Workspace Service | 草稿、模板、快照、迁移和测试报告 | 编辑即热改运行代码 |
 | Godot UI | DTO 插值、传感器图层、编辑、调试、工作区操作 | 权威碰撞、评分、ACL 决策 |
 
-实际目录为 `core/`（纯核心）、`host/`（场景、权限、调度与管理）、`clients/godot/`（授权表现和编辑器）、`sdk/python/`、`runtime/`、`protocol/`、`tests/` 和 `docs/`。`levels/` 存课程，`config/chassis/` 存完整底盘，`config/` 存时钟/求解器与运行策略，`assets/maps/` 存共享地图；没有另外一套 `content/` 关卡源。依赖从Host指向Core、Schema与适配接口；Core不反向依赖Host或UI。
+实际目录为 `core/`（纯核心）、`host/`（场景、权限、调度与管理）、`clients/godot/`（授权表现和编辑器）、`sdk/python/`、`runtime/`、`protocol/`、`tests/` 和 `docs/`。`assets/levels/` 存课程，`assets/config/chassis/` 存完整底盘，`assets/config/` 存时钟/求解器与运行策略，`assets/maps/` 存共享地图；没有另外一套 `content/` 关卡源。依赖从Host指向Core、Schema与适配接口；Core不反向依赖Host或UI。
 
 机器人接口优先参考 ROS 习惯，见 [ADR-0014](adr/0014-ros-style-velocity-interface.md)。`/robot/cmd_vel` 的 Twist 属于连续设定值 Topic；Host 在提交门转换成 Core 的内部 `BodyVelocityTarget(vx, vy, wz, source_tick)` 或目标失效事件。Core 不解析 Envelope，不关心网络和请求 ID；差速/径向全向轮模型共享输入形状，分别执行自己的运动学与动力学。
 
@@ -91,7 +91,7 @@ flowchart TB
 
 ## 前端架构与接口
 
-当前采用Godot/GDScript作为玩家GUI，由ADR-0057确定；[ADR-0058](adr/0058-external-editor-and-single-start.md) 将源码编辑交给VS Code，Godot只保留Start、只读说明与日志等游戏界面。`python3 tools/tankbot.py`默认打开Godot，`serve/browser/godot`子命令不再接受；headless/probe仍是开发工具。Web GUI、CodeMirror/npm、Pyodide及双origin启动器已删除。
+当前采用Godot/GDScript作为玩家GUI，由ADR-0057确定；[ADR-0058](adr/0058-external-editor-and-single-start.md) 将源码编辑交给VS Code，Godot只保留Start、只读说明与日志等游戏界面。`python3 main.py`默认打开Godot，`serve/browser/godot`子命令不再接受；headless/probe仍是开发工具。Web GUI、CodeMirror/npm、Pyodide及双origin启动器已删除。
 
 `clients/godot/backend.gd`连接受控loopback API，`timeline.gd`缓存/插值授权快照，`world_view.gd`只绘图，`main.gd`管理外部编辑入口、Start和只读反馈。碰撞、命中、权限、计时与部署生效由Authority决定。工作区和独立CPython不因更换GUI改变所有权。尚未移植的界面与证据见 [44](44_GODOT_DESKTOP_CLIENT.md)。
 

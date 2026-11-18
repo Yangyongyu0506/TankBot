@@ -19,7 +19,7 @@ from tankbot_host.level_plugins import LevelValidationError
 
 
 class ChassisProfileTests(unittest.TestCase):
-    def setUp(self):self.base=load_config(ROOT/'config/game.yaml')
+    def setUp(self):self.base=load_config(ROOT/'assets/config/game.yaml')
 
     def test_geometry_is_shared_by_core_public_calibration_runtime_and_gps(self):
         for level,half in (('c4',.4),('c5',.21)):
@@ -59,7 +59,7 @@ class ChassisProfileTests(unittest.TestCase):
             with self.subTest(field=field),self.assertRaises(LevelValidationError) as error:load_profiles(c)
             self.assertEqual(error.exception.path,expected)
         c=copy.deepcopy(self.base);c['chassis_profiles']['omnidirectional']='../../tmp/chassis.yaml'
-        with self.assertRaisesRegex(LevelValidationError,'inside config/chassis'):load_profiles(c)
+        with self.assertRaisesRegex(LevelValidationError,'inside assets/config/chassis'):load_profiles(c)
         c=copy.deepcopy(self.base);del c['chassis_profiles']['omnidirectional']['visual']['armor']['front_length_m']
         with self.assertRaises(LevelValidationError) as error:load_profiles(c)
         self.assertEqual(error.exception.path,'visual.armor')

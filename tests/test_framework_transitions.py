@@ -19,7 +19,7 @@ from campaign_support import solutions
 
 class FrameworkTransitionTests(unittest.TestCase):
     def setUp(self):
-        self.base=load_config(ROOT/'config/game.yaml')
+        self.base=load_config(ROOT/'assets/config/game.yaml')
 
     def test_retained_current_wrapper_does_not_mask_graph_manifest_in_single_profile(self):
         for graph_level in ('c3','c4'):

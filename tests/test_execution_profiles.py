@@ -17,7 +17,7 @@ from campaign_support import solutions
 
 
 class ExecutionProfileTests(unittest.TestCase):
-    def setUp(self):self.config=load_config(ROOT/'config/game.yaml')
+    def setUp(self):self.config=load_config(ROOT/'assets/config/game.yaml')
 
     def test_backend_selection_legacy_compatibility_and_conflict_rejection(self):
         runtime=self.config['runtime'];catalog=runtime['profiles']
@@ -101,8 +101,8 @@ class ExecutionProfileTests(unittest.TestCase):
         self.assertEqual(admission_cap(loaded),30)
         self.assertEqual(select_execution_profile(loaded,'native').batch_wall_deadline_ms,30)
         for runtime in (
-            {**self.config['runtime'],'profiles_file':'config/runtime-profiles.yaml'},
-            {**legacy['runtime'],'profiles_file':'config/runtime-profiles.yaml'},
+            {**self.config['runtime'],'profiles_file':'assets/config/runtime-profiles.yaml'},
+            {**legacy['runtime'],'profiles_file':'assets/config/runtime-profiles.yaml'},
         ):
             with self.assertRaisesRegex(ValueError,'CONFLICT'):load_execution_profiles({'runtime':runtime})
         with self.assertRaisesRegex(ValueError,'PATH'):

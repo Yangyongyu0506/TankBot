@@ -64,7 +64,7 @@ class Odometry(Module):
         pass
 ```
 
-上面是模板示例；M1 可执行多文件里程计见 `examples/robot/localization/`。完整目标 `ModuleContext` 拟公开 `simulation_tick`、`dt_seconds`、`output_commit_tick`、不可变 `config`、按模块派生的 `rng`、有配额的 `log` 和 `state` 检查点接口。它没有 World、物理对象、宿主文件系统、真实地图 seed 或未授权变换。
+上面是模板示例；M1 可执行多文件里程计见 `assets/examples/robot/localization/`。完整目标 `ModuleContext` 拟公开 `simulation_tick`、`dt_seconds`、`output_commit_tick`、不可变 `config`、按模块派生的 `rng`、有配额的 `log` 和 `state` 检查点接口。它没有 World、物理对象、宿主文件系统、真实地图 seed 或未授权变换。
 
 `ctx.publish(port, value, frame_id, simulation_tick=None)` 在本激活批次收集输出，默认 tick 为激活 tick；候选频道与 publisher 由已验证连接绑定。返回不代表已提交。输入是快照，模块不能修改 Router 缓存。`Inputs.latest(port)` 在允许的历史内选 `(sample_tick, sequence)` 最大的合法样本；过期可选输入返回 `None`。
 
@@ -108,7 +108,7 @@ ctx.publish("cmd_vel", velocity, frame_id="base_link")
 
 ### 一次性准备任务
 
-Navigation C5的GlobalPlanner是出发前准备任务，不是周期Module，也不加入四模块20ms声明额度。`communication.runtime.preparation`是配置单源，编译后的Manifest派生同名声明；旧Manifest新增该声明须预览显式升级。其输入为授权原始OccupancyGrid、公开起终点及安全参数，输出为map路径或None，原生/Pyodide完整往返均独立5秒。消息绑定run/deployment/task/request/operation，Schema见 [准备消息](schemas/preparation-task.schema.json)，完整合同见 [42](42_NAVIGATION_GLOBAL_PLANNING.md)。
+Navigation C5的GlobalPlanner是出发前准备任务，不是周期Module，也不加入四模块20ms声明额度。`communication.runtime.preparation`是配置单源，编译后的Manifest派生同名声明；旧Manifest新增该声明须预览显式升级。其输入为授权原始OccupancyGrid、公开起终点及安全参数，输出为map路径或None，原生/Pyodide完整往返均独立5秒。消息绑定run/deployment/task/request/operation，Schema见 [准备消息](../assets/schemas/preparation-task.schema.json)，完整合同见 [42](42_NAVIGATION_GLOBAL_PLANNING.md)。
 
 候选Worker先完成解释器/项目测试初始化；收到计时请求后才导入、构造和调用规划器。Authority验证结果后仅交付冻结静态路径，再初始化周期图。系统setup/reset不调用规划器，规划缓存/可变对象不跨阶段授权；任意其他Python计算不产生替代路径提交入口，也没有逐模块硬CPU隔离承诺。测试与正式部署分别新建Worker，各规划一次，关闭/超时清理沿用外部Supervisor；行驶阶段仍执行41的墙钟及6tick门。
 
@@ -136,13 +136,13 @@ Navigation C5的GlobalPlanner是出发前准备任务，不是周期Module，也
 
 ## M1 可用 API 与后续能力
 
-M1 实现 `Module.setup/update/reset/teardown`、不可变值类型、`Sample`、`Inputs.latest`、`ModuleContext.simulation_tick/dt_seconds/output_commit_tick/config/publish`；输出收集到固定提交门，经 Authority 再验证。Host 从唯一 `config/game.yaml` 派生生效 Contract（period=60/10，deadline=commit_delay_ticks），避免第二份硬编码控制参数。示例端口 wheels:joint_state@1、imu:imu@1 → pose:pose2d@1；SDK 初始化仅公开起点、轮几何和模块自身配置。
+M1 实现 `Module.setup/update/reset/teardown`、不可变值类型、`Sample`、`Inputs.latest`、`ModuleContext.simulation_tick/dt_seconds/output_commit_tick/config/publish`；输出收集到固定提交门，经 Authority 再验证。Host 从唯一 `assets/config/game.yaml` 派生生效 Contract（period=60/10，deadline=commit_delay_ticks），避免第二份硬编码控制参数。示例端口 wheels:joint_state@1、imu:imu@1 → pose:pose2d@1；SDK 初始化仅公开起点、轮几何和模块自身配置。
 
 M1 原始子集仅运行一个 periodic Module。M5 已补同步周期/event 多模块、依赖初始化、分组校验及自动模板，当前接口见 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)。FunctionModule/RobotApp、动态手动 Topic、ctx.rng/log/state 与检查点仍未实现。标准库/宿主文件/网络在普通 CPython 进程中没有被安全隔离；只能运行本人可信代码，不能把“ctx 未暴露引擎”说成“已经沙箱化”。[实际测试](../tests/test_m1.py) 会执行本文 SDK Python 片段并检查发布类型，同时独立验证真实外部 worker。
 
 ## M1b 增量 API
 
-已增加不可变 `TurretVelocity`、`FireCommand`、`FireResult`、`WeaponState` 与 `ctx.fire(port="fire", request_id=None)`。ctx.publish 收集炮台速度 Topic；ctx.fire 收集离散命令并返回 ID，结果从后续武器状态读取，不阻塞算法。只有启动配置授予 robot 控制源时，对应输出端口才出现在 Contract；声明端口不等于自动获得权限。新示例单独位于 [weapon_demo.py](../examples/robot/weapon_demo.py)，保留原定位源码；接口、时序、反馈字段与可执行片段见 [14](14_WEAPONS_DESIGN.md)。炮台/武器输入为可选授权观测；M1b当时仍复用单periodic Module；当前模块图已在M5实现，此处仅记录武器API来源。
+已增加不可变 `TurretVelocity`、`FireCommand`、`FireResult`、`WeaponState` 与 `ctx.fire(port="fire", request_id=None)`。ctx.publish 收集炮台速度 Topic；ctx.fire 收集离散命令并返回 ID，结果从后续武器状态读取，不阻塞算法。只有启动配置授予 robot 控制源时，对应输出端口才出现在 Contract；声明端口不等于自动获得权限。新示例单独位于 [weapon_demo.py](../assets/examples/robot/weapon_demo.py)，保留原定位源码；接口、时序、反馈字段与可执行片段见 [14](14_WEAPONS_DESIGN.md)。炮台/武器输入为可选授权观测；M1b当时仍复用单periodic Module；当前模块图已在M5实现，此处仅记录武器API来源。
 
 ## M2 运行适配
 
@@ -170,7 +170,7 @@ C3/C4 的 PolarTracker 输入与 C2 一致使用类型化观测元组：`measure
 
 `PathFollower.update(estimated_pose: NDArray[np.float64], path_xy: NDArray[np.float64], dt: float) -> Twist`用于Navigation C4。estimated_pose是只读map系(3,) `[x,y,yaw]`，path_xy是只读map系(N,2)米制坐标；使用SDK `readonly_path(points)`构造后，不能重新打开写权限。缺少、过期或错误帧的玩家位姿时，受管适配器输出零参考。
 
-PathTrackingModule只订阅玩家EKF候选，公开路径一次经受权启动配置提供，不每批复制或引入新中间件。四模块仍按既有冻结输入和6tick提交，Twist先进入原轮控制器，Authority独立拒绝负vx及非平面输入。旧WaypointController/Goal和其他课程接口保留；合同样例见 [path-follower-contract.json](examples/path-follower-contract.json)，完整教材见 [40](40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)。
+PathTrackingModule只订阅玩家EKF候选，公开路径一次经受权启动配置提供，不每批复制或引入新中间件。四模块仍按既有冻结输入和6tick提交，Twist先进入原轮控制器，Authority独立拒绝负vx及非平面输入。旧WaypointController/Goal和其他课程接口保留；合同样例见 [path-follower-contract.json](../assets/protocol/examples/path-follower-contract.json)，完整教材见 [40](40_NAVIGATION_CONTINUOUS_PATH_TRACKING.md)。
 
 ## 局部导航组合合同
 

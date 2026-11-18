@@ -1,6 +1,6 @@
 # Navigation C5 已知地图规划验收（2026-11-11）
 
-本次从干净的 HEAD `3531d80` 开始。关卡采用 `navigation.c5` 和现有 Navigation 工程，通关 `navigation.c4` 后解锁。仓储地图解析为 92 行 × 122 列的只读原始网格。玩家提交的路径先经过 Authority 整段安全校验，再交给已有的定位、追踪与轮控链。参考搜索源码位于测试目录，正式模板提供类型、参数和待实现的 `plan`。 [关卡配置](../../levels/navigation.C5.yaml) · [设计合同](../42_NAVIGATION_GLOBAL_PLANNING.md)
+本次从干净的 HEAD `3531d80` 开始。关卡采用 `navigation.c5` 和现有 Navigation 工程，通关 `navigation.c4` 后解锁。仓储地图解析为 92 行 × 122 列的只读原始网格。玩家提交的路径先经过 Authority 整段安全校验，再交给已有的定位、追踪与轮控链。参考搜索源码位于测试目录，正式模板提供类型、参数和待实现的 `plan`。 [关卡配置](../../assets/levels/navigation.C5.yaml) · [设计合同](../42_NAVIGATION_GLOBAL_PLANNING.md)
 
 ## 原生闭环和真实界面
 

@@ -48,7 +48,7 @@ class RuntimeTimingTests(unittest.TestCase):
         self.assertTrue(report['observational_only'])
 
     def test_native_measures_module_serialization_and_roundtrip_without_increasing_budget(self):
-        config=configure(load_config(ROOT/'config/game.yaml'),'c2')
+        config=configure(load_config(ROOT/'assets/config/game.yaml'),'c2')
         a=Authority(config,controlled=True,startup_sources=solutions(config))
         try:
             for _ in range(90):a.advance()

@@ -4,7 +4,7 @@
 
 当前状态更新于2026-11-18：应用配置2.1、十三关；C5/C6及Godot原型已提交。当前按用户确认删除Web GUI/Pyodide，默认直接启动Godot，见 [ADR-0057](adr/0057-godot-only-player-entry.md)。下方里程碑记录工程历史，不表示旧浏览器入口仍存在。课程和评分不变，headless/probe与Rust WASM开发验证保留；原生profile保持experimental。
 
-当前优先任务是补齐Godot中的曲线、实验台、项目维护/历史界面、设置/手柄、完整关卡树和导航/开发者图层；这些原Web功能的后端和数据保留，尚未完成界面移植。当前入口与验收见 [44](44_GODOT_DESKTOP_CLIENT.md)、[本轮报告](reports/GODOT_ONLY_ENTRY_VALIDATION.md)。
+Godot已恢复设置/改键、独立开发者/导航图层和只读数据查看器，见 [0059](adr/0059-godot-settings-and-developer-displays.md) 与 [验收](reports/GODOT_SETTINGS_AND_DEVELOPER_VALIDATION.md)。后续优先补齐曲线、实验台、项目维护/历史、手柄、完整关卡树和地图资产预览；后端保留不等于界面移植完成。入口和当前范围见 [44](44_GODOT_DESKTOP_CLIENT.md)，旧退役报告保留历史范围。
 
 编辑流程已进一步改为VS Code真实目录＋单次Start，见 [45](45_EXTERNAL_EDITOR_AND_START.md)、[验收](reports/EXTERNAL_EDITOR_AND_START_VALIDATION.md)：删除内置源码编辑及手动测试/部署按钮，内部快照、独立检查、正式Worker和固定门保持。运行中编辑不改当前revision，升级仍预览/显式应用。不再规划内置Vim/补全等工具移植。
 

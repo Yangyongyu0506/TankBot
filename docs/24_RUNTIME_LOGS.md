@@ -53,7 +53,7 @@ flowchart LR
 
 ## 容量与生命周期
 
-复用 `config/game.yaml.runtime.max_log_bytes`，当前 32768 字节；每个 Supervisor 和 Authority 聚合缓冲均按序列化字节数及最多 512 条记录裁剪旧日志，单条长文本继续拆分。原生不完整行也有长度上限；浏览器每个初始化/step 阶段额外限制输出字节与 128 条消息，超出后提示省略。
+复用 `assets/config/game.yaml.runtime.max_log_bytes`，当前 32768 字节；每个 Supervisor 和 Authority 聚合缓冲均按序列化字节数及最多 512 条记录裁剪旧日志，单条长文本继续拆分。原生不完整行也有长度上限；浏览器每个初始化/step 阶段额外限制输出字节与 128 条消息，超出后提示省略。
 
 滚动到最新时跟随输出，主动向上查看时保留位置。日志只保存在当前 run 内存，不持续写玩家存档/Workspace；重试、切关或服务重启建立新缓冲。清空显示是 UI 操作，不是删除源码或重置程序。
 

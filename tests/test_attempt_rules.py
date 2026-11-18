@@ -22,7 +22,7 @@ ZERO = {"linear": {"x": 0, "y": 0, "z": 0}, "angular": {"x": 0, "y": 0, "z": 0}}
 
 class AttemptRulesTests(unittest.TestCase):
     def config(self, level, seconds=1):
-        config = configure(load_config(ROOT/"config/game.yaml"), level)
+        config = configure(load_config(ROOT/"assets/config/game.yaml"), level)
         config["campaign"]["levels"][level]["time_limit_s"] = seconds
         return config
 
@@ -40,7 +40,7 @@ class AttemptRulesTests(unittest.TestCase):
         return a.deployment.last
 
     def test_yaml_is_canonical_and_ambiguous_configuration_is_rejected(self):
-        config = load_config(ROOT/"config/game.yaml")
+        config = load_config(ROOT/"assets/config/game.yaml")
         self.assertEqual(config, json.loads((ROOT/"core/tests/fixtures/default-profile.json").read_text()))
         self.assertEqual({lid:d['time_limit_s'] for lid,d in config['campaign']['levels'].items()},
             {'c0':60,'c1':60,'c2':120,'c3':120,'c4':120,'c5':180,

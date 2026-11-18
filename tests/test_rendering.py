@@ -16,7 +16,7 @@ class RenderingTests(unittest.TestCase):
         for level,enemy_chassis in (('c2','differential'),('c5','omnidirectional')):
             for own_chassis in ('differential','omnidirectional'):
                 with self.subTest(level=level,own_chassis=own_chassis):
-                    c=configure(load_config(ROOT/'config/game.yaml'),level)
+                    c=configure(load_config(ROOT/'assets/config/game.yaml'),level)
                     c['scene']['default_chassis']=own_chassis
                     a=Authority(c,controlled=True,developer_mode=True)
                     try:
@@ -36,7 +36,7 @@ class RenderingTests(unittest.TestCase):
                     finally:a.close()
 
     def test_visual_settings_do_not_change_physics(self):
-        config=load_config(ROOT/'config/game.yaml')
+        config=load_config(ROOT/'assets/config/game.yaml')
         other=copy.deepcopy(config)
         other['view']['snapshot_hz']=10
         other['rendering']['viewport_width_m']=5
@@ -50,7 +50,7 @@ class RenderingTests(unittest.TestCase):
             for core in cores:core.close()
 
     def test_profile_selects_independent_visuals_without_exposing_internal_model(self):
-        config=load_config(ROOT/'config/game.yaml')
+        config=load_config(ROOT/'assets/config/game.yaml')
         profiles=[]
         for chassis in config['chassis']:
             c=copy.deepcopy(config);c['scene']['default_chassis']=chassis

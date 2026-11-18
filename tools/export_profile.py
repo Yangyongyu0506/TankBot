@@ -18,10 +18,10 @@ def main():
     relaunch_if_needed(Path(__file__).resolve(), offline=args.offline)
     sys.path[:0]=[str(ROOT/p) for p in ("host","protocol","sdk/python")]
     from tankbot_host.authority import load_config
-    config=load_config(ROOT / "config/game.yaml")
+    config=load_config(ROOT / "assets/config/game.yaml")
     artifacts={ROOT / "core/tests/fixtures/default-profile.json":config}
     if "profiles" in config["runtime"]:
-        artifacts[ROOT / "docs/examples/runtime-execution-profiles.json"]=config["runtime"]["profiles"]
+        artifacts[ROOT / "assets/protocol/examples/runtime-execution-profiles.json"]=config["runtime"]["profiles"]
     for path,value in artifacts.items():
         data = json.dumps(value, ensure_ascii=False, indent=2) + "\n"
         if args.check:

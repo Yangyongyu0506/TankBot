@@ -8,9 +8,9 @@
 
 | 来源 | 职责 |
 | --- | --- |
-| config/chassis/*.yaml | 完整底盘 profile 2.0：body 含质量/惯量，servo、drive 黏性阻力、motion_limits、controller、wheels、armor/GPS 安装及 visual |
-| config/game.yaml | 应用 2.1：时钟、求解器、世界接触、武器、预算、平台、模型引用及自由试验场传感器实例 |
-| levels/*.yaml | 地图/初态/敌车策略、传感器实例、权限、规则、课程与模块组合 |
+| assets/config/chassis/*.yaml | 完整底盘 profile 2.0：body 含质量/惯量，servo、drive 黏性阻力、motion_limits、controller、wheels、armor/GPS 安装及 visual |
+| assets/config/game.yaml | 应用 2.1：时钟、求解器、世界接触、武器、预算、平台、模型引用及自由试验场传感器实例 |
+| assets/levels/*.yaml | 地图/初态/敌车策略、传感器实例、权限、规则、课程与模块组合 |
 | scene_definition.py | 引用解析后的不可变 World/Robot/Chassis/Sensor 定义、配置验证与场景缓存 |
 | sensor_instances.py | 实例规范化、类型/归属校验、统一采样入口与每 run 的随机/去重状态 |
 | Core / Authority | 根据每次运行的私有适配数据创建世界，推进既有物理、传感器计算、权限与调度 |

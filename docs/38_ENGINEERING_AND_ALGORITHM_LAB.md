@@ -6,7 +6,7 @@
 
 依据2026-11-04评估和当前源码，按以下验证边界推进：统一检查入口→Weapons C2固定输入实验→原生/Pyodide耗时诊断→项目备份/保留→局部职责提取→当前文档及未来课程建议。评估原文保留于 [原报告](reports/PROJECT_REVIEW_20261104.md)，本轮结果独立记录，不把历史实测当作新证据。
 
-本文首轮交付不新增关卡或物理；当时十关、20ms墙钟、6tick提交及玩家源码保持。后续Navigation C4、C5增加后当前十三关，课程合同分别见40/42；当前墙钟与声明准入的独立profile修订见 [41](41_RUNTIME_EXECUTION_PROFILES.md)，本文实验权限和源码保留合同继续有效。新增工程配额集中于 [engineering.yaml](../config/engineering.yaml)，经过 [Schema](schemas/engineering.schema.json) 校验；课程授权仍来自YAML。架构取舍见 [ADR-0051](adr/0051-engineering-experiments-and-retention.md)。
+本文首轮交付不新增关卡或物理；当时十关、20ms墙钟、6tick提交及玩家源码保持。后续Navigation C4、C5增加后当前十三关，课程合同分别见40/42；当前墙钟与声明准入的独立profile修订见 [41](41_RUNTIME_EXECUTION_PROFILES.md)，本文实验权限和源码保留合同继续有效。新增工程配额集中于 [engineering.yaml](../assets/config/engineering.yaml)，经过 [Schema](../assets/schemas/engineering.schema.json) 校验；课程授权仍来自YAML。架构取舍见 [ADR-0051](adr/0051-engineering-experiments-and-retention.md)。
 
 ## 本地和CI检查合同
 
@@ -18,7 +18,7 @@ CI构建矩阵与Linux回归使用这些相同入口。构建通过只证明构�
 
 ## 最小实验：单模块目标滤波
 
-首版只开放 [Weapons C2](../levels/weapons.C2.yaml) 声明的target_filter_replay组件。evaluation.experiment明确声明输入Topic、输出类型、误差反馈和可选诊断长度；加载器拒绝执行器、模块图、未授权输入/目标图层/误差指标。UI入口来自catalogue能力，不按ID分支。
+首版只开放 [Weapons C2](../assets/levels/weapons.C2.yaml) 声明的target_filter_replay组件。evaluation.experiment明确声明输入Topic、输出类型、误差反馈和可选诊断长度；加载器拒绝执行器、模块图、未授权输入/目标图层/误差指标。UI入口来自catalogue能力，不按ID分支。
 
 1. 正式部署后，通过实验管理接口显式开始录制；原Web“算法实验台”面板已退役，Godot面板待移植。只捕获已冻结、已提交给普通Runtime的授权请求，不复制World或开发者DTO。
 2. 记录有界批数/字节数、原始测量、源revision与源码、配置摘要、seed、物理频率、录制/尝试/部署tick、Core摘要、Python/平台和依赖版本。达到容量停止并说明原因；运行失败保留日志和失败tick。
@@ -94,6 +94,6 @@ RuntimeTiming在原生Supervisor上观测；浏览器Adapter已退役。每批�
 
 ## 局部组织调整与后续限制
 
-runtime_profile只装配课程公开初始参数；Authority继续拥有物理/授权/时序。management只共享静态资源和纯分发，两个Transport的CSRF、CSP和源隔离不合并。messages统一SDK发布类型与Runtime解码，正式JSON Schema仍是独立契约。两个航点脚手架移到templates/navigation，生成字节保持一致，其余脚手架后续逐个迁移，不整体重写。
+runtime_profile只装配课程公开初始参数；Authority继续拥有物理/授权/时序。management只共享静态资源和纯分发，两个Transport的CSRF、CSP和源隔离不合并。messages统一SDK发布类型与Runtime解码，正式JSON Schema仍是独立契约。早期仅提取了航点脚手架；现有课程的源码模板已统一提取到assets/templates，生成字节保持一致，见[46](46_STATIC_ASSETS_AND_ENTRYPOINT.md)。
 
 首版不包含通用实验编排、远程代码托管、竞技评分、多模块回放、图形化创新矩阵编辑或跨平台性能承诺。后续课程建议见 [39](39_NAVIGATION_COURSE_PROPOSALS.md)，新增模型和评分参数仍须确认。

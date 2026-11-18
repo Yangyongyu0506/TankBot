@@ -24,13 +24,13 @@ class LocalControlTests(unittest.TestCase):
             def update(self,observation,dt):calls.append((observation,dt));return Twist(Vector3(x=.2))
         follower.PathFollower=Follower;local.LocalController=Controller
         with patch.dict(sys.modules,{'navigation':types.ModuleType('navigation'),'navigation.path_follower':follower,'navigation.local_controller':local}):
-            spec=importlib.util.spec_from_file_location('isolated_local',ROOT/'templates/navigation/local_module.py')
+            spec=importlib.util.spec_from_file_location('isolated_local',ROOT/'assets/templates/navigation/local_module.py')
             module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
         self.module=module.LocalNavigationModule()
         from tankbot_host.authority import load_config
         from tankbot_host.campaign import configure
         from tankbot_host.navigation import drive_parameters
-        self.config={'path_tracking_parameters':{'reference':{'points_m':[[0.,0.],[1.,0.]]},'control_limits':{'min_vx_mps':0.,'max_vx_mps':.5,'max_wz_radps':1.5},'reference_speed_mps':.4,'position_tolerance_m':.35},'local_navigation_parameters':{'input_max_age_ticks':12,'tick_duration_s':1/60,'robot_radius_m':.5,'safety_margin_m':.15,'command_delay_s':.2},'drive_parameters':drive_parameters(configure(load_config(ROOT/'config/game.yaml'),'navigation.c6'))}
+        self.config={'path_tracking_parameters':{'reference':{'points_m':[[0.,0.],[1.,0.]]},'control_limits':{'min_vx_mps':0.,'max_vx_mps':.5,'max_wz_radps':1.5},'reference_speed_mps':.4,'position_tolerance_m':.35},'local_navigation_parameters':{'input_max_age_ticks':12,'tick_duration_s':1/60,'robot_radius_m':.5,'safety_margin_m':.15,'command_delay_s':.2},'drive_parameters':drive_parameters(configure(load_config(ROOT/'assets/config/game.yaml'),'navigation.c6'))}
         self.module.setup(ModuleContext(0,.1,6,self.config))
 
     def inputs(self,tick=12):

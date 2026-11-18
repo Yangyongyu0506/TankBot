@@ -18,7 +18,7 @@ ApplicationState统一执行YAML prerequisites的全部前置要求；CLI四种�
 
 ## 存档与工程兼容
 
-存档仍为version=1，四个字段不变。`[c0,navigation.c0,navigation.c1]`是合法非连续完成集合；已完成列表按既有目录顺序保存，不由布局重排。读取旧链式/分支存档不写回文件，不赠送关卡，不丢失完成时间或current_level。Schema取消固定关卡枚举，已知ID、前置闭包和当前关卡授权由领域层验证，示例见 [分支存档](../examples/branch-progress.json)。
+存档仍为version=1，四个字段不变。`[c0,navigation.c0,navigation.c1]`是合法非连续完成集合；已完成列表按既有目录顺序保存，不由布局重排。读取旧链式/分支存档不写回文件，不赠送关卡，不丢失完成时间或current_level。Schema取消固定关卡枚举，已知ID、前置闭包和当前关卡授权由领域层验证，示例见 [分支存档](../../assets/protocol/examples/branch-progress.json)。
 
 campaign/navigation继续独立存储。选关成功后原子切换Authority/Workspace，关闭旧候选/部署；返回选择原库，不复制跨主线算法。回归比较旧revision的完整快照（含源码和ledger），并验证重试、刷新及被拒绝的切换不会破坏原工程。真实界面只写入临时注释文件用于辨识工作区，没有参考解或日常userdata修改。
 

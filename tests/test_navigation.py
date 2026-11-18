@@ -21,7 +21,7 @@ from navigation_support import solution
 
 class NavigationTests(unittest.TestCase):
     def setUp(self):
-        self.base=load_config(ROOT/"config/game.yaml")
+        self.base=load_config(ROOT/"assets/config/game.yaml")
         self.config=configure(self.base,"navigation.c0")
 
     def authority(self,files=None):

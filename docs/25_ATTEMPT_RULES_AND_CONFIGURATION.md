@@ -6,7 +6,7 @@
 
 ## YAML 为唯一可编辑配置源
 
-`config/game.yaml` 定义通用物理、控制、渲染、Runtime、预算及插件目录。独立 `levels/*.yaml` 定义每关的世界/机器人组合、传感器、权限、目标、时限、终局顺序和教学说明，见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)。`campaign.levels`、`campaign.lessons` 等旧形状由加载器生成，供既有内部接口使用，不能作为第二套手工配置。课程库策略在 `config/player-dependencies.yaml`，个人键位与模式仍在 `userdata/settings.yaml`。
+`assets/config/game.yaml` 定义通用物理、控制、渲染、Runtime、预算及插件目录。独立 `assets/levels/*.yaml` 定义每关的世界/机器人组合、传感器、权限、目标、时限、终局顺序和教学说明，见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)。`campaign.levels`、`campaign.lessons` 等旧形状由加载器生成，供既有内部接口使用，不能作为第二套手工配置。课程库策略在 `assets/config/player-dependencies.yaml`，个人键位与模式仍在 `userdata/settings.yaml`。
 
 后续新增可调整数值、模型系数、容量、频率和关卡数据必须放入相应 YAML，并在 Schema 中声明；不得在 Python/Rust/JavaScript 中复制默认参数或失败时静默填入数值。数学定义、单位换算、类型/协议标识符属于接口语义，不能为了外置参数而改变其含义。新关卡复用已注册组件时只需添加 YAML 并完成教学验收；未知组件/规则须先扩展引擎和验证，不能仅添加配置就声称已支持。
 
@@ -14,7 +14,7 @@
 
 Rust/Node 测试及 WASM probe 使用生成的 `core/tests/fixtures/default-profile.json`，禁止手工维护第二份数值。`python3 tools/build.py` 自动运行 `tools/export_profile.py`；直接 Cargo/Node 开发前可执行 `python3 tools/export_profile.py --offline`。`python3 tools/export_profile.py --check --offline`、文档检查和配置单测都会拒绝过期夹具。默认 CLI 改为 YAML；自定义 JSON 仍可作为私有 Adapter/兼容输入，但新版本 Campaign 必须提供所有新字段，缺失时明确拒绝，不猜测时限。
 
-应用配置基线 `2.1`，关卡Schema为 `1.0`。独立完整底盘的质量/惯量、轮组、伺服/阻力、控制器、安装与外观在 `config/chassis/*.yaml`，由 `game.yaml` 显式引用，见 [29](29_CHASSIS_PROFILES.md)。旧报告记录的 JSON 路径和源码摘要描述当时构建，不能当作当前 YAML 的验证摘要。
+应用配置基线 `2.1`，关卡Schema为 `1.0`。独立完整底盘的质量/惯量、轮组、伺服/阻力、控制器、安装与外观在 `assets/config/chassis/*.yaml`，由 `game.yaml` 显式引用，见 [29](29_CHASSIS_PROFILES.md)。旧报告记录的 JSON 路径和源码摘要描述当时构建，不能当作当前 YAML 的验证摘要。
 
 ## 时间与开始边界
 

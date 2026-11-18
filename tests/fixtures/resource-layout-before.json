@@ -1,0 +1,381 @@
+{
+  "components": {
+    "wheel_controller": {
+      "control/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "control/wheel_controller.py": "971d2b0bd0cc397826c7d18c7175d54cf1a366f271499188ac17badaaf210b42"
+    },
+    "wheel_control_adapter": {
+      "navigation_robot.py": "213464d5235198e218d2c0e9857c288389fabb54c79ce7648ff9df575a42a3b8"
+    },
+    "wheel_odometry": {
+      "localization/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "localization/odometry.py": "22c8460549dff4943b8269fe36f7fc292f9ea568bb20569fae1fa55b856d4c0f"
+    },
+    "wheel_odometry_adapter": {
+      "localization/odometry_module.py": "1e55a750396f37bc40e11fb684e55e0a942b479c88ad004d2368a25fa4660e47"
+    },
+    "ekf_localization": {
+      "localization/ekf.py": "5842c11c7f5c7bb96935111c25d5b57deb41dc70280b9ceddcf03d9c7210754e"
+    },
+    "ekf_localization_adapter": {
+      "localization/ekf_module.py": "3b3effd7de59cf1595ea731304257a74825aa300305f34df53e4f47d687acfb6"
+    },
+    "waypoint_controller": {
+      "navigation/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "navigation/waypoint_controller.py": "7703eb88c9cdddc61a414fb4cae48d8515590e89bad4e3297d39fb4bb5158bd6"
+    },
+    "waypoint_navigation_adapter": {
+      "navigation/waypoint_module.py": "6264f381a2c1bc172795c19148de9ef39ba74348468073940445ee01832b3a27"
+    },
+    "path_follower": {
+      "navigation/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "navigation/path_follower.py": "6aa0bf697ed80b6d6f9f126078865e7d2395341a679c4b9c1e50b0cd98593687"
+    },
+    "path_tracking_adapter": {
+      "navigation/path_module.py": "44aa249f1c870789eed485affbe57b2da603a80e424aa8d80cc2d4afd2159f67"
+    },
+    "local_controller": {
+      "navigation/local_controller.py": "9b3bc4364fd08cd886d6493c354bb94e4f2bafe3a142f7c9d83188b47916b936"
+    },
+    "local_navigation_adapter": {
+      "navigation/local_module.py": "f37b665b4bc6fe1b8368080fa097274550617002227df7b79d5e27b7f41edd54"
+    },
+    "global_planner": {
+      "navigation/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "navigation/global_planner.py": "f0eed07db03d213a80539b59e8564dea45760ffb792885ea0710c7b07278dacc"
+    },
+    "armor_tracker": {
+      "perception/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "perception/armor_tracker.py": "8e074862036c9dea55f1c3435b51b1951009fa2d1f93f44d47a0dcb6eacf39fb"
+    },
+    "armor_tracking_adapter": {
+      "robot_modules/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "robot_modules/armor_observations.py": "1eec014aa1a30925d41c5f8f578268b1974c15ba1082128598b1912e87bdcae3"
+    },
+    "armor_contract_tests": {
+      "tests/test_armor_contract.py": "b1940d809a4865c807e62022bcb7a37999c547aca7fbb569a2918c3cc1fbe846"
+    },
+    "campaign_adapter": {
+      "campaign_robot.py": "2fa1624ee56bf23aed73183d6686ad21a3d2aac05f67493a06be9cd30f6cd84e"
+    },
+    "empty_perception_package": {
+      "perception/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "se3_transform": {
+      "perception/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "perception/transforms.py": "2b4674ed25967c2059dcb1c32c5b75fa94b334c83926d921d9868bdfd5a4f62d"
+    },
+    "se3_tests": {
+      "tests/test_coordinates.py": "3b50fae428a82ca3bf8617322b984eb9b240cd0a34fe3ed397be8e2fa58c88c1"
+    },
+    "point_tracker": {
+      "perception/tracker.py": "35e7785f6d5f4d9ad6c3c84bcd135483b0b19449a6355fe9b0cae17320f926c4"
+    },
+    "weapons_adapters": {
+      "robot_modules/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "robot_modules/weapons.py": "d8349922095b326bc563084695837bf6c9faaa57434b6a6277a293150fb8d9a1",
+      "perception/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "weapons/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "auto_aim": {
+      "weapons/auto_aim.py": "bd8099636e338edf60aefa19761c15e9903afed803fe702f2bb7b688d187d12f"
+    },
+    "armor_aim": {
+      "weapons/armor_aim.py": "2187fd4716800a5b1f5326f0ce6c286b8bcf268422c549aa070d56b00873eab9"
+    },
+    "pose_tracker": {
+      "perception/pose_tracker.py": "d493d0dcac940aaadf0558d1b155581f8c66294559c0fddbaa96466f80582124"
+    },
+    "auto_aim_tests": {
+      "tests/test_auto_aim.py": "0c16c3231f6a0abf8b0e181cf9e6422d2610763ad7e0f06609e24657920e092c"
+    },
+    "polar_tracker": {
+      "perception/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "perception/polar_tracker.py": "7cf16eb569605ee5a1a7c592eae34210e6b5ef7a4d5b9d21b8157d0c02425c1d"
+    },
+    "fusion_tracker": {
+      "perception/fusion_tracker.py": "71bd9098de083408b7a2aea5bcd5a3910c1fee05f20e3e54686ae5f5eeb5a7d8"
+    },
+    "raw_sensor_adapters": {
+      "robot_modules/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "robot_modules/observations.py": "db7fdd5d53859bab7d21432265797c62d13580983bec544eb95cd076bee9e468"
+    },
+    "predictive_aiming_adapter": {
+      "robot_modules/aiming.py": "8496ff32d5c0a33e61a471a462f6359c71647d843c6fa2586ff1227d382a2d21",
+      "weapons/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "polar_auto_aim": {
+      "weapons/auto_aim.py": "af16dce42d6622ddf5bb205fa13085305ee90d7234e03193af48fb93514c4261"
+    },
+    "target_prediction": {
+      "weapons/target_prediction.py": "b83a006b2f16ec4bb20cb1bc5f30e21be8a753dbd17333cd575bb876a6ba8123"
+    },
+    "polar_contract_tests": {
+      "tests/test_polar_contract.py": "28a0a6a00c87e5d789e748cb3f6e2adec34983724dda52053e9865914c6e35ca"
+    },
+    "fusion_contract_tests": {
+      "tests/test_fusion_contract.py": "b7aa49ea96aea1fb348ab6b1654402c34575befd266e6433663e2839d172a2d7"
+    },
+    "predictive_contract_tests": {
+      "tests/test_prediction_contract.py": "da209e436b9fea12292f75fa56db97a6584cb67875e5d7211986dc573e9bcae4"
+    }
+  },
+  "levels": {
+    "c0": {
+      "campaign_robot.py": "2fa1624ee56bf23aed73183d6686ad21a3d2aac05f67493a06be9cd30f6cd84e",
+      "perception/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "c1": {
+      "campaign_robot.py": "2fa1624ee56bf23aed73183d6686ad21a3d2aac05f67493a06be9cd30f6cd84e",
+      "perception/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "perception/transforms.py": "978fb0a70d00e43f8260dd7900bb0c09f5866eb073c0fc9d77a86c23ed0f235a",
+      "tests/test_coordinates.py": "3b50fae428a82ca3bf8617322b984eb9b240cd0a34fe3ed397be8e2fa58c88c1"
+    },
+    "c2": {
+      "campaign_robot.py": "2fa1624ee56bf23aed73183d6686ad21a3d2aac05f67493a06be9cd30f6cd84e",
+      "perception/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "perception/transforms.py": "978fb0a70d00e43f8260dd7900bb0c09f5866eb073c0fc9d77a86c23ed0f235a",
+      "tests/test_coordinates.py": "3b50fae428a82ca3bf8617322b984eb9b240cd0a34fe3ed397be8e2fa58c88c1",
+      "perception/tracker.py": "ad22f6033534b5aaed93c749c2d0b0c9b8825f034885eb8f8da4031da38e1367"
+    },
+    "c3": {
+      "perception/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "perception/polar_tracker.py": "8a2a0370af1bfadad41de3f11cd25b38e71d6c008c971f03d1b2863d829dc1a4",
+      "robot_modules/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "robot_modules/observations.py": "db7fdd5d53859bab7d21432265797c62d13580983bec544eb95cd076bee9e468",
+      "tests/test_polar_contract.py": "28a0a6a00c87e5d789e748cb3f6e2adec34983724dda52053e9865914c6e35ca"
+    },
+    "c4": {
+      "perception/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "perception/polar_tracker.py": "8a2a0370af1bfadad41de3f11cd25b38e71d6c008c971f03d1b2863d829dc1a4",
+      "robot_modules/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "robot_modules/observations.py": "db7fdd5d53859bab7d21432265797c62d13580983bec544eb95cd076bee9e468",
+      "tests/test_polar_contract.py": "28a0a6a00c87e5d789e748cb3f6e2adec34983724dda52053e9865914c6e35ca",
+      "robot_modules/aiming.py": "8496ff32d5c0a33e61a471a462f6359c71647d843c6fa2586ff1227d382a2d21",
+      "weapons/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "weapons/auto_aim.py": "c161bdbbc9f5b0d0dd18f72983ffd01a7a9c2add6a8b6c531cbcb23191da2dd8",
+      "weapons/target_prediction.py": "f2a0347938c9f9b4967827107797fce66a7a963a4a51940c061c3fbe191b1959",
+      "tests/test_prediction_contract.py": "da209e436b9fea12292f75fa56db97a6584cb67875e5d7211986dc573e9bcae4"
+    },
+    "c5": {
+      "perception/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "perception/armor_tracker.py": "0d984d44411a8eb426c2c84cebc80e344663a0d3b54ca34279cd153ad58eb210",
+      "robot_modules/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "robot_modules/armor_observations.py": "1eec014aa1a30925d41c5f8f578268b1974c15ba1082128598b1912e87bdcae3",
+      "robot_modules/aiming.py": "8496ff32d5c0a33e61a471a462f6359c71647d843c6fa2586ff1227d382a2d21",
+      "weapons/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "weapons/auto_aim.py": "c161bdbbc9f5b0d0dd18f72983ffd01a7a9c2add6a8b6c531cbcb23191da2dd8",
+      "weapons/target_prediction.py": "f699659a05a192a12aea5c61ffd4ab9a9618c3358a25ff1eb58300a60454efed",
+      "tests/test_armor_contract.py": "b1940d809a4865c807e62022bcb7a37999c547aca7fbb569a2918c3cc1fbe846",
+      "tests/test_prediction_contract.py": "da209e436b9fea12292f75fa56db97a6584cb67875e5d7211986dc573e9bcae4"
+    },
+    "navigation.c0": {
+      "control/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "control/wheel_controller.py": "971d2b0bd0cc397826c7d18c7175d54cf1a366f271499188ac17badaaf210b42",
+      "navigation_robot.py": "213464d5235198e218d2c0e9857c288389fabb54c79ce7648ff9df575a42a3b8"
+    },
+    "navigation.c1": {
+      "control/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "control/wheel_controller.py": "971d2b0bd0cc397826c7d18c7175d54cf1a366f271499188ac17badaaf210b42",
+      "navigation_robot.py": "213464d5235198e218d2c0e9857c288389fabb54c79ce7648ff9df575a42a3b8",
+      "localization/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "localization/odometry.py": "22c8460549dff4943b8269fe36f7fc292f9ea568bb20569fae1fa55b856d4c0f",
+      "localization/odometry_module.py": "1e55a750396f37bc40e11fb684e55e0a942b479c88ad004d2368a25fa4660e47"
+    },
+    "navigation.c2": {
+      "control/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "control/wheel_controller.py": "971d2b0bd0cc397826c7d18c7175d54cf1a366f271499188ac17badaaf210b42",
+      "navigation_robot.py": "213464d5235198e218d2c0e9857c288389fabb54c79ce7648ff9df575a42a3b8",
+      "localization/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "localization/odometry.py": "22c8460549dff4943b8269fe36f7fc292f9ea568bb20569fae1fa55b856d4c0f",
+      "localization/odometry_module.py": "1e55a750396f37bc40e11fb684e55e0a942b479c88ad004d2368a25fa4660e47",
+      "localization/ekf.py": "5842c11c7f5c7bb96935111c25d5b57deb41dc70280b9ceddcf03d9c7210754e",
+      "localization/ekf_module.py": "3b3effd7de59cf1595ea731304257a74825aa300305f34df53e4f47d687acfb6"
+    },
+    "navigation.c3": {
+      "control/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "control/wheel_controller.py": "971d2b0bd0cc397826c7d18c7175d54cf1a366f271499188ac17badaaf210b42",
+      "navigation_robot.py": "213464d5235198e218d2c0e9857c288389fabb54c79ce7648ff9df575a42a3b8",
+      "localization/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "localization/odometry.py": "22c8460549dff4943b8269fe36f7fc292f9ea568bb20569fae1fa55b856d4c0f",
+      "localization/odometry_module.py": "1e55a750396f37bc40e11fb684e55e0a942b479c88ad004d2368a25fa4660e47",
+      "localization/ekf.py": "5842c11c7f5c7bb96935111c25d5b57deb41dc70280b9ceddcf03d9c7210754e",
+      "localization/ekf_module.py": "3b3effd7de59cf1595ea731304257a74825aa300305f34df53e4f47d687acfb6",
+      "navigation/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "navigation/waypoint_controller.py": "7703eb88c9cdddc61a414fb4cae48d8515590e89bad4e3297d39fb4bb5158bd6",
+      "navigation/waypoint_module.py": "6264f381a2c1bc172795c19148de9ef39ba74348468073940445ee01832b3a27"
+    },
+    "navigation.c4": {
+      "control/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "control/wheel_controller.py": "971d2b0bd0cc397826c7d18c7175d54cf1a366f271499188ac17badaaf210b42",
+      "navigation_robot.py": "213464d5235198e218d2c0e9857c288389fabb54c79ce7648ff9df575a42a3b8",
+      "localization/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "localization/odometry.py": "22c8460549dff4943b8269fe36f7fc292f9ea568bb20569fae1fa55b856d4c0f",
+      "localization/odometry_module.py": "1e55a750396f37bc40e11fb684e55e0a942b479c88ad004d2368a25fa4660e47",
+      "localization/ekf.py": "5842c11c7f5c7bb96935111c25d5b57deb41dc70280b9ceddcf03d9c7210754e",
+      "localization/ekf_module.py": "3b3effd7de59cf1595ea731304257a74825aa300305f34df53e4f47d687acfb6",
+      "navigation/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "navigation/path_follower.py": "6aa0bf697ed80b6d6f9f126078865e7d2395341a679c4b9c1e50b0cd98593687",
+      "navigation/path_module.py": "44aa249f1c870789eed485affbe57b2da603a80e424aa8d80cc2d4afd2159f67"
+    },
+    "navigation.c5": {
+      "control/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "control/wheel_controller.py": "971d2b0bd0cc397826c7d18c7175d54cf1a366f271499188ac17badaaf210b42",
+      "navigation_robot.py": "213464d5235198e218d2c0e9857c288389fabb54c79ce7648ff9df575a42a3b8",
+      "localization/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "localization/odometry.py": "22c8460549dff4943b8269fe36f7fc292f9ea568bb20569fae1fa55b856d4c0f",
+      "localization/odometry_module.py": "1e55a750396f37bc40e11fb684e55e0a942b479c88ad004d2368a25fa4660e47",
+      "localization/ekf.py": "5842c11c7f5c7bb96935111c25d5b57deb41dc70280b9ceddcf03d9c7210754e",
+      "localization/ekf_module.py": "3b3effd7de59cf1595ea731304257a74825aa300305f34df53e4f47d687acfb6",
+      "navigation/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "navigation/path_follower.py": "6aa0bf697ed80b6d6f9f126078865e7d2395341a679c4b9c1e50b0cd98593687",
+      "navigation/path_module.py": "44aa249f1c870789eed485affbe57b2da603a80e424aa8d80cc2d4afd2159f67",
+      "navigation/global_planner.py": "f0eed07db03d213a80539b59e8564dea45760ffb792885ea0710c7b07278dacc"
+    },
+    "navigation.c6": {
+      "control/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "control/wheel_controller.py": "971d2b0bd0cc397826c7d18c7175d54cf1a366f271499188ac17badaaf210b42",
+      "navigation_robot.py": "213464d5235198e218d2c0e9857c288389fabb54c79ce7648ff9df575a42a3b8",
+      "localization/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "localization/odometry.py": "22c8460549dff4943b8269fe36f7fc292f9ea568bb20569fae1fa55b856d4c0f",
+      "localization/odometry_module.py": "1e55a750396f37bc40e11fb684e55e0a942b479c88ad004d2368a25fa4660e47",
+      "localization/ekf.py": "5842c11c7f5c7bb96935111c25d5b57deb41dc70280b9ceddcf03d9c7210754e",
+      "localization/ekf_module.py": "3b3effd7de59cf1595ea731304257a74825aa300305f34df53e4f47d687acfb6",
+      "navigation/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "navigation/path_follower.py": "6aa0bf697ed80b6d6f9f126078865e7d2395341a679c4b9c1e50b0cd98593687",
+      "navigation/global_planner.py": "f0eed07db03d213a80539b59e8564dea45760ffb792885ea0710c7b07278dacc",
+      "navigation/local_controller.py": "9b3bc4364fd08cd886d6493c354bb94e4f2bafe3a142f7c9d83188b47916b936",
+      "navigation/local_module.py": "f37b665b4bc6fe1b8368080fa097274550617002227df7b79d5e27b7f41edd54"
+    }
+  },
+  "starter": {
+    "c0": {
+      "campaign_robot.py": "2fa1624ee56bf23aed73183d6686ad21a3d2aac05f67493a06be9cd30f6cd84e",
+      "perception/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "c1": {
+      "campaign_robot.py": "2fa1624ee56bf23aed73183d6686ad21a3d2aac05f67493a06be9cd30f6cd84e",
+      "perception/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "perception/transforms.py": "978fb0a70d00e43f8260dd7900bb0c09f5866eb073c0fc9d77a86c23ed0f235a",
+      "tests/test_coordinates.py": "3b50fae428a82ca3bf8617322b984eb9b240cd0a34fe3ed397be8e2fa58c88c1"
+    },
+    "c2": {
+      "campaign_robot.py": "2fa1624ee56bf23aed73183d6686ad21a3d2aac05f67493a06be9cd30f6cd84e",
+      "perception/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "perception/transforms.py": "978fb0a70d00e43f8260dd7900bb0c09f5866eb073c0fc9d77a86c23ed0f235a",
+      "tests/test_coordinates.py": "3b50fae428a82ca3bf8617322b984eb9b240cd0a34fe3ed397be8e2fa58c88c1",
+      "perception/tracker.py": "ad22f6033534b5aaed93c749c2d0b0c9b8825f034885eb8f8da4031da38e1367"
+    },
+    "c3": {
+      "perception/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "perception/polar_tracker.py": "8a2a0370af1bfadad41de3f11cd25b38e71d6c008c971f03d1b2863d829dc1a4",
+      "robot_modules/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "robot_modules/observations.py": "db7fdd5d53859bab7d21432265797c62d13580983bec544eb95cd076bee9e468",
+      "tests/test_polar_contract.py": "28a0a6a00c87e5d789e748cb3f6e2adec34983724dda52053e9865914c6e35ca"
+    },
+    "c4": {
+      "perception/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "perception/polar_tracker.py": "8a2a0370af1bfadad41de3f11cd25b38e71d6c008c971f03d1b2863d829dc1a4",
+      "robot_modules/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "robot_modules/observations.py": "db7fdd5d53859bab7d21432265797c62d13580983bec544eb95cd076bee9e468",
+      "tests/test_polar_contract.py": "28a0a6a00c87e5d789e748cb3f6e2adec34983724dda52053e9865914c6e35ca",
+      "robot_modules/aiming.py": "8496ff32d5c0a33e61a471a462f6359c71647d843c6fa2586ff1227d382a2d21",
+      "weapons/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "weapons/auto_aim.py": "c161bdbbc9f5b0d0dd18f72983ffd01a7a9c2add6a8b6c531cbcb23191da2dd8",
+      "weapons/target_prediction.py": "f2a0347938c9f9b4967827107797fce66a7a963a4a51940c061c3fbe191b1959",
+      "tests/test_prediction_contract.py": "da209e436b9fea12292f75fa56db97a6584cb67875e5d7211986dc573e9bcae4"
+    },
+    "c5": {
+      "perception/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "perception/armor_tracker.py": "0d984d44411a8eb426c2c84cebc80e344663a0d3b54ca34279cd153ad58eb210",
+      "robot_modules/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "robot_modules/armor_observations.py": "1eec014aa1a30925d41c5f8f578268b1974c15ba1082128598b1912e87bdcae3",
+      "robot_modules/aiming.py": "8496ff32d5c0a33e61a471a462f6359c71647d843c6fa2586ff1227d382a2d21",
+      "weapons/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "weapons/auto_aim.py": "c161bdbbc9f5b0d0dd18f72983ffd01a7a9c2add6a8b6c531cbcb23191da2dd8",
+      "weapons/target_prediction.py": "f699659a05a192a12aea5c61ffd4ab9a9618c3358a25ff1eb58300a60454efed",
+      "tests/test_armor_contract.py": "b1940d809a4865c807e62022bcb7a37999c547aca7fbb569a2918c3cc1fbe846",
+      "tests/test_prediction_contract.py": "da209e436b9fea12292f75fa56db97a6584cb67875e5d7211986dc573e9bcae4"
+    },
+    "navigation.c0": {
+      "control/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "control/wheel_controller.py": "971d2b0bd0cc397826c7d18c7175d54cf1a366f271499188ac17badaaf210b42",
+      "navigation_robot.py": "213464d5235198e218d2c0e9857c288389fabb54c79ce7648ff9df575a42a3b8"
+    },
+    "navigation.c1": {
+      "control/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "control/wheel_controller.py": "971d2b0bd0cc397826c7d18c7175d54cf1a366f271499188ac17badaaf210b42",
+      "navigation_robot.py": "213464d5235198e218d2c0e9857c288389fabb54c79ce7648ff9df575a42a3b8",
+      "localization/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "localization/odometry.py": "22c8460549dff4943b8269fe36f7fc292f9ea568bb20569fae1fa55b856d4c0f",
+      "localization/odometry_module.py": "1e55a750396f37bc40e11fb684e55e0a942b479c88ad004d2368a25fa4660e47"
+    },
+    "navigation.c2": {
+      "control/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "control/wheel_controller.py": "971d2b0bd0cc397826c7d18c7175d54cf1a366f271499188ac17badaaf210b42",
+      "navigation_robot.py": "213464d5235198e218d2c0e9857c288389fabb54c79ce7648ff9df575a42a3b8",
+      "localization/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "localization/odometry.py": "22c8460549dff4943b8269fe36f7fc292f9ea568bb20569fae1fa55b856d4c0f",
+      "localization/odometry_module.py": "1e55a750396f37bc40e11fb684e55e0a942b479c88ad004d2368a25fa4660e47",
+      "localization/ekf.py": "5842c11c7f5c7bb96935111c25d5b57deb41dc70280b9ceddcf03d9c7210754e",
+      "localization/ekf_module.py": "3b3effd7de59cf1595ea731304257a74825aa300305f34df53e4f47d687acfb6"
+    },
+    "navigation.c3": {
+      "control/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "control/wheel_controller.py": "971d2b0bd0cc397826c7d18c7175d54cf1a366f271499188ac17badaaf210b42",
+      "navigation_robot.py": "213464d5235198e218d2c0e9857c288389fabb54c79ce7648ff9df575a42a3b8",
+      "localization/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "localization/odometry.py": "22c8460549dff4943b8269fe36f7fc292f9ea568bb20569fae1fa55b856d4c0f",
+      "localization/odometry_module.py": "1e55a750396f37bc40e11fb684e55e0a942b479c88ad004d2368a25fa4660e47",
+      "localization/ekf.py": "5842c11c7f5c7bb96935111c25d5b57deb41dc70280b9ceddcf03d9c7210754e",
+      "localization/ekf_module.py": "3b3effd7de59cf1595ea731304257a74825aa300305f34df53e4f47d687acfb6",
+      "navigation/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "navigation/waypoint_controller.py": "7703eb88c9cdddc61a414fb4cae48d8515590e89bad4e3297d39fb4bb5158bd6",
+      "navigation/waypoint_module.py": "6264f381a2c1bc172795c19148de9ef39ba74348468073940445ee01832b3a27"
+    },
+    "navigation.c4": {
+      "control/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "control/wheel_controller.py": "971d2b0bd0cc397826c7d18c7175d54cf1a366f271499188ac17badaaf210b42",
+      "navigation_robot.py": "213464d5235198e218d2c0e9857c288389fabb54c79ce7648ff9df575a42a3b8",
+      "localization/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "localization/odometry.py": "22c8460549dff4943b8269fe36f7fc292f9ea568bb20569fae1fa55b856d4c0f",
+      "localization/odometry_module.py": "1e55a750396f37bc40e11fb684e55e0a942b479c88ad004d2368a25fa4660e47",
+      "localization/ekf.py": "5842c11c7f5c7bb96935111c25d5b57deb41dc70280b9ceddcf03d9c7210754e",
+      "localization/ekf_module.py": "3b3effd7de59cf1595ea731304257a74825aa300305f34df53e4f47d687acfb6",
+      "navigation/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "navigation/path_follower.py": "6aa0bf697ed80b6d6f9f126078865e7d2395341a679c4b9c1e50b0cd98593687",
+      "navigation/path_module.py": "44aa249f1c870789eed485affbe57b2da603a80e424aa8d80cc2d4afd2159f67"
+    },
+    "navigation.c5": {
+      "control/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "control/wheel_controller.py": "971d2b0bd0cc397826c7d18c7175d54cf1a366f271499188ac17badaaf210b42",
+      "navigation_robot.py": "213464d5235198e218d2c0e9857c288389fabb54c79ce7648ff9df575a42a3b8",
+      "localization/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "localization/odometry.py": "22c8460549dff4943b8269fe36f7fc292f9ea568bb20569fae1fa55b856d4c0f",
+      "localization/odometry_module.py": "1e55a750396f37bc40e11fb684e55e0a942b479c88ad004d2368a25fa4660e47",
+      "localization/ekf.py": "5842c11c7f5c7bb96935111c25d5b57deb41dc70280b9ceddcf03d9c7210754e",
+      "localization/ekf_module.py": "3b3effd7de59cf1595ea731304257a74825aa300305f34df53e4f47d687acfb6",
+      "navigation/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "navigation/path_follower.py": "6aa0bf697ed80b6d6f9f126078865e7d2395341a679c4b9c1e50b0cd98593687",
+      "navigation/path_module.py": "44aa249f1c870789eed485affbe57b2da603a80e424aa8d80cc2d4afd2159f67",
+      "navigation/global_planner.py": "f0eed07db03d213a80539b59e8564dea45760ffb792885ea0710c7b07278dacc"
+    },
+    "navigation.c6": {
+      "control/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "control/wheel_controller.py": "971d2b0bd0cc397826c7d18c7175d54cf1a366f271499188ac17badaaf210b42",
+      "navigation_robot.py": "213464d5235198e218d2c0e9857c288389fabb54c79ce7648ff9df575a42a3b8",
+      "localization/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "localization/odometry.py": "22c8460549dff4943b8269fe36f7fc292f9ea568bb20569fae1fa55b856d4c0f",
+      "localization/odometry_module.py": "1e55a750396f37bc40e11fb684e55e0a942b479c88ad004d2368a25fa4660e47",
+      "localization/ekf.py": "5842c11c7f5c7bb96935111c25d5b57deb41dc70280b9ceddcf03d9c7210754e",
+      "localization/ekf_module.py": "3b3effd7de59cf1595ea731304257a74825aa300305f34df53e4f47d687acfb6",
+      "navigation/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "navigation/path_follower.py": "6aa0bf697ed80b6d6f9f126078865e7d2395341a679c4b9c1e50b0cd98593687",
+      "navigation/global_planner.py": "f0eed07db03d213a80539b59e8564dea45760ffb792885ea0710c7b07278dacc",
+      "navigation/local_controller.py": "9b3bc4364fd08cd886d6493c354bb94e4f2bafe3a142f7c9d83188b47916b936",
+      "navigation/local_module.py": "f37b665b4bc6fe1b8368080fa097274550617002227df7b79d5e27b7f41edd54"
+    }
+  },
+  "core_configuration_sha256": "c9b0881febfe133fe93dc04e672d50823c02353268cb67ef4a12062b1fd97b67",
+  "description": "Frozen source hashes and Core inputs before the 2026-11-18 resource relocation; no player workspace data."
+}

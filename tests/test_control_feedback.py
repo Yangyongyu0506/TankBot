@@ -17,7 +17,7 @@ from navigation_support import solution
 
 class ControlFeedbackTests(unittest.TestCase):
     def setUp(self):
-        self.config=configure(load_config(ROOT/"config/game.yaml"),"navigation.c0")
+        self.config=configure(load_config(ROOT/"assets/config/game.yaml"),"navigation.c0")
 
     def test_native_feedback_has_full_sampling_history_and_matches_authorized_encoder_fk(self):
         a=Authority(self.config,controlled=True,startup_sources=solution(self.config));self.addCleanup(a.close)
@@ -69,7 +69,7 @@ class ControlFeedbackTests(unittest.TestCase):
 
     def test_chart_source_units_permissions_and_resource_limits_are_validated(self):
         from tankbot_host.configuration import load_yaml
-        original=load_yaml(ROOT/"levels/navigation.C0.yaml")
+        original=load_yaml(ROOT/"assets/levels/navigation.C0.yaml")
         cases=[
             (lambda d:d["permissions"]["visualization"].update(allowed_control_signals=[]),"visualization.control_feedback.charts[0].signals"),
             (lambda d:d["visualization"]["control_feedback"]["charts"][0].update(unit="V"),"visualization.control_feedback.charts[0].unit"),

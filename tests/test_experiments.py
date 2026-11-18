@@ -20,7 +20,7 @@ from campaign_support import solutions,EMA,WINDOW
 
 class ExperimentTests(unittest.TestCase):
     @classmethod
-    def setUpClass(cls):cls.config=configure(load_config(ROOT/'config/game.yaml'),'c2')
+    def setUpClass(cls):cls.config=configure(load_config(ROOT/'assets/config/game.yaml'),'c2')
 
     def snapshot(self,tracker=EMA):
         files=solutions(self.config,tracker)
@@ -104,7 +104,7 @@ class ExperimentTests(unittest.TestCase):
         for _ in range(120):b.advance()
         self.assertFalse(b.lab.recording);self.assertEqual(len(b.lab.record['frames']),2)
         self.assertEqual(b.lab.record['stop_reason'],'capacity_reached')
-        c=Authority(configure(load_config(ROOT/'config/game.yaml'),'navigation.c3'),controlled=True);self.addCleanup(c.close)
+        c=Authority(configure(load_config(ROOT/'assets/config/game.yaml'),'navigation.c3'),controlled=True);self.addCleanup(c.close)
         with self.assertRaisesRegex(ValueError,'NOT_AUTHORIZED'):c.lab.start()
         self.assertFalse(c.lab.status()['enabled'])
 

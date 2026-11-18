@@ -2,7 +2,7 @@
 
 ## 目的、范围与确认
 
-用户已确认本关模型、接口、路线、时限、到点/停稳及安全规则。稳定ID为navigation.c3，源为 [navigation.C3.yaml](../levels/navigation.C3.yaml)，前置navigation.c2，继续使用独立navigation工程。复用C0轮控制器、C1里程计、C2 EKF及现有带噪编码器/GPS，不增加武器、传感器或物理模型。实现和验证状态见 [ADR-0050](adr/0050-estimated-pose-waypoint-control.md)。
+用户已确认本关模型、接口、路线、时限、到点/停稳及安全规则。稳定ID为navigation.c3，源为 [navigation.C3.yaml](../assets/levels/navigation.C3.yaml)，前置navigation.c2，继续使用独立navigation工程。复用C0轮控制器、C1里程计、C2 EKF及现有带噪编码器/GPS，不增加武器、传感器或物理模型。实现和验证状态见 [ADR-0050](adr/0050-estimated-pose-waypoint-control.md)。
 
 问题是“已经知道自己大致在哪里，怎样驶向目标并停住”。新文件navigation/waypoint_controller.py只要求玩家填写位置反馈；框架处理构造、文件、消息、目标切换、检查和部署。算法不限定为某个指定控制律。
 
@@ -47,7 +47,7 @@ wheel_voltage场景的/robot/cmd_vel是轮控制器的输入参考；实际执�
 
 现有速度伺服场景仍使用原cmd_vel执行器语义。加载器拒绝参考/执行器重叠、重复发布者、系统序列与玩家参考争用，以及不匹配的驱动。图不能从上一部署或其他图的输出缓存获得自己的首次输入。
 
-当前目标为map系waypoint_goal@1，Topic /robot/navigation/goal，内容只有goal_index（从0开始）和position_m（两个米制坐标）。SDK为WaypointGoal，坐标是不可重新开启写权限的float64 NumPy (2,)；该类型仅供读取，不允许玩家发布目标。见 [消息样例](examples/waypoint-goal-message.json)。每6tick更新一次，路线、采样周期、容差和限幅全部来自关卡YAML。
+当前目标为map系waypoint_goal@1，Topic /robot/navigation/goal，内容只有goal_index（从0开始）和position_m（两个米制坐标）。SDK为WaypointGoal，坐标是不可重新开启写权限的float64 NumPy (2,)；该类型仅供读取，不允许玩家发布目标。见 [消息样例](../assets/protocol/examples/waypoint-goal-message.json)。每6tick更新一次，路线、采样周期、容差和限幅全部来自关卡YAML。
 
 ## 玩家接口与教学
 

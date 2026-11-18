@@ -22,7 +22,7 @@ from tankbot_protocol.validation import Validator,Rejected,envelope
 
 class WeaponsCurriculumTests(unittest.TestCase):
     def config(self,level='c4'):
-        return configure(load_config(ROOT/'config/game.yaml'),level)
+        return configure(load_config(ROOT/'assets/config/game.yaml'),level)
 
     def test_polar_adapter_passes_typed_current_frame_tuple_without_filtering(self):
         from dataclasses import FrozenInstanceError

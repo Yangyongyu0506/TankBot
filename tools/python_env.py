@@ -69,7 +69,7 @@ def environment_key(root):
                 "machine": platform.machine(), "abi": sysconfig.get_config_var("SOABI"),
                 "base": str(Path(getattr(sys, "_base_executable", sys.executable)).resolve()),
                 "requirements": (root / "requirements.txt").read_text(encoding="utf-8"),
-                "bootstrap": (root / "config/python-bootstrap.lock.json").read_text(encoding="utf-8")}
+                "bootstrap": (root / "assets/config/python-bootstrap.lock.json").read_text(encoding="utf-8")}
     return hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()[:24]
 
 
@@ -169,7 +169,7 @@ def ensure_environment(root=ROOT, *, offline=False):
     if sys.version_info < (3, 11):
         raise BootstrapError("TankBot 需要 Python 3.11 或更高版本。")
     expected = requirements(root / "requirements.txt")
-    lock = json.loads((root / "config/python-bootstrap.lock.json").read_text(encoding="utf-8"))
+    lock = json.loads((root / "assets/config/python-bootstrap.lock.json").read_text(encoding="utf-8"))
     if probe(sys.executable, expected, lock["import_checks"])["ready"]:
         return None
     cache = root / ".m1-cache/python"

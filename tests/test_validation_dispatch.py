@@ -16,11 +16,11 @@ from tankbot_protocol.conformance import cases
 class ValidationDispatchTests(unittest.TestCase):
     def test_all_protocol_fixtures_and_mutations_match_standard_validator(self):
         optimized=Validator({},'comparison')._envelope_validator
-        sources=[json.loads(p.read_text()) for p in (ROOT/'docs/schemas').glob('*.schema.json')]
+        sources=[json.loads(p.read_text()) for p in (ROOT/'assets/schemas').glob('*.schema.json')]
         registry=Registry().with_resources((s['$id'],Resource.from_contents(s)) for s in sources)
-        standard=Draft202012Validator(json.loads((ROOT/'docs/schemas/envelope.schema.json').read_text()),registry=registry)
+        standard=Draft202012Validator(json.loads((ROOT/'assets/schemas/envelope.schema.json').read_text()),registry=registry)
         checked=0
-        for case in cases(ROOT/'docs/examples'):
+        for case in cases(ROOT/'assets/protocol/examples'):
             value=case['message'];variants=[value]
             for field in ('schema','message_type','channel','frame_id','payload','simulation_tick'):
                 for replacement in (None,False,[],{},'unknown',-1):

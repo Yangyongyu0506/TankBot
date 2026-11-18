@@ -49,7 +49,7 @@ def graph_files(config):
 
 class GraphTests(unittest.TestCase):
     def setUp(self):
-        self.config = load_config(ROOT/"config/game.yaml")
+        self.config = load_config(ROOT/"assets/config/game.yaml")
         self.a = Authority(self.config,controlled=True)
         self.addCleanup(self.a.close)
         self.a.deployment = DeploymentManager(self.a)

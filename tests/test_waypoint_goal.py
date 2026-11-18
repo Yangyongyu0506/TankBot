@@ -16,7 +16,7 @@ from module_runner import ModuleRunner
 class WaypointGoalTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.config = load_config(ROOT / "config/game.yaml")
+        cls.config = load_config(ROOT / "assets/config/game.yaml")
 
     def message(self):
         return envelope("waypoint_goal@1", "/robot/navigation/goal",

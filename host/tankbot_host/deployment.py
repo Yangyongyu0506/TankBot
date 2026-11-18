@@ -13,13 +13,13 @@ from .logs import python_diagnostic
 
 
 def environment(config, core_sha256, runtime_packages=None):
-    paths = list((ROOT / "docs/schemas").glob("*.json"))
+    paths = list((ROOT / "assets/schemas").glob("*.json"))
     paths += list((ROOT / "sdk/python").rglob("*.py"))
     paths += list((ROOT / "runtime").glob("*.py"))
     paths += list((ROOT / "host/tankbot_host").glob("*.py"))
     paths += list((ROOT / "protocol/tankbot_protocol").glob("*.py"))
-    paths += [ROOT / "requirements.txt", ROOT / "config/player-dependencies.yaml", ROOT / "config/game.yaml", ROOT / "config/engineering.yaml", ROOT / "config/runtime-profiles.yaml"]
-    paths += list((ROOT / "templates").rglob("*.py"))
+    paths += [ROOT / "requirements.txt", ROOT / "assets/config/player-dependencies.yaml", ROOT / "assets/config/game.yaml", ROOT / "assets/config/engineering.yaml", ROOT / "assets/config/runtime-profiles.yaml"]
+    paths += list((ROOT / "assets/templates").rglob("*.py"))
     return digest({"config": config, "core_sha256": core_sha256, "python": sys.version, "platform": sys.platform,
                    "runtime_packages": runtime_packages or {},
                    "sources": {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(paths)}})

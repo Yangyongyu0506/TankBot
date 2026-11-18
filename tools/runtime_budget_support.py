@@ -17,7 +17,7 @@ def benchmark_options(path):
     from tankbot_host.configuration import load_yaml
     from jsonschema import Draft202012Validator
     value=load_yaml(path)
-    schema=json.loads((ROOT/'docs/schemas/runtime-benchmark.schema.json').read_text())
+    schema=json.loads((ROOT/'assets/schemas/runtime-benchmark.schema.json').read_text())
     Draft202012Validator(schema).validate(value)
     c=value['calibration']
     if not c['min_iterations']<=min(c['initial_iterations'].values())<=max(c['initial_iterations'].values())<=c['max_iterations']:

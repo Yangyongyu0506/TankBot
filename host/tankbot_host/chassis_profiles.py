@@ -23,7 +23,7 @@ def load_profiles(config):
         except (KeyError,TypeError) as error:raise ValueError("Incomplete wheel calibration") from error
     if not isinstance(specs,dict) or not specs:
         raise LevelValidationError("chassis_profiles","chassis_profiles","expected a nonempty model mapping")
-    root=(ROOT/"config/chassis").resolve()
+    root=(ROOT/"assets/config/chassis").resolve()
     schemas=Validator(config,"chassis-loader").schemas
     validator=schemas["chassis-profile.schema.json"]
     models={}
@@ -31,9 +31,10 @@ def load_profiles(config):
         if isinstance(source,dict):
             value=copy.deepcopy(source);path="chassis_profiles."+name
         elif isinstance(source,str):
-            path=(ROOT/source).resolve()
+            from .resources import repository_path
+            path=repository_path(source)
             if not path.is_relative_to(root) or not path.is_file():
-                raise LevelValidationError(path,"chassis_profiles."+name,"chassis asset must exist inside config/chassis/")
+                raise LevelValidationError(path,"chassis_profiles."+name,"chassis asset must exist inside assets/config/chassis/")
             value=read_definition(path,config["level_plugins"]["limits"])
         else:
             raise LevelValidationError("chassis_profiles",name,"expected an asset path or compiled profile")

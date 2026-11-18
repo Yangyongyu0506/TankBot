@@ -25,8 +25,8 @@ class PythonEnvironmentTests(unittest.TestCase):
         self.temp=tempfile.TemporaryDirectory(prefix='tankbot-python-')
         self.addCleanup(self.temp.cleanup)
         self.root=Path(self.temp.name)
-        (self.root/'config').mkdir()
-        for name in ('requirements.txt','config/python-bootstrap.lock.json'):
+        (self.root/'assets/config').mkdir(parents=True)
+        for name in ('requirements.txt','assets/config/python-bootstrap.lock.json'):
             (self.root/name).write_bytes((ROOT/name).read_bytes())
 
     def test_current_complete_environment_never_installs_or_writes_cache(self):
@@ -113,20 +113,20 @@ class PythonEnvironmentTests(unittest.TestCase):
 
     def test_help_and_invalid_arguments_work_without_site_packages(self):
         for args,expected in ((['--help'],0),(['unknown-mode'],2),(['--level','c0','--view','estimated'],2)):
-            result=subprocess.run([sys.executable,'-I','-S',str(ROOT/'tools/tankbot.py'),*args],capture_output=True,text=True)
+            result=subprocess.run([sys.executable,'-I','-S',str(ROOT/'main.py'),*args],capture_output=True,text=True)
             self.assertEqual(result.returncode,expected,result.stderr)
             self.assertNotIn('首次运行',result.stdout+result.stderr)
             self.assertIn('usage:',result.stdout+result.stderr)
-        # The entry script tankbot.py must not shadow the SDK package of the same name.
-        source="import runpy, importlib.util;runpy.run_path("+repr(str(ROOT/'tools/tankbot.py'))+",run_name='launcher_probe');assert importlib.util.find_spec('tankbot').origin == "+repr(str(ROOT/'sdk/python/tankbot/__init__.py'))
+        # Importing the root entry must keep the real tankbot SDK discoverable.
+        source="import runpy, importlib.util;runpy.run_path("+repr(str(ROOT/'main.py'))+",run_name='launcher_probe');assert importlib.util.find_spec('tankbot').origin == "+repr(str(ROOT/'sdk/python/tankbot/__init__.py'))
         result=subprocess.run([sys.executable,'-I','-S','-c',source],capture_output=True,text=True)
         self.assertEqual(result.returncode,0,result.stderr)
 
     def test_relaunch_preserves_arguments_and_isolated_worker_interpreter(self):
         python=self.root/'path with spaces/python'
-        entry=self.root/'path with spaces/tankbot.py'
+        entry=self.root/'path with spaces/main.py'
         with mock.patch.object(bootstrap,'ensure_environment',return_value=python),mock.patch.object(bootstrap.os,'execv') as execute,\
-             mock.patch.object(sys,'argv',['tankbot.py','--level','c0']):
+             mock.patch.object(sys,'argv',['main.py','--level','c0']):
             bootstrap.relaunch_if_needed(entry,offline=True)
         execute.assert_called_once_with(str(python),[str(python),'-I',str(entry),'--level','c0'])
 

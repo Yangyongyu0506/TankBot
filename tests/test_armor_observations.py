@@ -20,7 +20,7 @@ from tankbot_protocol.validation import Validator,Rejected,envelope
 
 class ArmorObservationTests(unittest.TestCase):
     def config(self,ideal=True):
-        c=configure(load_config(ROOT/'config/game.yaml'),'c5')
+        c=configure(load_config(ROOT/'assets/config/game.yaml'),'c5')
         c['scene']['walls']=[]
         sensor=next(s for s in c['campaign']['levels']['c5']['sensors'] if s['type']=='armor_detector')
         if ideal:sensor['parameters']['noise'].update(range_stddev_m=0.,bearing_stddev_rad=0.,drop_probability=0.)

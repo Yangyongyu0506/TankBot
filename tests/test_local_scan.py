@@ -18,7 +18,7 @@ from tankbot_host.distance_scan import DistanceScanSimulator
 class ScanTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.config=resolve_scene(configure(load_config(ROOT/'config/game.yaml'),'navigation.c6')).to_config()
+        cls.config=resolve_scene(configure(load_config(ROOT/'assets/config/game.yaml'),'navigation.c6')).to_config()
         from tankbot_host.sensor_instances import definitions
         cls.instances=definitions(cls.config)
         cls.instance=next(i for i in cls.instances if i.type=='distance_scan')
@@ -97,7 +97,7 @@ class ScanTests(unittest.TestCase):
 
     def test_hidden_generation_failure_is_bounded_not_a_weakened_task(self):
         from tankbot_host.global_planning import PlanningError
-        c=configure(load_config(ROOT/'config/game.yaml'),'navigation.c6')
+        c=configure(load_config(ROOT/'assets/config/game.yaml'),'navigation.c6')
         obstacle=c['campaign']['levels']['navigation.c6']['rules']['local_navigation']['obstacle']
         obstacle.update(size_m=100.,max_attempts=1)
         with self.assertRaisesRegex(PlanningError,'LOCAL_SCENE_GENERATION_FAILED'):resolve_scene(c)

@@ -131,7 +131,7 @@ M4 新增独立的 Campaign 单模块 profile：标准输入是授权系统自�
 
 用户要求玩家代码归入 userdata。两种本机 Runtime 仍共享同一个 WorkspaceAPI/版本库实现；可编辑源码、所有历史 revision、模板 ledger 和 archive 均保存在 `userdata/workspaces/<项目标识>/`，完整备份 userdata 可包含设置、进度和代码。源码继续使用版本化 JSON，不改变快照、CAS 或部署接口。
 
-路径在 `config/game.yaml` 的 `workspace.storage.directory` 配置，历史根目录由 `legacy_directory` 指定；相对路径以仓库根为基准。这两个字段在1.8阶段引入并由当前2.1配置保留；旧profile未声明时读取当前YAML应用存储策略。显式 `--workspace-store` 优先，不迁移或改写该目录；`--workspace` 仍为只读种子。
+路径在 `assets/config/game.yaml` 的 `workspace.storage.directory` 配置，历史根目录由 `legacy_directory` 指定；相对路径以仓库根为基准。这两个字段在1.8阶段引入并由当前2.1配置保留；旧profile未声明时读取当前YAML应用存储策略。显式 `--workspace-store` 优先，不迁移或改写该目录；`--workspace` 仍为只读种子。
 
 打开默认库前扫描历史根目录的默认项目标识，逐个在原库文件锁下复制完整内容到新根的独立暂存目录；验证 HEAD 和全部历史源码摘要后原子发布。迁移锁串行化并发启动。目标目录存在时保留其内容，不合并旧库；原库保留为备份。缺 HEAD、损坏 revision、不安全链接或复制/发布失败时不生成替代项目，并清理本次暂存目录，可修复后重试。升级前应关闭旧服务，迁移后新目录为主；独立项目不会被合并。
 

@@ -15,7 +15,7 @@ from module_runner import ModuleRunner
 
 class PositionFixTests(unittest.TestCase):
     def setUp(self):
-        self.config=load_config(ROOT/'config/game.yaml')
+        self.config=load_config(ROOT/'assets/config/game.yaml')
 
     def message(self):
         return envelope('position_fix2d@1','/robot/sensors/gps/fix',

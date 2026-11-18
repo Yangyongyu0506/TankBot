@@ -1,4 +1,5 @@
-extends Node2D
+extends CanvasGroup
+## Compose overlapping parts before applying whole-entity self_modulate opacity.
 ## Local geometry is in metres; the view alone supplies authorized pose and scale.
 var weapon = Node2D.new()
 var model_kind: String = ""

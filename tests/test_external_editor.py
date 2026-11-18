@@ -24,7 +24,7 @@ from campaign_support import TRANSFORMS
 class ExternalEditorTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.base = load_config(ROOT / 'config/game.yaml')
+        cls.base = load_config(ROOT / 'assets/config/game.yaml')
         cls.config = configure(cls.base, 'c1')
 
     def setUp(self):
@@ -187,7 +187,7 @@ class SingleStartTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
-        config = configure(load_config(ROOT / 'config/game.yaml'), 'c1')
+        config = configure(load_config(ROOT / 'assets/config/game.yaml'), 'c1')
         config['host']['port'] = 0
         authority = Authority(config)
         self.server = LocalServer(authority, workspace_store=Path(self.temp.name) / 'store')

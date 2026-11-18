@@ -6,7 +6,7 @@
 
 ## 配置源与加载
 
-当前完整模型重构见 [32](32_RESOLVED_SCENE_AND_COMPONENTS.md)。应用配置版本为 `2.1`，底盘 profile 为 `2.0`。`config/game.yaml` 的 `chassis_profiles` 显式引用 `config/chassis/differential.yaml`、`omnidirectional.yaml`。每个文件声明版本/类型、body质量与惯量、servo、drive黏性阻力、motion_limits/controller、wheels、armor/GPS安装及visual；差速可选motor用于轮电压场景。文件不能引用代码或其他配置；模型文件只允许在 `config/chassis/` 内，沿用有界安全 YAML 读取器，使用 [chassis-profile.schema.json](schemas/chassis-profile.schema.json) 验证。
+当前完整模型重构见 [32](32_RESOLVED_SCENE_AND_COMPONENTS.md)。应用配置版本为 `2.1`，底盘 profile 为 `2.0`。`assets/config/game.yaml` 的 `chassis_profiles` 显式引用 `assets/config/chassis/differential.yaml`、`omnidirectional.yaml`。每个文件声明版本/类型、body质量与惯量、servo、drive黏性阻力、motion_limits/controller、wheels、armor/GPS安装及visual；差速可选motor用于轮电压场景。文件不能引用代码或其他配置；模型文件只允许在 `assets/config/chassis/` 内，沿用有界安全 YAML 读取器，使用 [chassis-profile.schema.json](../assets/schemas/chassis-profile.schema.json) 验证。
 
 | 配置 | 差速 | 四轮径向全向 |
 | --- | --- | --- |

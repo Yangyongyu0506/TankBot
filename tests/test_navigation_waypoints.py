@@ -25,7 +25,7 @@ from navigation_support import solution
 class NavigationWaypointTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.base=load_config(ROOT/'config/game.yaml')
+        cls.base=load_config(ROOT/'assets/config/game.yaml')
         cls.config=configure(cls.base,'navigation.c3')
         cls.spec=cls.config['campaign']['levels']['navigation.c3']['rules']['waypoint_route']
 
@@ -215,10 +215,10 @@ class NavigationWaypointTests(unittest.TestCase):
 
     def test_loader_rejects_conflicts_truth_input_and_unusable_limits(self):
         with tempfile.TemporaryDirectory() as directory:
-            path=Path(directory);shutil.copytree(ROOT/'levels',path/'levels')
-            base=yaml.safe_load((ROOT/'config/game.yaml').read_text());base['level_plugins']['directory']=str(path/'levels')
+            path=Path(directory);shutil.copytree(ROOT/'assets/levels',path/'levels')
+            base=yaml.safe_load((ROOT/'assets/config/game.yaml').read_text());base['level_plugins']['directory']=str(path/'levels')
             (path/'game.yaml').write_text(yaml.safe_dump(base))
-            original=yaml.safe_load((ROOT/'levels/navigation.C3.yaml').read_text())
+            original=yaml.safe_load((ROOT/'assets/levels/navigation.C3.yaml').read_text())
             for case in ('overlap','limits','duration','truth','required_pose','missing_pose_binding','missing_reference'):
                 value=copy.deepcopy(original)
                 if case=='overlap':value['permissions']['data_access']['actuators']['/robot/cmd_vel']='twist@1'

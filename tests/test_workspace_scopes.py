@@ -18,7 +18,7 @@ from tankbot_protocol.validation import Validator, Rejected
 
 class WorkspaceScopeTests(unittest.TestCase):
     def setUp(self):
-        self.config = configure(load_config(ROOT / "config/game.yaml"), "c2")
+        self.config = configure(load_config(ROOT / "assets/config/game.yaml"), "c2")
         self.navigation = copy.deepcopy(self.config)
         # Test storage independently of an unconfirmed new physics/lesson model.
         self.navigation["campaign"]["levels"]["c2"]["scaffolding"]["workspace_scope"] = "navigation"
@@ -67,7 +67,7 @@ class WorkspaceScopeTests(unittest.TestCase):
 
     def test_scope_is_schema_checked_and_never_a_path(self):
         validator = Validator(self.config, "scope-test")
-        value = load_yaml(ROOT / "levels/hello_robot.C0.yaml")
+        value = load_yaml(ROOT / "assets/levels/hello_robot.C0.yaml")
         value["scaffolding"]["workspace_scope"] = "navigation"
         validator.structure(value, "level.schema.json")
         for invalid in ("../navigation", "/tmp/nav", "", "a" * 49, 1):

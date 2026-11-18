@@ -1,0 +1,79 @@
+tools_version: '1.0'
+embed_subwindows: true
+dialog_ratio: 0.88
+settings_poll_ms: 1500
+inspector_max_chars: 32768
+history_limit: 1800
+scan_history_limit: 180
+scan_max_age_s: 0.20
+quick_layers: [map, robot, projectiles, target_estimates, path, radar]
+actions:
+  forward: 前进
+  backward: 后退
+  left: 左移 / 差速左转
+  right: 右移 / 差速右转
+  turn_left: 车体左转
+  turn_right: 车体右转
+  turret_left: 炮台左转
+  turret_right: 炮台右转
+  fire: 单发开火
+  editor: 打开 VS Code
+  help: 任务说明
+  settings: 打开 / 关闭设置
+layers:
+  map: 公开静态地图
+  robot: 本关授权车体
+  trail: 授权位姿轨迹
+  target_estimates: 玩家目标估计
+  radar: 局部 Radar / 装甲观测
+  imu: IMU 数据与加速度
+  encoders: 轮编码器
+  turret: 炮台与武器观测
+  truth_robot: 真实车体与炮台
+  truth_targets: 真实目标
+  projectiles: 弹丸
+  frames: 坐标系
+  velocities: 真实速度向量
+  colliders: 碰撞外形
+  gps: 带噪 GPS 点
+  pose_estimates: 玩家位姿估计与轨迹
+  pose_covariance: 选中估计的 1σ 位置椭圆
+  waypoints: 公开航点
+  path: 公开路径 / 玩家规划路径
+  checkpoints: 顺序检查点
+  planning_map: 公开原始地图 / 起终点
+  safety_grid: 规范安全膨胀区域（仅 UI）
+  scan: 车体系距离扫描
+  scan_points: 扫描投影（同 tick 玩家 EKF）
+  private_obstacles: 私有静态障碍（开发者）
+rendering:
+  developer_entity_opacity: 0.5
+  draw_order:
+    map: 0
+    entities: 10
+    annotations: 20
+  modal_shade: '#070f1acc'
+  line_width_px: 2.0
+  point_radius_px: 3.0
+  frame_length_m: 0.5
+  velocity_scale_s: 0.5
+  acceleration_scale_s2: 0.15
+  observation_radius_px: 65.0
+  observation_origin_px: [90.0, 90.0]
+  observation_ring_segments: 64
+  ellipse_segments: 64
+  truth_tint: '#a3e8ff'
+  truth_target_tint: '#ffffff'
+  trail: '#74e6b3'
+  reference: '#d8a1ff'
+  gps: '#ffbd69'
+  frame_x: '#ff837d'
+  frame_y: '#8ae3a1'
+  velocity: '#f5d67a'
+  collider: '#ffc6ce'
+  scan: '#78d7fa'
+  checkpoint: '#b9a0ff'
+  goal: '#f0d483'
+  safety: '#ae52634d'
+  occupied: '#71869c99'
+  private_obstacle: '#ec75a5aa'

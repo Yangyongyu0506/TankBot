@@ -16,7 +16,7 @@ from weapons_curriculum_support import solutions as polar_solutions
 
 
 class LiveMetricTests(unittest.TestCase):
-    def setUp(self):self.base=load_config(ROOT/'config/game.yaml')
+    def setUp(self):self.base=load_config(ROOT/'assets/config/game.yaml')
     def config(self,level='c2'):return configure(self.base,level)
     def sources(self,config):return solutions(config)
 

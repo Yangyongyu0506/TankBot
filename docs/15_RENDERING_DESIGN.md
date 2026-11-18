@@ -10,7 +10,7 @@
 
 物理保持 60 Hz / 4 子步，传感器 30 Hz、算法 10 Hz。视图快照从 10 Hz 改为独立的 30 Hz，HTTP 轮询间隔 33 ms；显示使用 requestAnimationFrame，随浏览器/显示器可用刷新率运行，不用刷新回调推进物理。低频授权数据必须插值，不能仅提高 Canvas 重绘次数。
 
-`config/game.yaml` 的 `view/rendering` 负责快照/轮询、缓存时延、相机视宽和网格。底盘几何、装甲/GPS 安装与独立外观现由 `config/chassis/*.yaml` 定义并编译，见 [29](29_CHASSIS_PROFILES.md)；旧自定义配置不会自动覆盖。协议仍为 1.0 草案。
+`assets/config/game.yaml` 的 `view/rendering` 负责快照/轮询、缓存时延、相机视宽和网格。底盘几何、装甲/GPS 安装与独立外观现由 `assets/config/chassis/*.yaml` 定义并编译，见 [29](29_CHASSIS_PROFILES.md)；旧自定义配置不会自动覆盖。协议仍为 1.0 草案。
 
 ## Proposed Design：显示数据流
 

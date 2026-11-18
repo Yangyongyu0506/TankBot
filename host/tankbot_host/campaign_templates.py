@@ -1,104 +1,18 @@
 """Bundled teaching scaffolds. Never execute these helpers in a player Runtime."""
+from .template_resources import load_template_resource
 import ast
 import json
 import re
 
 TEMPLATE_VERSION: str = "1.2.0"
 
-WRAPPER: str = '''# TankBot managed scaffold 1.2.0 — 算法只需填写 perception/ 中的 TODO。
-from __future__ import annotations
-from typing import TYPE_CHECKING, cast
-import numpy as np
-from numpy.typing import NDArray
-from tankbot import Inputs, Module, ModuleContext, Pose2D, RadarData, RadarDetection, Sample, TargetEstimate
-from tankbot.transforms import radar_point, validate_se3
+WRAPPER: str = load_template_resource("common/campaign_robot.py")
 
-if TYPE_CHECKING:
-    from perception.tracker import Tracker
+TRANSFORMS: str = load_template_resource("weapons/transforms.py")
 
+TRACKER: str = load_template_resource("weapons/tracker.py")
 
-class CampaignRobot(Module):
-    def setup(self, ctx: ModuleContext) -> None:
-        self.tracker: Tracker | None = None
-        self.last_sample: int | None = None
-        if ctx.config["lesson"]["processing"] == "track":
-            from perception.tracker import Tracker
-            self.tracker = Tracker()
-
-    def update(self, inputs: Inputs, ctx: ModuleContext) -> None:
-        processing: str = ctx.config["lesson"]["processing"]
-        if processing == "passive":
-            return
-        pose: Sample[Pose2D] | None = cast("Sample[Pose2D] | None", inputs.latest("self_pose"))
-        radar: Sample[RadarData] | None = cast("Sample[RadarData] | None", inputs.latest("radar"))
-        if pose is None or radar is None or radar.simulation_tick == self.last_sample:
-            return
-        self.last_sample = radar.simulation_tick
-        from perception.transforms import radar_to_map
-        try:
-            transform: NDArray[np.float64] = validate_se3(radar_to_map(pose.data), tolerance=ctx.config["lesson"]["transform_tolerance"])
-        except NotImplementedError:
-            return  # 等待玩家完成矩阵函数；正式测试会给出具体 TODO 提示。
-        points_list: list[TargetEstimate] = []
-        hit: RadarDetection
-        for hit in radar.data.detections:
-            point_radar: NDArray[np.float64] = radar_point(hit)
-            point_map: NDArray[np.float64] = transform @ point_radar
-            point: TargetEstimate = TargetEstimate(x_m=float(point_map[0]), y_m=float(point_map[1]))
-            points_list.append(point)
-        points: tuple[TargetEstimate, ...] = tuple(points_list)
-        estimate: TargetEstimate | None = (points[0] if points else None) if self.tracker is None else self.tracker.update(points, ctx.dt_seconds)
-        if estimate is not None:
-            ctx.publish("target", estimate, frame_id="map", simulation_tick=radar.simulation_tick)
-'''
-
-TRANSFORMS: str = '''import numpy as np
-from numpy.typing import NDArray
-from tankbot import Pose2D
-import math
-
-
-def radar_to_map(own_pose: Pose2D) -> NDArray[np.float64]:
-    """Algorithm input/output contract; see level guidance."""
-    T_map_radar: NDArray[np.float64] = np.eye(4, dtype=np.float64)
-    # TODO: 填写旋转和位移。完成后把下一行替换成 return T_map_radar。
-    raise NotImplementedError("请完成 perception/transforms.py 中的 SE(3) 矩阵")
-'''
-
-TRACKER: str = '''from tankbot import TargetEstimate
-
-
-class Tracker:
-    def __init__(self) -> None:
-        # self.estimate 在 update 调用之间保留，部署或重试时重新初始化。
-        self.estimate: TargetEstimate | None = None
-
-    def update(self, measurements: tuple[TargetEstimate, ...], dt: float) -> TargetEstimate | None:
-        """Algorithm input/output contract; see level guidance."""
-        # TODO: 减少抖动，并为没有测量的时刻保留合理的状态。
-        return self.estimate
-'''
-
-COORDINATE_TEST: str = '''import math
-import unittest
-import numpy as np
-from numpy.typing import NDArray
-from tankbot import Pose2D
-from tankbot.transforms import validate_se3
-from perception.transforms import radar_to_map
-
-
-class CoordinateTest(unittest.TestCase):
-    def test_rotated_robot(self) -> None:
-        matrix: NDArray[np.float64] = validate_se3(radar_to_map(Pose2D(1.0, 3.0, math.pi/2)), tolerance=1e-8)
-        point: NDArray[np.float64] = matrix @ np.array([2.0, 0.0, 0.0, 1.0])
-        np.testing.assert_allclose(point, [1.0, 5.0, 0.0, 1.0], atol=1e-8)
-
-    def test_translation_and_direction(self) -> None:
-        matrix: NDArray[np.float64] = validate_se3(radar_to_map(Pose2D(2.0, -1.0, 0.0)), tolerance=1e-8)
-        np.testing.assert_allclose(matrix @ np.array([1.0, 2.0, 0.0, 1.0]), [3.0, 1.0, 0.0, 1.0])
-        np.testing.assert_allclose(matrix @ np.array([1.0, 2.0, 0.0, 0.0]), [1.0, 2.0, 0.0, 0.0])
-'''
+COORDINATE_TEST: str = load_template_resource("weapons/test_coordinates.py")
 
 
 MANAGED_FILES: tuple[str, ...] = ("campaign_robot.py", "tankbot.json", "contracts/perception.json", "tests/test_coordinates.py")

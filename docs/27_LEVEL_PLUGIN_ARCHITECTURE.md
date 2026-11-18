@@ -2,27 +2,27 @@
 
 ## 当前范围与权威来源
 
-当前十三关全部由 `levels/*.yaml` 自动发现、校验并通过同一加载器创建。应用配置为2.1，关卡Schema为1.0；公共c0后开放Weapons与Navigation，分支内部按prerequisites推进。关卡是配置，不是可执行插件；物理、传感器、适配器与裁判由通用引擎组件提供。原五关迁移属于历史阶段，见文末，不用旧报告替代后续课程验收。
+当前十三关全部由 `assets/levels/*.yaml` 自动发现、校验并通过同一加载器创建。应用配置为2.1，关卡Schema为1.0；公共c0后开放Weapons与Navigation，分支内部按prerequisites推进。关卡是配置，不是可执行插件；物理、传感器、适配器与裁判由通用引擎组件提供。原五关迁移属于历史阶段，见文末，不用旧报告替代后续课程验收。
 
 | ID | 当前课程 | 配置源 | 必须通关的前置 |
 | --- | --- | --- | --- |
-| `c0` | C0 · 认识坦克与坐标 | [hello_robot.C0.yaml](../levels/hello_robot.C0.yaml) | 无 |
-| `c1` | C1 · 用 SE(3) 矩阵变换坐标 | [weapons.C1.yaml](../levels/weapons.C1.yaml) | c0 |
-| `c2` | C2 · 噪声中跟踪与击杀 | [weapons.C2.yaml](../levels/weapons.C2.yaml) | c1 |
-| `c3` | C3 · 直接处理距离与方位观测 | [weapons.C3.yaml](../levels/weapons.C3.yaml) | c2 |
-| `c4` | C4 · 从极坐标滤波到自动瞄准 | [weapons.C4.yaml](../levels/weapons.C4.yaml) | c3 |
-| `c5` | C5 · 预测小陀螺并自动瞄准 | [weapons.C5.yaml](../levels/weapons.C5.yaml) | c4 |
-| `navigation.c0` | Navigation C0 · 让双轮执行速度指令 | [navigation.C0.yaml](../levels/navigation.C0.yaml) | c0 |
-| `navigation.c1` | Navigation C1 · 从轮速推算自身位姿 | [navigation.C1.yaml](../levels/navigation.C1.yaml) | navigation.c0 |
-| `navigation.c2` | Navigation C2 · 用 GPS 校正里程计漂移 | [navigation.C2.yaml](../levels/navigation.C2.yaml) | navigation.c1 |
-| `navigation.c3` | Navigation C3 · 让定位参与航点驾驶 | [navigation.C3.yaml](../levels/navigation.C3.yaml) | navigation.c2 |
-| `navigation.c4` | Navigation C4 · 连续路径追踪 | [navigation.C4.yaml](../levels/navigation.C4.yaml) | navigation.c3 |
+| `c0` | C0 · 认识坦克与坐标 | [hello_robot.C0.yaml](../assets/levels/hello_robot.C0.yaml) | 无 |
+| `c1` | C1 · 用 SE(3) 矩阵变换坐标 | [weapons.C1.yaml](../assets/levels/weapons.C1.yaml) | c0 |
+| `c2` | C2 · 噪声中跟踪与击杀 | [weapons.C2.yaml](../assets/levels/weapons.C2.yaml) | c1 |
+| `c3` | C3 · 直接处理距离与方位观测 | [weapons.C3.yaml](../assets/levels/weapons.C3.yaml) | c2 |
+| `c4` | C4 · 从极坐标滤波到自动瞄准 | [weapons.C4.yaml](../assets/levels/weapons.C4.yaml) | c3 |
+| `c5` | C5 · 预测小陀螺并自动瞄准 | [weapons.C5.yaml](../assets/levels/weapons.C5.yaml) | c4 |
+| `navigation.c0` | Navigation C0 · 让双轮执行速度指令 | [navigation.C0.yaml](../assets/levels/navigation.C0.yaml) | c0 |
+| `navigation.c1` | Navigation C1 · 从轮速推算自身位姿 | [navigation.C1.yaml](../assets/levels/navigation.C1.yaml) | navigation.c0 |
+| `navigation.c2` | Navigation C2 · 用 GPS 校正里程计漂移 | [navigation.C2.yaml](../assets/levels/navigation.C2.yaml) | navigation.c1 |
+| `navigation.c3` | Navigation C3 · 让定位参与航点驾驶 | [navigation.C3.yaml](../assets/levels/navigation.C3.yaml) | navigation.c2 |
+| `navigation.c4` | Navigation C4 · 连续路径追踪 | [navigation.C4.yaml](../assets/levels/navigation.C4.yaml) | navigation.c3 |
 
 课程目标与控制权见 [09](09_LEVEL_DESIGN.md)，分支/存档见 [36](36_BRANCHING_PROGRESSION.md)。原五个ID保留，新增课程按独立增量验收；关卡数、章节名和order不参与仿真分支。
 
 ## 已知地图规划组件
 
-C5声明objectives.global_planning和communication.runtime.preparation；编译器由后者派生Manifest准备声明，避免两处人工维护。已解析场景包含不可变规划任务，起点、网格覆盖和地图边界统一确定。prepare_planning用私有有界搜索选择安全目标；玩家输入为原始网格。PlanningPreparation管理一次请求、独立5秒截止与路径验证，PlanningNavigation只评价无碰撞到点停稳。C4的自动路径/检查点裁判保持独立，不按关卡ID选择行为。planning_map、safety_grid和path图层及live/terminal标量授权分开配置；完整字段见 [42](42_NAVIGATION_GLOBAL_PLANNING.md) 和 [规划Schema](schemas/global-planning.schema.json)。
+C5声明objectives.global_planning和communication.runtime.preparation；编译器由后者派生Manifest准备声明，避免两处人工维护。已解析场景包含不可变规划任务，起点、网格覆盖和地图边界统一确定。prepare_planning用私有有界搜索选择安全目标；玩家输入为原始网格。PlanningPreparation管理一次请求、独立5秒截止与路径验证，PlanningNavigation只评价无碰撞到点停稳。C4的自动路径/检查点裁判保持独立，不按关卡ID选择行为。planning_map、safety_grid和path图层及live/terminal标量授权分开配置；完整字段见 [42](42_NAVIGATION_GLOBAL_PLANNING.md) 和 [规划Schema](../assets/schemas/global-planning.schema.json)。
 
 ## 逻辑架构与加载生命周期
 
@@ -44,12 +44,12 @@ flowchart TD
 
 ## Schema与配置归属
 
-正式结构为 [level.schema.json](schemas/level.schema.json)，精确组件与编写步骤见 [levels/README](../levels/README.md)。
+正式结构为 [level.schema.json](../assets/schemas/level.schema.json)，精确组件与编写步骤见 [assets/levels/README](../assets/levels/README.md)。
 
 | 来源 / 字段 | 当前职责与限制 |
 | --- | --- |
-| config/game.yaml | 通用时钟、求解器、接触、武器、平台、存储及模型/关卡/profile目录；非第二套课程配置 |
-| config/chassis/*.yaml | 完整底盘2.0：质量/惯量、轮组、伺服、黏性阻力、限制、装甲/GPS安装与外观；关卡按模型类型选择 |
+| assets/config/game.yaml | 通用时钟、求解器、接触、武器、平台、存储及模型/关卡/profile目录；非第二套课程配置 |
+| assets/config/chassis/*.yaml | 完整底盘2.0：质量/惯量、轮组、伺服、黏性阻力、限制、装甲/GPS安装与外观；关卡按模型类型选择 |
 | metadata | 稳定ID、名称/章节、学习说明、order和prerequisites；order仅展示/存档序列化，前置数组表示全部满足 |
 | world | 2D/map、固定频率、武器开关、inline矩形墙或assets内地图引用；C0/Weapons/Nav C0–C3为空旷场地，Nav C4为仓储资产 |
 | robots | 一个player和可选任务target；初态、生命、drive/control_sources、传感器实例和既有巡逻/装甲组件 |

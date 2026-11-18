@@ -2,7 +2,7 @@
 
 ## 目的、范围与确认
 
-在已有 Navigation C0 上补控制曲线，新增 `navigation.c1`（[YAML](../levels/navigation.C1.yaml)），复用玩家已有轮控制器，只增加从轮速推算位姿的任务。本轮不改变已确认的电机、接触或 C0 验收。C1 接口、权限、时序和阈值均由用户确认，决策见 [ADR-0047](adr/0047-navigation-odometry-and-control-feedback.md)。实际检查见 [验收报告](reports/NAVIGATION_ODOMETRY_VALIDATION.md)。
+在已有 Navigation C0 上补控制曲线，新增 `navigation.c1`（[YAML](../assets/levels/navigation.C1.yaml)），复用玩家已有轮控制器，只增加从轮速推算位姿的任务。本轮不改变已确认的电机、接触或 C0 验收。C1 接口、权限、时序和阈值均由用户确认，决策见 [ADR-0047](adr/0047-navigation-odometry-and-control-feedback.md)。实际检查见 [验收报告](reports/NAVIGATION_ODOMETRY_VALIDATION.md)。
 
 ## 数据流与职责
 

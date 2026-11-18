@@ -2,6 +2,9 @@ extends Control
 const Backend = preload("res://backend.gd")
 const WorldView = preload("res://world_view.gd")
 const UITheme = preload("res://ui_theme.gd")
+const Keyboard = preload("res://keyboard.gd")
+const SettingsDialog = preload("res://settings_dialog.gd")
+const InspectorDialog = preload("res://inspector_dialog.gd")
 var backend = Backend.new()
 var world = WorldView.new()
 var options: Dictionary
@@ -35,6 +38,18 @@ var stop_button: Button
 var upgrade_button: Button
 var plan_dialog = ConfirmationDialog.new()
 var plan_text = TextEdit.new()
+var settings_dialog = SettingsDialog.new()
+var inspector = InspectorDialog.new()
+var settings_button: Button
+var quick_checks: Dictionary = {}
+var developer_busy: bool = false
+var settings_busy: bool = false
+var layer_save_busy: bool = false
+var pending_layers: Dictionary = {}
+var preparing: bool = false
+var grant_epoch: int = 0
+var status_epoch: int = 0
+var grant_suspended: bool = true
 
 func _ready() -> void:
 	get_tree().auto_accept_quit = false
@@ -43,10 +58,11 @@ func _ready() -> void:
 		if argument.begins_with("--") and "=" in argument:
 			arguments[argument.get_slice("=", 0)] = argument.substr(argument.find("=")+1)
 	if not arguments.has("--client-settings"):
-		push_error("请通过 python3 tools/tankbot.py 启动客户端。")
+		push_error("请通过 python3 main.py 启动客户端。")
 		get_tree().quit(2)
 		return
 	options = JSON.parse_string(FileAccess.get_file_as_string(arguments["--client-settings"]))
+	get_viewport().gui_embed_subwindows = bool(options.tools.embed_subwindows)
 	add_child(backend)
 	if not backend.configure(arguments.get("--backend-url", ""), options):
 		get_tree().quit(2)
@@ -57,6 +73,7 @@ func _ready() -> void:
 	if not world.load_assets(options.sprites):
 		get_tree().quit(2)
 		return
+	world.tools = options.tools
 	build_ui()
 	await reload_session()
 	if not connected:
@@ -64,6 +81,8 @@ func _ready() -> void:
 	start_timer(float(profile.view.poll_ms)/1000.0, poll_view)
 	start_timer(float(options.status_poll_ms)/1000.0, poll_status)
 	start_timer(float(profile.view.keyboard_refresh_ms)/1000.0, send_controls)
+	start_timer(float(profile.view.poll_ms)/1000.0, poll_developer)
+	start_timer(float(options.tools.settings_poll_ms)/1000.0, poll_settings)
 
 func button(parent: Node, text: String, action: Callable, variant: String = "") -> Button:
 	var node = Button.new()
@@ -130,6 +149,8 @@ func build_ui() -> void:
 	edit_button = button(toolbar, "VS Code · F2", open_editor)
 	button(toolbar, "任务说明", show_guide)
 	upgrade_button = button(toolbar, "框架升级", preview_upgrade)
+	settings_button = button(toolbar, "设置", show_settings)
+	button(toolbar, "数据查看", show_inspector)
 	levels.item_selected.connect(choose_level)
 	card(root, "StatusPanel").add_child(status_text)
 	status_text.theme_type_variation = "SmallLabel"
@@ -155,19 +176,20 @@ func build_ui() -> void:
 	var layers = HFlowContainer.new()
 	label_in(sidebar, "显示图层", "SmallLabel")
 	sidebar.add_child(layers)
-	for item in [["map", "地图"], ["robot", "车体"], ["projectiles", "炮弹"], ["target_estimates", "目标估计"], ["path", "路径"], ["radar", "局部雷达"]]:
+	for key in options.tools.quick_layers:
 		var check = Button.new()
 		check.theme_type_variation = "LayerToggle"
 		check.toggle_mode = true
 		check.focus_mode = Control.FOCUS_NONE
 		check.custom_minimum_size.y = int(options.appearance.metrics.toggle_height)
 		check.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-		check.text = item[1] + " · 开"
+		check.text = options.tools.layers[key] + " · 开"
 		check.button_pressed = true
 		check.toggled.connect(func(enabled):
-			world.layers[item[0]] = enabled
-			check.text = item[1] + (" · 开" if enabled else " · 关"))
+			toggle_layer(key, enabled))
+		quick_checks[key] = check
 		layers.add_child(check)
+	button(sidebar, "全部图层与键位设置", show_settings)
 	text_box(logs)
 	var log_panel = card(root)
 	log_panel.custom_minimum_size.y = int(options.log_height)
@@ -192,6 +214,19 @@ func build_ui() -> void:
 	text_box(plan_text)
 	full(plan_text)
 	plan_dialog.confirmed.connect(apply_upgrade)
+	add_child(settings_dialog)
+	settings_dialog.theme = theme
+	settings_dialog.configure(options.tools)
+	settings_dialog.save_requested.connect(save_settings)
+	settings_dialog.visibility_changed.connect(func():
+		keys.clear()
+		get_viewport().gui_release_focus())
+	add_child(inspector)
+	inspector.theme = theme
+	inspector.configure(options.tools)
+	inspector.closed.connect(func():
+		keys.clear()
+		get_viewport().gui_release_focus())
 
 func start_timer(seconds: float, action: Callable) -> void:
 	var timer = Timer.new()
@@ -211,6 +246,8 @@ func request(path: String, payload: Variant = null) -> Dictionary:
 	return value
 
 func reload_session() -> void:
+	status_epoch += 1
+	fence_developer()
 	connected = false
 	mission.text = ""
 	running = false
@@ -222,6 +259,9 @@ func reload_session() -> void:
 	backend.token = profile.control_token
 	settings = await request("/api/settings")
 	world.configure(profile)
+	world.apply_preferences(settings.settings)
+	grant_suspended = false
+	refresh_settings_ui()
 	var project = await request("/api/workspace")
 	if project.has("error"):
 		return
@@ -246,7 +286,159 @@ func reload_session() -> void:
 	connected = true
 	await poll_status()
 	await poll_view()
+	await poll_developer()
 	message("VS Code 保存后点击 Start 自动检查并运行。代码目录：" + editable_directory)
+
+func fence_developer() -> void:
+	grant_epoch += 1
+	grant_suspended = true
+	world.revoke_developer()
+	inspector.revoke()
+
+func refresh_settings_ui() -> void:
+	edit_button.text = "VS Code · " + Keyboard.label(settings.settings.keyboard.editor)
+	settings_button.text = "设置 · " + Keyboard.label(settings.settings.keyboard.settings)
+	for key in quick_checks:
+		var check: Button = quick_checks[key]
+		check.visible = world.policy.allowed(key)
+		check.disabled = not world.policy.toggleable(key)
+		check.set_pressed_no_signal(world.policy.enabled(key))
+		check.text = str(options.tools.layers[key]) + (" · 开" if world.policy.enabled(key) else " · 关")
+		check.tooltip_text = "更多图层请打开设置。"
+
+func modal_open() -> bool:
+	return guide_dialog.visible or plan_dialog.visible or settings_dialog.visible or inspector.visible
+
+func show_settings() -> void:
+	if settings_dialog.visible:
+		settings_dialog.hide()
+		return
+	if transaction_busy or settings_busy:
+		return
+	if guide_dialog.visible or plan_dialog.visible or inspector.visible:
+		return
+	keys.clear()
+	await send_controls()
+	var current = await request("/api/settings")
+	if current.has("error"):
+		return
+	if current.settings.developer_mode != settings.settings.developer_mode:
+		await reload_session()
+	settings = current
+	settings_dialog.open(settings, world.policy, running or preparing)
+
+func save_settings(revision: String, candidate: Dictionary) -> void:
+	if settings_busy or layer_save_busy or transaction_busy:
+		settings_dialog.fail("设置正在保存或关卡正在切换，请稍后重试。")
+		return
+	var changed: bool = candidate.developer_mode != settings.settings.developer_mode
+	if changed and (running or preparing):
+		settings_dialog.fail("切换模式前请先结束尝试，并等待自动检查完成。")
+		return
+	settings_busy = true
+	keys.clear()
+	await send_controls()
+	if changed:
+		fence_developer()
+	var result = await write_settings(revision, candidate)
+	settings_busy = false
+	if result.has("error"):
+		settings_dialog.fail(str(result.error) + " 关闭后重新打开设置可读取最新版本。")
+		if changed:
+			await reload_session()
+		return
+	settings = result
+	settings_dialog.hide()
+	if result.mode_changed:
+		await reload_session()
+	else:
+		world.apply_preferences(settings.settings, true)
+		refresh_settings_ui()
+		refresh_inspector()
+	message("设置已保存到 YAML。" + ("开发者模式：不记录正式通关。" if settings.settings.developer_mode else "玩家模式：按正式进度解锁。"))
+
+func write_settings(revision: String, candidate: Dictionary) -> Dictionary:
+	var value = candidate.duplicate(true)
+	# Godot JSON parses numbers as floats; retain the version-1 YAML integer contract.
+	if typeof(value.get("version")) not in [TYPE_INT, TYPE_FLOAT] or value.version != 1:
+		return {"error": "不支持此设置版本。"}
+	value.version = int(value.version)
+	return await request("/api/settings", {"revision": revision, "settings": value})
+
+func toggle_layer(key: String, enabled: bool) -> void:
+	if not world.policy.set_layer(key, enabled):
+		refresh_settings_ui()
+		return
+	refresh_settings_ui()
+	pending_layers = world.policy.values.duplicate(true)
+	if layer_save_busy:
+		return
+	layer_save_busy = true
+	while not pending_layers.is_empty():
+		var selected = pending_layers
+		pending_layers = {}
+		var candidate: Dictionary = settings.settings.duplicate(true)
+		for layer in selected:
+			if world.policy.allowed(layer):
+				candidate.layers[layer] = selected[layer]
+		var result = await write_settings(settings.revision, candidate)
+		if result.has("error"):
+			pending_layers.clear()
+			message("图层保存失败：" + str(result.error))
+			break
+		settings = result
+	layer_save_busy = false
+
+func show_inspector() -> void:
+	if modal_open():
+		return
+	keys.clear()
+	await send_controls()
+	refresh_inspector()
+	inspector.popup_centered_ratio(float(options.tools.dialog_ratio))
+
+func refresh_inspector() -> void:
+	var debug: Dictionary = world.developer.latest if not grant_suspended and settings.get("settings", {}).get("developer_mode", false) else {}
+	inspector.accept(world.data.messages(debug, attempt))
+
+func poll_developer() -> void:
+	if not connected or grant_suspended or developer_busy or not settings.settings.developer_mode:
+		return
+	developer_busy = true
+	var epoch = grant_epoch
+	var session = profile.run_id
+	var value = await backend.call_api("/api/developer")
+	developer_busy = false
+	if epoch != grant_epoch or grant_suspended or not connected or session != profile.run_id:
+		return
+	if value.has("error"):
+		world.clear_developer_data()
+		inspector.revoke()
+		if value.error == "UNAUTHORIZED":
+			fence_developer()
+			await reload_session()
+		return
+	if value.get("run_id") == session:
+		world.developer.accept(value)
+		refresh_inspector()
+
+func poll_settings() -> void:
+	if not connected or settings_busy or transaction_busy or layer_save_busy:
+		return
+	var epoch = grant_epoch
+	var previous_revision: String = settings.revision
+	var current = await backend.call_api("/api/settings")
+	if current.has("error") or epoch != grant_epoch or settings_busy or layer_save_busy or settings.revision != previous_revision:
+		return
+	if current.settings.developer_mode != settings.settings.developer_mode:
+		fence_developer()
+		settings_dialog.hide()
+		await reload_session()
+	elif current.revision != settings.revision and not settings_dialog.visible:
+		settings = current
+		keys.clear()
+		world.apply_preferences(settings.settings, true)
+		refresh_settings_ui()
 
 func level_name(level_id: String, title: String = "", code_only: bool = false) -> String:
 	var entry: Dictionary = {}
@@ -350,7 +542,15 @@ func start_level() -> void:
 
 func finish_attempt() -> void:
 	keys.clear()
-	await request("/api/campaign/finish", {})
+	status_epoch += 1
+	var result = await request("/api/campaign/finish", {})
+	if not result.has("error") and result.get("run_id") == profile.run_id:
+		status_epoch += 1
+		running = false
+		preparing = false
+		attempt = result.get("attempt", {})
+		world.task = attempt
+		update_mission()
 	await poll_status()
 
 func poll_view() -> void:
@@ -360,6 +560,7 @@ func poll_view() -> void:
 	var value = await request("/api/view")
 	if not value.has("error") and value.get("run_id") == profile.run_id:
 		world.accept(value)
+		refresh_inspector()
 	view_busy = false
 
 func poll_status() -> void:
@@ -367,19 +568,22 @@ func poll_status() -> void:
 		return
 	status_busy = true
 	var session = profile.run_id
+	var epoch = status_epoch
 	var status = await request("/api/deployment")
 	var campaign = await request("/api/campaign")
-	if session != profile.run_id or status.get("run_id") != session or campaign.get("run_id") != session:
+	if epoch != status_epoch or session != profile.run_id or status.get("run_id") != session or campaign.get("run_id") != session:
 		status_busy = false
 		return
 	deployment = status
 	attempt = campaign.get("attempt", {}) if campaign.get("attempt") else {}
 	running = attempt.get("phase") == "running" or (attempt.get("status") == "active" and status.get("active") != null)
 	var launch = status.get("player_start")
-	var preparing = status.get("job") != null or (launch != null and launch.get("phase") in ["Checking", "Starting"])
+	preparing = status.get("job") != null or (launch != null and launch.get("phase") in ["Checking", "Starting"])
 	start_button.disabled = running or preparing or transaction_busy
 	upgrade_button.disabled = running or preparing or transaction_busy
 	levels.disabled = running or preparing or transaction_busy
+	settings_dialog.mode_locked = running or preparing
+	settings_dialog.developer.disabled = running or preparing or settings_dialog.busy
 	var phase = str(launch.get("phase", "")) if launch else ""
 	if phase != last_launch_phase:
 		last_launch_phase = phase
@@ -391,7 +595,9 @@ func poll_status() -> void:
 			message("程序已运行 · revision " + str(launch.revision).substr(0, 12) + "。VS Code 后续修改在下次 Start 生效。")
 		elif phase in ["Finished", "Cancelled"]:
 			message("本次尝试已结束。修改并保存后可再次 Start。")
-	status_text.text = "%s · %s · %.1f s · 原生 profile %s" % [level_name(profile.campaign.active_level, "", true), attempt.get("status", "sandbox"), attempt.get("timing", {}).get("remaining_s", 0), profile.runtime_execution_profile.profile_id]
+	status_text.text = "%s · %s · %s · %.1f s · 原生 profile %s" % ["开发者模式" if settings.settings.developer_mode else "玩家模式", level_name(profile.campaign.active_level, "", true), attempt.get("status", "sandbox"), attempt.get("timing", {}).get("remaining_s", 0), profile.runtime_execution_profile.profile_id]
+	world.task = attempt
+	refresh_inspector()
 	update_mission()
 	var output = ""
 	for entry in status.get("logs", {}).get("entries", []):
@@ -429,22 +635,25 @@ func task_text() -> String:
 	if attempt.get("result"):
 		result += "\n\n最终报告\n" + JSON.stringify(attempt.result, "  ")
 	result += "\n\n按键：" + str(settings.settings.keyboard)
+	result += world.sensor_summary()
 	return result
 
 func dom_code(event: InputEventKey) -> String:
-	var key = event.physical_keycode if event.physical_keycode else event.keycode
-	if key >= KEY_A and key <= KEY_Z:
-		return "Key" + OS.get_keycode_string(key)
-	if key == KEY_SPACE:
-		return "Space"
-	if key == KEY_ENTER:
-		return "Enter"
-	return OS.get_keycode_string(key)
+	return Keyboard.code(event)
 
 func _input(event: InputEvent) -> void:
 	if not connected or not event is InputEventKey:
 		return
 	var code = dom_code(event)
+	if settings_dialog.visible:
+		settings_dialog.handle_input(event)
+		return
+	if code == settings.settings.keyboard.settings and event.pressed and not event.echo:
+		show_settings()
+		get_viewport().set_input_as_handled()
+		return
+	if modal_open():
+		return
 	if code == settings.settings.keyboard.editor and event.pressed and not event.echo:
 		open_editor()
 		get_viewport().set_input_as_handled()
@@ -452,8 +661,6 @@ func _input(event: InputEvent) -> void:
 	if code == settings.settings.keyboard.get("help", "") and event.pressed and not event.echo:
 		show_guide()
 		get_viewport().set_input_as_handled()
-		return
-	if guide_dialog.visible or plan_dialog.visible:
 		return
 	if not event.echo:
 		keys[code] = event.pressed
@@ -464,9 +671,11 @@ func pressed(action: String) -> float:
 	return 1.0 if keys.get(settings.settings.keyboard.get(action, ""), false) else 0.0
 
 func send_controls() -> void:
-	if command_busy or not connected:
+	if command_busy or not connected or attempt.get("phase") == "finished":
 		return
 	command_busy = true
+	if modal_open():
+		keys.clear()
 	var vx = (pressed("forward") - pressed("backward")) * float(profile.view.keyboard_linear_mps)
 	var vy = (pressed("left") - pressed("right")) * float(profile.view.keyboard_linear_mps)
 	var wz = (pressed("turn_left") - pressed("turn_right")) * float(profile.view.keyboard_yaw_radps)

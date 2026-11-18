@@ -39,7 +39,7 @@ def build_core(root, env, args):
         try:
             run(export, root, env)
         except subprocess.CalledProcessError as exc:
-            raise BuildError("无法从 config/game.yaml 生成核心测试配置。") from exc
+            raise BuildError("无法从 assets/config/game.yaml 生成核心测试配置。") from exc
     cargo = cargo_tool(root, env)
     command = [cargo, "fmt", "--all", "--check"] if args.format_check else [cargo, "build", "--locked"]
     if not args.format_check:

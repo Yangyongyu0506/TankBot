@@ -13,7 +13,7 @@ from tankbot_host.runtime_timing import RuntimeTiming
 
 class RuntimeBudgetBenchmarkTests(unittest.TestCase):
     def test_stream_rotates_and_retains_censored_sample_and_exact_attempt_failure(self):
-        limits=load_yaml(ROOT/'config/runtime-benchmark.yaml')['limits']
+        limits=load_yaml(ROOT/'assets/config/runtime-benchmark.yaml')['limits']
         limits.update(max_jsonl_part_bytes=3000,max_jsonl_parts=128)
         with tempfile.TemporaryDirectory() as directory:
             collector=Journal(directory,limits);timing=RuntimeTiming(30,'test')
@@ -38,7 +38,7 @@ class RuntimeBudgetBenchmarkTests(unittest.TestCase):
             self.assertNotIn('truth',raw);self.assertEqual(sum(json.loads(line)['event']=='batch_finish' for line in raw.splitlines()),30)
 
     def test_short_slice_is_not_reported_as_successful_complete_attempt(self):
-        limits=load_yaml(ROOT/'config/runtime-benchmark.yaml')['limits']
+        limits=load_yaml(ROOT/'assets/config/runtime-benchmark.yaml')['limits']
         with tempfile.TemporaryDirectory() as directory:
             collector=Journal(directory,limits)
             snapshot={'run_id':'r','tick':1,'runtime_fault':None,'attempt_status':'active','timing':{'events':[],'dropped_events':0}}
@@ -51,7 +51,7 @@ class RuntimeBudgetBenchmarkTests(unittest.TestCase):
         from runtime_budget_support import benchmark_options
         from summarize_runtime_benchmark import normalize_event
         from jsonschema import ValidationError
-        options=benchmark_options(ROOT/'config/runtime-benchmark.yaml')
+        options=benchmark_options(ROOT/'assets/config/runtime-benchmark.yaml')
         with tempfile.TemporaryDirectory() as directory:
             path=Path(directory)/'bad.json';options['limits']['max_summary_batches']=0
             path.write_text(json.dumps(options))

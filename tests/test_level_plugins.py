@@ -30,9 +30,9 @@ class LevelPluginTests(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
         self.directory=Path(self.temp.name)
-        self.levels=self.directory/'levels';shutil.copytree(ROOT/'levels',self.levels)
+        self.levels=self.directory/'levels';shutil.copytree(ROOT/'assets/levels',self.levels)
         self.level_paths={load_yaml(path)['metadata']['id']:path for path in self.levels.glob('*.yaml')}
-        self.base=load_yaml(ROOT/'config/game.yaml')
+        self.base=load_yaml(ROOT/'assets/config/game.yaml')
         self.base['level_plugins']['directory']=str(self.levels)
         self.path=self.directory/'game.yaml'
         self.write_base()
@@ -221,7 +221,7 @@ class LevelPluginTests(unittest.TestCase):
         state=ApplicationState(config,self.directory/'settings.yaml',self.directory/'progress.json')
         for key in state.levels[:-1]:state.complete(state.register_attempt(key),key)
         self.assertIn(lid,state.progress()['unlocked_levels'])
-        self.assertEqual(len(list((ROOT/'levels').glob('*.yaml'))),len(self.level_paths))
+        self.assertEqual(len(list((ROOT/'assets/levels').glob('*.yaml'))),len(self.level_paths))
 
     def test_data_permission_is_independent_of_system_pose_visualization(self):
         d=self.definition();d['permissions']['data_access']['inputs']={}

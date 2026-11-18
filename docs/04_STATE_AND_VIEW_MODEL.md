@@ -119,7 +119,7 @@ Renderer 只在同 `run_id`、同 source、同 frame 且有效的相邻估计样
 
 ## 历史：M1实施边界
 
-M1 只有玩家位姿源 odometry，默认 System Pose Provider 禁用；开启未实现的系统源会拒绝配置。Selector 独占 `/robot/localization/pose`，Gateway 只接受标准估计与授权观测，不接受真值对象。UI 只在同 run/revision/source/frame 内插值，来源变化清缓存；跳变阈值以 config/game.yaml 的 `view` 为准。`view_revision` 不随普通快照递增，Envelope sequence 负责排序。
+M1 只有玩家位姿源 odometry，默认 System Pose Provider 禁用；开启未实现的系统源会拒绝配置。Selector 独占 `/robot/localization/pose`，Gateway 只接受标准估计与授权观测，不接受真值对象。UI 只在同 run/revision/source/frame 内插值，来源变化清缓存；跳变阈值以 assets/config/game.yaml 的 `view` 为准。`view_revision` 不随普通快照递增，Envelope sequence 负责排序。
 
 公开地图和零初始位姿属于用户确认的试验场任务信息；这不授予运行中的世界状态读取权限。未定位时仍能使用键盘与轮速/IMU 面板；完整局部 scan/接触提示、通用选源服务和 TF 留在后续任务。C0 系统显示及 C1/C2 雷达已在 M4 增加，相关权限见下节。
 
@@ -133,7 +133,7 @@ M1 只有玩家位姿源 odometry，默认 System Pose Provider 禁用；开启�
 
 ## 当前逐关授权
 
-以下由 `levels/*.yaml` 的data_access、visualization、evaluation声明；UI管理状态和Robot Runtime输入是独立通道。
+以下由 `assets/levels/*.yaml` 的data_access、visualization、evaluation声明；UI管理状态和Robot Runtime输入是独立通道。
 
 | 关卡 | 普通玩家视图与UI反馈 | 玩家程序输入边界 |
 | --- | --- | --- |
@@ -151,6 +151,8 @@ HP与击杀结果是显式游戏反馈，不含命中位置。炮弹显示可能
 ## 本机玩家与开发者角色
 
 默认玩家模式继续使用本关 View Policy；C1/C2 的目标只能来自获授权的玩家估计。开发者模式额外获得 Authority 检查的只读视图 grant，可通过独立 DeveloperSnapshot 和图层开关查看当前已实现的真值、估计与传感器；它不进入 PlayerViewSnapshot 或 Robot Runtime，也不改写 Pose Selector。图层开关是呈现偏好，不能给玩家授予新数据。模式切换重建 Authority/Worker 并清除旧缓存，完整权限、文件与单机信任边界见 [22](22_SETTINGS_MODES_AND_PROGRESS.md) 和 [ADR-0026](adr/0026-settings-modes-and-campaign-progress.md)。
+
+Godot已接入这些独立显示，见 [0059](adr/0059-godot-settings-and-developer-displays.md)。私有流使用独立缓存，与普通时间线共享仿真显示时刻；关闭grant先清空节点/数据，再按世代和run丢弃旧响应。扫描地图投影始终要求同tick玩家EKF，不以开发者真值补齐；普通查看器只列Gateway消息和已授权任务反馈。
 
 ## Weapons 目标估计与传感器授权
 

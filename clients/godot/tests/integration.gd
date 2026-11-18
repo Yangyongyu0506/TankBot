@@ -3,6 +3,8 @@ extends SceneTree
 const AppScene = preload("res://main.tscn")
 const Timeline = preload("res://timeline.gd")
 const WorldView = preload("res://world_view.gd")
+const SettingsFlow = preload("res://tests/settings_flow.gd")
+const DisplayDataTests = preload("res://tests/display_data_tests.gd")
 var app: Control
 var failed: bool = false
 var report_path: String = ""
@@ -163,6 +165,7 @@ func sprite_tests() -> bool:
 		column.add_child(heading)
 		var view = WorldView.new()
 		view.sprites = app.world.sprites
+		view.tools = app.world.tools
 		view.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		view.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		view.clip_contents = true
@@ -232,6 +235,8 @@ func run() -> void:
 		return
 	if not await theme_tests():
 		return
+	if not DisplayDataTests.new().run(self):
+		return
 	if not await sprite_tests():
 		return
 	if not await mission_scroll_tests():
@@ -264,6 +269,12 @@ func run() -> void:
 	check(not app.edit_button.disabled, "external editor remains available while running")
 	check(app.start_button.disabled, "stop is required before starting another code version")
 	check(app.deployment.active.revision == active_revision, "disk edits do not modify the active revision")
+	await app.show_settings()
+	check(app.settings_dialog.visible and app.settings_dialog.developer.disabled, "running attempts keep mode switching disabled in settings")
+	app.settings_dialog.draft.developer_mode = true
+	app.settings_dialog.submit()
+	check(app.settings_dialog.visible and not app.settings.settings.developer_mode and app.deployment.active.revision == active_revision, "blocked mode switch preserves the running revision and player grant")
+	app.settings_dialog.hide()
 	var view = await app.backend.call_api("/api/view")
 	if not check(await until(func(): return not app.world.timeline.latest.get("payload", {}).get("target_estimates", []).is_empty()), "player estimate reaches authorized renderer"):
 		return
@@ -353,6 +364,8 @@ func run() -> void:
 	check(saved.get("revision") == campaign_revision, "authored revision remains readable after C0 and Navigation visits")
 	await key(KEY_F2)
 	check(app.editable_directory.ends_with("/files"), "returning opens the original editable project")
+	if not await SettingsFlow.new().run(self):
+		return
 	app.show_guide()
 	check(await until(func(): return app.guide_dialog.visible), "read-only lesson remains available without a code editor")
 	if not screenshot_path.is_empty() and DisplayServer.get_name() != "headless":

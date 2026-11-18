@@ -23,7 +23,7 @@ def digest(value):return hashlib.sha256(json.dumps(value,sort_keys=True,separato
 
 
 class ResolvedSceneTests(unittest.TestCase):
-    def setUp(self):self.base=load_config(ROOT/'config/game.yaml')
+    def setUp(self):self.base=load_config(ROOT/'assets/config/game.yaml')
 
     def test_twelve_pre_refactor_traces_and_unified_sensor_frames_match(self):
         baseline=json.loads((ROOT/'tests/fixtures/simulator-before.json').read_text())

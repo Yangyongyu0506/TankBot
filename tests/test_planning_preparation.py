@@ -18,7 +18,7 @@ from preparation_runner import PreparationRunner
 class PlanningPreparationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.config=configure(load_config(ROOT/'config/game.yaml'),'navigation.c5')
+        cls.config=configure(load_config(ROOT/'assets/config/game.yaml'),'navigation.c5')
         cls.contract=cls.config['campaign']['levels']['navigation.c5']['runtime']['preparation']
 
     def test_native_preparation_budget_is_independent_and_not_player_selected(self):

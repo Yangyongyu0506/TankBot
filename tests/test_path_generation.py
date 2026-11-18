@@ -23,7 +23,7 @@ from tankbot_host.path_generation import (generate_path,validate_path,segment_sa
 class PathGenerationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.base=load_config(ROOT/'config/game.yaml')
+        cls.base=load_config(ROOT/'assets/config/game.yaml')
         cls.config=configure(cls.base,'navigation.c4')
         cls.spec=cls.config['campaign']['levels']['navigation.c4']['rules']['path_tracking']
 

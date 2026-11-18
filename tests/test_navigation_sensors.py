@@ -27,7 +27,7 @@ def sensor_configuration(base):
 
 class NavigationSensorTests(unittest.TestCase):
     def setUp(self):
-        self.base=load_config(ROOT/'config/game.yaml')
+        self.base=load_config(ROOT/'assets/config/game.yaml')
         self.config=sensor_configuration(self.base)
 
     def scheduler(self,config=None):

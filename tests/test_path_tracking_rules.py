@@ -17,7 +17,7 @@ from tankbot_host.path_generation import distance_to_polyline
 class PathTrackingRuleTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.config=configure(load_config(ROOT/'config/game.yaml'),'navigation.c4')
+        cls.config=configure(load_config(ROOT/'assets/config/game.yaml'),'navigation.c4')
         rules=cls.config['campaign']['levels']['navigation.c4']['rules']
         cls.spec,cls.parameters=rules['path_tracking'],rules['parameters']
         cls.reference={'path_id':'unit-reference','points_m':np.column_stack((np.linspace(-2.,0.,21),np.zeros(21))).tolist(),

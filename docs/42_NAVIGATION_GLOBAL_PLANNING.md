@@ -62,7 +62,7 @@ start/goal为只读float64(2,)地图系绝对米制坐标。成功返回float64(
 | 准备阶段、Worker截止和正式激活 | planning_preparation.py、deployment.py、runtime/preparation_runner.py、supervisor.py、browser_authority.py、runtime-frame.js |
 | 正式任务裁判与终局诊断 | planning_navigation.py；与C4复用PolylineMetrics，规则独立 |
 | 授权元数据/状态与图层 | campaign.py、global-planning-view.js、campaign-ui.js |
-| 参数/合同 | levels/navigation.C5.yaml；global-planning/preparation-task/level/workspace Schema |
+| 参数/合同 | assets/levels/navigation.C5.yaml；global-planning/preparation-task/level/workspace Schema |
 | 测试参考 | tests/fixtures/planner_astar.py与planner_dijkstra.py独立搜索；共同几何后处理只存在测试目录 |
 
 原生受控多seed自动化与真实界面属于不同验证层。原Firefox流程及工具已退役，其当时命令、数据、截图和未覆盖平台保留于 [历史验收](reports/NAVIGATION_GLOBAL_PLANNING_VALIDATION.md)，不能再作为当前入口。Godot规划专用图层和完整C5界面流程仍需独立验收，当前范围见 [44](44_GODOT_DESKTOP_CLIENT.md)。
