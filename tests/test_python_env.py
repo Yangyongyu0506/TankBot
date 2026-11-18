@@ -112,7 +112,7 @@ class PythonEnvironmentTests(unittest.TestCase):
         with bootstrap.installation_lock(path,timeout=0):pass
 
     def test_help_and_invalid_arguments_work_without_site_packages(self):
-        for args,expected in ((['--help'],0),(['unknown-mode'],2),(['serve','--level','c0','--view','estimated'],2)):
+        for args,expected in ((['--help'],0),(['unknown-mode'],2),(['--level','c0','--view','estimated'],2)):
             result=subprocess.run([sys.executable,'-I','-S',str(ROOT/'tools/tankbot.py'),*args],capture_output=True,text=True)
             self.assertEqual(result.returncode,expected,result.stderr)
             self.assertNotIn('首次运行',result.stdout+result.stderr)
@@ -126,9 +126,9 @@ class PythonEnvironmentTests(unittest.TestCase):
         python=self.root/'path with spaces/python'
         entry=self.root/'path with spaces/tankbot.py'
         with mock.patch.object(bootstrap,'ensure_environment',return_value=python),mock.patch.object(bootstrap.os,'execv') as execute,\
-             mock.patch.object(sys,'argv',['tankbot.py','serve','--level','c0']):
+             mock.patch.object(sys,'argv',['tankbot.py','--level','c0']):
             bootstrap.relaunch_if_needed(entry,offline=True)
-        execute.assert_called_once_with(str(python),[str(python),'-I',str(entry),'serve','--level','c0'])
+        execute.assert_called_once_with(str(python),[str(python),'-I',str(entry),'--level','c0'])
 
 
 if __name__=='__main__':unittest.main()

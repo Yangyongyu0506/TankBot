@@ -1,0 +1,110 @@
+{
+  "date": "2026-11-18",
+  "baseline_commit": "292cad36c31ad6a822c573c2faf7496f6a96e17a",
+  "scope": "Godot-only player entry; no physics, curriculum, SDK, or user source changes",
+  "runs": [
+    {
+      "mode": "headless",
+      "evidence": ".m1-cache/godot-qa/20261118T022751711193",
+      "passed": true,
+      "checks": 33,
+      "display": "headless",
+      "godot": "4.7.2-stable (official)",
+      "outcome": {
+        "estimate_samples": 68.0,
+        "finished_tick": 691.0,
+        "hits": 1.0,
+        "passed": true,
+        "reason": "objective_completed",
+        "rmse_m": 1.10858914143722e-15,
+        "scored_samples": 68.0,
+        "yaw_rmse_rad": null
+      },
+      "runtime": {
+        "total_batches": 69.0,
+        "wall_timeouts": 0.0,
+        "missed_commit_gates": 0.0
+      },
+      "round_trip_ms": {
+        "count": 69.0,
+        "max_ms": 9.230111,
+        "p50_ms": 1.827263,
+        "p95_ms": 2.715367,
+        "p99_9_ms": 9.230111,
+        "p99_ms": 9.230111
+      }
+    },
+    {
+      "mode": "x11_disable_vsync",
+      "evidence": ".m1-cache/godot-qa/20261118T024428538928",
+      "passed": true,
+      "checks": 33,
+      "display": "X11",
+      "godot": "4.7.2-stable (official)",
+      "outcome": {
+        "estimate_samples": 30.0,
+        "finished_tick": 530.0,
+        "hits": 1.0,
+        "passed": true,
+        "reason": "objective_completed",
+        "rmse_m": 1.20464740632387e-15,
+        "scored_samples": 30.0,
+        "yaw_rmse_rad": null
+      },
+      "runtime": {
+        "total_batches": 31.0,
+        "wall_timeouts": 0.0,
+        "missed_commit_gates": 0.0
+      },
+      "round_trip_ms": {
+        "count": 31.0,
+        "max_ms": 3.455047,
+        "p50_ms": 1.865251,
+        "p95_ms": 2.50758,
+        "p99_9_ms": 3.455047,
+        "p99_ms": 3.455047
+      }
+    }
+  ],
+  "standard_check": {
+    "command": "python3 tools/check.py --offline",
+    "exit_code": 1,
+    "python_tests": 388,
+    "failures": 1,
+    "errors": 0,
+    "duration_s": 536.478,
+    "failure": "C6 DWA seed 2 reached the 120 simulation-second task limit; no Runtime deadline/gate failures",
+    "log": ".m1-cache/godot-only-qa/standard-check-final.log"
+  },
+  "limitations": [
+    "Default-vsync X11 handshake failed repeatedly in this environment; --disable-vsync diagnostic flow passed; production settings unchanged.",
+    "Default no-mode/no-level launcher and shutdown tested through a headless auto-close binary.",
+    "No cross-platform, full thirteen-course GUI, input-method, or long-run reliability validation.",
+    "C6 DWA seed 2 failed in the complete suite and passed in isolation; preparation activation ticks differ (300/294). Root cause not confirmed; full suite is not certified green."
+  ],
+  "other_checks": {
+    "rust": {
+      "passed": 18,
+      "failed": 0
+    },
+    "wasm_equivalence": "passed",
+    "documentation_schema_examples": "passed",
+    "generated_profile": "passed",
+    "git_diff_check": "passed",
+    "native_benchmark_smoke": {
+      "batches": 5,
+      "wall_timeouts": 0,
+      "missed_commit_gates": 0,
+      "reliability_claim": false
+    }
+  },
+  "c6_recheck": {
+    "test_methods": 1,
+    "scenarios": 6,
+    "passed": true,
+    "duration_s": 34.965,
+    "log": ".m1-cache/godot-only-qa/navigation-c6-recheck.log",
+    "failed_evidence": ".m1-cache/godot-only-qa/navigation-c6-regression-failed.json",
+    "recheck_evidence": ".m1-cache/godot-only-qa/navigation-c6-regression-recheck.json"
+  }
+}

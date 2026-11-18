@@ -1,5 +1,7 @@
 # 42 Navigation C5：已知地图全局路径规划
 
+**当前客户端范围（2026-11-18）：** 玩家入口仅Godot＋原生CPython，Web/Pyodide和相关工具已由 [ADR-0057](adr/0057-godot-only-player-entry.md) 移除。本文算法/物理/权限及后端合同保持；Web菜单、曲线和工具的历史描述不表示Godot已移植，当前界面范围见 [44](44_GODOT_DESKTOP_CLIENT.md)。周期截止以 [41](41_RUNTIME_EXECUTION_PROFILES.md) 的原生30ms/20ms声明及固定门为准，旧40ms浏览器数值仅是历史。
+
 ## 目的、范围与状态
 
 稳定ID为navigation.c5，前置navigation.c4，复用Navigation独立工程的轮控、里程计、GPS/EKF与PathFollower。只新增玩家算法navigation/global_planner.py，不增加物理、传感器、动态障碍、未知地图或在线重规划。用户已确认下面合同，首版实现已接入；平台验收范围由 [ADR-0054](adr/0054-known-map-planning-preparation.md) 和最终报告区分。
@@ -63,4 +65,4 @@ start/goal为只读float64(2,)地图系绝对米制坐标。成功返回float64(
 | 参数/合同 | levels/navigation.C5.yaml；global-planning/preparation-task/level/workspace Schema |
 | 测试参考 | tests/fixtures/planner_astar.py与planner_dijkstra.py独立搜索；共同几何后处理只存在测试目录 |
 
-原生受控多seed自动化与真实界面属于不同验证层；真实Firefox流程可用tools/test_browser.py --scenario global-planning复现，所有路径均为隔离工程。具体命令、数据、截图和未覆盖平台见 [验收](reports/NAVIGATION_GLOBAL_PLANNING_VALIDATION.md)。
+原生受控多seed自动化与真实界面属于不同验证层。原Firefox流程及工具已退役，其当时命令、数据、截图和未覆盖平台保留于 [历史验收](reports/NAVIGATION_GLOBAL_PLANNING_VALIDATION.md)，不能再作为当前入口。Godot规划专用图层和完整C5界面流程仍需独立验收，当前范围见 [44](44_GODOT_DESKTOP_CLIENT.md)。

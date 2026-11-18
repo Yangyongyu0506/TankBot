@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {spawn} from "node:child_process";
-import {WasmCore} from "../web/wasm-core.js";
+import {WasmCore} from "../tools/wasm_core.mjs";
 
 const bytes=readFileSync(new URL("../target/wasm32-unknown-unknown/release/tankbot_core.wasm",import.meta.url));
 const wasm=new WasmCore((await WebAssembly.instantiate(bytes,{})).instance);

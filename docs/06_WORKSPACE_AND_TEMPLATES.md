@@ -1,5 +1,7 @@
 # 06 Workspace、模板与 Edit / Test / Deploy
 
+**当前客户端范围（2026-11-18）：** 玩家入口仅Godot＋原生CPython，Web/Pyodide和相关工具已由 [ADR-0057](adr/0057-godot-only-player-entry.md) 移除。本文算法/物理/权限及后端合同保持；Web菜单、曲线和工具的历史描述不表示Godot已移植，当前界面范围见 [44](44_GODOT_DESKTOP_CLIENT.md)。周期截止以 [41](41_RUNTIME_EXECUTION_PROFILES.md) 的原生30ms/20ms声明及固定门为准，旧40ms浏览器数值仅是历史。
+
 ## 目的、范围与约束
 
 支持持久化、多文件Python项目、无损解锁新模块和不可变部署。当前本机已支持单模块兼容包装及同步周期/event模块图、整图测试/部署/回滚、模板升级预览和项目维护；分别见 [17](17_EDITOR_AND_DEPLOYMENT.md)、[26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)、[38](38_ENGINEERING_AND_ALGORITHM_LAB.md)。ADR-0009/0012约束非覆盖管理与编辑/运行分离。独立静态Web存储、云同步、持久运行checkpoint和动态RobotApp组装仍未实现。

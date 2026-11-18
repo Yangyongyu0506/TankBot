@@ -13,7 +13,6 @@ from tankbot_host.authority import Authority,load_config
 from tankbot_host.execution_profiles import admission_cap,select_execution_profile,validate_execution_profiles
 from tankbot_host.campaign import configure
 from tankbot_host.runtime_timing import RuntimeTiming
-from browser_authority import BrowserSupervisor,runtime_event
 from campaign_support import solutions
 
 
@@ -22,7 +21,7 @@ class ExecutionProfileTests(unittest.TestCase):
 
     def test_backend_selection_legacy_compatibility_and_conflict_rejection(self):
         runtime=self.config['runtime'];catalog=runtime['profiles']
-        for backend,wall in [('native',30),('pyodide',50)]:
+        for backend,wall in [('native',30)]:
             catalog['profiles'][catalog['defaults'][backend]]['batch_wall_deadline_ms']=wall
             p=select_execution_profile(self.config,backend)
             self.assertEqual(p.batch_wall_deadline_ms,wall)
@@ -32,7 +31,7 @@ class ExecutionProfileTests(unittest.TestCase):
         runtime['batch_budget_ms']=20
         with self.assertRaisesRegex(ValueError,'CONFLICT'):validate_execution_profiles(self.config)
         runtime.pop('profiles')
-        for backend in ('native','pyodide'):
+        for backend in ('native',):
             p=select_execution_profile(self.config,backend)
             self.assertEqual((p.module_declared_budget_cap_ms,p.batch_wall_deadline_ms),(20,20))
             self.assertEqual(p.source,'batch_budget_ms')
@@ -42,13 +41,24 @@ class ExecutionProfileTests(unittest.TestCase):
     def test_profile_references_backend_version_and_values_are_checked(self):
         for mutate in (
             lambda c:c['defaults'].update(native='unknown'),
-            lambda c:c['defaults'].update(native=c['defaults']['pyodide']),
+            lambda c:c['profiles'][c['defaults']['native']].update(backend='pyodide'),
             lambda c:c.update(schema_version='2.0'),
             lambda c:c.update(module_declared_budget_cap_ms=0),
             lambda c:c['profiles'][c['defaults']['native']].update(batch_wall_deadline_ms=float('nan')),
         ):
             config=copy.deepcopy(self.config);mutate(config['runtime']['profiles'])
             with self.subTest(config=config['runtime']),self.assertRaises(ValueError):validate_execution_profiles(config)
+
+    def test_legacy_browser_metadata_cannot_start_a_retired_backend(self):
+        config=copy.deepcopy(self.config)
+        catalog=config['runtime']['profiles']
+        catalog['defaults']['pyodide']='browser_pyodide_v1'
+        catalog['profiles']['browser_pyodide_v1']={
+            'profile_version':'1.0','backend':'pyodide','batch_wall_deadline_ms':40,'status':'experimental'}
+        validate_execution_profiles(config)  # Read legacy trusted configuration without activating it.
+        self.assertEqual(select_execution_profile(config,'native').batch_wall_deadline_ms,30)
+        with self.assertRaisesRegex(ValueError,'RUNTIME_PROFILE_BACKEND'):
+            select_execution_profile(config,'pyodide')
 
     def test_attempt_freezes_backend_limits_and_new_workers_inherit_same_profile(self):
         config=configure(self.config,'c2')
@@ -81,47 +91,6 @@ class ExecutionProfileTests(unittest.TestCase):
             self.assertEqual(admission_cap(config),20)
         finally:a.close()
 
-    def browser(self):
-        config=copy.deepcopy(self.config)
-        config['runtime'].pop('profiles');config['runtime']['batch_budget_ms']=20
-        return BrowserSupervisor(config,{})
-
-    def test_browser_decode_crosses_deadline_and_delayed_watchdog_cannot_accept_it(self):
-        with patch.dict(sys.modules,{'js':types.SimpleNamespace(runtime_send=lambda raw:None)}):
-            sup=self.browser()
-            with patch('browser_authority.time.monotonic_ns',return_value=1_000_000_000):sup.submit({'request_id':'a'})
-            def decode(raw):
-                clock.return_value=1_020_000_001
-                return {'payload':{'telemetry':{'budget_ms':90000,'runtime_python_ms':0}}}
-            with patch('browser_authority.time.monotonic_ns',return_value=1_019_000_000) as clock,patch('browser_authority.strict_loads',side_effect=decode):
-                sup.receive('{}',0)
-                self.assertIsNone(sup.finish())
-            self.assertEqual(sup.fault,'RESOURCE_LIMIT')
-            self.assertEqual(sup.timing.samples[-1]['failure_location'],'response_decode_deadline')
-            self.assertEqual(sup.execution_profile.batch_wall_deadline_ms,20)
-            self.assertNotIn(sup.worker_id,BrowserSupervisor.workers)
-            runtime_event({'op':'result','worker_id':sup.worker_id,'raw':'{}','elapsed_ms':0})
-            self.assertIsNone(sup.result)
-
-    def test_browser_duplicate_response_and_early_gate_reject_without_waiting(self):
-        with patch.dict(sys.modules,{'js':types.SimpleNamespace(runtime_send=lambda raw:None)}),patch('browser_authority.time.monotonic_ns',return_value=100):
-            sup=self.browser();sup.submit({'request_id':'a'});sup.receive('{}',0);sup.receive('{}',0)
-            self.assertIsNone(sup.finish());self.assertEqual(sup.fault,'RESOURCE_LIMIT')
-            sup=self.browser();sup.submit({'request_id':'b'})
-            self.assertIsNone(sup.finish());self.assertEqual(sup.fault,'MISSED_DEADLINE')
-
-    def test_late_undecoded_bytes_are_a_censored_arrival_not_a_complete_roundtrip(self):
-        with patch.dict(sys.modules,{'js':types.SimpleNamespace(runtime_send=lambda raw:None)}):
-            sup=self.browser()
-            with patch('browser_authority.time.monotonic_ns',return_value=100_000_000):sup.submit({'request_id':'late'})
-            with patch('browser_authority.time.monotonic_ns',return_value=120_000_001),patch('browser_authority.strict_loads') as decode:
-                sup.receive('{}',5)
-                decode.assert_not_called()
-            row=sup.timing.samples[-1]
-            self.assertTrue(row['censored']);self.assertNotIn('round_trip_ms',row)
-            self.assertEqual(row['response_arrival_ms'],20.000001)
-            self.assertEqual(sup.timing.public()['wall_timeouts'],1)
-
     def test_legacy_loader_and_conflicting_asset_modes(self):
         import tempfile
         from tankbot_host.execution_profiles import load_execution_profiles
@@ -130,7 +99,7 @@ class ExecutionProfileTests(unittest.TestCase):
             path=Path(directory)/'legacy.json';path.write_text(json.dumps(legacy))
             loaded=load_config(path)
         self.assertEqual(admission_cap(loaded),30)
-        self.assertEqual(select_execution_profile(loaded,'pyodide').batch_wall_deadline_ms,30)
+        self.assertEqual(select_execution_profile(loaded,'native').batch_wall_deadline_ms,30)
         for runtime in (
             {**self.config['runtime'],'profiles_file':'config/runtime-profiles.yaml'},
             {**legacy['runtime'],'profiles_file':'config/runtime-profiles.yaml'},
@@ -258,8 +227,6 @@ class ExecutionProfileTests(unittest.TestCase):
         finally:a.close()
 
     def test_finish_without_an_active_batch_is_a_controlled_failure_not_a_clock_type_error(self):
-        with patch.dict(sys.modules,{'js':types.SimpleNamespace(runtime_send=lambda raw:None)}):
-            sup=self.browser();self.assertIsNone(sup.finish());self.assertEqual(sup.fault,'MISSED_DEADLINE')
         config=configure(self.config,'c2');a=Authority(config,controlled=True)
         try:
             self.assertIsNone(a.worker.finish());self.assertEqual(a.worker.fault,'MISSED_DEADLINE')

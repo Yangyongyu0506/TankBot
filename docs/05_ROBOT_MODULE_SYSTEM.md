@@ -1,5 +1,7 @@
 # 05 Robot Module Contract 与 Python SDK
 
+**当前客户端范围（2026-11-18）：** 玩家入口仅Godot＋原生CPython，Web/Pyodide和相关工具已由 [ADR-0057](adr/0057-godot-only-player-entry.md) 移除。本文算法/物理/权限及后端合同保持；Web菜单、曲线和工具的历史描述不表示Godot已移植，当前界面范围见 [44](44_GODOT_DESKTOP_CLIENT.md)。周期截止以 [41](41_RUNTIME_EXECUTION_PROFILES.md) 的原生30ms/20ms声明及固定门为准，旧40ms浏览器数值仅是历史。
+
 ## 目的、范围与约束
 
 `tankbot` SDK 隐藏 JSON、网络、进程和权限细节，公开稳定的类型、模块生命周期和端口。初学者函数与高级模块采用同一份 Contract 及同一 Host 验证路径。ADR-0008 接受 Contract 和混合交互原则；当前已实现类型化消息、同步periodic/event、声明式模块图与课程适配器，源码在 `sdk/python/tankbot/` 和runtime；尚未发布到pip。下文区分现有API、历史M1子集和未实现扩展。

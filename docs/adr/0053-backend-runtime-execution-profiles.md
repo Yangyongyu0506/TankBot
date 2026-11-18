@@ -4,6 +4,8 @@
 - Date: 2026-11-06；2026-11-07接受本机实现合同
 - Scope: 本机CPython与Pyodide；不改变物理、算法dt、权限或activation + 6tick
 
+2026-11-18局部修订：[ADR-0057](0057-godot-only-player-entry.md) 删除Web/Pyodide和旧玩家子命令，当前仅Godot＋原生CPython；本记录的原Context和历史证据保留，其他仍适用的权限、Workspace或截止合同不变。
+
 ## Context
 
 旧runtime.batch_budget_ms同时限制Contract预算总和与整批往返。历史评估提出原生30ms、浏览器50ms，但未执行候选看门狗长测，不能作为既定默认。浏览器接收检查尚未覆盖响应解码期间跨越截止，原生管道写入也可能阻塞Authority线程。

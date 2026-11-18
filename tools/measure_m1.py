@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Private evaluator report for the 600-tick M1 profile; never served to the browser."""
+"""Private evaluator report for the 600-tick M1 profile; never exposed through the player UI."""
 import copy
 from datetime import date
 import hashlib

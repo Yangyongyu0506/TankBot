@@ -23,7 +23,6 @@ from tankbot_host.campaign import catalog,configure
 from tankbot_host.cli import main
 from tankbot_host.level_plugins import LevelValidationError
 from tankbot_host.server import LocalServer
-from tankbot_host.browser_server import BrowserServer
 from tankbot_host.workspace import workspace_scope
 from tankbot_host.workspace_api import WorkspaceAPI
 from tankbot_protocol.validation import Validator
@@ -141,8 +140,8 @@ class BranchingProgressionTests(unittest.TestCase):
 
     def test_locked_cli_paths_and_authorized_diagnostic_start_use_same_progress(self):
         common=['--settings-file',str(self.state.settings_path),'--save-file',str(self.state.progress_path)]
-        for mode in ('serve','browser','headless','probe'):
-            with self.subTest(mode=mode),patch.object(sys,'argv',['tankbot.py',mode,'--level','navigation.c0',*common]),contextlib.redirect_stderr(io.StringIO()) as errors:
+        for mode in (None,'headless','probe'):
+            with self.subTest(mode=mode),patch.object(sys,'argv',['tankbot.py',*([mode] if mode else []),'--level','navigation.c0',*common]),contextlib.redirect_stderr(io.StringIO()) as errors:
                 with self.assertRaises(SystemExit) as raised:main()
                 self.assertEqual(raised.exception.code,2);self.assertIn('LEVEL_LOCKED',errors.getvalue());self.assertIn('(c0)',errors.getvalue())
         self.complete('c0');self.state.select_level('navigation.c0')
@@ -150,9 +149,11 @@ class BranchingProgressionTests(unittest.TestCase):
         for mode in ('headless','probe'):
             with patch.object(sys,'argv',['tankbot.py',mode,'--level','c1','--ticks','0',*common]),contextlib.redirect_stdout(io.StringIO()):main()
         self.assertEqual(raw,self.state.progress_path.read_bytes());self.assertEqual(settings,self.state.settings_path.read_bytes())
-        for mode,target in (('serve','tankbot_host.server.LocalServer'),('browser','tankbot_host.browser_server.BrowserServer')):
-            with patch(target) as launcher,patch.object(sys,'argv',['tankbot.py',mode,'--level','navigation.c0',*common]):main()
-            self.assertTrue(launcher.return_value.serve.called)
+        with patch('tankbot_host.desktop.prepare_desktop',return_value=Path('/tmp/godot')), \
+                patch('tankbot_host.desktop.run_desktop') as launch, patch('tankbot_host.server.LocalServer'), \
+                patch.object(sys,'argv',['tankbot.py','--level','navigation.c0',*common]):
+            main()
+        launch.assert_called_once()
 
     def test_native_http_selection_preserves_both_projects_history_and_cleans_old_tests(self):
         config=configure(self.config,'c0');config['host']['port']=0
@@ -186,19 +187,6 @@ class BranchingProgressionTests(unittest.TestCase):
         self.assertEqual(nav.store.read(),nav_before)
         self.assertEqual(self.state.progress()['completed_levels'],['c0'])
 
-    @unittest.skipUnless((ROOT/'build/browser/authority-bundle.json').is_file() and (ROOT/'target/wasm32-unknown-unknown/release/tankbot_core.wasm').is_file(),'browser artifacts not prepared')
-    def test_browser_launcher_checks_player_gate_and_preserves_scope_revisions(self):
-        config=configure(self.config,'c0');config['host']['port']=0
-        with socket.socket() as handle:handle.bind(('127.0.0.1',0));config['browser']['runtime_port']=handle.getsockname()[1]
-        server=BrowserServer(config,workspace_store=self.directory/'browser-store',application=self.state)
-        self.addCleanup(server.ui.server_close);self.addCleanup(server.runtime.server_close)
-        with self.assertRaisesRegex(ValueError,'LEVEL_LOCKED'):server.start_level('navigation.c0')
-        self.complete('c0');weapons=server.workspace;before=weapons.store.read()
-        server.start_level('navigation.c0');nav=server.workspace;nav_before=nav.store.read()
-        self.assertEqual(workspace_scope(nav.config),'navigation');self.assertNotIn('perception/transforms.py',nav_before['files'])
-        with self.assertRaisesRegex(ValueError,'navigation.c0'):server.start_level('navigation.c1')
-        server.start_level('c1');self.assertIs(server.workspace,weapons);self.assertEqual(weapons.store.read(before['revision']),before)
-        server.start_level('navigation.c0');self.assertIs(server.workspace,nav);self.assertEqual(nav.store.read(),nav_before)
 
 
 if __name__=='__main__':unittest.main()

@@ -21,18 +21,18 @@
         },
         "pyodide": {
           "type": "string",
-          "pattern": "^[a-z][a-z0-9_]{0,63}$"
+          "pattern": "^[a-z][a-z0-9_]{0,63}$",
+          "deprecated": true
         }
       },
       "required": [
-        "native",
-        "pyodide"
+        "native"
       ],
       "additionalProperties": false
     },
     "profiles": {
       "type": "object",
-      "minProperties": 2,
+      "minProperties": 1,
       "maxProperties": 32,
       "propertyNames": {
         "pattern": "^[a-z][a-z0-9_]{0,63}$"

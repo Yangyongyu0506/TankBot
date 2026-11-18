@@ -2,9 +2,9 @@
 
 ## 目的、范围与证据层次
 
-当前实现为应用配置2.1、十三关、原生/浏览器Runtime、同步模块图、多文件编辑部署、C2滤波回放试点和项目维护；Navigation含轮控、里程计、GPS/EKF、航点、连续路径和已知地图规划。运行profile已拆分声明准入/墙钟，默认仍experimental。当前事实与提交状态见 [本轮核对](reports/DOCUMENTATION_STATE_SYNC_20261110.md)，接口由领域规范负责，验收由各历史报告记录，未来能力由开放项追踪。
+当前实现为应用配置2.1、十三关、Godot＋原生CPython、同步模块图、多文件编辑部署；Navigation含轮控、里程计、GPS/EKF、航点、连续路径、已知地图规划和局部静态避障。C2滤波回放和项目维护后端保留，对应Godot面板待移植。运行profile已拆分声明准入/墙钟，默认仍experimental。当前客户端及删除范围见 [44](44_GODOT_DESKTOP_CLIENT.md)、[ADR-0057](adr/0057-godot-only-player-entry.md)，接口由领域规范负责，验收由各时期报告记录。
 
-本轮开始HEAD为7c065ab、工作区干净；Runtime profile等不是本轮新增代码。历史M0–M3研究/计数保留在文末明确标注的小节，不以当时范围否定后续实现，也不将历史通过计数称作本轮检查。完整平台隔离ADR-0013仍为Proposed，CI配置不是平台通过证据。
+2026-11-10文档核对时HEAD为7c065ab，见 [历史核对](reports/DOCUMENTATION_STATE_SYNC_20261110.md)；后续客户端已变更。历史M0–M3研究/计数保留在文末明确标注的小节，不以当时范围否定后续实现，也不将历史通过计数称作本轮检查。完整平台隔离ADR-0013仍为Proposed，CI配置不是平台通过证据。
 
 ## 需求与接口追踪
 
@@ -12,7 +12,7 @@
 | --- | --- | --- |
 | 产品愿景、模式、持续学习 | 01、09、36；0001/0049 | 十三关双主线、主线内代码复用；未来课程另行确认 |
 | 逻辑/进程/部署、Rust/C++ | 02；0001/0002 | 无头/原生/WASM 探针与平台矩阵 |
-| Web 表现/编辑器 | 02、06、17；0021 | 只读 DTO、多文件/Vim/焦点测试 |
+| Godot表现/编辑器 | 02、06、17、44；0056/0057 | 授权DTO、多文件/焦点/编辑部署；高级编辑工具待移植 |
 | JSON、权限、版本和 Transport | 03；0004/0005/0014 | 结构、时序、授权、ROS 风格速度流、Adapter 等价夹具 |
 | 三层状态、选源、初值/帧/显示 | 04；0006/0007 | 错估计、无估计、多源、漂移与泄漏回归 |
 | SDK、Contract、渐进 API | 05；0008 | 函数/类等价、缺输入、依赖/事件/重置测试 |
@@ -44,7 +44,7 @@ python3 tools/export_profile.py --check --offline
 git diff --check
 ```
 
-标准入口依次运行自动发现的普通Node测试、Python、Rust、文档与生成配置一致性，失败返回非零。`npm test`仅为普通前端；构建后WASM另跑 `npm run test:wasm`，真实UI另用 `npm run test:browser -- --help` 选择流程。文档专项需要requirements.txt中的jsonschema/referencing/PyYAML等依赖，离线注册本地Schema，不访问$id域名。具体入口和范围见 [38](38_ENGINEERING_AND_ALGORITHM_LAB.md)。
+标准入口依次运行自动发现的Python、Rust、文档与生成配置一致性，失败返回非零。构建后WASM另跑 `python3 tools/check.py --suite wasm`；Godot流程另用 `python3 tools/check.py --suite godot`，追加 `-- --headless` 运行无头流程。Node仅用于独立WASM检查，无npm构建。文档专项需要requirements.txt中的jsonschema/referencing/PyYAML等依赖，离线注册本地Schema，不访问$id域名。具体入口和范围见 [38](38_ENGINEERING_AND_ALGORITHM_LAB.md)。
 
 检查范围：Markdown 本地链接与代码块、ADR 状态和索引、严格 JSON、Draft 2020-12 Schema、自包含正例、结构负例与领域案例分层、Python 示例语法、行尾空白。Python 示例仅 AST 解析，此工具不导入 SDK；另由 M1 测试执行 SDK 片段。早期检查仅针对初始化后的文档；当前`git diff --check` 检查已跟踪改动；新增文件仍需检查。工具对所有 Markdown 检查空白，JSON 做完整格式检查；也可逐文件运行 `git diff --no-index --check /dev/null <path>`，退出码 1 仅表示文件差异，实际空白告警不能忽略。
 
@@ -77,22 +77,22 @@ git diff --check
 
 | ID | 已实现/已接受的子项 | 仍待决定或验证的部分 | 权威入口 |
 | --- | --- | --- | --- |
-| O01 | Rust/Rapier已在Linux原生/Firefox WASM范围接受 | 其他OS/浏览器完整流程、规模与维护成本 | 02、ADR-0002、16 |
-| O02 | Canvas/CodeMirror/Vim、类型帮助与多文件编辑部署 | 其他平台键位/编辑体验、独立静态Web存储 | 17、19、ADR-0021 |
-| O03 | 双origin/Pyodide Worker与可信共享Authority已实现 | 浏览器硬资源隔离、后台/休眠与其他浏览器 | 16；ADR-0013完整安全组合仍Proposed |
-| O04 | 本机可信本人代码与受限浏览器Worker | 服务端OS沙箱、第三方上传、CPU/内存/网络攻击测试 | 08、M8上线门 |
+| O01 | Rust/Rapier原生仿真及独立WASM对照；Firefox记录属历史 | 其他OS完整流程、规模与维护成本 | 02、ADR-0002、44 |
+| O02 | Godot授权绘图、CodeEdit多文件编辑/测试/部署 | 高级编辑工具、其他平台与完整Godot界面迁移 | 17、44、ADR-0056/0057 |
+| O03 | Godot＋原生Authority与独立CPython；浏览器拓扑已退役 | 独立发行包、桌面多平台及强隔离 | 44；ADR-0013完整安全组合仍Proposed |
+| O04 | 本机可信本人代码的独立Worker | 服务端OS沙箱、第三方上传、CPU/内存/网络攻击测试 | 08、M8上线门 |
 | O05 | 固定60Hz/4子步、按实例采样、10Hz算法、6tick门；独立后端profile及流式基准 | 更多完整UI尝试、设备/平台与整局截止可靠性；未证明<1% | 07、41、11月7日Runtime报告 |
 | O06 | 严格JSON、现用消息/地图/路径与原生-WASM夹具 | 大规模scan/地图瓦片、多机器人与必要时的编码优化；公共Envelope与私有帧配额分开 | 03、27、40 |
 | O07 | revision/ledger、预览迁移、旧源码和完整工程恢复 | 已发布SDK兼容窗口、云同步、会话artifact GC | 06、17、38 |
 | O08 | 固定尝试profile、权限和可重复本机基准 | 远程权威、赛制硬件/资源类别与Arena公平性 | 08、41、M8 |
-| O09 | 逐关实时RMSE、C2授权回放和失败复现 | 完整Lab、多模块/控制器成对闭环与信息oracle评估 | 04、38 |
+| O09 | 逐关授权指标、C2回放/失败复现后端 | Godot完整指标/实验面板、完整Lab、多模块/控制器成对闭环及信息oracle评估 | 04、38、44 |
 | O10 | 固定公开帧、Navigation编码器/GPS特定时间对齐 | 通用动态TF、任意异步融合与非零安装 | 32、35 |
-| O11 | Weapons弹丸显示、Radar与匿名装甲已实现 | scan、听觉模型和通用接触方向观测 | 04、30、39 |
+| O11 | Weapons弹丸/Radar/匿名装甲、C6扫描与局部避障后端已实现 | Godot扫描专用显示、听觉模型及通用接触方向观测 | 04、30、43、44 |
 | O12 | 已注册消息、跨Adapter/Schema/SDK夹具及当前兼容规则 | Protocol 1.0首次发布冻结、正式网络会话/服务集 | 03、schemas索引 |
 | O13 | Twist/JointState等采用ROS习惯，PolarTargetEstimate元组统一 | 首次SDK发布审查命名/单位差异；不声称完整ROS消息兼容 | 03、05、ADR-0014 |
 | O14 | 两种底盘、完整模型、理想轮观测；差速轮电压电机已实现 | 全向轮电机、空转/轮滑、更多地面模型与热替换 | 29、32、33 |
 
-当前课程阈值与模型已经确认，不列为待选默认，也不在文档同步中调整。玩家全局规划已按用户确认实现为 [42](42_NAVIGATION_GLOBAL_PLANNING.md)，其验收单列；局部避障、IMU融合、建图/SLAM课程仍为Planned，见 [39](39_NAVIGATION_COURSE_PROPOSALS.md)。C4裁判生成路径与C5玩家规划是不同合同。发布许可/资产政策、账号与服务方案仍需维护者决策。
+当前课程阈值与模型已经确认，不列为待选默认，也不在文档同步中调整。玩家全局规划和局部避障分别见 [42](42_NAVIGATION_GLOBAL_PLANNING.md)、[43](43_NAVIGATION_LOCAL_AVOIDANCE.md)，验收单列；IMU融合、建图/SLAM课程仍为Planned，见 [39](39_NAVIGATION_COURSE_PROPOSALS.md)。C4裁判生成路径与C5玩家规划是不同合同。发布许可/资产政策、账号与服务方案仍需维护者决策。
 
 ## 历史研究来源与适用限度（M0/M1）
 

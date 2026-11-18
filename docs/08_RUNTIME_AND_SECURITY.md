@@ -16,13 +16,13 @@ C5候选Worker由PreparationRunner先接收一次规划任务，再接收已校�
 
 | 环境 | 方案与状态 | 有效边界 | 必须承认的限制 |
 | --- | --- | --- | --- |
-| 浏览器单人 | 已实现：Core WASM Worker + 独立Pyodide Worker | 消息传递、不共享 World、可终止 worker | Worker 不是服务器沙箱；本机用户能读客户端内存 |
+| Godot本机 | 原生Authority/Core＋独立CPython Worker | 消息边界、外部终止与授权输入 | 普通子进程非强OS沙箱；只运行本人可信代码 |
 | 本机原生 | 已实现本人可信代码CPython worker；桌面发行/OS受限模式待实现 | 故障隔离、明确输入与运行目录 | 普通子进程没有足够文件/网络隔离；OS 差异待验证 |
 | 服务器/Arena | Planned：Linux上每机器人独立强化沙箱 | 无 Host FS/网络、系统资源配额、可信桥接 | gVisor/microVM 等需基准与攻击测试后选型 |
 
-本地第一版若只具进程隔离，必须在产品中清楚标注“仅运行本人可信代码”，不得接收任意下载脚本或把该模式叫安全沙箱。远程第三方代码在服务器隔离验收前禁用，不能用“内部测试”绕过边界。Windows/macOS 在服务器级本地隔离未验证前，可采用浏览器运行或远程 Runtime。
+本地第一版若只具进程隔离，必须在产品中清楚标注“仅运行本人可信代码”，不得接收任意下载脚本或把该模式叫安全沙箱。远程第三方代码在服务器隔离验收前禁用，不能用“内部测试”绕过边界。Windows/macOS强隔离、桌面发行与远程Runtime均须独立验证；当前不提供浏览器替代运行入口。
 
-## 浏览器设计
+## 历史浏览器设计（ADR-0057已退役）
 
 Pyodide Worker 避免同步 Python 阻塞主 UI；它与 Core Worker 不同，只有专用 MessagePort，任何 port 消息仍按 Protocol 校验。不得给 Python 传 Core 对象、共享内存、账号令牌或桌面原生桥。
 
@@ -80,15 +80,15 @@ M1 为明确授权的**本人可信代码开发 profile**：原生 Rust Core 的
 
 该 profile **没有** OS 文件/网络沙箱、硬 CPU/内存/进程配额，不接受第三方上传，也不提供 Arena。完整服务端隔离要求与 ADR-0013 仍有效且 Proposed；不能用本机死循环测试代替沙箱攻击测试。loopback HTTP 限定 Host/Origin、控制 token、POST JSON 大小和控制频率；这些是本地 UI Adapter 的保护，不代表可直接公开到互联网。M1 原范围仅有键盘来源；M1b 已支持启动时按执行器选择 keyboard/robot，并在程序故障时撤销目标。运行时动态控制权切换仍未实现。
 
-## M2 实测浏览器 profile
+## 历史：M2浏览器profile实测（实现已退役）
 
 双 origin / 双 Worker 已在 Linux Firefox 验证，Authority/玩家解释器不共享堆；Runtime 资源路由不提供配置、Core 或宿主源码。真实 Python JS 桥测试确认宿主句柄/文件不存在、UI/外网连接与嵌套 Worker 被阻止、fork 不可用；死循环强制终止后 Core 和 UI 继续。该轮验证使用浏览器初始化45s、批次20ms、原生初始化5s。当前启动上限仍在config/game.yaml；整批截止由独立后端profile冻结，旧batch_budget_ms仅在旧配置模式中同时表示准入/墙钟，混用新模式拒绝，见 [41](41_RUNTIME_EXECUTION_PROFILES.md)。
 
 CSP 允许 Runtime origin 的固定只读资源请求，MEMFS 可写；浏览器无硬内存/磁盘/CPU 配额，未进行破坏性 OOM 压力测试，不保证抗所有 DoS。尚无第三方服务器代码执行或 Arena；ADR-0013 整体仍 Proposed，局部实现选择与成本由 ADR-0020 接受。详细攻击结果、来源与数据边界见 [16](16_BROWSER_RUNTIME.md) 和 [M2 报告](reports/M2_VALIDATION.md)。
 
-## M3 测试与部署边界
+## 测试与部署边界（保留原生实现）
 
-Test/import/setup/玩家 unittest 也在独立 Runtime 中执行；原生仍仅可信本机代码，浏览器复用 M2 的独立 origin。候选不收到完整 Workspace 存储或 World，只收到固定源码与授权配置/传感器；其输出在 Test 中不会提交执行器。原子切换生成新 publisher 身份、清除旧提交队列/控制目标，旧 Worker 结果无法用于新租约。归档报告只供审计，不能恢复 Ready 授权。详见 [17](17_EDITOR_AND_DEPLOYMENT.md)。
+Test/import/setup/玩家 unittest 也在独立 Runtime 中执行；原生仍仅可信本机代码，原浏览器独立origin实现已按ADR-0057移除。候选不收到完整 Workspace 存储或 World，只收到固定源码与授权配置/传感器；其输出在 Test 中不会提交执行器。原子切换生成新 publisher 身份、清除旧提交队列/控制目标，旧 Worker 结果无法用于新租约。归档报告只供审计，不能恢复 Ready 授权。详见 [17](17_EDITOR_AND_DEPLOYMENT.md)。
 
 ## M5 当前增量
 

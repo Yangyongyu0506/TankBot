@@ -1,5 +1,7 @@
 # 40 Navigation C4：连续路径追踪
 
+**当前客户端范围（2026-11-18）：** 玩家入口仅Godot＋原生CPython，Web/Pyodide和相关工具已由 [ADR-0057](adr/0057-godot-only-player-entry.md) 移除。本文算法/物理/权限及后端合同保持；Web菜单、曲线和工具的历史描述不表示Godot已移植，当前界面范围见 [44](44_GODOT_DESKTOP_CLIENT.md)。周期截止以 [41](41_RUNTIME_EXECUTION_PROFILES.md) 的原生30ms/20ms声明及固定门为准，旧40ms浏览器数值仅是历史。
+
 ## 目的、范围与确认
 
 用户已确认本关目标、地图、接口数据、运动限制、检查点、追踪误差、时限和终局优先级。稳定ID为navigation.c4，前置navigation.c3，仍使用navigation独立工程。本机实现与验证接受于 [ADR-0052](adr/0052-generated-continuous-path-tracking.md)，证据见文末验收；本关不是路径规划教学，不增加物理/传感器模型。

@@ -6,8 +6,8 @@
 
 ```bash
 python3 tools/tankbot.py --list-maps
-python3 tools/tankbot.py serve --level c0 --map open_large
-python3 tools/tankbot.py browser --level c0 --map maps/navigation_warehouse.yaml
+python3 tools/tankbot.py --level c0 --map open_large
+python3 tools/tankbot.py --level c0 --map maps/navigation_warehouse.yaml
 python3 tools/tankbot.py headless --level c0 --map open_large --ticks 600
 ```
 
@@ -15,9 +15,9 @@ python3 tools/tankbot.py headless --level c0 --map open_large --ticks 600
 
 ## 生命周期与配置优先级
 
-启动器先选择关卡与底盘，再解析 CLI 地图。优先级为 **启动覆盖 > 关卡地图 > 自由试验场地图**。解析后的 `map_override: {path, walls}` 是本次进程的内部配置，Schema 验证其结构；不写回源 YAML、设置或存档。关卡重新配置后重新应用覆盖，因此重试、切关、模式切换及浏览器页面重载都不会悄悄恢复绑定地图。停止服务、重新启动且省略 --map 即恢复默认地图。
+启动器先选择关卡与底盘，再解析 CLI 地图。优先级为 **启动覆盖 > 关卡地图 > 自由试验场地图**。解析后的 `map_override: {path, walls}` 是本次进程的内部配置，Schema 验证其结构；不写回源 YAML、设置或存档。关卡重新配置后重新应用覆盖，因此重试和切关不会悄悄恢复绑定地图。退出游戏、重新启动且省略 --map 即恢复默认地图。
 
-原生和浏览器分别调用同一 `maps.apply_override`；Core 最终仍收到 scene.walls，物理、遮挡、视图同源。私有 Core DTO 不需要 map_override 元信息；玩家 SDK 消息不变。
+Godot和无头入口使用同一 `maps.apply_override`；Core 最终仍收到 scene.walls，物理、遮挡、视图同源。私有 Core DTO 不需要 map_override 元信息；玩家 SDK 消息不变。
 
 ## 初态冲突与约束
 
@@ -29,23 +29,23 @@ python3 tools/tankbot.py headless --level c0 --map open_large --ticks 600
 
 用户明确选择：任何 --map 覆盖均为自定义练习，即使选中与原关相同的地图。保留原任务判定、正式时限和关卡解锁权限，但成功不写 completed_levels、不解锁后续关卡。已有源码、历史版本及既有完成记录保留。
 
-ApplicationState 在注册尝试时将 practice 绑定到服务端 ticket；完成请求不能通过客户端字段改成正式成绩。原生和浏览器都传入此标记；开发者模式仍按原规则不计成绩。public_profile 的 custom_map_practice 为新增只读 UI 字段，画面常驻提示练习状态，终局文案不会误报已解锁下一关。
+ApplicationState 在注册尝试时将 practice 绑定到服务端 ticket；完成请求不能通过客户端字段改成正式成绩。开发者模式仍按原规则不计成绩。public_profile 的 custom_map_practice 为只读 UI 字段，Godot也遵守该进度边界。
 
 ## 预览与权限
 
-顶部「地图预览」打开模态弹窗，显示地图全景、原点与世界轴、网格刻度、外包尺寸和墙体数量。外包尺寸包括墙厚，与资产目录所写的内部净尺寸区别明确。开发者可选择任意发现的地图，预览不改变当前仿真，并提供 --map 启动示例。普通玩家只得到本关授权公开的当前地图；未授权时显示说明，不发送墙体或资产路径。
+当前保留地图预览API，Godot预览弹窗待移植。原Web顶部「地图预览」曾提供全景、世界轴、刻度及开发者资产选择，不能作为当前Godot菜单说明。外包尺寸包括墙厚，与资产目录的内部净尺寸区别明确。普通玩家只得到本关授权公开的当前地图；未授权时不发送墙体或资产路径。
 
-`GET /api/maps` 返回 current（或 null）、maps（开发者资产目录，普通玩家为空）、overridden、override_path（未授权时 null）、developer。服务器同时检查 scene.public_map、View Policy.public_map 和关卡 allowed_layers；不以 CSS 隐藏实现权限。播放器 Runtime origin 不提供此接口，也不开放资产目录静态下载。浏览器本地模式的既有客户端信任限制保持。
+`GET /api/maps` 返回 current（或 null）、maps（开发者资产目录，普通玩家为空）、overridden、override_path（未授权时 null）、developer。Authority侧同时检查 scene.public_map、View Policy.public_map 和关卡 allowed_layers；不靠客户端隐藏实现权限。玩家Worker不提供此接口，服务器也不开放资产目录静态下载。
 
-预览按完整包围盒等比例绘制，不跟随坦克、不旋转世界轴；主游戏仍沿用授权快照和跟随相机。弹窗中驾驶/开火/手柄编辑入口被抑制，F1/F2/F10 不叠加其他弹窗；Esc 或 × 关闭后聚焦游戏。预览不暂停正式尝试，不新增网页滚动。
+原Web预览按完整包围盒绘制，不跟随坦克；其快捷键和手柄交互随Web退役。Godot主游戏继续沿用授权快照和固定世界朝向跟随相机，当前范围见 [44](44_GODOT_DESKTOP_CLIENT.md)。
 
 ## 验证与限制
 
-自动测试覆盖 CLI/路径、所有关卡重配后的覆盖保留、初态冲突、隐藏地图拒绝、两种 HTTP 服务、练习 ticket 和正常成绩，以及预览坐标/空图绘制。真实 Firefox 验证使用独立 settings/save/workspace，工具为 `tools/browser_maps.py`；不对玩家 userdata 做改写。
+当前自动测试覆盖CLI/路径、关卡重配后的覆盖保留、初态冲突、隐藏地图拒绝、本机API、练习ticket和正常成绩；旧网页预览工具与专用测试已退役，不代表Godot预览已完成。不对玩家userdata做改写。
 
 当前没有地图热切换、缩放漫游编辑或任意初态自动修复。可信裁判路径生成已在Navigation C4实现，见40；它不属于玩家规划器或本篇原地图预览验收范围。地图命名来自资产文件名，未来本地化地图元信息尚未实现。
 
-### 本次验收（2026-10-29）
+### 历史验收（2026-10-29，浏览器工具已退役）
 
 - 完整 Python 回归：197 项通过；最终路径与中文错误响应修订后，地图覆盖专项 5 项再次通过。
 - Node：地图预览 2 项、渲染 15 项、编辑器尝试锁 4 项、设置/权限 5 项通过。

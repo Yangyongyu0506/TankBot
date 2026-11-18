@@ -1,4 +1,6 @@
-# 16 浏览器 Runtime 与平台适配
+# 16 历史浏览器Runtime与平台适配
+
+**历史文档：** 2026-11-18由 [ADR-0057](adr/0057-godot-only-player-entry.md) 退役。下文记录当时的Pyodide/双Worker、资源及安全验证；相关实现和启动入口已删除。当前运行见 [44](44_GODOT_DESKTOP_CLIENT.md)，不得按下文命令安装浏览器依赖。
 
 ## 目的、范围与当前状态
 

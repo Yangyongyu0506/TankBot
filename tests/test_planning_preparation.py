@@ -13,7 +13,6 @@ sys.path[:0]=[str(ROOT/p) for p in ('host','protocol','sdk/python','runtime','te
 from tankbot_host.authority import load_config
 from tankbot_host.campaign import configure
 from preparation_runner import PreparationRunner
-from browser_authority import BrowserSupervisor,runtime_event
 
 
 class PlanningPreparationTests(unittest.TestCase):
@@ -21,6 +20,19 @@ class PlanningPreparationTests(unittest.TestCase):
     def setUpClass(cls):
         cls.config=configure(load_config(ROOT/'config/game.yaml'),'navigation.c5')
         cls.contract=cls.config['campaign']['levels']['navigation.c5']['runtime']['preparation']
+
+    def test_native_preparation_budget_is_independent_and_not_player_selected(self):
+        from tankbot_host.supervisor import Supervisor
+        from unittest.mock import Mock
+        supervisor=Supervisor.__new__(Supervisor)
+        supervisor.preparation=copy.deepcopy(self.contract)
+        supervisor.initialization_budget_ns=5_000_000_000
+        supervisor._submit=Mock(return_value=True)
+        request={'request_id':'planning','operation':'plan','wall_deadline_ms':999999}
+        self.assertTrue(supervisor.submit_preparation(request))
+        supervisor._submit.assert_called_once_with(request,5_000_000_000,task=True)
+        from tankbot_host.execution_profiles import select_execution_profile
+        self.assertEqual(select_execution_profile(self.config,'native').batch_wall_deadline_ms,30)
 
     def test_one_call_readonly_public_inputs_identity_and_no_planner_in_periodic_init(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -67,34 +79,3 @@ class GlobalPlanner:
             from preparation_runner import clear_project_modules
             clear_project_modules(directory)
             sys.path[:]=[p for p in sys.path if p!=directory]
-
-    def browser(self):
-        return BrowserSupervisor(self.config,{'preparation':copy.deepcopy(self.contract)})
-
-    def test_preparation_uses_trusted_five_seconds_not_telemetry_and_periodic_stays_forty(self):
-        with patch.dict(sys.modules,{'js':types.SimpleNamespace(runtime_send=lambda raw:None)}):
-            sup=self.browser()
-            with patch('browser_authority.time.monotonic_ns',return_value=100):
-                self.assertTrue(sup.submit_preparation({'request_id':'plan','operation':'plan','wall_deadline_ms':999999}))
-                self.assertEqual(sup.expires_ns,5_000_000_100)
-            with patch('browser_authority.time.monotonic_ns',return_value=5_000_000_100):
-                sup.receive('{}',0);self.assertEqual(sup.poll_preparation(),{})
-            self.assertIsNone(sup.fault);self.assertEqual(sup.timing.public()['total_batches'],0)
-            with patch('browser_authority.time.monotonic_ns',return_value=6_000_000_000):
-                sup.submit({'request_id':'periodic'})
-                self.assertEqual(sup.expires_ns,6_040_000_000)
-            sup.close()
-
-    def test_decode_crossing_or_late_preparation_is_killed_and_old_worker_cannot_reply(self):
-        for scenario in ('late','decode'):
-            with patch.dict(sys.modules,{'js':types.SimpleNamespace(runtime_send=lambda raw:None)}):
-                sup=self.browser()
-                with patch('browser_authority.time.monotonic_ns',return_value=100):
-                    sup.submit_preparation({'request_id':'p','operation':'plan'})
-                with patch('browser_authority.time.monotonic_ns',return_value=5_000_000_101 if scenario=='late' else 5_000_000_099) as clock:
-                    def decode(raw):clock.return_value=5_000_000_101;return {}
-                    with patch('browser_authority.strict_loads',side_effect=decode):sup.receive('{}',0)
-                self.assertEqual(sup.fault,'RESOURCE_LIMIT');self.assertTrue(sup.closed)
-                self.assertNotIn(sup.worker_id,BrowserSupervisor.workers)
-                runtime_event({'op':'result','worker_id':sup.worker_id,'raw':'{}','elapsed_ms':0})
-                self.assertIsNone(sup.result)

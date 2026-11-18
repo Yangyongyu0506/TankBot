@@ -1,4 +1,4 @@
-"""Shared multi-file module lifecycle for native CPython and Pyodide. No Core dependency."""
+"""Multi-file module lifecycle for supervised native CPython. No Core dependency."""
 import contextlib
 import importlib
 import sys

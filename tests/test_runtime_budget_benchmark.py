@@ -70,10 +70,3 @@ class RuntimeBudgetBenchmarkTests(unittest.TestCase):
             guard=ArtifactGuard([path]);guard.check()
             path.write_text('VALUE=2\n')
             with self.assertRaisesRegex(RuntimeError,'ARTIFACT_CHANGED'):guard.check()
-
-    def test_browser_helpers_do_not_shadow_the_sdk_with_the_launcher(self):
-        before=list(sys.path)
-        import browser_support
-        self.assertEqual(sys.path,before)
-        import tankbot
-        self.assertTrue(hasattr(tankbot,'__path__'))

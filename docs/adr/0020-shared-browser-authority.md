@@ -1,8 +1,10 @@
 # ADR-0020 浏览器复用 Authority 与独立玩家运行区
 
-- Status: Accepted
+- Status: Superseded
 - Date: 2026-10-22
 - Scope: M2 本地浏览器部署与适配；不接受服务器沙箱技术
+
+2026-11-18由 [ADR-0057](0057-godot-only-player-entry.md) 退役浏览器部署；下文保留原决策和当时验证，不代表当前支持。
 
 ## Context
 

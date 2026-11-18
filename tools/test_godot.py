@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Isolated Godot/native-CPython flow, separate from ordinary frontend tests."""
+"""Isolated Godot/native-CPython flow, separate from ordinary Python tests."""
 import argparse
 from datetime import datetime, timezone
 import json
@@ -31,7 +31,7 @@ def launcher_smoke(binary, isolated, out, env, offline):
     wrapper = isolated / 'godot-auto-close.sh'
     wrapper.write_text('#!/bin/sh\nexec ' + shlex.quote(str(binary)) + ' --headless --max-fps 60 --quit-after 240 "$@"\n')
     wrapper.chmod(0o755)
-    command = [sys.executable, str(ROOT / 'tools/tankbot.py'), 'godot', '--config', str(path), '--level', 'c0',
+    command = [sys.executable, str(ROOT / 'tools/tankbot.py'), '--config', str(path),
                '--godot-binary', str(wrapper), '--workspace-store', str(isolated / 'launcher-workspace'),
                '--settings-file', str(isolated / 'launcher-settings.yaml'), '--save-file', str(isolated / 'launcher-progress.json'),
                *(['--offline'] if offline else [])]
@@ -51,6 +51,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--godot-binary', type=Path)
     parser.add_argument('--headless', action='store_true', help='No screenshot or real display validation')
+    parser.add_argument('--disable-vsync', action='store_true', help='Diagnostic window option for displays with blocked presentation; production settings unchanged')
     parser.add_argument('--offline', action='store_true')
     args = parser.parse_args()
     from python_env import relaunch_if_needed
@@ -82,7 +83,8 @@ def main():
         env = dict(os.environ)
         for key in ('XDG_DATA_HOME', 'XDG_CONFIG_HOME', 'XDG_CACHE_HOME'):
             env[key] = str(isolated / key.lower())
-        command = [str(binary), *(['--headless'] if args.headless else []), '--path', str(ROOT / 'clients/godot'),
+        command = [str(binary), *(['--headless'] if args.headless else []),
+                   *(['--disable-vsync'] if args.disable_vsync else []), '--path', str(ROOT / 'clients/godot'),
                    '--script', 'res://tests/integration.gd', '--',
                    '--backend-url=http://127.0.0.1:' + str(server.http.server_port),
                    '--client-settings=' + str(client), '--report=' + str(out / 'flow.json'),

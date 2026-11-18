@@ -95,16 +95,12 @@ def main():
         sanitized['machine']=metadata['machine']
         sanitized['config_sha256_kind']=metadata.get('config_sha256_kind','prepared source config before ephemeral port assignment (R1)')
         cells.append({'cell':str(directory.relative_to(args.input)),'metadata':sanitized,'result':result})
-    lock=json.loads((ROOT/'config/browser-assets.lock.json').read_text())
-    runtime_lock=json.loads((ROOT/'build/browser/pyodide/pyodide-lock.json').read_text())
     profiles=load_yaml(ROOT/'config/runtime-profiles.yaml')
     report={'report_version':'1.0','analysis_version':'1.1','counts_from':'unique timing_id + step_id in raw JSONL, including cancelled/censored batches',
         'primary_workload_minimum_applies_to':'each backend/workload total across measured conditions and actual watchdog candidates; not 10000 per cell',
         'selected_defaults':{backend:{'profile_id':identity,'module_declared_budget_cap_ms':profiles['module_declared_budget_cap_ms'],**profiles['profiles'][identity]}
                             for backend,identity in profiles['defaults'].items()},
-        'runtime_browser':{'pyodide_version':lock['version'],'lock_sha256':hashlib.sha256((ROOT/'config/browser-assets.lock.json').read_bytes()).hexdigest(),
-                           'interpreter_build':runtime_lock['info'],'numpy':runtime_lock['packages']['numpy']['version'],
-                           'jsonschema':runtime_lock['packages']['jsonschema']['version']},
+        'runtime_browser':{'status':'retired','versions':'Use the original per-cell metadata and archived reports; browser assets are no longer installed'},
         'scope_notes':['Actual platform, CPU, dependencies, browser version and document visibility are recorded per cell',
             'Requested process affinity is not an OS isolation guarantee; thermal, child-process placement and OS effects are not eliminated',
             'Runtime-only page keeps authorized view/health traffic; full canvas/editor flow is tested separately',

@@ -1,5 +1,7 @@
 # 26 多模块运行图与 Weapons 章节
 
+**当前客户端范围（2026-11-18）：** 玩家入口仅Godot＋原生CPython，Web/Pyodide和相关工具已由 [ADR-0057](adr/0057-godot-only-player-entry.md) 移除。本文算法/物理/权限及后端合同保持；Web菜单、曲线和工具的历史描述不表示Godot已移植，当前界面范围见 [44](44_GODOT_DESKTOP_CLIENT.md)。周期截止以 [41](41_RUNTIME_EXECUTION_PROFILES.md) 的原生30ms/20ms声明及固定门为准，旧40ms浏览器数值仅是历史。
+
 ## 目的、范围与当前状态
 
 M5建立同步多模块项目、Contract/Topic图与渐进武器课程。当前公共Hello Robot（c0）后并列开放Weapons（c1–c5）和Navigation（navigation.c0–c4），主线内按YAML prerequisites推进，见 [36](36_BRANCHING_PROGRESSION.md)。本篇负责模块图和Weapons：C3原始极坐标滤波、C4复用滤波并接管中心自瞄、C5匿名装甲/小陀螺。当前接口见 [28](28_WEAPONS_PROGRESSIVE_ESTIMATION.md)、[30](30_ARMOR_OBSERVATIONS.md)；原C3/C4自动武器范围保留为 [历史M5报告](reports/M5_VALIDATION.md)，不作为当前配置。

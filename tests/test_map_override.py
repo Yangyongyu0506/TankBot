@@ -18,7 +18,6 @@ from tankbot_host.maps import set_override,preview_catalog,asset_path,discover_m
 from tankbot_host.cli import parse_args
 from tankbot_host.application import ApplicationState
 from tankbot_host.server import LocalServer
-from tankbot_host.browser_server import BrowserServer
 
 
 class MapOverrideTests(unittest.TestCase):
@@ -35,7 +34,7 @@ class MapOverrideTests(unittest.TestCase):
         return status,data
 
     def test_cli_names_and_configure_preserve_override_without_mutating_plugins(self):
-        _,args=parse_args(['serve','--level','c0','--map','open_large'])
+        _,args=parse_args(['--level','c0','--map','open_large'])
         self.assertEqual(args.map,'open_large')
         self.assertTrue(parse_args(['--list-maps'])[1].list_maps)
         original=copy.deepcopy(self.base)
@@ -102,7 +101,7 @@ class MapOverrideTests(unittest.TestCase):
             port=server.http.server_port
             status,raw=self.get(port,'/api/maps');self.assertEqual(status,200)
             self.assertEqual(json.loads(raw)['current']['walls'],config['scene']['walls'])
-            self.assertEqual(self.get(port,'/map-preview.js')[0],200)
+            self.assertEqual(self.get(port,'/map-preview.js')[0],404)
             self.assertEqual(self.get(port,'/assets/maps/navigation_slalom.yaml')[0],404)
             with patch('tankbot_host.maps.preview_catalog',side_effect=ValueError('地图资产无效')):
                 status,raw=self.get(port,'/api/maps')
@@ -122,37 +121,6 @@ class MapOverrideTests(unittest.TestCase):
         finally:
             server.http.shutdown();thread.join(timeout=5);server.http.server_close();server.authority.close()
 
-    def test_browser_session_tickets_and_reload_keep_override(self):
-        c=set_override(configure(self.base,'c0'),'open_large');state=self.state()
-        leases=[]
-        for _ in range(2):
-            sock=socket.socket();sock.bind(('127.0.0.1',0));leases.append(sock)
-        c['host']['port'],c['browser']['runtime_port']=[s.getsockname()[1] for s in leases]
-        for sock in leases:sock.close()
-        server=BrowserServer(c,workspace_store=self.directory/'workspace',application=state)
-        servers=(server.ui,server.runtime);threads=[threading.Thread(target=s.serve_forever,daemon=True) for s in servers]
-        for thread in threads:thread.start()
-        def post(path,value):
-            conn=http.client.HTTPConnection('127.0.0.1',c['host']['port'],timeout=5)
-            conn.request('POST',path,json.dumps(value),{'Content-Type':'application/json','Origin':server.ui_origin,'X-TankBot-Control':server.token})
-            response=conn.getresponse();data=json.loads(response.read());conn.close();self.assertEqual(response.status,200,data);return data
-        try:
-            self.assertEqual(self.get(c['browser']['runtime_port'],'/api/maps')[0],404)
-            self.assertEqual(self.get(c['host']['port'],'/map-preview.js')[0],200)
-            with patch('tankbot_host.maps.preview_catalog',side_effect=ValueError('地图资产无效')):
-                status,raw=self.get(c['host']['port'],'/api/maps')
-                self.assertEqual(status,400);self.assertEqual(json.loads(raw)['error'],'地图资产无效')
-            for _ in range(2):
-                session=post('/api/session/start',{})
-                post('/api/progress/complete',{'ticket':session['ticket'],'level_id':'c0'})
-                self.assertEqual(state.progress()['completed_levels'],[])
-                data=json.loads(self.get(c['host']['port'],'/api/maps')[1])
-                self.assertEqual(data['current']['walls'],c['scene']['walls'])
-                post('/api/campaign/start',{'level_id':'c0'})
-                self.assertEqual(server.ui_json['/authority-config.json']['scene']['walls'],c['scene']['walls'])
-        finally:
-            for s in servers:s.shutdown();s.server_close()
-            for thread in threads:thread.join(timeout=5)
 
 
 if __name__=='__main__':unittest.main()

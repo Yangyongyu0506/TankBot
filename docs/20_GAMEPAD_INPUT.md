@@ -1,5 +1,7 @@
 # 20 手柄驱动与人工输入仲裁
 
+**界面状态（2026-11-18）：** 本页涉及的Web/Canvas或Gamepad API实现已由 [ADR-0057](adr/0057-godot-only-player-entry.md) 退役，相关Web工具不再可执行。渲染/输入的授权原则继续适用；当前Godot实现和待移植项以 [44](44_GODOT_DESKTOP_CLIENT.md) 为准，以下Web实现/验证按历史阅读。
+
 ## 目的、范围与约束
 
 用户要求像普通游戏一样使用手柄驾驶 TankBot。本轮覆盖现有原生 Host 和浏览器 WASM 两种运行方式、差速与全向底盘、炮台、单发及编辑器切换。手柄是 Web UI 的输入适配器，沿用已有人工权限与 Controller，不引入 ROS2、HID 原生服务或新的物理模型。

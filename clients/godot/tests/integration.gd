@@ -29,7 +29,7 @@ func check(condition: bool, description: String) -> bool:
 func finish() -> void:
 	if not report_path.is_empty():
 		var output = FileAccess.open(report_path, FileAccess.WRITE)
-		output.store_string(JSON.stringify({"passed": not failed, "checks": checks, "godot": Engine.get_version_info(), "display": DisplayServer.get_name(), "terminal": terminal, "deployment": app.deployment if app else {}}, "  "))
+		output.store_string(JSON.stringify({"passed": not failed, "checks": checks, "godot": Engine.get_version_info(), "display": DisplayServer.get_name(), "terminal": terminal, "deployment": app.deployment if app else {}, "client_status": {"connected": app.connected, "status": app.status_text.text, "message": app.message_text.text, "inflight": app.backend.inflight} if app else {}}, "  "))
 	quit(1 if failed else 0)
 
 func until(predicate: Callable, seconds: float = 15.0) -> bool:

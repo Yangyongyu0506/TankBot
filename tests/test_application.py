@@ -84,7 +84,7 @@ class ApplicationTests(unittest.TestCase):
         for filename, value in (("settings.schema.json", self.state.settings), ("progress.schema.json", self.state.read_progress())):
             Draft202012Validator(json.loads((ROOT / "docs/schemas" / filename).read_text())).validate(value)
         from tankbot_host.cli import main
-        with mock.patch.object(sys, "argv", ["tankbot.py", "serve", "--level", "c2", "--settings-file", str(self.state.settings_path), "--save-file", str(self.state.progress_path)]), mock.patch("sys.stderr", new_callable=io.StringIO) as errors:
+        with mock.patch.object(sys, "argv", ["tankbot.py", "--level", "c2", "--settings-file", str(self.state.settings_path), "--save-file", str(self.state.progress_path)]), mock.patch("sys.stderr", new_callable=io.StringIO) as errors:
             with self.assertRaises(SystemExit) as result: main()
             self.assertEqual(result.exception.code, 2)
             self.assertIn("LEVEL_LOCKED", errors.getvalue())
@@ -129,6 +129,9 @@ class ApplicationTests(unittest.TestCase):
             if authenticated: headers.update(Origin=f"http://127.0.0.1:{server.http.server_port}", **{"X-TankBot-Control": server.token})
             conn.request("GET" if value is None else "POST", path, json.dumps(value) if value is not None else None, headers)
             response = conn.getresponse(); result = (response.status, json.loads(response.read())); conn.close(); return result
+        for retired in ('/', '/index.html', '/app.js', '/editor-bundle.js', '/runtime-frame.html', '/authority-config.json'):
+            self.assertEqual(request(retired)[0], 404, retired)
+        self.assertEqual(request('/api/view')[0], 200)
         self.assertEqual(request("/api/developer")[0], 403)
         self.assertEqual(request("/api/campaign/start", {"level_id": "c2"})[0], 400)
         a.finish_campaign(); server.save_progress()

@@ -55,7 +55,7 @@ git diff --check
 
 ## 两种真实玩家界面
 
-使用独立临时配置、设置、空存档和工程，developer_mode=false；工具为 [browser_progression_tree.py](../../tools/browser_progression_tree.py)。原生/浏览器分别从新玩家开始：
+使用独立临时配置、设置、空存档和工程，developer_mode=false；工具为 [browser_progression_tree.py](https://github.com/Yangyongyu0506/TankBot/blob/292cad36c31ad6a822c573c2faf7496f6a96e17a/tools/browser_progression_tree.py)。原生/浏览器分别从新玩家开始：
 
 1. 初始只开放c0；查看锁定Navigation节点，普通API也拒绝开始。
 2. 通过正常驾驶、转向及人工武器接口实际命中，完成c0；没有写入假完成记录或使用开发者绕过。自动化瞄准只读取C0本来公开的自身/目标/关节观测。

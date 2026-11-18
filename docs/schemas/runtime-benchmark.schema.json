@@ -23,22 +23,10 @@
             "minimum": 1,
             "maximum": 1000
           }
-        },
-        "pyodide": {
-          "type": "array",
-          "minItems": 1,
-          "maxItems": 16,
-          "uniqueItems": true,
-          "items": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 1000
-          }
         }
       },
       "required": [
-        "native",
-        "pyodide"
+        "native"
       ],
       "additionalProperties": false
     },
@@ -71,16 +59,10 @@
           "type": "integer",
           "minimum": 1,
           "maximum": 100000
-        },
-        "pyodide": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 100000
         }
       },
       "required": [
-        "native",
-        "pyodide"
+        "native"
       ],
       "additionalProperties": false
     },
@@ -189,16 +171,10 @@
               "type": "integer",
               "minimum": 1,
               "maximum": 100000000
-            },
-            "pyodide": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 100000000
             }
           },
           "required": [
-            "native",
-            "pyodide"
+            "native"
           ],
           "additionalProperties": false
         },
@@ -233,32 +209,6 @@
         "batches_per_round"
       ],
       "additionalProperties": false
-    },
-    "browser": {
-      "type": "object",
-      "properties": {
-        "width": {
-          "type": "integer",
-          "minimum": 320,
-          "maximum": 8192
-        },
-        "height": {
-          "type": "integer",
-          "minimum": 240,
-          "maximum": 8192
-        },
-        "startup_timeout_s": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 600
-        }
-      },
-      "required": [
-        "width",
-        "height",
-        "startup_timeout_s"
-      ],
-      "additionalProperties": false
     }
   },
   "required": [
@@ -269,8 +219,7 @@
     "batches_per_cell",
     "workloads",
     "limits",
-    "calibration",
-    "browser"
+    "calibration"
   ],
   "additionalProperties": false
 }

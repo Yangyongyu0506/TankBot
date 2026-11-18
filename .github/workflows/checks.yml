@@ -21,15 +21,17 @@ jobs:
         with:
           python-version: '3.13'
       - uses: actions/setup-node@v4
+        if: runner.os == 'Linux'
         with:
           node-version: '22'
-      - name: Build editor from locked npm dependencies
-        run: python tools/build.py --web-only
       - name: Shared local/CI regression entry
         if: runner.os == 'Linux'
         run: |
           python -m pip install -r requirements.txt
           python tools/check.py
-      - name: Built native/WASM equivalence (separate from browser UI)
+      - name: Standalone Core native/WASM equivalence (no browser or npm)
         if: runner.os == 'Linux'
-        run: npm run test:wasm
+        run: python tools/check.py --suite wasm
+      - name: Godot headless player flow (not full platform certification)
+        if: runner.os == 'Linux'
+        run: python tools/check.py --suite godot -- --headless

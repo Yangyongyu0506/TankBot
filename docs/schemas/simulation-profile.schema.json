@@ -2087,7 +2087,9 @@
         "max_pending_requests",
         "probe_enabled"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "deprecated": true,
+      "description": "旧2.1配置兼容字段，当前无浏览器Runtime；不参与运行。"
     },
     "workspace": {
       "type": "object",
@@ -2488,7 +2490,6 @@
     "view_mode",
     "practice_view_policy",
     "rendering",
-    "browser",
     "workspace"
   ],
   "additionalProperties": false,

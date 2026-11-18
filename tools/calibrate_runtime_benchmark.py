@@ -11,7 +11,7 @@ sys.path[:0]=[str(ROOT/'tools'),str(ROOT/'host')]
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--backend',choices=('native','pyodide'),required=True)
+    p.add_argument('--backend',choices=('native',),default='native')
     p.add_argument('--output',type=Path,required=True);p.add_argument('--cpu-affinity')
     p.add_argument('--offline',action='store_true');args=p.parse_args()
     from python_env import relaunch_if_needed

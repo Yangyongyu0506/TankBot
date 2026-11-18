@@ -311,11 +311,6 @@ rendering:
   history_ms: 2000
   stats_interval_ms: 1000
   barrel_width_m: 0.035
-browser:
-  runtime_port: 8766
-  startup_timeout_s: 45
-  max_pending_requests: 16
-  probe_enabled: false
 workspace:
   storage:
     directory: userdata/workspaces

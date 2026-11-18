@@ -3,7 +3,6 @@ schema_version: '1.0'
 seed: 0
 candidates_ms:
   native: [80, 20, 30]
-  pyodide: [80, 20, 30, 40, 50]
 conditions:
   foreground:
     host_load_ms: 0
@@ -11,8 +10,7 @@ conditions:
     host_load_ms: 8
 batches_per_cell:
   native: 1667
-  pyodide: 1000
-# 每个主要负载至少 10000 批：原生 3×2×1667、浏览器 5×2×1000。
+# 每个主要负载的原生矩阵至少10000批：3×2×1667；历史浏览器报告保留。
 workloads:
   empty:
     level: c2
@@ -53,12 +51,7 @@ calibration:
   relative_tolerance: 0.10
   initial_iterations:
     native: 120000
-    pyodide: 12000
   min_iterations: 1
   max_iterations: 2000000
   max_rounds: 4
   batches_per_round: 12
-browser:
-  width: 1440
-  height: 1000
-  startup_timeout_s: 120

@@ -179,7 +179,7 @@ class ApplicationState(LevelProgression):
         self.require_level(level_id)
         with self.lock:
             ticket = run_id or secrets.token_urlsafe()
-            # Bound memory for reloads; old browser tabs must restart after revocation.
+            # Bound memory for reloads; old client sessions must restart after revocation.
             if len(self.tickets) >= 128:
                 self.tickets.pop(next(iter(self.tickets)))
             self.tickets[ticket] = (level_id, self.developer, bool(practice))

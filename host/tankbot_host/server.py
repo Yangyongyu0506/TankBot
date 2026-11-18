@@ -1,4 +1,4 @@
-from .management import UI_RESOURCES,experiment_command
+from .management import experiment_command
 """Loopback development server with a narrow, authorized HTTP adapter."""
 import copy
 import json
@@ -109,9 +109,6 @@ class LocalServer:
                     with owner.lock:
                         value = owner.authority.deployment.status()
                     self.reply(200, json.dumps(value).encode())
-                elif path in ("/editor-bundle.js", "/THIRD_PARTY_NOTICES.txt"):
-                    file = ROOT / "build/web" / path[1:]
-                    self.reply(200 if file.exists() else 404, file.read_bytes() if file.exists() else b"", "text/javascript" if path.endswith(".js") else "text/plain; charset=utf-8")
                 elif path in ("/api/profile", "/api/view"):
                     with owner.lock:
                         if path == "/api/profile":
@@ -120,10 +117,6 @@ class LocalServer:
                         else:
                             value = copy.deepcopy(owner.authority.view)
                     self.reply(200, json.dumps(value, allow_nan=False).encode())
-                elif path == "/" or path[1:] in UI_RESOURCES:
-                    file = ROOT / "web" / ("index.html" if path == "/" else path[1:])
-                    kind = {".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css"}[file.suffix]
-                    self.reply(200, file.read_bytes(), kind)
                 else:
                     self.reply(404, b'{}')
 
@@ -261,7 +254,7 @@ class LocalServer:
     def serve(self):
         self.thread.start()
         host, port = self.http.server_address
-        print(f"TankBot: http://{host}:{port}  [trusted local code only]", flush=True)
+        print(f"TankBot backend: http://{host}:{port}  [Godot API; trusted local code only]", flush=True)
         try:
             self.http.serve_forever()
         finally:

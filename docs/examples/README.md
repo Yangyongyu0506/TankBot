@@ -20,7 +20,7 @@
 | [view-policy](view-policy.json) | 禁用系统源的受信策略结构，不是玩家提权申请 |
 | [runtime请求](runtime-step-request.json)、[响应](runtime-step-result.json)、[遥测](runtime-telemetry.json) | 固定激活/提交的私有控制面；遥测不可信、不是CPU额度 |
 | [规划请求](planning-prepare-request.json)、[路径响应](planning-prepare-response.json)、[冻结交付](planning-initialize-request.json)、[正常无解](planning-none-response.json) | 一次性准备消息结构；小网格仅演示形状，不是满足正式生成约束的关卡或参考解 |
-| [运行profile目录](runtime-execution-profiles.json) | 当前新目录结构与实验性后端默认；兼容/优先级合同见41 |
+| [运行profile目录](runtime-execution-profiles.json) | 当前native目录结构与实验性默认；退休后端的兼容/拒绝合同见41 |
 | [协商请求](negotiate-request.json)、[响应](negotiate-response.json)、[错误](error-event.json) | 结构夹具，不证明正式远程协商或服务器已发布 |
 | [周期Contract](module-contract.json)、[event Contract](module-contract-event.json) | 两种已实现调度模式的结构样例；端口与额度仍须经实际任务准入 |
 | [M3 Manifest](m3-workspace.json)、[Contract](m3-module-contract.json) | 历史单模块本机形状，仍用于兼容测试 |

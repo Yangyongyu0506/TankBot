@@ -1,5 +1,7 @@
 # 38 工程检查、算法实验台与项目保留
 
+**当前客户端范围（2026-11-18）：** 玩家入口仅Godot＋原生CPython，Web/Pyodide和相关工具已由 [ADR-0057](adr/0057-godot-only-player-entry.md) 移除。本文算法/物理/权限及后端合同保持；Web菜单、曲线和工具的历史描述不表示Godot已移植，当前界面范围见 [44](44_GODOT_DESKTOP_CLIENT.md)。周期截止以 [41](41_RUNTIME_EXECUTION_PROFILES.md) 的原生30ms/20ms声明及固定门为准，旧40ms浏览器数值仅是历史。
+
 ## 目的、范围与实施顺序
 
 依据2026-11-04评估和当前源码，按以下验证边界推进：统一检查入口→Weapons C2固定输入实验→原生/Pyodide耗时诊断→项目备份/保留→局部职责提取→当前文档及未来课程建议。评估原文保留于 [原报告](reports/PROJECT_REVIEW_20261104.md)，本轮结果独立记录，不把历史实测当作新证据。
@@ -8,17 +10,17 @@
 
 ## 本地和CI检查合同
 
-`python3 tools/check.py` 依次执行自动发现的普通Node组件测试、Python回归、Rust、文档及生成profile核对，任一失败返回非零。`--suite frontend/python/wasm/browser` 可单独选择；`--offline` 复用已准备依赖。正常Cargo与仓库本机工具链选择复用build.py，不另维护一套路径。
+`python3 tools/check.py` 依次执行自动发现的Python回归、Rust、文档及生成profile核对，任一失败返回非零。`--suite python/wasm/godot` 可单独选择；`--offline` 复用已准备依赖。正常Cargo与仓库本机工具链选择复用build.py，不另维护一套路径。
 
-`npm test` 递归发现test_*.mjs，排除需构建产物的test_wasm.mjs；新组件无需修改CI清单。`npm run test:wasm` 单独验证已构建原生/WASM的语义一致性。`npm run test:browser -- --mode both --offline` 创建隔离的课程工程、前置存档和Firefox，执行真实网页流程并清理专用进程；不操作日常userdata。前置通关记录是夹具，不声称本轮重新通关旧课程。
+`python3 tools/check.py --suite wasm` 单独验证已构建原生/WASM的语义一致性，仅此检查需要Node，无npm依赖。`python3 tools/check.py --suite godot --offline` 创建隔离的课程工程、前置存档及Godot窗口，执行编辑/测试/部署流程；追加 `-- --headless` 可运行无头检查，不证明实际显示。前置通关记录是夹具，不声称重新通关旧课程；不操作日常userdata。
 
-CI构建矩阵与Linux回归使用这些相同入口。构建通过只证明构建/静态组件或协议结果；真实玩家流程、操作系统、浏览器和安全支持范围必须另附运行证据。普通检查不下载Pyodide，也不偷偷把网页检查当作已执行。
+CI构建矩阵与Linux回归使用这些相同入口。构建通过只证明构建/静态组件或协议结果；真实玩家流程、操作系统和安全支持范围必须另附运行证据。浏览器测试入口已退役，历史结果保留于当期报告。
 
 ## 最小实验：单模块目标滤波
 
 首版只开放 [Weapons C2](../levels/weapons.C2.yaml) 声明的target_filter_replay组件。evaluation.experiment明确声明输入Topic、输出类型、误差反馈和可选诊断长度；加载器拒绝执行器、模块图、未授权输入/目标图层/误差指标。UI入口来自catalogue能力，不按ID分支。
 
-1. 正式部署后，玩家点击“算法实验台→开始录制”。只捕获已冻结、已提交给普通Runtime的授权请求，不复制World或开发者DTO。
+1. 正式部署后，通过实验管理接口显式开始录制；原Web“算法实验台”面板已退役，Godot面板待移植。只捕获已冻结、已提交给普通Runtime的授权请求，不复制World或开发者DTO。
 2. 记录有界批数/字节数、原始测量、源revision与源码、配置摘要、seed、物理频率、录制/尝试/部署tick、Core摘要、Python/平台和依赖版本。达到容量停止并说明原因；运行失败保留日志和失败tick。
 3. 停止录制并结束当前尝试，选择A/B两个保存版本。在独立Worker中依次重置并回放相同请求；输入摘要相同，源revision/环境摘要不同，各自输出不进入物理、正式画面、计分或进度。
 4. 显示实际执行批数、原始r/θ、地图系估计、可选协方差、采样误差、累计/分段RMSE、缺测区间、异常栈和失败位置。未发布协方差/尚无估计时显示缺失，不补零。
@@ -56,7 +58,7 @@ diagnostic("innovation", innovation)
 
 ## 耗时观测与边界
 
-RuntimeTiming在现有Supervisor与浏览器Adapter上增量观测。每批记录输入采样tick、激活/固定提交tick、宿主单调时钟的启动/接收/提交时刻，以及模块解码、update和输出构建。序列化、可测写入/桥接及完整往返单独观测；gate_wait_ms是收到至提交的合并耗时，包含门等待和Authority校验，并未可靠拆成纯等待/纯验证两项。Native和Pyodide共用MeasuredExecution。
+RuntimeTiming在原生Supervisor上观测；浏览器Adapter已退役。每批记录输入采样tick、激活/固定提交tick、宿主单调时钟的启动/接收/提交时刻，以及模块解码、update和输出构建。序列化、可测写入及完整往返单独观测；gate_wait_ms是收到至提交的合并耗时，包含门等待和Authority校验，并未可靠拆成纯等待/纯验证两项。MeasuredExecution仍用于原生模块诊断。
 
 输出编码无法把自身最终耗时放进同一已编码消息，因此报告前一批编码耗时，并附前批step_id；UI明确标“前批”。浏览器桥接与Authority总往返是不同计时范围，不能互减或假定跨Worker绝对时钟同步。通信/排队/调度的剩余时间没有被可靠分开的部分明确保留为往返，不伪造独立CPU耗时。
 
@@ -64,7 +66,7 @@ RuntimeTiming在现有Supervisor与浏览器Adapter上增量观测。每批记�
 
 ## 项目备份、保留与恢复
 
-F2→模板、备份与恢复→“项目容量与完整备份”，区分当前HEAD、历史快照、测试/部署归档、实验记录、压缩备份和恢复区。这里是当前课程项目，不包含进度和设置；完整个人备份仍应另外保存userdata。
+项目维护API区分当前HEAD、历史快照、测试/部署归档、实验记录、压缩备份和恢复区。原Web的F2维护面板已退役，Godot面板待移植；后端和数据仍保留。这里是当前课程项目，不包含进度和设置；完整个人备份仍应另外保存userdata。
 
 所有维护操作复用原Store文件锁。固定版本显式写入PINS；历史清理先预览保留原因，保护HEAD、固定项、近期版本、部署/测试、归档/实验及模板计划引用。归档默认全部保留，用户可逐项选择回收。清理应用同时检查revision CAS及目录/引用指纹，过期预览拒绝执行。
 
@@ -79,7 +81,7 @@ F2→模板、备份与恢复→“项目容量与完整备份”，区分当前
 | 接口 | 语义 |
 | --- | --- |
 | /api/experiment/{status,start,stop,export,clear} | 本关实验状态、显式录制与导出 |
-| /api/experiment/compare | 原生传revision由宿主读库；浏览器传已读snapshot到Core Worker，二者都校验快照 |
+| /api/experiment/compare | 传revision由原生宿主读库，并校验快照 |
 | /api/experiment/import | 仅导入授权记录，不自动运行或覆盖源码 |
 | /api/workspace/revisions、storage、pin | 元信息、总量和固定版本 |
 | /api/workspace/backup_export、backup_preview、backup_apply | 完整备份、显式预览与CAS恢复 |

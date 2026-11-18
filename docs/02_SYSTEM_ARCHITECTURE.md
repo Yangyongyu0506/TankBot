@@ -1,6 +1,6 @@
 # 02 系统架构
 
-当前十三关的声明式入口为 `levels/*.yaml`：公共 c0、Weapons c1–c5、Navigation c0–c6。共享Host加载器发现、严格校验并解析地图、完整底盘和传感器实例，再构造Authority/Core；原生和浏览器共用规则与权限。关卡加载见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)，场景装配见 [32](32_RESOLVED_SCENE_AND_COMPONENTS.md)。当前应用配置为 `2.1`；课程清单与解锁取YAML，不由本页维护注册表。
+当前十三关的声明式入口为 `levels/*.yaml`：公共 c0、Weapons c1–c5、Navigation c0–c6。共享Host加载器发现、严格校验并解析地图、完整底盘和传感器实例，再构造Authority/Core；Godot和无头工具共用原生规则与权限。关卡加载见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)，场景装配见 [32](32_RESOLVED_SCENE_AND_COMPONENTS.md)。当前应用配置为 `2.1`；课程清单与解锁取YAML，不由本页维护注册表。
 
 ## 目的、范围与约束
 
@@ -34,7 +34,7 @@ flowchart TB
     end
     PY[不可信 Robot Runtime / tankbot SDK] <--> SUP
     VIEW --> DTO[PlayerViewSnapshot]
-    DTO --> UI[Web Renderer / Editor / Debug UI]
+    DTO --> UI[Godot Renderer / Editor / Debug UI]
     UI --> INTENT[输入与部署请求]
     INTENT --> BROKER
 ```
@@ -53,9 +53,9 @@ flowchart TB
 | Pose Selector | 从许可候选选择标准位姿 | 自动选择最接近真值的算法 |
 | View Gateway | 将私有数据投影为授权 DTO、效果和音频事件 | 转发原始世界 dump |
 | Workspace Service | 草稿、模板、快照、迁移和测试报告 | 编辑即热改运行代码 |
-| Web UI | DTO 插值、传感器图层、编辑、调试、工作区操作 | 权威碰撞、评分、ACL 决策 |
+| Godot UI | DTO 插值、传感器图层、编辑、调试、工作区操作 | 权威碰撞、评分、ACL 决策 |
 
-实际目录为 `core/`（纯核心）、`host/`（场景、权限、调度与管理）、`web/`（授权表现和编辑器）、`sdk/python/`、`runtime/`、`protocol/`、`tests/` 和 `docs/`。`levels/` 存课程，`config/chassis/` 存完整底盘，`config/` 存时钟/求解器与运行策略，`assets/maps/` 存共享地图；没有另外一套 `content/` 关卡源。依赖从Host指向Core、Schema与适配接口；Core不反向依赖Host或UI。
+实际目录为 `core/`（纯核心）、`host/`（场景、权限、调度与管理）、`clients/godot/`（授权表现和编辑器）、`sdk/python/`、`runtime/`、`protocol/`、`tests/` 和 `docs/`。`levels/` 存课程，`config/chassis/` 存完整底盘，`config/` 存时钟/求解器与运行策略，`assets/maps/` 存共享地图；没有另外一套 `content/` 关卡源。依赖从Host指向Core、Schema与适配接口；Core不反向依赖Host或UI。
 
 机器人接口优先参考 ROS 习惯，见 [ADR-0014](adr/0014-ros-style-velocity-interface.md)。`/robot/cmd_vel` 的 Twist 属于连续设定值 Topic；Host 在提交门转换成 Core 的内部 `BodyVelocityTarget(vx, vy, wz, source_tick)` 或目标失效事件。Core 不解析 Envelope，不关心网络和请求 ID；差速/径向全向轮模型共享输入形状，分别执行自己的运动学与动力学。
 
@@ -63,13 +63,12 @@ flowchart TB
 
 | 部署 | 权威仿真 | Python | UI / Transport | 保证范围 |
 | --- | --- | --- | --- | --- |
-| 本机开发/无头 | 原生 Core Host | 隔离 CPython worker | CLI/浏览器；IPC、loopback WebSocket | 同机边界，隔离能力依宿主 |
-| 浏览器单机 | Core WASM 的独立 Worker | 另一 Pyodide Worker | 主线程 UI；MessagePort | 教学隔离；无法对设备所有者防作弊 |
+| 本机开发/无头 | 原生 Core Host | 隔离 CPython worker | CLI；私有IPC及本机管理API | 同机边界，隔离能力依宿主 |
 | 桌面应用 | Godot原型复用原生Host/权威Core | 独立CPython Worker | Godot原生GUI；受控loopback管理API | 原型仅Linux实测；发行包与强隔离待验证 |
-| 远程单人/多人 | 服务器 Core Host | 服务器沙箱，每机器人隔离 | 浏览器仅授权 DTO；WebSocket | 服务器执行权限；客户端不可信 |
+| 远程单人/多人 | 服务器 Core Host | 服务器沙箱，每机器人隔离 | Godot仅授权DTO；Transport待验收 | 服务器执行权限；客户端不可信 |
 | 批量测试/Replay | 无头 Host | 受控 Runtime 或记录输出 | Replay/Test Transport | 固定构建与输入的可复现范围 |
 
-桌面客户端现按用户确认采用Godot原型，见 [44](44_GODOT_DESKTOP_CLIENT.md)；早期Tauri建议未实施，完整打包仍待验证。浏览器不用 `SharedArrayBuffer` 共享 World；MessagePort 接口首先满足可审查性，再测是否值得优化。
+桌面客户端现按用户确认采用Godot原型，见 [44](44_GODOT_DESKTOP_CLIENT.md)；早期Tauri建议未实施，完整打包仍待验证。浏览器实现已由ADR-0057退役；Rust WASM仅保留独立开发构建/验证，不提供浏览器玩家入口。
 
 ## 核心语言比较与建议
 
@@ -92,17 +91,17 @@ flowchart TB
 
 ## 前端架构与接口
 
-M3 接受现有 ES module JavaScript/Canvas + CodeMirror 6 + 可选 Vim 的本机组合，见 [ADR-0021](adr/0021-editor-and-deployment-profile.md)。多文件、焦点、错误定位和原生/浏览器部署已验证；不为编辑器替换渲染器。Phaser/TypeScript 仍可在后续有明确需求时重新评估，不能将其建议当成当前依赖。确切 npm 版本与许可见 [M3 设计](17_EDITOR_AND_DEPLOYMENT.md)。
+当前采用Godot/GDScript与原生CodeEdit，由 [ADR-0057](adr/0057-godot-only-player-entry.md) 确认为唯一玩家GUI。`python3 tools/tankbot.py`默认打开Godot，`serve/browser/godot`子命令不再接受；headless/probe仍是开发工具。Web GUI、CodeMirror/npm、Pyodide及双origin启动器已删除。
 
-前端职责划分为连接、授权视图缓存、渲染、Workspace、编辑器和诊断；这些是逻辑职责名，不表示存在同名类。实际代码包括 `web/rendering.js`、`workspace-ui.js`、`editor.js`、`timing-ui.js`。渲染器只消费授权DTO，不提供 `getWorld()`。草稿缓冲、相机缩放、面板布局由客户端维护；碰撞、命中、能力、部署生效、计分均由Authority决定。
+`clients/godot/backend.gd`连接受控loopback API，`timeline.gd`缓存/插值授权快照，`world_view.gd`只绘图，`main.gd`管理草稿和测试部署请求。碰撞、命中、权限、计时与部署生效由Authority决定。工作区和独立CPython不因更换GUI改变所有权。尚未移植的界面与证据见 [44](44_GODOT_DESKTOP_CLIENT.md)。
 
-逻辑接口草案：`CoreHost.advance(tick_inputs) -> AuthorizedOutputs`；`ViewGateway.build(principal, policy, tick) -> PlayerViewSnapshot`；`RuntimeSupervisor.submit(step_request) -> StepHandle`；`WorkspaceService.snapshot(revision) -> DeploymentArtifact`。现有 Python/Worker 映射见 16/17，未来扩展应保留这些边界，输入输出语义以 03–08 为准。
+逻辑接口仍为 `CoreHost.advance(tick_inputs) -> AuthorizedOutputs`、`ViewGateway.build(...) -> PlayerViewSnapshot`、`RuntimeSupervisor.submit(step_request)`与Workspace不可变快照。当前实际接口以03–08及44为准；历史M3编辑器/浏览器映射保留于17/16，不代表现行依赖。
 
 ## 替代方案、风险与验收
 
 完整游戏引擎能加快关卡编辑，却可能引入渲染/物理耦合；先采用小型纯核心，未来在边界外集成编辑工具。全平台强制同进程会损害服务器隔离；采用共享语义与不同 Host。JSON 的分配与编码开销先测量，不能直接跳到自制二进制总线。
 
-开放项：独立 Web 持久化、其他浏览器编辑体验、更多实体时的 WASM 启动/运行成本、桌面隔离能力。验收需证明：无头运行不加载 UI/Python 库；同一传感器/命令夹具能经过本地、Worker 与网络适配；Renderer 在隐藏位姿时根本收不到私有字段；任一 Runtime 崩溃不停止 Core tick。
+开放项：Godot界面功能补齐、独立发行包、其他桌面平台、更多实体性能与桌面隔离能力。验收需证明：无头运行不加载 UI/Python 库；同一传感器/命令夹具能经过本地、Worker 与网络适配；Renderer 在隐藏位姿时根本收不到私有字段；任一 Runtime 崩溃不停止 Core tick。
 
 ## 当前实现映射
 
@@ -111,10 +110,10 @@ M3 接受现有 ES module JavaScript/Canvas + CodeMirror 6 + 可选 Vim 的本�
 | 发现与场景准备 | `level_plugins.py`、`scene_definition.py`：YAML/地图/模型校验和已解析定义；重试创建新实例 |
 | 权威物理与课程任务 | Rust Core保存真实状态；`campaign.py`、`path_tracking.py` 等可信裁判计算任务与评分 |
 | 模块图与Runtime | `robot_graph.py` / `runtime/module_runner.py`；周期/event输入冻结、跨批次Topic与整图部署 |
-| 执行约束与观测 | `execution_profiles.py`、两种Supervisor、`runtime_timing.py`；独立声明准入与往返截止，见 [41](41_RUNTIME_EXECUTION_PROFILES.md) |
+| 执行约束与观测 | `execution_profiles.py`、原生Supervisor、`runtime_timing.py`；独立声明准入与往返截止，见 [41](41_RUNTIME_EXECUTION_PROFILES.md) |
 | 项目与实验 | `workspace_maintenance.py` 提供备份/固定版本/恢复；`experiments.py` 仅提供C2滤波回放试点，见 [38](38_ENGINEERING_AND_ALGORITHM_LAB.md) |
 
-本机已接受Rust/Rapier（ADR-0002）、Canvas/ES module/CodeMirror/Vim（ADR-0021，替代0003）及共享Authority浏览器拓扑（ADR-0020）。ADR-0056新增Godot桌面原型：复用原生Authority与独立CPython，以现有授权HTTP管理接口驱动原生GUI，Web继续保留；原型范围见 [44](44_GODOT_DESKTOP_CLIENT.md)。完整桌面发行、远程服务器和Arena部署仍是计划；平台隔离组合ADR-0013仍为Proposed。
+本机已接受Rust/Rapier（ADR-0002）、Godot＋原生CPython边界（ADR-0056/0057）。浏览器拓扑ADR-0020已Superseded；ADR-0021的Web组合不再使用，Workspace/部署原则保持。完整桌面发行、远程服务器和Arena仍待实施，平台强隔离ADR-0013仍Proposed。
 
 ## 历史：M1 实施映射
 
@@ -122,6 +121,6 @@ M3 接受现有 ES module JavaScript/Canvas + CodeMirror 6 + 可选 Vim 的本�
 
 M1页面通过loopback HTTP Adapter获取profile/授权view、提交Twist；当时WebSocket、Pyodide和多Adapter等价性留待M2，现已按M2范围实现。桌面壳仍未交付。`/api/profile` 返回公开地图/模型、ControllerProfile、目录、UI和执行profile摘要，绝不转发完整私有仿真配置。M1报告记录当时的选型状态，不覆盖上表的现行ADR。
 
-## 当前两种本机运行方式（M2建立，后续沿用）
+## 历史：M2双Runtime拓扑（2026-11-18已退役浏览器）
 
 本地浏览器的可信Core Worker同时运行Rust/WASM和Pyodide内的共享Python Authority；另一无凭据origin的iframe管理独立Pyodide Robot Worker。主线程处理授权View、公开Profile与管理/控制请求。原生模式继续使用外部CPython/stdio；不要求相同进程拓扑。本机前端组合已接受，服务器隔离组合仍为Proposed。接口、启动资源公开范围与成本见 [16](16_BROWSER_RUNTIME.md) 和 [ADR-0020](adr/0020-shared-browser-authority.md)；Linux/Firefox证据不能外推其他平台。

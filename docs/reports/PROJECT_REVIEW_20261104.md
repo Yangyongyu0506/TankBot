@@ -83,5 +83,5 @@ Weapons 方向可在实验台稳定后安排机动跟踪、置信度驱动开火
 
 - 运行/权限：[Authority](../../host/tankbot_host/authority.py)、[模块图](../../host/tankbot_host/robot_graph.py)、[Supervisor](../../host/tankbot_host/supervisor.py)、[ViewGateway](../../host/tankbot_host/view.py)。
 - 玩家项目：[版本库](../../host/tankbot_host/workspace.py)、[部署管理](../../host/tankbot_host/deployment.py)、[脚手架升级](../../host/tankbot_host/campaign_templates.py)。
-- 自动化：[CI](../../.github/workflows/checks.yml)、[npm 入口](../../package.json)、[验证与开放问题](../12_VALIDATION_AND_OPEN_QUESTIONS.md)。
+- 自动化：[CI](../../.github/workflows/checks.yml)、[npm 入口](https://github.com/Yangyongyu0506/TankBot/blob/292cad36c31ad6a822c573c2faf7496f6a96e17a/package.json)、[验证与开放问题](../12_VALIDATION_AND_OPEN_QUESTIONS.md)。
 - 当前课程：[航点闭环设计](../37_NAVIGATION_WAYPOINT_CONTROL.md)、[真实验收](NAVIGATION_WAYPOINT_CONTROL_VALIDATION.md)、[GPS/EKF](../35_NAVIGATION_GPS_LOCALIZATION.md)、[双主线进度](../36_BRANCHING_PROGRESSION.md)。

@@ -7,7 +7,7 @@ import math
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[2]
-BACKENDS=('native','pyodide')
+BACKENDS=('native',)
 
 
 def milliseconds_ns(value):

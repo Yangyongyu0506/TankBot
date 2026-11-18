@@ -1,5 +1,7 @@
 # 07 仿真、时间语义与 Replay
 
+**当前客户端范围（2026-11-18）：** 玩家入口仅Godot＋原生CPython，Web/Pyodide和相关工具已由 [ADR-0057](adr/0057-godot-only-player-entry.md) 移除。本文算法/物理/权限及后端合同保持；Web菜单、曲线和工具的历史描述不表示Godot已移植，当前界面范围见 [44](44_GODOT_DESKTOP_CLIENT.md)。周期截止以 [41](41_RUNTIME_EXECUTION_PROFILES.md) 的原生30ms/20ms声明及固定门为准，旧40ms浏览器数值仅是历史。
+
 ## 目的、范围与约束
 
 定义二维权威仿真、传感器、多频率模块与异步执行的统一时间模型。固定步长、边界提交与有限确定性遵守ADR-0010/0011，执行profile由ADR-0053局部修订。当前已实现两类底盘、武器、Radar/装甲观测、生命规则及Navigation差速轮电压电机；模型分别见 [13](13_PHYSICS_MODEL_DECISIONS.md)、[14](14_WEAPONS_DESIGN.md)、[32](32_RESOLVED_SCENE_AND_COMPONENTS.md)、[33](33_NAVIGATION_MOTION_CONTROL.md)。已有Linux原生/Firefox证据不代表完整跨平台部署或性能保证。
@@ -134,7 +136,7 @@ Authority 的有界私有记录保留 tick、执行器实际提交、真实位�
 
 ## 显示时间层
 
-当前 `web/rendering.js` 不推进世界；SceneTimeline 按授权快照时间与选中位姿/关节实际采样时间插值，独立 RAF 驱动绘制，相机只跟随显示 x/y。时延、丢帧/跳变/失源与模型配置见 [15](15_RENDERING_DESIGN.md)。提高视图频率不改变传感器或 Python 算法频率；重复旧估计不能制造新估计样本。
+当前Godot `timeline.gd` / `world_view.gd` 不推进世界；按授权快照时间与选中位姿/关节实际采样时间插值，渲染独立于物理tick，相机只跟随显示x/y。当前客户端范围见 [44](44_GODOT_DESKTOP_CLIENT.md)，早期Web算法记录见 [15](15_RENDERING_DESIGN.md)。提高视图频率不改变传感器或Python算法频率；重复旧估计不能制造新估计样本。
 
 ## M2 浏览器时间适配
 

@@ -40,11 +40,13 @@
 
 现用负载覆盖Pose2D、JointState/Encoder/IMU、Radar、目标点/位姿/极坐标、匿名装甲、Twist、轮电压、炮台速度/角加速度、开火及武器反馈。Navigation GPS为position_fix2d@1，公开目标为waypoint_goal@1；完整路径一次通过受权初始化配置交付，不新增路径Topic。各canonical频道及兼容规则见 [03](../03_PROTOCOL_SPECIFICATION.md)。
 
-view_snapshot@1保留空objects/effects；@2增加获授权弹丸/目标，@3增加目标估计，@4增加图输出，@5增加白名单自身位姿候选。旧版本结构不自动接受新字段，当前Web已解码这些版本；图层、候选与指标仍分别授权，见 [04](../04_STATE_AND_VIEW_MODEL.md)。
+view_snapshot@1保留空objects/effects；@2增加获授权弹丸/目标，@3增加目标估计，@4增加图输出，@5增加白名单自身位姿候选。旧版本结构不自动接受新字段；Godot只绘制已移植的授权子集，不由Schema推断所有图层已具备。图层、候选与指标仍分别授权，见 [04](../04_STATE_AND_VIEW_MODEL.md)、[44](../44_GODOT_DESKTOP_CLIENT.md)。
 
 negotiate等结构夹具不证明正式远程会话服务已发布；地图瓦片、通用动态TF/选源服务、任意异步融合仍未实现。intercepted_gps兼容组件存在，但当前正式Weapons不启用；不能由Schema枚举推断某关开放该数据。
 
 runtime.profiles_file只存在于可信YAML引用阶段，解析后为runtime.profiles；与旧batch_budget_ms互斥。旧字段独用时准入/墙钟仍同值。共同声明上限不等于墙钟，timing.budget_ms只保留为墙钟诊断别名；数值、冻结与后端选择以 [41](../41_RUNTIME_EXECUTION_PROFILES.md) 为准。
+
+当前目录仅发布native后端。应用browser字段和旧目录的pyodide元数据保留为deprecated结构兼容，但不提供执行后端；显式选择pyodide拒绝，见ADR-0057。当前基准Schema仅允许原生候选；历史浏览器结果仍按原始报告解释。
 
 ## 四层验证职责
 
@@ -62,7 +64,7 @@ python3 docs/tools/check_design.py
 python3 tools/export_profile.py --check --offline
 ```
 
-需要已准备的requirements.txt依赖。前者离线核对本地链接、ADR、Schema、正/反结构夹具、JSON/Python片段语法和课程引用；后者核对从YAML生成的Rust/Node夹具。二者不运行完整玩家流程或证明安全隔离。完整标准入口为tools/check.py，WASM和真实网页分组见 [38](../38_ENGINEERING_AND_ALGORITHM_LAB.md)。
+需要已准备的requirements.txt依赖。前者离线核对本地链接、ADR、Schema、正/反结构夹具、JSON/Python片段语法和课程引用；后者核对从YAML生成的Core夹具。二者不运行完整玩家流程或证明安全隔离。完整标准入口为tools/check.py，WASM和Godot流程分组见 [38](../38_ENGINEERING_AND_ALGORITHM_LAB.md)。
 
 公共结构变化须同步领域规范、SDK/协议映射、样例和语义回归，不只让Schema通过。当前源码和报告的区别见 [本轮核对](../reports/DOCUMENTATION_STATE_SYNC_20261110.md)。
 

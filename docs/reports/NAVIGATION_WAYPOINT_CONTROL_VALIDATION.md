@@ -16,7 +16,7 @@
 
 ## 两种真实玩家流程
 
-工具 [browser_navigation_waypoints.py](../../tools/browser_navigation_waypoints.py) 在原生与浏览器均通过：
+工具 [browser_navigation_waypoints.py](https://github.com/Yangyongyu0506/TankBot/blob/292cad36c31ad6a822c573c2faf7496f6a96e17a/tools/browser_navigation_waypoints.py) 在原生与浏览器均通过：
 
 1. 使用隔离存档中的既有C2进度和独立C2工程；developer_mode=false，C3尚未通关。前置记录为测试夹具，不冒充本次实际重新通关旧课程。
 2. 在真实关卡树选择C3；控制器、里程计与EKF源码相同，新增文件树高亮navigation/waypoint_controller.py。

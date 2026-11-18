@@ -1,6 +1,7 @@
 """Native-client lifecycle/configuration guards; real Godot flow is an explicit suite."""
 from pathlib import Path
 import copy
+import contextlib
 import hashlib
 import io
 import sys
@@ -23,10 +24,17 @@ class DesktopTests(unittest.TestCase):
         self.assertEqual(len(value['engine']['linux_x86_64']['archive_sha512']), 128)
 
     def test_cli_keeps_existing_modes_and_isolation_options(self):
-        for mode in ('serve', 'browser', 'godot', 'headless', 'probe'):
-            _, args = parse_args([mode, '--level', 'c1', '--workspace-store', '/tmp/isolated'])
-            self.assertEqual(args.mode, mode)
+        for mode in (None, 'headless', 'probe'):
+            _, args = parse_args([*([mode] if mode else []), '--level', 'c1', '--workspace-store', '/tmp/isolated'])
+            self.assertEqual(args.mode, mode or 'godot')
             self.assertEqual(args.workspace_store, Path('/tmp/isolated'))
+
+    def test_retired_player_modes_fail_before_dependency_bootstrap(self):
+        for mode in ('serve', 'browser', 'godot'):
+            with self.subTest(mode=mode), contextlib.redirect_stderr(io.StringIO()):
+                with self.assertRaises(SystemExit) as result:
+                    parse_args([mode])
+                self.assertEqual(result.exception.code, 2)
 
     def test_engine_version_rejected(self):
         with patch('tankbot_host.desktop.subprocess.run', return_value=Mock(stdout='3.6.stable')):

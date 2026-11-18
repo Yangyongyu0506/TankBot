@@ -1,5 +1,7 @@
 # 15 时间插值、跟随相机与底盘外观
 
+**界面状态（2026-11-18）：** 本页涉及的Web/Canvas或Gamepad API实现已由 [ADR-0057](adr/0057-godot-only-player-entry.md) 退役，相关Web工具不再可执行。渲染/输入的授权原则继续适用；当前Godot实现和待移植项以 [44](44_GODOT_DESKTOP_CLIENT.md) 为准，以下Web实现/验证按历史阅读。
+
 ## Purpose / Scope
 
 修正 M1b 弹丸逐快照跳动、固定场景相机与两底盘共用外形的问题。本文规定浏览器表现，不改物理、武器或机器人调度。遵守 [ADR-0010](adr/0010-simulation-scheduling.md) 与新增 [ADR-0018](adr/0018-authorized-rendering-timeline.md)；实际证据见 [渲染验收](reports/RENDERING_VALIDATION.md)。

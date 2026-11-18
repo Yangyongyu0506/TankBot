@@ -41,7 +41,7 @@ python3 tools/tankbot.py serve --robot-demo --view weapons-practice
 
 ## 浏览器验收
 
-使用真实无头 Firefox/Marionette 分别启动默认估计视图与显式真值练习视图，执行前进、J 键旋转、空格单发和多次 repeat keydown；两模式均只增加一发，状态/视图标识正确。工具为 [browser_smoke.py](../../tools/browser_smoke.py)，连接已启动的服务与 Marionette：
+使用真实无头 Firefox/Marionette 分别启动默认估计视图与显式真值练习视图，执行前进、J 键旋转、空格单发和多次 repeat keydown；两模式均只增加一发，状态/视图标识正确。工具为 [browser_smoke.py](https://github.com/Yangyongyu0506/TankBot/blob/292cad36c31ad6a822c573c2faf7496f6a96e17a/tools/browser_smoke.py)，连接已启动的服务与 Marionette：
 
 ```bash
 python3 tools/browser_smoke.py --weapons --screenshot .m1-cache/m1b-estimated.png

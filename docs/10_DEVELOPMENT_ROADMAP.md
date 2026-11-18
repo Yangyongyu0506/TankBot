@@ -2,7 +2,9 @@
 
 ## 目的与执行原则
 
-当前状态更新于2026-11-17：应用配置2.1，十三关；C5/C6分别由435adcd/57f5e90记录，本轮Godot桌面原型仍在工作区。公共c0后Weapons/Navigation并列开放，里程碑依赖表示工程开发顺序，不是玩家解锁链。后端profile拆分已实现，默认仍experimental；下表区分已交付子项与未来范围，历史阶段不由当前测试重写。证据层次见 [核对表](reports/DOCUMENTATION_STATE_SYNC_20261110.md)。
+当前状态更新于2026-11-18：应用配置2.1、十三关；C5/C6及Godot原型已提交。当前按用户确认删除Web GUI/Pyodide，默认直接启动Godot，见 [ADR-0057](adr/0057-godot-only-player-entry.md)。下方里程碑记录工程历史，不表示旧浏览器入口仍存在。课程和评分不变，headless/probe与Rust WASM开发验证保留；原生profile保持experimental。
+
+当前优先任务是补齐Godot中的曲线、实验台、项目维护/历史界面、设置/手柄、完整关卡树和导航/开发者图层；这些原Web功能的后端和数据保留，尚未完成界面移植。当前入口与验收见 [44](44_GODOT_DESKTOP_CLIENT.md)、[本轮报告](reports/GODOT_ONLY_ENTRY_VALIDATION.md)。
 
 先验证本项目独特的端到端数据流，再扩展内容。M0、M1/M1b 已交付并完成[收尾复核](reports/M1_CLOSEOUT.md)；M2 已完成浏览器双 Worker、Adapter 一致性及本机资源验收，见 [M2 报告](reports/M2_VALIDATION.md)。其他 OS/浏览器验证仍待执行；M3 编辑部署和 M4 C0–C2 本机教学闭环已完成，见 [M3](reports/M3_VALIDATION.md)、[M4 报告](reports/M4_VALIDATION.md)。M5 多模块和 Weapons C3/C4 已完成本机验收，见 [M5 报告](reports/M5_VALIDATION.md)；M6a–M6g 已接入 Navigation 双轮控制、控制调试、里程计、GPS/EKF、航点闭环、连续路径追踪、已知地图规划和局部静态避障；其他导航课程尚未实施。Accepted 安全/状态边界从 M1 开始，不把三层状态分离推迟到画面完成以后。
 

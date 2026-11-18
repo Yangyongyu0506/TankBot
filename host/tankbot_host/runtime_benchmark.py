@@ -1,8 +1,9 @@
-"""Read-only, payload-free timing deltas for the explicitly enabled local QA harness."""
+"""Private, payload-free timing deltas for a trusted in-process benchmark driver.
+
+This helper is never routed through the Godot API or given to player Python.
+"""
 
 def snapshot(authority):
-    if not authority.config['browser']['probe_enabled']:
-        raise ValueError('UNAUTHORIZED')
     campaign=authority.campaign
     return {'run_id':authority.run_id,'tick':authority.tick,'ready':authority.worker.poll_ready(),
             'profile':authority.runtime_profile.public(),'runtime_fault':authority.worker.fault,

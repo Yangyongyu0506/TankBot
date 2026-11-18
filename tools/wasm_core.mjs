@@ -1,4 +1,4 @@
-// Trusted private DTO ABI. Import only in Core Worker or private test tools.
+// Trusted private DTO ABI. Used only by private Core equivalence tests; no browser client.
 export class WasmCore {
   constructor(instance) { this.exports = instance.exports; }
   call(request) {

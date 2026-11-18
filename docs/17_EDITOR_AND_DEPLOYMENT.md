@@ -1,8 +1,10 @@
 # 17 编辑器、Workspace与部署实现
 
-## 目的、范围与保证
+当前唯一玩家入口为Godot，见 [44](44_GODOT_DESKTOP_CLIENT.md) 和 [ADR-0057](adr/0057-godot-only-player-entry.md)。本文Workspace/合同/部署后端原则继续有效；CodeMirror/Vim、网页菜单、npm构建和browser命令是历史界面记录。高级编辑、备份管理/恢复等界面需在Godot另行实现，不能以历史验收宣称当前已具备。
 
-当前本机提供持久多文件Python编辑、单模块/同步多模块图的Manifest/Contract校验、非覆盖模板、不可变快照测试、原子部署与回滚，以及工程备份/固定版本/预览清理。继承 [06](06_WORKSPACE_AND_TEMPLATES.md)、ADR-0009/0012；模块图详见 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)，维护详见 [38](38_ENGINEERING_AND_ALGORITHM_LAB.md)。Arena、云同步和独立静态Web存储尚未实现。
+## 当前范围与历史界面
+
+当前Godot提供持久多文件Python编辑、单模块/同步多模块图的Manifest/Contract校验、非覆盖模板、不可变快照测试、原子部署与回滚，以及后端工程备份/固定版本/预览清理API；相应Godot管理界面待移植。继承 [06](06_WORKSPACE_AND_TEMPLATES.md)、ADR-0009/0012；模块图详见 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)，维护详见 [38](38_ENGINEERING_AND_ALGORITHM_LAB.md)。Arena、云同步和独立静态Web存储尚未实现。
 
 当前应用配置为 `2.1`，workspace段和engineering.yaml共同提供文件、测试/部署、归档/备份与UI配额；Runtime准入/墙钟分别由后端profile约束，见 [41](41_RUNTIME_EXECUTION_PROFILES.md)。历史M3在1.5引入workspace段，没有改变物理或Protocol 1.0；该历史版本不代表当前配置要求。工具不改写用户自定义配置。
 
@@ -14,7 +16,7 @@ C5 Test在新候选中执行项目检查、一次5秒完整规划及路径校验
 
 ```mermaid
 flowchart LR
-    CM[CodeMirror / Vim 草稿] --> SAVE[Workspace API / CAS revision]
+    CM[Godot CodeEdit 草稿] --> SAVE[Workspace API / CAS revision]
     SAVE --> SNAP[文件与 ledger 快照]
     SNAP --> CHECK[Authority 结构、语义、权限与摘要检查]
     CHECK --> TEST[独立测试 Runtime]
@@ -26,13 +28,13 @@ flowchart LR
     REPORT --> ARCHIVE[只读归档与导出]
 ```
 
-`workspace.py` / `workspace_api.py` 管理文件；不 import 玩家代码。`deployment.py` 只使用授权传感器、Contract 和 Supervisor，不把 World 传给 Runtime。`module_profile.py` 生成任务授权的初始合同，Manifest 不能增加输入、输出或执行器权限。`web/workspace-ui.js` 管理编辑事务与状态；`web/editor.js` 是 CodeMirror 适配器，Canvas 继续只消费授权视图。
+`workspace.py` / `workspace_api.py` 管理文件；不 import 玩家代码。`deployment.py` 只使用授权传感器、Contract 和 Supervisor，不把 World 传给 Runtime。`module_profile.py` 生成任务授权的初始合同，Manifest 不能增加输入、输出或执行器权限。`clients/godot/main.gd`管理编辑事务与请求，时间插值/绘图仅消费授权视图，见44。
 
-原生模式由 Host 驱动 `DeploymentManager`，候选 CPython 子进程异步启动；浏览器模式由可信 Core Worker 驱动同一个类，独立 Runtime origin 为 Active 和候选各创建一个 Pyodide Worker。最多两个玩家 Worker；Core Worker 自身还有一个可信解释器。候选加载、import、单元测试不能阻塞 UI 或直接执行于 Authority。
+当前Host驱动DeploymentManager，候选使用独立CPython子进程；候选import/测试不执行在Authority物理循环。原Pyodide双Worker已按ADR-0057删除。
 
 ## Workspace 与存储
 
-两种本机启动方式都由HTTP启动器提供版本库。默认路径为 `userdata/workspaces/<seed-and-scope-hash>/`，公共入门/Weapons使用campaign，Navigation使用navigation；身份不取具体关卡、控制权、模板或Module入口。两分支共享进度文件但不复制算法。沙盒沿用原seed/control profile身份，`--workspace-store PATH`可指定目录。独立静态网站的IndexedDB/OPFS尚待验证。
+当前Godot由本机HTTP API提供同一版本库。默认路径为 `userdata/workspaces/<seed-and-scope-hash>/`，公共入门/Weapons使用campaign，Navigation使用navigation；身份不取具体关卡、控制权、模板或Module入口。两分支共享进度文件但不复制算法。沙盒沿用原seed/control profile身份，`--workspace-store PATH`可指定目录。独立静态网站的IndexedDB/OPFS尚待验证。
 
 `--workspace PATH` 是只读种子：首次建立编辑库时导入文件，只补不存在的基础模板；原目录和仓库示例均不回写。后续启动继续读取保存的编辑库。启动机器人使用原种子示例；编辑库须经 Test/Deploy 才成为 Active，避免启动时自动执行未测试草稿。
 
@@ -72,7 +74,7 @@ UI 看到的测试/部署结果连同对应源码快照保存在 `archive-<sha25
 
 ## 本地管理接口
 
-这些是 M3 启动器/Worker 的管理接口，不是新的机器人 Topic 或公共网络协议。HTTP 修改需匹配 Host、Origin、控制 token、JSON 类型与帧大小；独立 Runtime origin 没有这些路由。
+这些是本机启动器/Worker 的管理接口，不是新的机器人 Topic 或公共网络协议。HTTP 修改需匹配Host、Origin、控制token、JSON类型与帧大小；玩家CPython不能通过SDK获得管理句柄。
 
 | 接口 | 输入与语义 |
 | --- | --- |
@@ -84,13 +86,13 @@ UI 看到的测试/部署结果连同对应源码快照保存在 `archive-<sha25
 | `POST /api/workspace/apply` | `{revision, plan_id, resolutions}`；每路径 keep/incoming |
 | `POST /api/workspace/revision` | `{revision}`；读取本库历史源码 |
 | `POST /api/workspace/archive` / `archives` | 保存观察结果/导出审计记录，不授予 Ready |
-| `GET /api/deployment` | Native 状态；Browser 使用同名 Worker RPC |
-| `/api/deployment/test` / `deploy` | Native POST `{revision}`；Browser RPC `{snapshot}`，Authority 重算摘要 |
+| `GET /api/deployment` | 原生Authority的测试、部署和日志状态 |
+| `/api/deployment/test` / `deploy` | POST `{revision}`，由宿主读库，Authority重算摘要 |
 | `/api/deployment/rollback` | `{sha256}`；仅允许当前会话已验证的历史 artifact |
 
 主要错误：`REVISION_CONFLICT`、`UNSAFE_PATH`、`RESERVED_MODULE`、`CONTRACT_PROFILE_MISMATCH`、`UNAUTHORIZED_CONNECTION`、`TEST_REQUIRED_FOR_THIS_SNAPSHOT_AND_PROFILE`、`DEPLOYMENT_BUSY`、`RESOURCE_LIMIT`。拒绝不提交部分保存或部分算法输出。
 
-## 取舍、约束与验收
+## 历史Web界面、构建与验收（已退役）
 
 CodeMirror 6 + Python/JSON 扩展 + 可切换 Vim，通过 esbuild 本地打包；沿用 ES module JavaScript 与现有 Canvas，不在本阶段引入 Phaser/全仓 TypeScript 转换。确切版本、传递依赖、integrity 在 `package-lock.json`；许可证随构建生成并由页面链接。UI 允许 CodeMirror 动态样式；不放宽脚本或 Runtime 网络/Worker 权限。
 

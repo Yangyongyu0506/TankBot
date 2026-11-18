@@ -5,8 +5,8 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def make_parser():
-    parser = argparse.ArgumentParser(description="TankBot trusted-local simulation and teaching levels")
-    parser.add_argument("mode", nargs="?", choices=("serve", "browser", "godot", "headless", "probe"))
+    parser = argparse.ArgumentParser(description="TankBot: launch Godot by default; headless/probe are developer tools")
+    parser.add_argument("mode", nargs="?", choices=("headless", "probe"), help="Optional developer mode; omit to launch the game")
     parser.add_argument("--godot-binary", type=Path, help="Godot 4 executable (desktop prototype only)")
     parser.add_argument("--config", type=Path, default=ROOT / "config/game.yaml")
     parser.add_argument("--level", help="Start a teaching level with its authorized capabilities")
@@ -22,7 +22,6 @@ def make_parser():
     parser.add_argument("--view", choices=("estimated", "weapons-practice"))
     parser.add_argument("--robot-demo", action="store_true", help="Run the separate SDK turret/fire example")
     parser.add_argument("--fault", choices=("none","infinite_loop","exception","bad_covariance","no_output"), help="Local failure probe")
-    parser.add_argument("--browser-qa", action="store_true", help="Run explicit M2 browser security/fixture probes")
     parser.add_argument("--offline", action="store_true", help="Prepare Python dependencies only from the local cache")
     parser.add_argument("--settings-file", type=Path, help="Persistent YAML settings (default: userdata/settings.yaml)")
     parser.add_argument("--save-file", type=Path, help="Campaign save (default: userdata/progress.json)")
@@ -35,8 +34,7 @@ def make_parser():
 def parse_args(argv=None):
     parser = make_parser()
     args = parser.parse_args(argv)
-    if args.mode is None and not (args.list_maps or args.level_tree):
-        parser.error("需要运行模式 serve/browser/godot/headless/probe，或使用 --list-maps / --level-tree")
+    args.mode = args.mode or "godot"
     if args.level and (args.view or args.robot_demo):
         parser.error("--level 不可与 --view 或 --robot-demo 合用")
     return parser, args
@@ -61,7 +59,7 @@ def main():
             parser.error(str(error))
         print(f"存档：{path}{note}")
         print(format_level_tree(progression, progress))
-        print("\n游戏内也可点击顶部或任务面板的「关卡路线」查看交互式依赖树。")
+        print("\nGodot关卡选择器按相同前置条件解锁；完整树形界面待移植。")
         return
     if args.list_maps:
         from .maps import discover_maps
@@ -69,14 +67,14 @@ def main():
             print(f"{item['path']}  ({len(item['walls'])} walls)")
         return
     application = None
-    if args.mode in ("serve", "browser", "godot") or args.level is not None:
+    if args.mode == "godot" or args.level is not None:
         from .application import ApplicationState
         try:
             application = ApplicationState(config, args.settings_file, args.save_file)
             if args.developer_mode is not None:
                 value = application.public_settings()
                 value["settings"]["developer_mode"] = args.developer_mode
-                if args.mode in ("serve","browser","godot"):
+                if args.mode == "godot":
                     application.update_settings({"revision": value["revision"], "settings": value["settings"]})
                 else:
                     application.settings=value["settings"]  # Diagnostic overrides do not rewrite personal settings.
@@ -87,7 +85,7 @@ def main():
                     parser.error("真值练习和机器人演示需要开发者模式；请使用 --developer 或在设置中开启。")
                 args.level = args.level or application.progress()["current_level"] or application.initial_level
             if args.level:
-                if args.mode in ("serve","browser","godot"):
+                if args.mode == "godot":
                     application.select_level(args.level)
                 else:
                     application.require_level(args.level)
@@ -116,15 +114,6 @@ def main():
         config["module"]["weapon_demo"]["enabled"] = True
     if args.fault:
         config["module"]["fault"] = args.fault
-    if args.browser_qa:
-        config["browser"]["probe_enabled"] = True
-    if args.mode == "browser":
-        from .browser_server import BrowserServer
-        try:
-            BrowserServer(config, args.workspace, args.workspace_store, application=application).serve()
-        except KeyboardInterrupt:
-            pass
-        return
     if args.mode == "probe":
         from .authority import CoreAdapter
         from .scene_definition import resolve_scene
@@ -151,15 +140,12 @@ def main():
     authority = Authority(config, workspace=args.workspace, binary=args.core_binary, controlled=args.mode=="headless",
                           developer_mode=bool(application and application.developer))
     try:
-        if args.mode in ("serve", "godot"):
+        if args.mode == "godot":
             from .server import LocalServer
             try:
                 server = LocalServer(authority, args.workspace, args.workspace_store, application=application)
-                if args.mode == "godot":
-                    from .desktop import run_desktop
-                    run_desktop(server, desktop_binary)
-                else:
-                    server.serve()
+                from .desktop import run_desktop
+                run_desktop(server, desktop_binary)
             except KeyboardInterrupt:
                 pass
         else:
@@ -171,6 +157,6 @@ def main():
                               "campaign": authority.campaign_status()}, indent=2))
     finally:
         # Switching lessons replaces the Authority; close the current instance too.
-        if args.mode in ("serve", "godot") and "server" in locals():
+        if args.mode == "godot" and "server" in locals():
             server.authority.close()
         authority.close()

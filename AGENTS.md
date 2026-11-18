@@ -2,7 +2,7 @@
 
 ## 项目状态与阅读入口
 
-TankBot 已有 Rust 权威仿真、Python SDK/Runtime、Web 编辑器与两种本机运行方式。当前课程由 `levels/*.yaml` 自动发现；真实范围、平台证据及限制以 [文档索引](docs/README.md) 和 [路线图](docs/10_DEVELOPMENT_ROADMAP.md) 为准。新任务先读相关设计及 [ADR 状态表](docs/adr/README.md)，检查 `git status`，保留已有修改；不得把 Proposed 或历史报告视为当前已验证功能。
+TankBot 已有 Rust 权威仿真、独立 CPython SDK/Runtime 和 Godot 桌面客户端；无参数启动 `python3 tools/tankbot.py`。Web GUI/Pyodide已退役，headless/probe和独立Rust WASM开发验证保留。当前课程由 `levels/*.yaml` 自动发现；真实范围、平台证据及限制以 [文档索引](docs/README.md) 和 [路线图](docs/10_DEVELOPMENT_ROADMAP.md) 为准。新任务先读相关设计及 [ADR 状态表](docs/adr/README.md)，检查 `git status`，保留已有修改；不得把 Proposed 或历史报告视为当前已验证功能。
 
 ## 开发中的交互确认
 
@@ -28,8 +28,8 @@ TankBot 已有 Rust 权威仿真、Python SDK/Runtime、Web 编辑器与两种�
 
 ## 组织、检查与贡献
 
-文档使用中文，标识符/文件名用英文；设计在 `docs/`，决策在 `docs/adr/`，Schema/夹具在 `docs/schemas/` 和 `docs/examples/`。实现位于 `core/`、`host/`、`runtime/`、`sdk/python/`、`web/`；课程在 `levels/`，公共模型和参数在 `config/`，地图在 `assets/maps/`。新增参数写入对应 YAML。使用空格缩进及现有风格；Rust 使用 rustfmt。
+文档使用中文，标识符/文件名用英文；设计在 `docs/`，决策在 `docs/adr/`，Schema/夹具在 `docs/schemas/` 和 `docs/examples/`。实现位于 `core/`、`host/`、`runtime/`、`sdk/python/`、`clients/godot/`；课程在 `levels/`，公共模型和参数在 `config/`，地图在 `assets/maps/`。新增参数写入对应 YAML。使用空格缩进及现有风格；Rust 使用 rustfmt。
 
-本地与CI共用 `python3 tools/check.py`；普通前端测试由 `npm test` 自动发现，构建后另跑 `npm run test:wasm`，真实网页另跑 `npm run test:browser -- --help` 查看运行分组。构建和运行命令见根 README；文档检查不代替权限、调度、迁移或玩家流程回归。收尾运行 `git diff --check`。使用隔离存档/工作区验收，勿操作日常 `userdata/`。
+本地与CI共用 `python3 tools/check.py`，自动发现Python回归；Godot流程另跑 `python3 tools/check.py --suite godot`，构建后WASM对照另跑 `python3 tools/check.py --suite wasm`。标准构建/检查不需要Node/npm。构建和运行命令见根 README；文档检查不代替权限、调度、迁移或玩家流程回归。收尾运行 `git diff --check`。使用隔离存档/工作区验收，勿操作日常 `userdata/`。
 
 提交主题参考近期 `git log`，每次聚焦一个目的；未经用户要求不提交或推送。PR 说明问题、变化、实际验证及限制，可见界面变化附图。区分跨平台构建与完整玩家流程验证；不得提交凭据、本机环境、私有记录或构建缓存。

@@ -2,7 +2,7 @@
 
 ## 目的与状态
 
-ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评审变更。初版日期为 2026-10-20，当前索引核对于2026-11-17，最近决策为Godot桌面原型与统一原生启动（ADR-0056）。`Accepted` 表示当前接受的设计约束；不是实施完成证明。`Proposed` 表示仍需指定实验/审查，不得当成已锁定依赖。`Superseded` 表示被明确编号的新 ADR 完整替代，保留原记录与链接。ADR-0003 已由 M3 实证后的 ADR-0021 替代；ADR-0014 局部修订 0004/0010 的速度接口表达，其余约束仍有效。ADR-0017 局部修订武器阶段与后坐作用模型，未整体废弃 ADR-0015。
+ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评审变更。初版日期为 2026-10-20，当前索引核对于2026-11-18，最近决策为Godot唯一玩家界面与默认入口（ADR-0057）。`Accepted` 表示当前接受的设计约束；不是实施完成证明。`Proposed` 表示仍需指定实验/审查，不得当成已锁定依赖。`Superseded` 表示被明确编号的新 ADR 完整替代，保留原记录与链接。ADR-0003 已由 M3 实证后的 ADR-0021 替代；ADR-0014 局部修订 0004/0010 的速度接口表达，其余约束仍有效。ADR-0017 局部修订武器阶段与后坐作用模型，未整体废弃 ADR-0015。
 
 | 编号 | 决策 | Status |
 | --- | --- | --- |
@@ -25,7 +25,7 @@ ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评
 | [0017](0017-confirmed-weapons-loop.md) | 用户确认的武器物理、幂等单发与授权练习视图 | Accepted |
 | [0018](0018-authorized-rendering-timeline.md) | 授权数据时间插值、平移跟随相机与独立外观 | Accepted |
 | [0019](0019-fourfold-omni-wheel-layout.md) | 四轮 90° 旋转对称固定全向轮与统一运动学 | Accepted |
-| [0020](0020-shared-browser-authority.md) | 浏览器复用 Authority、双 origin 与独立玩家 Worker | Accepted |
+| [0020](0020-shared-browser-authority.md) | 历史浏览器Authority，由0057退役 | Superseded |
 | [0021](0021-editor-and-deployment-profile.md) | M3 CodeMirror/Vim、本机版本库与共享部署生命周期 | Accepted |
 | [0022](0022-campaign-capabilities-and-evaluation.md) | C0–C2 能力配置、Radar/目标估计与结束后评分 | Accepted |
 | [0023](0023-typed-learning-and-se3-exercise.md) | 带类型的逐关说明、NumPy SE(3) 与矩阵实验 | Accepted |
@@ -62,6 +62,7 @@ ADR 记录为什么选择某条设计路线，供后续 Agent 约束实现和评
 | [0054](0054-known-map-planning-preparation.md) | 已知原始地图、一次性5秒规划准备、独立路径校验与静态交付 | Accepted |
 | [0055](0055-prior-map-local-navigation.md) | 先验/私有场景、扫描与同模块局部避障、同tick估计投影 | Accepted |
 | [0056](0056-godot-desktop-presentation.md) | Godot桌面原型、统一启动及独立CPython，保留Web回归 | Accepted |
+| [0057](0057-godot-only-player-entry.md) | Godot唯一玩家GUI、默认启动及浏览器退役，保留原生/WASM开发能力 | Accepted |
 
 ## 后续局部修订与历史状态
 

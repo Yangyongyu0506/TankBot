@@ -18,7 +18,7 @@ from websockets.asyncio.client import connect
 class TransportTests(unittest.IsolatedAsyncioTestCase):
     async def test_same_fixtures_through_memory_ipc_websocket_and_replay(self):
         config=load_config(ROOT/"config/game.yaml")
-        limit=config["runtime"]["max_message_bytes"];capacity=config["browser"]["max_pending_requests"]
+        limit=config["runtime"]["max_message_bytes"];capacity=16  # Protocol fixture capacity, independent of the display client.
         fixtures=cases(ROOT/"docs/examples")
         async def check(tx,rx):
             incoming=rx.receive()
@@ -82,7 +82,7 @@ class TransportTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_websocket_disconnect_and_binary_fail_closed(self):
         config=load_config(ROOT/"config/game.yaml")
-        limit=config["runtime"]["max_message_bytes"];capacity=config["browser"]["max_pending_requests"]
+        limit=config["runtime"]["max_message_bytes"];capacity=16  # Protocol fixture capacity, independent of the display client.
         async def binary(ws):await ws.send(b'{}')
         async with serve(binary,"127.0.0.1",0,max_size=limit,max_queue=capacity) as server:
             async with connect(f"ws://127.0.0.1:{server.sockets[0].getsockname()[1]}",max_size=limit,max_queue=capacity) as ws:

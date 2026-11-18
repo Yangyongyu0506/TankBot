@@ -7,6 +7,8 @@
 
 2026-11-17 局部扩展：[ADR-0056](0056-godot-desktop-presentation.md) 增加 Godot 原生 GUI 原型并复用本记录的 Workspace/部署合同；本条 Web 组合和历史验收保持有效，不代表 Godot 已达到完整编辑器功能等价。
 
+2026-11-18局部修订：[ADR-0057](0057-godot-only-player-entry.md) 删除Web/Pyodide和旧玩家子命令，当前仅Godot＋原生CPython；本记录的原Context和历史证据保留，其他仍适用的权限、Workspace或截止合同不变。
+
 ## Context
 
 M1/M2 已有 Canvas、ES modules、CPython/Pyodide ModuleRunner 和共享 Authority。M3 需要真实多文件编辑与安全切换；仅引入编辑框不能证明编辑/运行隔离。没有证据要求替换现有 Renderer，独立静态网站存储也尚未验证。

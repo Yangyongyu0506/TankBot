@@ -2,9 +2,13 @@
 
 ## 阅读方式与规范状态
 
-当前更新日期：2026-11-17；应用配置2.1，关卡Schema 1.0。前一轮文档核对基于HEAD `7c065ab`；C5/C6实现已分别由`435adcd`/`57f5e90`记录；本轮新增Godot桌面原型见44，尚未提交，证据见 [规划验收](reports/NAVIGATION_GLOBAL_PLANNING_VALIDATION.md)。前轮逐项事实见 [文档核对表](reports/DOCUMENTATION_STATE_SYNC_20261110.md)。已完成 M1/M1b、M2 本机浏览器/Transport、M3 编辑部署和 M4 C0–C2 教学闭环验收：实现与限制见 [运行入口](../README.md)、[M4 验证报告](reports/M4_VALIDATION.md)；模型由用户逐项确认，见 [13](13_PHYSICS_MODEL_DECISIONS.md)、[18](18_CAMPAIGN_DESIGN.md)。M5 已实现模块图、角加速度与装甲；现按用户要求调整为 C3 极坐标滤波、C4 中心预测与自瞄、C5 小陀螺自瞄，当前边界及验收见 [28](28_WEAPONS_PROGRESSIVE_ESTIMATION.md)、[新课程报告](reports/WEAPONS_REDESIGN_VALIDATION.md)。关卡使用独立 YAML 插件，现有 C0–C5 与 Navigation C0–C6 十三关，见 [27](27_LEVEL_PLUGIN_ARCHITECTURE.md)。Navigation 已实现双轮电压控制、控制曲线、理想里程计、GPS/EKF定位、航点位置闭环、仓储连续路径追踪和已知地图全局规划；C6局部扫描与静态避障已接入，验收范围见43与本轮报告。IMU融合、建图与Arena尚未实现。进度现为公共c0后同时开放Weapons与Navigation，两条主线可交替推进；当前规则与实测见 [36](36_BRANCHING_PROGRESSION.md)、[双主线验收](reports/BRANCHING_PROGRESSION_VALIDATION.md)。
+当前更新日期：2026-11-18。应用配置2.1，关卡Schema 1.0；十三关由YAML发现。公共c0后同时开放Weapons C1和Navigation C0，各主线按prerequisites推进，工程与进度格式保持。Weapons已有坐标变换、目标滤波/预测及自瞄；Navigation已有轮电压、里程计、GPS/EKF、航点、连续追踪、全局规划和局部静态避障。SLAM、动态避障与Arena未实施。
 
-工程增量已交付统一检查、Weapons C2授权滤波实验、原生/Pyodide耗时诊断与可恢复工程保留；实际证据与限制见 [验收](reports/ENGINEERING_QUALITY_VALIDATION_20261105.md)。这是Algorithm Lab的单关试点，控制器成对重跑和其他课程实验尚未实现。后端运行profile已由ADR-0053接受配置/截止合同：20ms声明上限、原生30ms与Pyodide40ms墙钟均取可信目录，后两项仍为experimental，固定6tick门不变。Linux/Firefox候选对照不证明其他平台、强沙箱或整局截止失败率<1%。
+当前唯一玩家GUI是Godot，运行 `python3 tools/tankbot.py`；Rust/Rapier继续权威物理，独立CPython继续运行玩家代码。Web GUI、CodeMirror/npm、Pyodide及浏览器专用工具已按用户确认删除，见 [ADR-0057](adr/0057-godot-only-player-entry.md)、[44](44_GODOT_DESKTOP_CLIENT.md)。headless/probe、Rust WASM开发构建/对照和Godot所需本机API保留。标准检查不依赖Node/npm；WASM单独检查需要Node。
+
+原生profile仍为20ms声明准入、30ms整批墙钟、6tick提交，状态experimental；不因删除浏览器宣称可靠性提升。历史双Runtime报告、原始JSON和当期测试计数保留，不能作为当前浏览器支持或完整Godot功能等价的证据。历史浏览器源链接指向删除前提交。
+
+Godot当前已验证渲染、键鼠、F2编辑、测试/部署、日志、通关/重试和工程保留。曲线、实验台、备份/历史管理界面、完整图层、手柄/设置及高级编辑工具待移植，其后端合同和玩家数据保留。本轮实际验证和限制见 [退役验收](reports/GODOT_ONLY_ENTRY_VALIDATION.md)；旧愿景、里程碑和报告需按各自时期阅读。
 
 “必须／不得”为设计约束；“建议／拟采用”为待验证方案。Accepted ADR 表示接受设计原则或接口方向，不表示实现或平台验证完成；Proposed 技术不得当作既成依赖。协议 `1.0` 是**未发布草案**，首次发布前由兼容性审查冻结；发布后执行版本规则。
 
@@ -14,7 +18,8 @@
 
 | 文档 | 负责的设计与接口 |
 | --- | --- |
-| [44 Godot桌面原型](44_GODOT_DESKTOP_CLIENT.md) | 统一启动、授权原生渲染、CodeEdit、CPython编辑部署及兼容边界 |
+| [Godot唯一入口验收](reports/GODOT_ONLY_ENTRY_VALIDATION.md) | 默认启动、Web/Pyodide清理、数据兼容与保留的开发能力 |
+| [44 Godot桌面客户端](44_GODOT_DESKTOP_CLIENT.md) | 统一启动、授权原生渲染、CodeEdit、CPython编辑部署及兼容边界 |
 | [Godot原型验收](reports/GODOT_DESKTOP_VALIDATION.md) | 隔离工程、实际Godot流程、源码/进度保留与截图；非完整迁移 |
 | [38 工程与算法实验台](38_ENGINEERING_AND_ALGORITHM_LAB.md) | 统一检查、C2授权回放对照、耗时诊断与可恢复项目保留 |
 | [工程验收](reports/ENGINEERING_QUALITY_VALIDATION_20261105.md) | 统一回归、原生/Pyodide实际实验/恢复、截止证据与范围 |
@@ -68,7 +73,7 @@
 | [13 物理确认记录](13_PHYSICS_MODEL_DECISIONS.md) | 用户逐项确认、伺服/轮组/IMU 方程、历史武器模型与 M1b 修订 |
 | [14 武器设计与确认](14_WEAPONS_DESIGN.md) | M1b 范围、控制/开火接口、共同确认、数值近似及验收 |
 | [15 渲染设计](15_RENDERING_DESIGN.md) | 多频率时间插值、固定世界朝向相机、独立底盘外观 |
-| [16 浏览器 Runtime](16_BROWSER_RUNTIME.md) | 共享 Authority、私有 WASM ABI、独立 origin、加载/截止与平台限制 |
+| [16 历史浏览器Runtime](16_BROWSER_RUNTIME.md) | 已退役；保留当时架构与证据，不是当前启动说明 |
 | [17 编辑器与部署](17_EDITOR_AND_DEPLOYMENT.md) | 当前存储/模块图、短测、原子部署/回滚及维护边界，含M3历史 |
 | [编辑器阶段锁定验收](reports/EDITOR_ATTEMPT_LOCK_VALIDATION.md) | Space 发射焦点、运行期编辑门与结束/重试恢复 |
 | [18 教学关卡](18_CAMPAIGN_DESIGN.md) | M4 C0–C2、Radar、目标估计、巡逻敌车与血量通关 |

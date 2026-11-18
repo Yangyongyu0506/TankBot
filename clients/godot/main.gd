@@ -49,7 +49,7 @@ func _ready() -> void:
 		if argument.begins_with("--") and "=" in argument:
 			arguments[argument.get_slice("=", 0)] = argument.substr(argument.find("=")+1)
 	if not arguments.has("--client-settings"):
-		push_error("请通过 python3 tools/tankbot.py godot 启动客户端。")
+		push_error("请通过 python3 tools/tankbot.py 启动客户端。")
 		get_tree().quit(2)
 		return
 	options = JSON.parse_string(FileAccess.get_file_as_string(arguments["--client-settings"]))

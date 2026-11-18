@@ -44,7 +44,7 @@ flowchart TD
 ## 使用方式、取舍与未决项
 
 ```bash
-python3 tools/tankbot.py serve --level c0
+python3 tools/tankbot.py --level c0
 python3 tools/tankbot.py headless --level c0 --ticks 12 --offline
 ```
 

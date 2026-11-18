@@ -31,7 +31,7 @@ Node的**13个测试文件通过**，含新增GPS/轨迹容量、重复轮询、
 
 ## 真实界面验收
 
-工具 [browser_navigation_localization.py](../../tools/browser_navigation_localization.py) 在原生与浏览器服务均通过：C1工程→切C2→控制器/里程计源码相同→编辑高亮EKF文件→预览仅升级系统文件→测试→部署→编辑器自动关闭且运行期锁定→显示GPS、两条估计轨迹、P椭圆、两项双线RMSE→通关→重试清空评分并使用新run→检查源码revision保留。页面无整体滚动；图层允许独立切换，开发者真值开关默认未开启。
+工具 [browser_navigation_localization.py](https://github.com/Yangyongyu0506/TankBot/blob/292cad36c31ad6a822c573c2faf7496f6a96e17a/tools/browser_navigation_localization.py) 在原生与浏览器服务均通过：C1工程→切C2→控制器/里程计源码相同→编辑高亮EKF文件→预览仅升级系统文件→测试→部署→编辑器自动关闭且运行期锁定→显示GPS、两条估计轨迹、P椭圆、两项双线RMSE→通关→重试清空评分并使用新run→检查源码revision保留。页面无整体滚动；图层允许独立切换，开发者真值开关默认未开启。
 
 ![浏览器实际通关时的GPS点、估计轨迹与两组误差](../images/navigation-gps-ekf.png)
 
