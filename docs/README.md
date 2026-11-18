@@ -21,7 +21,10 @@ Godot提供渲染、键鼠、VS Code入口、Start、日志及关卡操作；内
 | [45 外部编辑与Start](45_EXTERNAL_EDITOR_AND_START.md) | VS Code真实文件、保存/快照、冲突保护和单次Start自动检查/运行 |
 | [外部编辑与Start验收](reports/EXTERNAL_EDITOR_AND_START_VALIDATION.md) | 磁盘/历史保护、自动启动、隔离编辑器及真实流程证据 |
 | [Godot唯一入口验收](reports/GODOT_ONLY_ENTRY_VALIDATION.md) | 默认启动、Web/Pyodide清理、数据兼容与保留的开发能力 |
-| [44 Godot桌面客户端](44_GODOT_DESKTOP_CLIENT.md) | 统一启动、授权原生渲染、CodeEdit、CPython编辑部署及兼容边界 |
+| [44 Godot桌面客户端](44_GODOT_DESKTOP_CLIENT.md) | 统一启动、授权渲染、外部编辑与Start、桌面主题及兼容边界 |
+| [Godot主题验收](reports/GODOT_UI_CONTRAST_VALIDATION.md) | 浅色按钮、Start/停止配色、可读性与实际窗口回归 |
+| [Sprite资源](../assets/sprites/README.md) | 工业风预制PNG、分层装配、原模型标定与美术提示词 |
+| [Godot Sprite验收](reports/GODOT_SPRITES_VALIDATION.md) | 图片加载、双底盘与靶标、变换/清理和原生窗口流程 |
 | [Godot原型验收](reports/GODOT_DESKTOP_VALIDATION.md) | 隔离工程、实际Godot流程、源码/进度保留与截图；非完整迁移 |
 | [38 工程与算法实验台](38_ENGINEERING_AND_ALGORITHM_LAB.md) | 统一检查、C2授权回放对照、耗时诊断与可恢复项目保留 |
 | [工程验收](reports/ENGINEERING_QUALITY_VALIDATION_20261105.md) | 统一回归、原生/Pyodide实际实验/恢复、截止证据与范围 |

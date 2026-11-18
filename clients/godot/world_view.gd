@@ -1,24 +1,86 @@
 extends Control
 ## Drawing consumes only public profile and ViewGateway messages.
 const Timeline = preload("res://timeline.gd")
+const SpriteLibrary = preload("res://sprite_library.gd")
+const VehicleSprite = preload("res://vehicle_sprite.gd")
 var timeline = Timeline.new()
+var sprites = SpriteLibrary.new()
+var vehicle: Node2D
+var entities: Dictionary = {}
+var scene: Dictionary = {"pose": null, "objects": [], "turret": 0.0}
 var profile: Dictionary = {}
 var camera = Vector2.ZERO
 var layers = {"map": true, "robot": true, "projectiles": true, "target_estimates": true, "path": true, "radar": true}
 var scale_m: float = 1.0
 var draw_pose: Variant = null
 
+func load_assets(value: Dictionary) -> bool:
+	return sprites.configure(value)
+
 func configure(value: Dictionary) -> void:
+	clear_entities()
 	profile = value
 	timeline.configure(value)
 	camera = Vector2(value.rendering.camera_origin_m[0], value.rendering.camera_origin_m[1])
+	vehicle = VehicleSprite.new()
+	vehicle.name = "player_vehicle"
+	vehicle.configure(sprites, value.chassis_visual, value.body, value.wheel_calibration, value.weapons_enabled)
+	vehicle.mount_barrel(sprites, vector(value.turret_muzzle_offset_m), value.rendering.barrel_width_m, Color(value.chassis_visual.colors.barrel))
+	vehicle.visible = false
+	add_child(vehicle)
+	draw_pose = null
+	scene = {"pose": null, "objects": [], "turret": 0.0}
+
+func clear_entities() -> void:
+	if is_instance_valid(vehicle):
+		vehicle.free()
+	for entity in entities.values():
+		entity.free()
+	entities.clear()
 
 func accept(message: Dictionary) -> void:
 	if timeline.push(message, Time.get_ticks_msec()):
 		camera = Vector2(profile.rendering.camera_origin_m[0], profile.rendering.camera_origin_m[1])
 
 func _process(_dt: float) -> void:
+	if not profile.is_empty() and size.x > 0:
+		scale_m = size.x / float(profile.rendering.viewport_width_m)
+		scene = timeline.sample(Time.get_ticks_msec())
+		draw_pose = scene.pose
+		if draw_pose:
+			camera = point(draw_pose)
+		vehicle.visible = draw_pose != null and layers.robot
+		if vehicle.visible:
+			vehicle.present(project(point(draw_pose)), float(draw_pose.yaw_rad), scale_m, float(scene.turret))
+		sync_entities()
 	queue_redraw()
+
+func sync_entities() -> void:
+	var active: Dictionary = {}
+	for object in scene.objects:
+		var projectile: bool = object.kind == "projectile"
+		if (projectile and not layers.projectiles) or (not projectile and not layers.robot):
+			continue
+		var key = str([object.kind, object.get("projectile_id", object.get("target_id"))])
+		active[key] = true
+		if not entities.has(key):
+			entities[key] = sprites.part(self, "projectile" if projectile else "target", Vector2.ONE)
+		var sprite: Sprite2D = entities[key]
+		var extent: Vector2
+		if projectile:
+			extent = Vector2.ONE * max(float(sprites.options.projectile_min_diameter_px), 2.0 * float(object.radius_m) * scale_m)
+			sprite.position = project(point(object))
+		else:
+			var body: Dictionary = profile.target_geometry.body
+			extent = Vector2(body.length_m, body.width_m) * scale_m
+			sprite.position = project(point(object.pose))
+			sprite.rotation = -float(object.pose.yaw_rad)
+		sprite.scale = extent / sprite.texture.get_size()
+	# Despawn, visibility changes and run resets cannot leave an old entity visible.
+	for key in entities.keys():
+		if not active.has(key):
+			entities[key].free()
+			entities.erase(key)
 
 func project(point: Vector2) -> Vector2:
 	return size * 0.5 + Vector2(point.x - camera.x, camera.y - point.y) * scale_m
@@ -35,36 +97,10 @@ func plate(center: Vector2, length: float, width: float, yaw: float, color: Colo
 		vertices.append(project(center + Vector2(corner.x * length * 0.5, corner.y * width * 0.5).rotated(yaw)))
 	draw_colored_polygon(vertices, color)
 
-func chassis(pose: Dictionary, model: Dictionary, calibration: Variant, turret: float = 0.0) -> void:
-	var center = point(pose)
-	var yaw = float(pose.yaw_rad)
-	if model.kind == "tracked":
-		for side in [-1, 1]:
-			plate(center + Vector2(0, side * model.track.center_y_m).rotated(yaw), model.track.length_m, model.track.width_m, yaw, Color(model.colors.rubber))
-	elif model.kind == "radial_omni" and calibration:
-		for mount in calibration.wheels:
-			var angle = deg_to_rad(float(mount.azimuth_deg))
-			var position = Vector2(cos(angle), sin(angle)) * float(calibration.center_radius_m)
-			plate(center + position.rotated(yaw), float(calibration.radius_m) * 2, float(model.wheel.width_m), yaw + angle + PI * 0.5, Color(model.colors.rubber))
-	plate(center, model.hull.length_m, model.hull.width_m, yaw, Color(model.colors.shell))
-	var marker = PackedVector2Array()
-	for vertex in model.forward_marker_m:
-		marker.append(project(center + vector(vertex).rotated(yaw)))
-	draw_colored_polygon(marker, Color(model.colors.mark))
-	if profile.weapons_enabled:
-		draw_circle(project(center), model.turret_radius_m * scale_m, Color(model.colors.turret))
-		var muzzle = vector(profile.turret_muzzle_offset_m).rotated(yaw + turret)
-		draw_line(project(center), project(center + muzzle), Color(model.colors.barrel), max(1.0, profile.rendering.barrel_width_m * scale_m), true)
-
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), Color("101b29"))
 	if profile.is_empty():
 		return
-	scale_m = size.x / float(profile.rendering.viewport_width_m)
-	var scene = timeline.sample(Time.get_ticks_msec())
-	draw_pose = scene.pose
-	if draw_pose:
-		camera = point(draw_pose)
 	var grid = float(profile.rendering.grid_spacing_m)
 	var radius = max(size.x, size.y) / scale_m
 	for axis in [0, 1]:
@@ -82,14 +118,6 @@ func _draw() -> void:
 				var path = level.path_tracking.get("points_m", [])
 				for i in range(1, path.size()):
 					draw_line(project(vector(path[i-1])), project(vector(path[i])), Color("4ac8df"), 2, true)
-	for object in scene.objects:
-		if object.kind == "projectile" and layers.projectiles:
-			draw_circle(project(point(object)), max(2.0, object.radius_m * scale_m), Color("ffe1a6"))
-		elif object.kind == "target" and layers.robot:
-			var geometry = profile.target_geometry.body
-			plate(point(object.pose), geometry.length_m, geometry.width_m, object.pose.yaw_rad, Color("dc8073"))
-	if draw_pose and layers.robot:
-		chassis(draw_pose, profile.chassis_visual, profile.wheel_calibration, scene.turret)
 	if timeline.latest.is_empty():
 		return
 	if layers.target_estimates:

@@ -1,6 +1,7 @@
 extends Control
 const Backend = preload("res://backend.gd")
 const WorldView = preload("res://world_view.gd")
+const UITheme = preload("res://ui_theme.gd")
 var backend = Backend.new()
 var world = WorldView.new()
 var options: Dictionary
@@ -30,6 +31,7 @@ var logs = TextEdit.new()
 var message_text = Label.new()
 var edit_button: Button
 var start_button: Button
+var stop_button: Button
 var upgrade_button: Button
 var plan_dialog = ConfirmationDialog.new()
 var plan_text = TextEdit.new()
@@ -51,9 +53,10 @@ func _ready() -> void:
 		return
 	get_window().title = options.title
 	get_window().size = Vector2i(options.window_width, options.window_height)
-	theme = Theme.new()
-	theme.default_font_size = int(options.font_size)
-	add_theme_font_size_override("font_size", int(options.font_size))
+	theme = UITheme.create(options.appearance, int(options.font_size))
+	if not world.load_assets(options.sprites):
+		get_tree().quit(2)
+		return
 	build_ui()
 	await reload_session()
 	if not connected:
@@ -62,10 +65,13 @@ func _ready() -> void:
 	start_timer(float(options.status_poll_ms)/1000.0, poll_status)
 	start_timer(float(profile.view.keyboard_refresh_ms)/1000.0, send_controls)
 
-func button(parent: Node, text: String, action: Callable) -> Button:
+func button(parent: Node, text: String, action: Callable, variant: String = "") -> Button:
 	var node = Button.new()
 	node.text = text
 	node.focus_mode = Control.FOCUS_NONE
+	node.theme_type_variation = variant
+	node.custom_minimum_size.y = int(options.appearance.metrics.button_height)
+	node.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	node.pressed.connect(action)
 	parent.add_child(node)
 	return node
@@ -75,31 +81,59 @@ func full(node: Control) -> void:
 
 func text_box(node: TextEdit) -> void:
 	node.editable = false
-	node.add_theme_color_override("font_readonly_color", Color("d9e2ef"))
-	var surface = StyleBoxFlat.new()
-	surface.bg_color = Color("101b29")
-	node.add_theme_stylebox_override("normal", surface)
-	node.add_theme_stylebox_override("read_only", surface)
 	node.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
 	node.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	node.size_flags_vertical = Control.SIZE_EXPAND_FILL
 
+func card(parent: Node, variant: String = "CardPanel") -> PanelContainer:
+	var node = PanelContainer.new()
+	node.theme_type_variation = variant
+	parent.add_child(node)
+	return node
+
+func label_in(parent: Node, text: String, variant: String = "HeadingLabel") -> Label:
+	var node = Label.new()
+	node.text = text
+	node.theme_type_variation = variant
+	parent.add_child(node)
+	return node
+
 func build_ui() -> void:
+	var background = Panel.new()
+	background.theme_type_variation = "AppPanel"
+	add_child(background)
+	full(background)
+	var margin = MarginContainer.new()
+	add_child(margin)
+	full(margin)
+	for side in ["left", "right", "top", "bottom"]:
+		margin.add_theme_constant_override("margin_" + side, int(options.appearance.metrics.outer_margin))
 	var root = VBoxContainer.new()
-	add_child(root)
-	full(root)
-	var toolbar = HBoxContainer.new()
-	root.add_child(toolbar)
-	button(toolbar, "TankBot · Godot", func(): message("桌面原型 · 玩家 CPython 独立进程 · 仅运行本人可信代码"))
+	margin.add_child(root)
+	var header = VBoxContainer.new()
+	card(root).add_child(header)
+	var title_row = HBoxContainer.new()
+	header.add_child(title_row)
+	var brand = label_in(title_row, "TankBot", "BrandLabel")
+	brand.tooltip_text = "Godot 桌面客户端 · CPython 独立进程 · 仅运行本人可信代码"
+	var caption = label_in(title_row, "机器人算法训练", "MutedLabel")
+	caption.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	levels.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	toolbar.add_child(levels)
-	start_button = button(toolbar, "Start · 运行 / 重试", start_level)
-	button(toolbar, "结束尝试", finish_attempt)
+	levels.custom_minimum_size.y = int(options.appearance.metrics.button_height)
+	title_row.add_child(levels)
+	var toolbar = HFlowContainer.new()
+	header.add_child(toolbar)
+	start_button = button(toolbar, "Start · 运行 / 重试", start_level, "StartButton")
+	start_button.tooltip_text = "保存 VS Code 中的代码后点击；自动检查并运行新快照。"
+	stop_button = button(toolbar, "结束尝试", finish_attempt, "StopButton")
+	stop_button.tooltip_text = "结束本次运行，然后可以启动修改后的代码。"
 	edit_button = button(toolbar, "VS Code · F2", open_editor)
 	button(toolbar, "任务说明", show_guide)
 	upgrade_button = button(toolbar, "框架升级", preview_upgrade)
 	levels.item_selected.connect(choose_level)
-	root.add_child(status_text)
+	card(root, "StatusPanel").add_child(status_text)
+	status_text.theme_type_variation = "SmallLabel"
+	status_text.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	status_text.text = "连接本机 Authority…"
 	var content = HSplitContainer.new()
 	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -108,35 +142,50 @@ func build_ui() -> void:
 	world.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	world.clip_contents = true
 	world.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	content.add_child(world)
+	var viewport_panel = card(content, "ViewportPanel")
+	viewport_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	viewport_panel.add_child(world)
 	var sidebar = VBoxContainer.new()
-	sidebar.custom_minimum_size.x = int(options.guide_width)
-	content.add_child(sidebar)
-	var heading = Label.new()
-	heading.text = "任务与授权反馈"
-	sidebar.add_child(heading)
+	var sidebar_panel = card(content)
+	sidebar_panel.custom_minimum_size.x = int(options.guide_width)
+	sidebar_panel.add_child(sidebar)
+	label_in(sidebar, "任务与授权反馈")
 	text_box(mission)
 	sidebar.add_child(mission)
 	var layers = HFlowContainer.new()
+	label_in(sidebar, "显示图层", "SmallLabel")
 	sidebar.add_child(layers)
 	for item in [["map", "地图"], ["robot", "车体"], ["projectiles", "炮弹"], ["target_estimates", "目标估计"], ["path", "路径"], ["radar", "局部雷达"]]:
-		var check = CheckButton.new()
-		check.text = item[1]
+		var check = Button.new()
+		check.theme_type_variation = "LayerToggle"
+		check.toggle_mode = true
+		check.focus_mode = Control.FOCUS_NONE
+		check.custom_minimum_size.y = int(options.appearance.metrics.toggle_height)
+		check.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		check.text = item[1] + " · 开"
 		check.button_pressed = true
-		check.toggled.connect(func(enabled): world.layers[item[0]] = enabled)
+		check.toggled.connect(func(enabled):
+			world.layers[item[0]] = enabled
+			check.text = item[1] + (" · 开" if enabled else " · 关"))
 		layers.add_child(check)
 	text_box(logs)
-	logs.custom_minimum_size.y = int(options.log_height)
-	logs.size_flags_vertical = Control.SIZE_FILL
-	root.add_child(logs)
+	var log_panel = card(root)
+	log_panel.custom_minimum_size.y = int(options.log_height)
+	var log_column = VBoxContainer.new()
+	log_panel.add_child(log_column)
+	label_in(log_column, "运行日志", "SmallLabel")
+	log_column.add_child(logs)
 	message_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	message_text.theme_type_variation = "SmallLabel"
 	root.add_child(message_text)
 	add_child(guide_dialog)
+	guide_dialog.theme = theme
 	guide_dialog.title = "本关任务、类型与算法接口"
 	guide_dialog.add_child(guide)
 	text_box(guide)
 	full(guide)
 	add_child(plan_dialog)
+	plan_dialog.theme = theme
 	plan_dialog.title = "教学框架升级预览 · 确认后创建新 revision"
 	plan_dialog.ok_button_text = "保留算法，应用此框架升级"
 	plan_dialog.add_child(plan_text)

@@ -2,10 +2,12 @@ extends SceneTree
 ## Isolated desktop smoke flow; the Python harness owns settings/store/server.
 const AppScene = preload("res://main.tscn")
 const Timeline = preload("res://timeline.gd")
+const WorldView = preload("res://world_view.gd")
 var app: Control
 var failed: bool = false
 var report_path: String = ""
 var screenshot_path: String = ""
+var visual_fixtures_path: String = ""
 var checks: Array = []
 var first_revision: String
 var terminal: Dictionary = {}
@@ -16,6 +18,8 @@ func _initialize() -> void:
 			report_path = argument.substr(9)
 		if argument.begins_with("--screenshot="):
 			screenshot_path = argument.substr(13)
+		if argument.begins_with("--visual-fixtures="):
+			visual_fixtures_path = argument.trim_prefix("--visual-fixtures=")
 	call_deferred("run")
 
 func check(condition: bool, description: String) -> bool:
@@ -100,10 +104,135 @@ func save_source(path: String, content: String) -> void:
 	file.store_string(content)
 	file.close()
 
+func theme_tests() -> bool:
+	if not check(await until(func(): return not app.status_busy and not app.mission.text.is_empty()), "task feedback is loaded before visual inspection"):
+		return false
+	var colors: Dictionary = app.options.appearance.colors
+	for entry in [[app.start_button, "start_normal", "start_pressed"], [app.stop_button, "stop_normal", "stop_pressed"], [app.edit_button, "button_normal", "button_pressed"]]:
+		var control: Button = entry[0]
+		if not check(control.get_theme_stylebox("normal").bg_color == Color(colors[entry[1]]) and control.get_theme_stylebox("pressed").bg_color == Color(colors[entry[2]]), control.text + " resolves its solid normal and pressed theme"):
+			return false
+		if not check(control.get_theme_stylebox("disabled").bg_color == Color(colors.button_disabled) and control.get_theme_color("font_disabled_color") == Color(colors.disabled_text), control.text + " has readable disabled colors"):
+			return false
+		if not check(control.focus_mode == Control.FOCUS_NONE, control.text + " preserves gameplay key focus behavior"):
+			return false
+	await process_frame
+	for control in app.find_children("*", "Button", true, false):
+		if control.is_visible_in_tree() and not check(app.get_global_rect().encloses(control.get_global_rect()), control.text + " stays within the viewport"):
+			return false
+	for control in app.find_children("*", "Button", true, false):
+		if control.theme_type_variation == "LayerToggle" and control.text.begins_with("地图"):
+			control.button_pressed = false
+			if not check(not app.world.layers.map and control.text.ends_with("关"), "layer toggle has an explicit off state"):
+				return false
+			control.button_pressed = true
+			if not check(app.world.layers.map and control.text.ends_with("开"), "layer toggle restores the authorized map presentation"):
+				return false
+	if not screenshot_path.is_empty() and DisplayServer.get_name() != "headless":
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png(screenshot_path.get_basename() + "-ready.png")
+		var motion = InputEventMouseMotion.new()
+		motion.position = app.start_button.get_global_rect().get_center()
+		Input.parse_input_event(motion)
+		await process_frame
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png(screenshot_path.get_basename() + "-hover.png")
+		motion.position = app.world.get_global_rect().get_center()
+		Input.parse_input_event(motion)
+		await process_frame
+	return true
+
+func sprite_tests() -> bool:
+	for key in app.world.sprites.textures:
+		var texture: AtlasTexture = app.world.sprites.textures[key]
+		if not check(texture.atlas is ImageTexture and texture.region.has_area(), key + " loads a shared prebuilt image texture"):
+			return false
+	var profiles: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(visual_fixtures_path))
+	var gallery = HBoxContainer.new()
+	root.add_child(gallery)
+	gallery.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	app.visible = false
+	var views: Array = []
+	for chassis_type in profiles:
+		var column = VBoxContainer.new()
+		column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		gallery.add_child(column)
+		var heading = Label.new()
+		heading.text = "Sprite 美术预览（隔离显示夹具） · " + str(chassis_type)
+		heading.theme = app.theme
+		column.add_child(heading)
+		var view = WorldView.new()
+		view.sprites = app.world.sprites
+		view.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		view.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		view.clip_contents = true
+		column.add_child(view)
+		var profile: Dictionary = profiles[chassis_type]
+		profile.rendering.viewport_width_m = 3.0
+		view.configure(profile)
+		var frame = {"run_id": "visual-fixture", "sequence_number": 1, "simulation_tick": 0,
+			"payload": {"view_revision": 0, "selected_pose": {"source_id": "system", "frame_id": "map", "simulation_tick": 0, "pose": {"x_m": 0.0, "y_m": 0.0, "yaw_rad": 0.0}},
+			"objects": [{"kind": "target", "target_id": "board", "pose": {"x_m": 1.0, "y_m": 0.0, "yaw_rad": 0.0}}], "local_observations": []}}
+		view.accept(frame)
+		await process_frame
+		view._process(0.0)
+		if not check(view.vehicle.visible and not view.vehicle.find_children("*", "Sprite2D", true, false).is_empty(), str(chassis_type) + " is rendered with Sprite2D parts"):
+			return false
+		if chassis_type == "omnidirectional":
+			if not check(view.vehicle.wheel_sprites.size() == profile.wheel_calibration.wheels.size(), "omni has four independently mounted wheel sprites"):
+				return false
+			for i in range(view.vehicle.wheel_sprites.size()):
+				var angle = deg_to_rad(float(profile.wheel_calibration.wheels[i].azimuth_deg))
+				var wheel: Sprite2D = view.vehicle.wheel_sprites[i]
+				var expected = Vector2(cos(angle), -sin(angle)) * float(profile.wheel_calibration.center_radius_m)
+				if not check(wheel.position.distance_to(expected) < 1e-6 and is_equal_approx(wheel.rotation, -angle - PI * 0.5), "omni wheel uses calibrated centre and tangential orientation"):
+					return false
+		var entity: Sprite2D = view.entities.values()[0]
+		if not check(entity.texture == app.world.sprites.textures.target, "authorized target uses the stored bullseye image"):
+			return false
+		var id = entity.get_instance_id()
+		view._process(0.0)
+		if not check(view.entities.values()[0].get_instance_id() == id, "same entity reuses its sprite across render frames"):
+			return false
+		view.vehicle.present(Vector2.ZERO, 0.6, view.scale_m, 0.7)
+		if not check(is_equal_approx(view.vehicle.rotation, -0.6) and is_equal_approx(view.vehicle.weapon.rotation, -0.7), "turret sprite rotates independently about its body pivot"):
+			return false
+		var barrel: Sprite2D = view.vehicle.weapon.get_node("barrel")
+		var muzzle = Vector2(profile.turret_muzzle_offset_m[0], profile.turret_muzzle_offset_m[1])
+		if not check(barrel.position.distance_to(Vector2(muzzle.x, -muzzle.y) * 0.5) < 1e-6 and is_equal_approx(barrel.scale.x * barrel.texture.get_width(), muzzle.length()), "barrel sprite ends at the configured muzzle without padding distortion"):
+			return false
+		view._process(0.0)
+		views.append({"view": view, "frame": frame, "profile": profile})
+	await process_frame
+	if not screenshot_path.is_empty() and DisplayServer.get_name() != "headless":
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png(screenshot_path.get_basename() + "-sprites.png")
+	for entry in views:
+		var view = entry.view
+		var frame: Dictionary = entry.frame
+		frame.sequence_number = 2
+		frame.simulation_tick = 1
+		frame.payload.selected_pose = null
+		frame.payload.objects = []
+		view.accept(frame)
+		view._process(0.0)
+		if not check(not view.vehicle.visible and view.entities.is_empty(), "missing pose and despawn remove sprites without truth fallback"):
+			return false
+		view.configure(entry.profile)
+		if not check(view.entities.is_empty() and not view.vehicle.visible, "reconfigure clears prior run sprites"):
+			return false
+	gallery.free()
+	app.visible = true
+	return true
+
 func run() -> void:
 	app = AppScene.instantiate()
 	root.add_child(app)
 	if not check(await until(func(): return app.connected), "native Host connection"):
+		return
+	if not await theme_tests():
+		return
+	if not await sprite_tests():
 		return
 	if not await mission_scroll_tests():
 		return
@@ -201,6 +330,9 @@ func run() -> void:
 	Input.parse_input_event(forward)
 	var moved = await app.backend.call_api("/api/view")
 	check(float(moved.payload.selected_pose.pose.x_m) > x0 + 0.05, "C0 keyboard driving moves the authoritative body")
+	if not screenshot_path.is_empty() and DisplayServer.get_name() != "headless":
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png(screenshot_path.get_basename() + "-c0.png")
 	await app.finish_attempt()
 	for index in range(app.levels.item_count):
 		if app.levels.get_item_metadata(index) == "navigation.c0":
@@ -208,6 +340,7 @@ func run() -> void:
 			await app.choose_level(index)
 			break
 	check(app.profile.campaign.active_level == "navigation.c0" and not app.profile.weapons_enabled, "Navigation scope switches to unarmed native scene")
+	check(not app.world.vehicle.weapon.visible, "Navigation hides the weapon sprite layer")
 	check(not app.snapshot.files.has("perception/transforms.py"), "Navigation never copies Weapons algorithms")
 	for index in range(app.levels.item_count):
 		if app.levels.get_item_metadata(index) == "c1":

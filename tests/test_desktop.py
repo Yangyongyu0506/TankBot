@@ -4,6 +4,7 @@ import copy
 import contextlib
 import hashlib
 import io
+import struct
 import sys
 import tempfile
 import threading
@@ -22,6 +23,85 @@ class DesktopTests(unittest.TestCase):
         value = settings()
         self.assertEqual(value['desktop_version'], '1.0')
         self.assertEqual(len(value['engine']['linux_x86_64']['archive_sha512']), 128)
+
+    def test_theme_readability_including_disabled_controls(self):
+        appearance = settings()['client']['appearance']
+        colors = appearance['colors']
+
+        def luminance(key):
+            rgb = [int(colors[key][i:i + 2], 16) / 255 for i in (1, 3, 5)]
+            return sum((v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4) * w
+                       for v, w in zip(rgb, (0.2126, 0.7152, 0.0722)))
+
+        def contrast(first, second):
+            low, high = sorted((luminance(first), luminance(second)))
+            return (high + 0.05) / (low + 0.05)
+
+        for prefix in ('button', 'start', 'stop'):
+            for state in ('normal', 'hover', 'pressed', 'disabled'):
+                fill = f'{prefix}_{state}' if state != 'disabled' else 'button_disabled'
+                text = f'{prefix}_text' if state != 'disabled' else 'disabled_text'
+                with self.subTest(control=prefix, state=state):
+                    self.assertGreaterEqual(contrast(text, fill), appearance['readability']['minimum_text_contrast'])
+                    self.assertGreaterEqual(contrast(fill, 'panel'), appearance['readability']['minimum_control_contrast'])
+        for text in ('text', 'muted'):
+            for surface in ('background', 'panel', 'inset'):
+                with self.subTest(text=text, surface=surface):
+                    self.assertGreaterEqual(contrast(text, surface), appearance['readability']['minimum_text_contrast'])
+
+    def test_legacy_desktop_configuration_gets_the_same_validated_theme(self):
+        from tankbot_host.configuration import load_yaml
+        raw = load_yaml(ROOT / 'config/desktop.yaml')
+        raw.pop('theme_file')
+        raw.pop('sprites_file')
+        appearance = load_yaml(ROOT / 'config/desktop-theme.yaml')
+        sprites = load_yaml(ROOT / 'config/desktop-sprites.yaml')
+        with patch('tankbot_host.configuration.load_yaml', side_effect=[raw, appearance, sprites]) as load:
+            actual = settings()
+        self.assertEqual(load.call_args_list[1].args[0], ROOT / 'config/desktop-theme.yaml')
+        self.assertEqual(load.call_args_list[2].args[0], ROOT / 'config/desktop-sprites.yaml')
+        self.assertEqual(actual['client']['appearance'], appearance)
+        self.assertNotIn('appearance', actual['engine'])
+
+    def test_invalid_theme_or_theme_path_is_rejected_before_launch(self):
+        from jsonschema import ValidationError
+        from tankbot_host.configuration import load_yaml
+        raw = load_yaml(ROOT / 'config/desktop.yaml')
+        appearance = load_yaml(ROOT / 'config/desktop-theme.yaml')
+        appearance['colors']['button_normal'] = 'transparent'
+        with patch('tankbot_host.configuration.load_yaml', side_effect=[raw, appearance]):
+            with self.assertRaises(ValidationError):
+                settings()
+        raw['theme_file'] = '../other.yaml'
+        with patch('tankbot_host.configuration.load_yaml', return_value=raw):
+            with self.assertRaises(ValidationError):
+                settings()
+
+    def test_sprite_manifest_contains_real_bounded_rgba_art(self):
+        sprites = settings()['client']['sprites']
+        for name, definition in sprites['assets'].items():
+            with self.subTest(asset=name):
+                path = Path(definition['path'])
+                self.assertTrue(path.is_relative_to(ROOT / 'assets/sprites'))
+                if path.suffix == '.png':
+                    header = path.read_bytes()[:33]
+                    self.assertEqual(header[:8], b'\x89PNG\r\n\x1a\n')
+                    width, height = struct.unpack('>II', header[16:24])
+                    self.assertLessEqual(max(width, height), sprites['limits']['max_dimension_px'])
+                    self.assertEqual(header[25], 6, 'sprite must carry an alpha channel')
+                    x, y, w, h = definition['region_px']
+                    self.assertLessEqual(x + w, width)
+                    self.assertLessEqual(y + h, height)
+
+    def test_missing_sprite_fails_before_launch(self):
+        from tankbot_host.configuration import load_yaml
+        raw = load_yaml(ROOT / 'config/desktop.yaml')
+        appearance = load_yaml(ROOT / 'config/desktop-theme.yaml')
+        sprites = load_yaml(ROOT / 'config/desktop-sprites.yaml')
+        sprites['assets']['target']['path'] = 'assets/sprites/industrial/missing.png'
+        with patch('tankbot_host.configuration.load_yaml', side_effect=[raw, appearance, sprites]):
+            with self.assertRaisesRegex(ValueError, 'SPRITE_ASSET_MISSING: target'):
+                settings()
 
     def test_cli_keeps_existing_modes_and_isolation_options(self):
         for mode in (None, 'headless', 'probe'):

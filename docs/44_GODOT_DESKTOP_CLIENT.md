@@ -24,6 +24,16 @@ Godot使用既有 `GET /api/profile`、`/api/view`、`/api/workspace`、`/api/de
 
 任务反馈文本仅变化时刷新，保留滚动位置；切关/重试后从顶部显示新任务。
 
+### 预制 Sprite
+
+实体外观加载 [assets/sprites](../assets/sprites/README.md) 下的图片，由 [desktop-sprites.yaml](../config/desktop-sprites.yaml) 和 [Schema](schemas/desktop-sprites.schema.json) 管理引用、文件/像素限额及弹丸最小显示直径。启动器验证后将可信绝对路径只传给Godot，不进入公共profile或玩家Runtime。旧desktop配置省略sprites_file时使用同一默认配置；缺文件或非法图像明确失败，不悄悄退回几何占位。
+
+`sprite_library.gd`首次解码图片、建立共享ImageTexture/AtlasTexture和mipmap；`vehicle_sprite.gd`按现有底盘、轮标定、装甲壳与炮口尺寸装配Sprite2D。底盘、炮台和炮管分层；四轮保持90°对称、主滚动方向切向。靶标采用圆角/倒角底板、同心圆与十字纹。图片是美术轮廓，权威碰撞继续由Rust模型判定。
+
+`world_view.gd`每帧只更新实体Sprite变换，保留授权时间插值和相机语义；同ID复用节点，消失/切关时清理，无合法位姿则隐藏。墙体、网格、路径与雷达/估计标记仍是诊断几何。没有新增敌车真值权限或开发者数据旁路；完整敌车开发者图层仍待移植。现有已授权target占位改为靶板Sprite，不以资源推断未授权敌车的位置/朝向。
+
+当前从源码仓库目录读取资产，不依赖Godot导入缓存或图片生成服务。独立Godot导出包的资源打包仍待专门验收。实际C0、双底盘夹具和清理验证见 [Sprite验收](reports/GODOT_SPRITES_VALIDATION.md)。
+
 ## 外部编辑、Start与源码兼容
 
 内置CodeEdit、源码文件树及保存/测试/部署按钮已按 [ADR-0058](adr/0058-external-editor-and-single-start.md) 删除。F2/VS Code按钮打开当前课程真实代码目录及主要文件，玩家保存后只需点击Start。Godot保留只读说明、升级预览、日志和停止操作，具体磁盘/版本接口见 [45](45_EXTERNAL_EDITOR_AND_START.md)。
@@ -35,6 +45,14 @@ Start自动生成原Workspace CAS快照，执行原独立检查，再创建全�
 ## 配置与入口
 
 `config/desktop.yaml` 和 [desktop Schema](schemas/desktop.schema.json) 管理Godot版本/官方包摘要、窗口、轮询及HTTP容量。仿真/模型/课程仍取原YAML，原生profile见 [41](41_RUNTIME_EXECUTION_PROFILES.md)。Linux x86_64首次缺Godot时在 `.m1-cache/godot/<version>/` 准备固定SHA-512便携包；离线须缓存完整或指定二进制。Python依赖使用原专用环境；缺Core时仅构建Rust，不调用Node/npm。
+
+### 桌面主题
+
+`theme_file` 引用 [desktop-theme.yaml](../config/desktop-theme.yaml)，由 [主题Schema](schemas/desktop-theme.schema.json) 验证后仅传给Godot；旧桌面配置省略此字段时使用同一默认主题。色值为不透明RGB，配色、边距、圆角、字体层级及滚动条尺寸集中配置。`ui_theme.gd` 生成统一Theme，主界面与说明/升级对话框共享，避免各控件重复定义颜色。
+
+保留深色场景；普通按钮使用浅色实心背景和深色文字，Start使用青色，结束尝试使用红色。悬停、按下、禁用分别有独立样式，禁用状态仍保持文字可读。图层按钮同时显示“开/关”和选中颜色，显示开关仍只作用于已获授权的数据。工具栏使用流式排列，任务、场景和日志独立分区。
+
+当前配色的按钮文字（含禁用状态）对比度至少4.5:1，按钮填充对相邻面板至少3:1，由Python回归核对；这些是本主题的可读性目标，不代表完整无障碍认证。按钮保持不获取游戏键盘焦点，点击后Space和F2沿用原输入规则。主题不改变Start、快照、Worker、View Policy或物理参数。实际窗口及交互证据见 [主题验收](reports/GODOT_UI_CONTRAST_VALIDATION.md)。
 
 ```sh
 python3 tools/tankbot.py

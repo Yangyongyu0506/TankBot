@@ -1,5 +1,7 @@
 # Godot 是表现客户端；不改变物理、Runtime profile 或 Workspace 格式。
 desktop_version: '1.0'
+theme_file: config/desktop-theme.yaml
+sprites_file: config/desktop-sprites.yaml
 engine:
   version: 4.7.2
   linux_x86_64:

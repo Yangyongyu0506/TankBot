@@ -21,6 +21,22 @@ def settings():
     value = load_yaml(ROOT / 'config/desktop.yaml')
     schema = json.loads((ROOT / 'docs/schemas/desktop.schema.json').read_text())
     Draft202012Validator(schema).validate(value)
+    appearance = load_yaml(ROOT / value.get('theme_file', 'config/desktop-theme.yaml'))
+    theme_schema = json.loads((ROOT / 'docs/schemas/desktop-theme.schema.json').read_text())
+    Draft202012Validator(theme_schema).validate(appearance)
+    value['client']['appearance'] = appearance
+    sprites = load_yaml(ROOT / value.get('sprites_file', 'config/desktop-sprites.yaml'))
+    sprite_schema = json.loads((ROOT / 'docs/schemas/desktop-sprites.schema.json').read_text())
+    Draft202012Validator(sprite_schema).validate(sprites)
+    for name, definition in sprites['assets'].items():
+        relative = definition['path']
+        asset = (ROOT / relative).resolve()
+        if not asset.is_relative_to((ROOT / 'assets/sprites').resolve()) or not asset.is_file():
+            raise ValueError(f'SPRITE_ASSET_MISSING: {name}: {relative}')
+        if asset.stat().st_size > sprites['limits']['max_file_bytes']:
+            raise ValueError(f'SPRITE_ASSET_TOO_LARGE: {name}: {relative}')
+        definition['path'] = str(asset)
+    value['client']['sprites'] = sprites
     return value
 
 

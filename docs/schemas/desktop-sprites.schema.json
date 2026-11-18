@@ -1,0 +1,429 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tankbot.example/schemas/desktop-sprites.schema.json",
+  "title": "Godot prebuilt sprite assets",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "sprite_version",
+    "limits",
+    "projectile_min_diameter_px",
+    "assets"
+  ],
+  "properties": {
+    "sprite_version": {
+      "const": "1.0"
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "max_file_bytes",
+        "max_dimension_px"
+      ],
+      "properties": {
+        "max_file_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16777216
+        },
+        "max_dimension_px": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8192
+        }
+      }
+    },
+    "projectile_min_diameter_px": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 32
+    },
+    "assets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tracked_base",
+        "omni_hull",
+        "omni_wheel",
+        "turret",
+        "barrel",
+        "armor",
+        "target",
+        "forward_marker",
+        "projectile"
+      ],
+      "properties": {
+        "tracked_base": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^assets/sprites/(?:[a-z0-9_-]+/)*[a-z0-9_-]+\\.(?:png|svg)$"
+            },
+            "region_px": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "prefixItems": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 8192
+                },
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 8192
+                },
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 8192
+                },
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 8192
+                }
+              ],
+              "items": false
+            }
+          }
+        },
+        "omni_hull": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^assets/sprites/(?:[a-z0-9_-]+/)*[a-z0-9_-]+\\.(?:png|svg)$"
+            },
+            "region_px": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "prefixItems": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 8192
+                },
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 8192
+                },
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 8192
+                },
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 8192
+                }
+              ],
+              "items": false
+            }
+          }
+        },
+        "omni_wheel": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^assets/sprites/(?:[a-z0-9_-]+/)*[a-z0-9_-]+\\.(?:png|svg)$"
+            },
+            "region_px": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "prefixItems": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 8192
+                },
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 8192
+                },
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 8192
+                },
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 8192
+                }
+              ],
+              "items": false
+            }
+          }
+        },
+        "turret": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^assets/sprites/(?:[a-z0-9_-]+/)*[a-z0-9_-]+\\.(?:png|svg)$"
+            },
+            "region_px": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "prefixItems": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 8192
+                },
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 8192
+                },
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 8192
+                },
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 8192
+                }
+              ],
+              "items": false
+            }
+          }
+        },
+        "barrel": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^assets/sprites/(?:[a-z0-9_-]+/)*[a-z0-9_-]+\\.(?:png|svg)$"
+            },
+            "region_px": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "prefixItems": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 8192
+                },
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 8192
+                },
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 8192
+                },
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 8192
+                }
+              ],
+              "items": false
+            }
+          }
+        },
+        "armor": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^assets/sprites/(?:[a-z0-9_-]+/)*[a-z0-9_-]+\\.(?:png|svg)$"
+            },
+            "region_px": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "prefixItems": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 8192
+                },
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 8192
+                },
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 8192
+                },
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 8192
+                }
+              ],
+              "items": false
+            }
+          }
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^assets/sprites/(?:[a-z0-9_-]+/)*[a-z0-9_-]+\\.(?:png|svg)$"
+            },
+            "region_px": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "prefixItems": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 8192
+                },
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 8192
+                },
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 8192
+                },
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 8192
+                }
+              ],
+              "items": false
+            }
+          }
+        },
+        "forward_marker": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^assets/sprites/(?:[a-z0-9_-]+/)*[a-z0-9_-]+\\.(?:png|svg)$"
+            },
+            "region_px": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "prefixItems": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 8192
+                },
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 8192
+                },
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 8192
+                },
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 8192
+                }
+              ],
+              "items": false
+            }
+          }
+        },
+        "projectile": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^assets/sprites/(?:[a-z0-9_-]+/)*[a-z0-9_-]+\\.(?:png|svg)$"
+            },
+            "region_px": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "prefixItems": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 8192
+                },
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 8192
+                },
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 8192
+                },
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 8192
+                }
+              ],
+              "items": false
+            }
+          }
+        }
+      }
+    }
+  }
+}

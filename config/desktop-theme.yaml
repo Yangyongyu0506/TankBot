@@ -1,0 +1,49 @@
+# 仅控制桌面界面外观，不进入仿真、Runtime 或玩家输入。
+theme_version: '1.0'
+colors:
+  background: '#0b1220'
+  panel: '#18283e'
+  inset: '#101b2b'
+  border: '#6b85a3'
+  text: '#f1f5fb'
+  muted: '#c1d0e1'
+  button_text: '#14263d'
+  button_normal: '#dce8f8'
+  button_hover: '#f2f7ff'
+  button_pressed: '#b9cfe8'
+  button_disabled: '#91a4ba'
+  disabled_text: '#26394f'
+  start_normal: '#64e4cf'
+  start_hover: '#a2f5e5'
+  start_pressed: '#3fcbb5'
+  start_text: '#092f2b'
+  stop_normal: '#f5a7ad'
+  stop_hover: '#ffd0d4'
+  stop_pressed: '#eb929c'
+  stop_text: '#4a1420'
+  focus: '#ffd166'
+  selection: '#385d80'
+  scroll_track: '#101b2b'
+  scroll_grabber: '#88a2bf'
+  scroll_hover: '#b8d2ed'
+metrics:
+  outer_margin: 14
+  gap: 10
+  small_gap: 8
+  panel_padding: 12
+  corner_radius: 8
+  border_width: 1
+  focus_width: 3
+  button_height: 44
+  button_padding_horizontal: 16
+  button_padding_vertical: 9
+  toggle_height: 36
+  toggle_padding_horizontal: 10
+  heading_font_size: 20
+  brand_font_size: 24
+  small_font_size: 16
+  line_spacing: 4
+  scrollbar_width: 12
+readability:
+  minimum_text_contrast: 4.5
+  minimum_control_contrast: 3.0

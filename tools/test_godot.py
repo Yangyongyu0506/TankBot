@@ -100,6 +100,21 @@ def main():
                         completions={'c0': {'completed_at': datetime.now(timezone.utc).isoformat()}})
         app.write(app.progress_path, app.validate_progress(progress))
         authority = Authority(configure(config, 'c1'))
+        # Static public model metadata for a synthetic visual-only gallery.
+        # No hidden poses or extra API grants; never becomes player input.
+        import copy
+        from tankbot_host.chassis_profiles import body_for, wheel_calibration_for
+        visuals = {}
+        for chassis in config['chassis']:
+            visual = copy.deepcopy(authority.public_profile())
+            visual['chassis'] = chassis
+            visual['chassis_visual'] = copy.deepcopy(authority.config['rendering']['chassis_models'][chassis])
+            visual['body'] = {key: value for key, value in body_for(authority.config, chassis).items()
+                              if key in ('length_m', 'width_m', 'corner_radius_m')}
+            visual['wheel_calibration'] = wheel_calibration_for(authority.config, chassis) if chassis == 'omnidirectional' else None
+            visuals[chassis] = visual
+        visual_fixtures = isolated / 'visual-fixtures.json'
+        visual_fixtures.write_text(json.dumps(visuals))
         server = LocalServer(authority, workspace_store=isolated / 'workspace', application=app)
         service = threading.Thread(target=server.serve)
         service.start()
@@ -113,9 +128,16 @@ def main():
                    '--script', 'res://tests/integration.gd', '--',
                    '--backend-url=http://127.0.0.1:' + str(server.http.server_port),
                    '--client-settings=' + str(client), '--report=' + str(out / 'flow.json'),
+                   '--visual-fixtures=' + str(visual_fixtures),
                    '--screenshot=' + str(out / 'game.png')]
         try:
-            result = subprocess.run(command, cwd=ROOT, env=env, capture_output=True, text=True, timeout=90)
+            try:
+                result = subprocess.run(command, cwd=ROOT, env=env, capture_output=True, text=True, timeout=90)
+            except subprocess.TimeoutExpired as error:
+                partial = b''.join(value.encode() if isinstance(value, str) else value or b''
+                                   for value in (error.stdout, error.stderr))
+                (out / 'godot.log').write_bytes(partial)
+                raise
             (out / 'godot.log').write_text(result.stdout + result.stderr)
             print(result.stdout + result.stderr)
             assert result.returncode == 0, 'Godot returned a nonzero status'

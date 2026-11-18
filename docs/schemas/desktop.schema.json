@@ -167,6 +167,14 @@
           "maximum": 32
         }
       }
+    },
+    "theme_file": {
+      "type": "string",
+      "pattern": "^config/[a-z0-9-]+\\.yaml$"
+    },
+    "sprites_file": {
+      "type": "string",
+      "pattern": "^config/[a-z0-9-]+\\.yaml$"
     }
   }
 }

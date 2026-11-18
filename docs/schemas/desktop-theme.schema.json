@@ -1,0 +1,281 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tankbot.example/schemas/desktop-theme.schema.json",
+  "title": "Godot desktop appearance",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "theme_version",
+    "colors",
+    "metrics",
+    "readability"
+  ],
+  "properties": {
+    "theme_version": {
+      "const": "1.0"
+    },
+    "colors": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "background",
+        "panel",
+        "inset",
+        "border",
+        "text",
+        "muted",
+        "button_text",
+        "button_normal",
+        "button_hover",
+        "button_pressed",
+        "button_disabled",
+        "disabled_text",
+        "start_normal",
+        "start_hover",
+        "start_pressed",
+        "start_text",
+        "stop_normal",
+        "stop_hover",
+        "stop_pressed",
+        "stop_text",
+        "focus",
+        "selection",
+        "scroll_track",
+        "scroll_grabber",
+        "scroll_hover"
+      ],
+      "properties": {
+        "background": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "panel": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "inset": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "border": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "text": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "muted": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "button_text": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "button_normal": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "button_hover": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "button_pressed": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "button_disabled": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "disabled_text": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "start_normal": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "start_hover": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "start_pressed": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "start_text": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "stop_normal": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "stop_hover": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "stop_pressed": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "stop_text": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "focus": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "selection": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "scroll_track": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "scroll_grabber": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "scroll_hover": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outer_margin",
+        "gap",
+        "small_gap",
+        "panel_padding",
+        "corner_radius",
+        "border_width",
+        "focus_width",
+        "button_height",
+        "button_padding_horizontal",
+        "button_padding_vertical",
+        "toggle_height",
+        "toggle_padding_horizontal",
+        "heading_font_size",
+        "brand_font_size",
+        "small_font_size",
+        "line_spacing",
+        "scrollbar_width"
+      ],
+      "properties": {
+        "outer_margin": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128
+        },
+        "gap": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128
+        },
+        "small_gap": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128
+        },
+        "panel_padding": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128
+        },
+        "corner_radius": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 128
+        },
+        "border_width": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 128
+        },
+        "focus_width": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128
+        },
+        "button_height": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128
+        },
+        "button_padding_horizontal": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128
+        },
+        "button_padding_vertical": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128
+        },
+        "toggle_height": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128
+        },
+        "toggle_padding_horizontal": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128
+        },
+        "heading_font_size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128
+        },
+        "brand_font_size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128
+        },
+        "small_font_size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128
+        },
+        "line_spacing": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128
+        },
+        "scrollbar_width": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128
+        }
+      }
+    },
+    "readability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minimum_text_contrast",
+        "minimum_control_contrast"
+      ],
+      "properties": {
+        "minimum_text_contrast": {
+          "type": "number",
+          "minimum": 4.5,
+          "maximum": 21
+        },
+        "minimum_control_contrast": {
+          "type": "number",
+          "minimum": 3,
+          "maximum": 21
+        }
+      }
+    }
+  }
+}

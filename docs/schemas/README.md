@@ -35,6 +35,8 @@
 | [runtime-execution](runtime-execution.schema.json) | 可信后端目录、共同声明上限、独立整批墙钟和版本/状态 |
 | [runtime-benchmark](runtime-benchmark.schema.json) | 隔离基准候选、工作负载/校准、样本与磁盘限额 |
 | [desktop](desktop.schema.json) | Godot便携包锁、窗口/HTTP容量、只读说明宽度与VS Code命令/文件扫描限额；不包含物理或玩家权限 |
+| [desktop-theme](desktop-theme.schema.json) | 桌面主题版本、RGB配色、控件间距/尺寸及可读性目标；仅供Godot显示 |
+| [desktop-sprites](desktop-sprites.schema.json) | 预制Sprite资产引用、文件/像素限额、最小弹丸显示直径；仅供Godot显示 |
 
 ## 消息、配置与运行能力的区别
 

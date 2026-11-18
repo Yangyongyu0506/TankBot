@@ -1,0 +1,60 @@
+# 仅供本地 Sprite 显示。region_px 为美术裁切框，不是物理尺寸。
+sprite_version: '1.0'
+limits:
+  max_file_bytes: 8388608
+  max_dimension_px: 4096
+projectile_min_diameter_px: 4.0
+assets:
+  tracked_base:
+    path: assets/sprites/industrial/tracked_base.png
+    region_px:
+    - 32
+    - 87
+    - 1384
+    - 910
+  omni_hull:
+    path: assets/sprites/industrial/omni_hull.png
+    region_px:
+    - 98
+    - 81
+    - 1067
+    - 1072
+  omni_wheel:
+    path: assets/sprites/industrial/omni_wheel.png
+    region_px:
+    - 14
+    - 92
+    - 1956
+    - 608
+  turret:
+    path: assets/sprites/industrial/turret.png
+    region_px:
+    - 51
+    - 48
+    - 1149
+    - 1154
+  barrel:
+    path: assets/sprites/industrial/barrel.png
+    region_px:
+    - 25
+    - 240
+    - 2127
+    - 232
+  armor:
+    path: assets/sprites/industrial/armor.png
+    region_px:
+    - 55
+    - 179
+    - 2062
+    - 364
+  target:
+    path: assets/sprites/industrial/target.png
+    region_px:
+    - 19
+    - 26
+    - 1411
+    - 1009
+  forward_marker:
+    path: assets/sprites/industrial/forward_marker.svg
+  projectile:
+    path: assets/sprites/industrial/projectile.svg
