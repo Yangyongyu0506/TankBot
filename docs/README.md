@@ -4,6 +4,8 @@
 
 当前更新日期：2026-11-18。应用配置2.1，关卡Schema 1.0；十三关由YAML发现。公共c0后同时开放Weapons C1和Navigation C0，各主线按prerequisites推进，工程与进度格式保持。Weapons已有坐标变换、目标滤波/预测及自瞄；Navigation已有轮电压、里程计、GPS/EKF、航点、连续追踪、全局规划和局部静态避障。SLAM、动态避障与Arena未实施。
 
+Godot显示名每章从C0编号：Hello Robot.C0、Weapons.C0–C4、Navigation.C0–C6。显示名与稳定ID分离，Weapons.C0–C4对应原c1–c5；文档/API/YAML中的原编号保留兼容含义，映射见 [44](44_GODOT_DESKTOP_CLIENT.md)。
+
 当前唯一玩家GUI是Godot，运行 `python3 tools/tankbot.py`；Rust/Rapier继续权威物理，独立CPython继续运行玩家代码。Web GUI、CodeMirror/npm、Pyodide及浏览器专用工具已按用户确认删除，见 [ADR-0057](adr/0057-godot-only-player-entry.md)、[44](44_GODOT_DESKTOP_CLIENT.md)。headless/probe、Rust WASM开发构建/对照和Godot所需本机API保留。标准检查不依赖Node/npm；WASM单独检查需要Node。
 
 原生profile仍为20ms声明准入、30ms整批墙钟、6tick提交，状态experimental；不因删除浏览器宣称可靠性提升。历史双Runtime报告、原始JSON和当期测试计数保留，不能作为当前浏览器支持或完整Godot功能等价的证据。历史浏览器源链接指向删除前提交。

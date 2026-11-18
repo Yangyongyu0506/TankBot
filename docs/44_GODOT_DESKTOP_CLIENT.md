@@ -24,6 +24,10 @@ Godot使用既有 `GET /api/profile`、`/api/view`、`/api/workspace`、`/api/de
 
 任务反馈文本仅变化时刷新，保留滚动位置；切关/重试后从顶部显示新任务。
 
+选关列表、状态栏、任务说明标题及前置提示统一显示“章节名称.Cn”，每章从C0编号，列表保留中文课题和完成/锁定标记。章节名取目录title，章内编号取该章levels列表中的零起始位置，不维护章节映射或关卡特例。当前为`Hello Robot.C0`、`Weapons.C0–C4`和`Navigation.C0–C6`。历史标题在显示时去除重复前缀。
+
+显示编号与稳定ID分离：Weapons.C0–C4依次对应c1–c5；Hello Robot.C0仍为c0，Navigation.C0–C6仍为navigation.c0–navigation.c6。选项元数据、请求、CLI、存档、YAML文件名及Workspace仍使用原ID。文档中的旧课程编号若用于API/算法复用，应按稳定ID理解；本次仅调整显示，不迁移玩家源码、历史版本或解锁记录。
+
 ### 预制 Sprite
 
 实体外观加载 [assets/sprites](../assets/sprites/README.md) 下的图片，由 [desktop-sprites.yaml](../config/desktop-sprites.yaml) 和 [Schema](schemas/desktop-sprites.schema.json) 管理引用、文件/像素限额及弹丸最小显示直径。启动器验证后将可信绝对路径只传给Godot，不进入公共profile或玩家Runtime。旧desktop配置省略sprites_file时使用同一默认配置；缺文件或非法图像明确失败，不悄悄退回几何占位。

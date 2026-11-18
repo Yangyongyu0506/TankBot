@@ -233,11 +233,14 @@ func reload_session() -> void:
 	levels.clear()
 	for level in profile.campaign.levels:
 		var unlocked = progress.get("developer_mode", false) or level.level_id in progress.get("unlocked_levels", [])
-		levels.add_item(level.title + (" [已通关]" if level.level_id in progress.get("completed_levels", []) else "" if unlocked else " [未解锁]"))
+		levels.add_item(level_name(level.level_id) + (" [已通关]" if level.level_id in progress.get("completed_levels", []) else "" if unlocked else " [未解锁]"))
 		var index = levels.item_count-1
 		levels.set_item_metadata(index, level.level_id)
 		levels.set_item_disabled(index, not unlocked)
-		levels.set_item_tooltip(index, level.problem + "\n前置：" + str(level.prerequisites))
+		var prerequisites = PackedStringArray()
+		for prerequisite in level.prerequisites:
+			prerequisites.append(level_name(prerequisite, "", true))
+		levels.set_item_tooltip(index, level.problem + "\n前置：" + ("无" if prerequisites.is_empty() else "、".join(prerequisites)))
 		if level.level_id == profile.campaign.active_level:
 			levels.select(index)
 	connected = true
@@ -245,9 +248,38 @@ func reload_session() -> void:
 	await poll_view()
 	message("VS Code 保存后点击 Start 自动检查并运行。代码目录：" + editable_directory)
 
+func level_name(level_id: String, title: String = "", code_only: bool = false) -> String:
+	var entry: Dictionary = {}
+	for level in profile.campaign.levels:
+		if level.level_id == level_id:
+			entry = level
+			break
+	if entry.is_empty():
+		return level_id
+	var chapter_title = str(entry.chapter_id)
+	var legacy_code = level_id.get_slice(".", level_id.get_slice_count(".") - 1).to_upper()
+	var local_code = legacy_code
+	for chapter in profile.campaign.chapters:
+		if chapter.chapter_id == entry.chapter_id:
+			chapter_title = str(chapter.title)
+			var index = chapter.levels.find(level_id)
+			if index >= 0:
+				local_code = "C%d" % index
+			break
+	var display_code = chapter_title + "." + local_code
+	if code_only:
+		return display_code
+	if title.is_empty():
+		title = str(entry.title)
+	for prefix in [legacy_code, chapter_title + " " + legacy_code, chapter_title + "." + legacy_code, local_code, chapter_title + " " + local_code, display_code]:
+		if title.begins_with(prefix + " · "):
+			title = title.trim_prefix(prefix + " · ")
+			break
+	return display_code + " · " + title
+
 func lesson_text() -> String:
 	var lesson = learning.get("lesson", {})
-	var result = str(lesson.get("title", "")) + "\n\n" + str(lesson.get("summary", "")) + "\n\n"
+	var result = level_name(profile.campaign.active_level, str(lesson.get("title", ""))) + "\n\n" + str(lesson.get("summary", "")) + "\n\n"
 	for step in lesson.get("steps", []):
 		result += "• " + str(step) + "\n"
 	result += "\n" + str(lesson.get("execution", "")) + "\n" + str(lesson.get("completion", ""))
@@ -359,7 +391,7 @@ func poll_status() -> void:
 			message("程序已运行 · revision " + str(launch.revision).substr(0, 12) + "。VS Code 后续修改在下次 Start 生效。")
 		elif phase in ["Finished", "Cancelled"]:
 			message("本次尝试已结束。修改并保存后可再次 Start。")
-	status_text.text = "%s · %s · %.1f s · 原生 profile %s" % [profile.campaign.active_level, attempt.get("status", "sandbox"), attempt.get("timing", {}).get("remaining_s", 0), profile.runtime_execution_profile.profile_id]
+	status_text.text = "%s · %s · %.1f s · 原生 profile %s" % [level_name(profile.campaign.active_level, "", true), attempt.get("status", "sandbox"), attempt.get("timing", {}).get("remaining_s", 0), profile.runtime_execution_profile.profile_id]
 	update_mission()
 	var output = ""
 	for entry in status.get("logs", {}).get("entries", []):

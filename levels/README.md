@@ -5,6 +5,8 @@
 ## 编写与验证流程
 
 文件名统一为 `<chapter_id>.C<n>.yaml`：章节使用 `metadata.chapter.chapter_id` 的小写标识，`C` 大写，保留当前课程编号。例如 `hello_robot.C0.yaml`、`weapons.C1.yaml` 至 `weapons.C5.yaml`、`navigation.C0.yaml`。
+
+文件名和metadata.id保留稳定身份，Godot显示名则按每章目录顺序从C0编号。因此Weapons.C0–C4对应原c1–c5及weapons.C1.yaml–weapons.C5.yaml；不要为匹配界面显示而重命名既有ID/文件或迁移玩家工程。完整映射见 [44](../docs/44_GODOT_DESKTOP_CLIENT.md)。
 文件名只用于组织配置；加载、`--level`、前置关卡及存档继续使用 YAML 内稳定的 `metadata.id`（现有 `c0`–`c5`、`navigation.c0`–`navigation.c4`），不得因重命名而改变 ID 或玩家工作区。
 
 1. 选择使用相同现有组件的配置作为起点，完整保留所需字段。metadata.id使用新稳定ID，order唯一且只负责展示/序列化；prerequisites引用已发现ID，必须无环，数组表示全部通关，不要求排在展示列表前面。不要修改已有稳定关卡的ID/顺序。

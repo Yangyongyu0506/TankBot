@@ -6,21 +6,23 @@
 
 ```mermaid
 flowchart TD
-    I[c0 公共入门] --> W1[Weapons C1 坐标变换]
-    I --> N0[Navigation C0 轮驱动]
-    W1 --> W2[C2 目标跟踪]
-    W2 --> W3[C3 极坐标滤波]
-    W3 --> W4[C4 预测与自瞄]
-    W4 --> W5[C5 装甲与小陀螺]
-    N0 --> N1[Navigation C1 里程计]
-    N1 --> N2[Navigation C2 GPS/EKF]
-    N2 --> N3[Navigation C3 航点位置闭环]
-    N3 --> N4[Navigation C4 连续路径追踪]
-    N4 --> N5[Navigation C5 已知地图全局规划]
-    N5 --> N6[Navigation C6 局部感知与静态避障]
+    I[Hello Robot.C0 公共入门] --> W1[Weapons.C0 坐标变换]
+    I --> N0[Navigation.C0 轮驱动]
+    W1 --> W2[Weapons.C1 目标跟踪]
+    W2 --> W3[Weapons.C2 极坐标滤波]
+    W3 --> W4[Weapons.C3 预测与自瞄]
+    W4 --> W5[Weapons.C4 装甲与小陀螺]
+    N0 --> N1[Navigation.C1 里程计]
+    N1 --> N2[Navigation.C2 GPS/EKF]
+    N2 --> N3[Navigation.C3 航点位置闭环]
+    N3 --> N4[Navigation.C4 连续路径追踪]
+    N4 --> N5[Navigation.C5 已知地图全局规划]
+    N5 --> N6[Navigation.C6 局部感知与静态避障]
 ```
 
 实线均为必须通关的前置。公共入口保留Hello Robot章节与c0存储身份；Weapons和Navigation原章节ID、文件名及metadata.order不变。跨主线建议只进入现有关卡tutorial.hints，不影响解锁，也不复制算法。
+
+图中使用Godot显示名，各章从C0编号。Weapons.C0–C4的稳定ID仍依次为c1–c5；下文存档/API规则继续使用稳定ID，见 [显示与身份映射](44_GODOT_DESKTOP_CLIENT.md)。
 
 ## 单一规则与存档
 
