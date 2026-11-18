@@ -1,0 +1,106 @@
+{
+  "date": "2026-11-18",
+  "baseline_commit": "5e0f036",
+  "configuration_version": "2.1",
+  "vscode_version_observed": "1.127.0",
+  "runs": [
+    {
+      "evidence": ".m1-cache/godot-qa/20261118T031459805014",
+      "passed": true,
+      "checks": 33,
+      "display": "headless",
+      "godot": "4.7.2-stable (official)",
+      "result": {
+        "estimate_samples": 37.0,
+        "finished_tick": 284.0,
+        "hits": 1.0,
+        "passed": true,
+        "reason": "objective_completed",
+        "rmse_m": 1.28802424842365e-15,
+        "scored_samples": 37.0,
+        "yaw_rmse_rad": null
+      },
+      "runtime": {
+        "total_batches": 38.0,
+        "wall_timeouts": 0.0,
+        "missed_commit_gates": 0.0
+      },
+      "round_trip_ms": {
+        "count": 38.0,
+        "max_ms": 3.474054,
+        "p50_ms": 2.111028,
+        "p95_ms": 2.633442,
+        "p99_9_ms": 3.474054,
+        "p99_ms": 3.474054
+      },
+      "editor": {
+        "real_vscode": false,
+        "note": "recording launcher; not real editor GUI"
+      }
+    },
+    {
+      "evidence": ".m1-cache/godot-qa/20261118T033342256310",
+      "passed": true,
+      "checks": 33,
+      "display": "X11",
+      "godot": "4.7.2-stable (official)",
+      "result": {
+        "estimate_samples": 28.0,
+        "finished_tick": 231.0,
+        "hits": 1.0,
+        "passed": true,
+        "reason": "objective_completed",
+        "rmse_m": 1.27830709063112e-15,
+        "scored_samples": 28.0,
+        "yaw_rmse_rad": null
+      },
+      "runtime": {
+        "total_batches": 29.0,
+        "wall_timeouts": 0.0,
+        "missed_commit_gates": 0.0
+      },
+      "round_trip_ms": {
+        "count": 29.0,
+        "max_ms": 3.5536,
+        "p50_ms": 1.763146,
+        "p95_ms": 2.505211,
+        "p99_9_ms": 3.5536,
+        "p99_ms": 3.5536
+      },
+      "editor": {
+        "real_vscode": true,
+        "launches": 3,
+        "live_at_end": 1,
+        "saved_file_input": "integration fixture writes real files; no claim of manual VS Code keystroke/IME validation"
+      }
+    }
+  ],
+  "targeted_external_tests": {
+    "passed": 16,
+    "failed": 0,
+    "duration_s": 13.161
+  },
+  "initial_standard_check": {
+    "python_tests": 402,
+    "failures": 4,
+    "duration_s": 528.59,
+    "reason": "frozen baseline expects old editor-operation text; historical fixtures preserved, exact 22 approved tutorial translations used for comparison",
+    "log": ".m1-cache/external-editor-qa/standard-check.log"
+  },
+  "final_standard_check": {
+    "exit_code": 0,
+    "python_tests": 404,
+    "duration_s": 529.803,
+    "rust_tests": 18,
+    "documentation_schema_examples": "passed",
+    "generated_profile": "passed",
+    "log": ".m1-cache/external-editor-qa/standard-check-final.log"
+  },
+  "limits": [
+    "Real-window flow uses --disable-vsync due to the previously recorded X11 presentation issue.",
+    "Files saved by test fixture; no claim of manual VS Code typing, Python-extension or IME validation.",
+    "No full thirteen-course GUI certification or expanded experimental-runtime reliability guarantee."
+  ],
+  "wasm_equivalence": "passed",
+  "git_diff_check": "passed"
+}

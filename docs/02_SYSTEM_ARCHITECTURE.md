@@ -91,9 +91,9 @@ flowchart TB
 
 ## 前端架构与接口
 
-当前采用Godot/GDScript与原生CodeEdit，由 [ADR-0057](adr/0057-godot-only-player-entry.md) 确认为唯一玩家GUI。`python3 tools/tankbot.py`默认打开Godot，`serve/browser/godot`子命令不再接受；headless/probe仍是开发工具。Web GUI、CodeMirror/npm、Pyodide及双origin启动器已删除。
+当前采用Godot/GDScript作为玩家GUI，由ADR-0057确定；[ADR-0058](adr/0058-external-editor-and-single-start.md) 将源码编辑交给VS Code，Godot只保留Start、只读说明与日志等游戏界面。`python3 tools/tankbot.py`默认打开Godot，`serve/browser/godot`子命令不再接受；headless/probe仍是开发工具。Web GUI、CodeMirror/npm、Pyodide及双origin启动器已删除。
 
-`clients/godot/backend.gd`连接受控loopback API，`timeline.gd`缓存/插值授权快照，`world_view.gd`只绘图，`main.gd`管理草稿和测试部署请求。碰撞、命中、权限、计时与部署生效由Authority决定。工作区和独立CPython不因更换GUI改变所有权。尚未移植的界面与证据见 [44](44_GODOT_DESKTOP_CLIENT.md)。
+`clients/godot/backend.gd`连接受控loopback API，`timeline.gd`缓存/插值授权快照，`world_view.gd`只绘图，`main.gd`管理外部编辑入口、Start和只读反馈。碰撞、命中、权限、计时与部署生效由Authority决定。工作区和独立CPython不因更换GUI改变所有权。尚未移植的界面与证据见 [44](44_GODOT_DESKTOP_CLIENT.md)。
 
 逻辑接口仍为 `CoreHost.advance(tick_inputs) -> AuthorizedOutputs`、`ViewGateway.build(...) -> PlayerViewSnapshot`、`RuntimeSupervisor.submit(step_request)`与Workspace不可变快照。当前实际接口以03–08及44为准；历史M3编辑器/浏览器映射保留于17/16，不代表现行依赖。
 

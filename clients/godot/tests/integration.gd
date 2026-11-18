@@ -95,6 +95,11 @@ func mission_scroll_tests() -> bool:
 	app.update_mission()
 	return true
 
+func save_source(path: String, content: String) -> void:
+	var file = FileAccess.open(app.editable_directory.path_join(path), FileAccess.WRITE)
+	file.store_string(content)
+	file.close()
+
 func run() -> void:
 	app = AppScene.instantiate()
 	root.add_child(app)
@@ -108,37 +113,31 @@ func run() -> void:
 	first_revision = app.snapshot.revision
 	check(app.profile.runtime_execution_profile.backend == "native", "native profile; no Pyodide")
 	check(app.profile.runtime_execution_profile.batch_wall_deadline_ms == 30, "native experimental 30ms deadline unchanged")
+	check(app.find_children("*", "CodeEdit", true, false).is_empty(), "built-in source editor removed")
 	await key(KEY_F2)
-	if not check(await until(func(): return app.editor_panel.visible and app.editor_panel.size == app.size), "F2 full-screen editor"):
+	if not check(await until(func(): return FileAccess.file_exists(app.editable_directory.path_join("perception/transforms.py"))), "F2 exports real source files for external editor"):
 		return
-	check(app.editor_panel.get_theme_stylebox("panel").bg_color.a == 1, "editor has opaque background over game view")
-	app.open_file("perception/transforms.py")
-	app.editor.text = "def broken(:\n"
-	await app.save_files()
-	await app.test_snapshot()
-	if not check(await until(func(): return app.editor_logs.text.contains("SyntaxError")), "invalid Python rejected"):
+	save_source("perception/transforms.py", "def broken(:\n")
+	await app.start_level()
+	if not check(await until(func(): return app.last_log.contains("SyntaxError")), "Start shows native Python source diagnostic"):
 		return
-	check(app.editor_logs.text.contains("SyntaxError"), "Python source diagnostic visible")
-	# Reference confined to this test. Production templates remain empty exercises.
-	app.editor.text = "import math\nimport numpy as np\nfrom numpy.typing import NDArray\nfrom tankbot import Pose2D\n\ndef radar_to_map(own_pose: Pose2D) -> NDArray[np.float64]:\n    T: NDArray[np.float64] = np.eye(4, dtype=np.float64)\n    c: float = math.cos(own_pose.yaw_rad)\n    s: float = math.sin(own_pose.yaw_rad)\n    T[:2, :2] = [[c, -s], [s, c]]\n    T[0, 3] = own_pose.x_m\n    T[1, 3] = own_pose.y_m\n    return T\n"
-	await app.save_files()
-	await app.add_file("my_notes.py")
-	app.editor.text = "# preserved custom file\n"
-	await app.save_files()
-	var revision = app.snapshot.revision
-	await app.test_snapshot()
-	if not check(await until(func(): return app.ready_revision == revision), "C1 snapshot Ready in isolated CPython"):
+	check(app.deployment.get("active") == null, "invalid source cannot become active")
+	# Reference confined to this test; save real files, never fill a production template.
+	save_source("perception/transforms.py", "import math\nimport numpy as np\nfrom numpy.typing import NDArray\nfrom tankbot import Pose2D\n\ndef radar_to_map(own_pose: Pose2D) -> NDArray[np.float64]:\n    T: NDArray[np.float64] = np.eye(4, dtype=np.float64)\n    c: float = math.cos(own_pose.yaw_rad)\n    s: float = math.sin(own_pose.yaw_rad)\n    T[:2, :2] = [[c, -s], [s, c]]\n    T[0, 3] = own_pose.x_m\n    T[1, 3] = own_pose.y_m\n    return T\n")
+	save_source("my_notes.py", "# preserved custom file\n")
+	await app.start_level()
+	if not check(await until(func(): return app.deployment.get("active") != null and app.running), "single Start checks and activates isolated CPython"):
 		return
-	check(not app.deploy_button.disabled, "deployment button enabled after test")
-	await app.deploy_snapshot()
-	if not check(await until(func(): return app.deployment.get("active") != null), "real deployment Active"):
-		return
-	await create_timer(0.2).timeout
-	check(not app.editor_panel.visible, "deployment closes editor")
+	var active_revision = app.deployment.active.revision
+	check(not app.deployment.reports.is_empty(), "Start retained preflight checks automatically")
+	save_source("my_notes.py", "# edited while running\n")
 	await key(KEY_F2)
-	check(not app.editor_panel.visible, "running attempt blocks editor")
+	check(not app.edit_button.disabled, "external editor remains available while running")
+	check(app.start_button.disabled, "stop is required before starting another code version")
+	check(app.deployment.active.revision == active_revision, "disk edits do not modify the active revision")
 	var view = await app.backend.call_api("/api/view")
-	check(not view.payload.get("target_estimates", []).is_empty(), "player estimate reaches authorized renderer")
+	if not check(await until(func(): return not app.world.timeline.latest.get("payload", {}).get("target_estimates", []).is_empty()), "player estimate reaches authorized renderer"):
+		return
 	if not screenshot_path.is_empty() and DisplayServer.get_name() != "headless":
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png(screenshot_path)
@@ -176,18 +175,19 @@ func run() -> void:
 		return
 	terminal = {"attempt": app.attempt.duplicate(true), "deployment": app.deployment.duplicate(true)}
 	await app.start_level()
-	check(app.snapshot.files["my_notes.py"] == "# preserved custom file\n", "custom source preserved after retry")
+	check(app.snapshot.files["my_notes.py"] == "# edited while running\n", "retry captures externally saved code")
 	check(is_zero_approx(app.mission.scroll_vertical), "new attempt starts mission text at the top")
 	var original = await app.backend.call_api("/api/workspace/revision", {"revision": first_revision})
 	check(original.get("revision") == first_revision, "original revision and ledger preserved")
-	check(not app.running, "retry resets attempt lifecycle")
+	await app.finish_attempt()
 	var campaign_revision = app.snapshot.revision
 	var campaign_files = app.snapshot.files.duplicate(true)
 	var campaign_ledger = app.snapshot.ledger.duplicate(true)
 	for index in range(app.levels.item_count):
 		if app.levels.get_item_metadata(index) == "c0":
 			app.levels.select(index)
-	await app.start_level()
+			await app.choose_level(index)
+			break
 	var initial = await app.backend.call_api("/api/view")
 	var x0 = float(initial.payload.selected_pose.pose.x_m)
 	var forward = InputEventKey.new()
@@ -205,21 +205,24 @@ func run() -> void:
 	for index in range(app.levels.item_count):
 		if app.levels.get_item_metadata(index) == "navigation.c0":
 			app.levels.select(index)
-	await app.start_level()
+			await app.choose_level(index)
+			break
 	check(app.profile.campaign.active_level == "navigation.c0" and not app.profile.weapons_enabled, "Navigation scope switches to unarmed native scene")
 	check(not app.snapshot.files.has("perception/transforms.py"), "Navigation never copies Weapons algorithms")
 	for index in range(app.levels.item_count):
 		if app.levels.get_item_metadata(index) == "c1":
 			app.levels.select(index)
-	await app.start_level()
+			await app.choose_level(index)
+			break
 	check(campaign_files.keys().all(func(path): return app.snapshot.files.get(path) == campaign_files[path]), "returning to Weapons preserves all existing source bytes")
 	check(campaign_ledger.keys().all(func(name): return app.snapshot.ledger.get(name) == campaign_ledger[name]), "returning preserves prior ledger entries; new unlock may append provenance")
 	var saved = await app.backend.call_api("/api/workspace/revision", {"revision": campaign_revision})
 	check(saved.get("revision") == campaign_revision, "authored revision remains readable after C0 and Navigation visits")
-	app.open_file("perception/transforms.py")
 	await key(KEY_F2)
-	check(await until(func(): return app.editor_panel.visible), "retry restores editor access")
+	check(app.editable_directory.ends_with("/files"), "returning opens the original editable project")
+	app.show_guide()
+	check(await until(func(): return app.guide_dialog.visible), "read-only lesson remains available without a code editor")
 	if not screenshot_path.is_empty() and DisplayServer.get_name() != "headless":
 		await RenderingServer.frame_post_draw
-		root.get_texture().get_image().save_png(screenshot_path.get_basename() + "-editor.png")
+		root.get_texture().get_image().save_png(screenshot_path.get_basename() + "-guide.png")
 	finish()

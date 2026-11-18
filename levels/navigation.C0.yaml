@@ -188,7 +188,7 @@ randomization: {seed: 0, reset_on: new_run, generator: python_random_v1}
 tutorial:
   problem: 系统会发送四组“直行 4 秒、原地左转 2 秒”的速度指令。实现轮控制器，让真实底盘尽可能走完方形并回到起点。不能手动驾驶，也没有武器。
   hints:
-  - 在 F2 中只需编辑高亮的 control/wheel_controller.py；Navigation 使用独立项目，Weapons 代码与历史保留在原工程。
+  - 按 F2 在 VS Code 编辑 control/wheel_controller.py；Navigation 使用独立项目，Weapons 代码与历史保留在原工程。
   - 轮速顺序永远是 [left,right]，单位 rad/s；正角速度表示逆时针左转，左轮应比右轮慢。
   - 先做 FK 检查当前运动，再做 IK 得到目标轮速，结合电机反电动势、负载与速度误差计算两轮电压。
   - 运行时打开“曲线”，对比目标与编码器速度、左右轮速和执行电压；虚线标记指令切换，鼠标移入可查看采样值。

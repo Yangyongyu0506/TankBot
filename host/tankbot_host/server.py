@@ -35,6 +35,8 @@ class LocalServer:
         self.workspace_scopes={workspace_scope(config):self.workspace}
         self.campaign_directory = (Path(workspace_store) / "campaign" if workspace_store and not config.get("campaign", {}).get("active_level") else workspace_store)
         authority.deployment = DeploymentManager(authority)
+        self.player_run = None
+        self.launch_error = None
         if config["host"]["bind"] != "127.0.0.1":
             raise ValueError("M1 supports loopback only")
         owner = self
@@ -108,6 +110,7 @@ class LocalServer:
                 elif path == "/api/deployment":
                     with owner.lock:
                         value = owner.authority.deployment.status()
+                        value['player_start'] = owner.start_status()
                     self.reply(200, json.dumps(value).encode())
                 elif path in ("/api/profile", "/api/view"):
                     with owner.lock:
@@ -126,7 +129,7 @@ class LocalServer:
                 if not self.valid_host() or self.headers.get("Origin") not in origins or self.headers.get("X-TankBot-Control") != owner.token:
                     self.reply(403, b'{}')
                     return
-                if self.path not in ("/api/settings", "/api/cmd_vel", "/api/turret_cmd_vel", "/api/fire", "/api/campaign/start", "/api/campaign/finish", "/api/pose_source") and not self.path.startswith(("/api/workspace/", "/api/deployment/", "/api/experiment/")):
+                if self.path not in ("/api/settings", "/api/cmd_vel", "/api/turret_cmd_vel", "/api/fire", "/api/campaign/start", "/api/campaign/run", "/api/campaign/finish", "/api/pose_source") and not self.path.startswith(("/api/workspace/", "/api/deployment/", "/api/experiment/")):
                     self.reply(404, b'{}')
                     return
                 try:
@@ -160,10 +163,10 @@ class LocalServer:
                                 if not owner.application.developer or level is None:
                                     level = owner.application.progress()["current_level"] or owner.application.initial_level
                                 owner.start_level(level)
-                        elif self.path == "/api/campaign/start":
+                        elif self.path in ("/api/campaign/start", "/api/campaign/run"):
                             if not isinstance(value, dict) or set(value) != {"level_id"}:
                                 raise ValueError("INVALID_LEVEL_REQUEST")
-                            result = owner.start_level(value["level_id"])
+                            result = owner.run_level(value['level_id']) if self.path.endswith('/run') else owner.start_level(value['level_id'])
                         elif self.path == "/api/campaign/finish":
                             if value != {}:
                                 raise ValueError("INVALID_LEVEL_REQUEST")
@@ -218,8 +221,33 @@ class LocalServer:
             raise
         self.authority = candidate
         self.workspace = selected_workspace
+        self.player_run = None
+        self.launch_error = None
         old.close()
         return candidate.public_profile()
+
+    def start_status(self):
+        return self.player_run.public() if self.player_run else self.launch_error
+
+    def run_level(self, level_id):
+        """Reset intentionally, capture saved files, then asynchronously check/start."""
+        from .campaign import active
+        from .player_run import PlayerRun
+        if self.authority.campaign and self.authority.campaign.status == 'active' and self.authority.campaign.started_tick is not None:
+            raise ValueError('ATTEMPT_RUNNING: 请先停止当前尝试，再点击 Start')
+        profile = self.start_level(level_id)
+        identity = active(self.authority.config)
+        lesson = self.authority.config['campaign']['levels'][identity] if identity else None
+        if lesson and lesson['runtime']['processing'] == 'passive':
+            return {'profile': profile, 'player_start': None}
+        try:
+            snapshot = self.workspace.external.capture()
+            self.player_run = PlayerRun(self.authority, snapshot)
+        except (ValueError, OSError) as error:
+            self.launch_error = {'run_id': self.authority.run_id, 'revision': None,
+                                 'phase': 'Failed', 'error': str(error)}
+            self.authority.logs.append(str(error) + '\n', source='start', stream='error', tick=self.authority.tick)
+        return {'profile': profile, 'player_start': self.start_status()}
 
     def save_progress(self):
         a = self.authority
@@ -242,6 +270,8 @@ class LocalServer:
             while time.monotonic() >= deadline and catchup < self.authority.config["host"]["max_catchup_ticks"]:
                 with self.lock:
                     self.authority.advance()
+                    if self.player_run:
+                        self.player_run.advance()
                     if self.authority.tick % self.authority.hz == 0 or (self.authority.campaign and self.authority.campaign.status == "passed" and not self.save_error):
                         self.save_progress()
                 deadline += 1/self.authority.hz

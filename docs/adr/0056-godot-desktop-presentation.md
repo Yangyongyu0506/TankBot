@@ -7,6 +7,8 @@
 
 2026-11-18局部修订：[ADR-0057](0057-godot-only-player-entry.md) 删除Web/Pyodide和旧玩家子命令，当前仅Godot＋原生CPython；本记录的原Context和历史证据保留，其他仍适用的权限、Workspace或截止合同不变。
 
+2026-11-18局部修订：[ADR-0058](0058-external-editor-and-single-start.md) 将内置源码编辑与手动测试/部署按钮替换为VS Code＋Start，底层隔离、快照及固定提交边界保持。
+
 ## Context
 
 现有 GUI 使用浏览器；原生模式实际上已由 Python Authority、Rust Core 和独立 CPython Worker 执行仿真与玩家代码。用户希望改用 Godot，并已明确确认“合并环境”指统一安装和启动，仍保留独立玩家 Worker。首轮明确为 Godot 4 标准版/GDScript、授权渲染、键鼠、F2 多文件编辑、测试/部署和日志；Web 保留回归。

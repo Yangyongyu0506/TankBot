@@ -332,16 +332,16 @@ tutorial:
     - 按任务面板要求移动、转向，再用 J/L 瞄准、空格单发。
     - 地图 +x 向右、+y 向上；yaw 从 +x 逆时针为正，视角不会跟着车体旋转。
     - 此关明确显示真值。后续关卡会逐步撤回信息，并提供替代观测与算法模板。
-    - 正式尝试持续计时，打开编辑器不暂停；可在任务页或编辑器点击「结束本次尝试」，修改保存后重试。
+    - 正式尝试持续计时，切换到 VS Code 不暂停；可在游戏点击「结束尝试」，修改并保存后点击 Start 重试。
     files: []
     default_type: Pose2D
     functions: []
     aliases: {}
-    execution: 本关无需编程；关闭代码编辑器后使用键盘驾驶。
+    execution: 本关无需编程；在游戏窗口使用键盘驾驶，Start 可开始或重试。
     completion: 相对起点移动至少 {movement_m:g} m、车体转向至少 {turn_rad:g} rad，并命中靶标 {required_hits}
       次。 限时 {time_limit_s} 仿真秒。首次有效人工操作开始计时。
     common_errors:
-    - 编辑器打开时，驾驶按键用于编辑代码；关闭后才能控制坦克。
+    - 切换到 VS Code 时游戏释放驾驶按键；切回游戏窗口后再操控坦克。
     type_notes:
       TargetPoints:
         description: 当前帧地图坐标测量矩阵，不包含历史。

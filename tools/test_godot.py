@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT / path) for path in ('host', 'protocol', 'sdk/python', 'tools')]
@@ -53,6 +54,8 @@ def main():
     parser.add_argument('--headless', action='store_true', help='No screenshot or real display validation')
     parser.add_argument('--disable-vsync', action='store_true', help='Diagnostic window option for displays with blocked presentation; production settings unchanged')
     parser.add_argument('--offline', action='store_true')
+    parser.add_argument('--real-vscode', action='store_true', help='Open a real isolated VS Code window; default uses a recording launcher')
+    parser.add_argument('--vscode-binary', type=Path, help='Explicit VS Code GUI executable for isolated window validation')
     args = parser.parse_args()
     from python_env import relaunch_if_needed
     relaunch_if_needed(Path(__file__).resolve(), offline=args.offline)
@@ -68,6 +71,28 @@ def main():
     config['host']['port'] = 0
     with tempfile.TemporaryDirectory(prefix='tankbot-godot-flow-') as temporary:
         isolated = Path(temporary)
+        import shutil
+        desktop_spec = settings()
+        launcher = isolated / 'record-editor.py'
+        launcher.write_text('import json,sys\nfrom pathlib import Path\nPath(' + repr(str(out / 'editor-launch.json')) + ').write_text(json.dumps(sys.argv[1:]))\n')
+        if args.real_vscode:
+            executable = str(args.vscode_binary.resolve()) if args.vscode_binary else shutil.which('code')
+            if not executable:
+                raise RuntimeError('VS Code is not installed; use --vscode-binary')
+            arguments = ['--user-data-dir', str(isolated / 'vscode-profile'), '--extensions-dir', str(isolated / 'vscode-extensions'), '--disable-extensions']
+        else:
+            executable, arguments = sys.executable, [str(launcher)]
+        desktop_spec['editor'].update(executable=executable, arguments=arguments)
+        editor_processes = []
+        real_popen = subprocess.Popen
+        def editor_popen(*values, **keywords):
+            process = real_popen(*values, **keywords)
+            editor_processes.append(process)
+            return process
+        editor_settings = patch('tankbot_host.desktop.settings', return_value=desktop_spec)
+        editor_launcher = patch('tankbot_host.external_editor.Popen', side_effect=editor_popen)
+        editor_settings.start()
+        editor_launcher.start()
         app = ApplicationState(config, isolated / 'settings.yaml', isolated / 'progress.json')
         # A legitimate precompleted prerequisite fixture, not a developer grant.
         progress = app.new_progress()
@@ -99,11 +124,28 @@ def main():
             assert app.progress()['completed_levels'] == ['c0', 'c1'], 'Actual pass must persist progress'
             assert not app.developer
             launcher_smoke(binary, isolated, out, env, args.offline)
-            print('PASS: Godot editor → test → deploy → C1 pass → retry; source/history/progress preserved.')
+            if not args.real_vscode:
+                assert (out / 'editor-launch.json').is_file(), 'F2 did not invoke the external launcher'
+            else:
+                assert any(process.poll() is None for process in editor_processes), 'The isolated VS Code GUI exited before flow completion'
+            (out / 'editor-evidence.json').write_text(json.dumps({'real_vscode': args.real_vscode,
+                'launches': len(editor_processes), 'live_at_end': sum(process.poll() is None for process in editor_processes),
+                'saved_file_input': 'integration fixture writes real files; no claim of manual VS Code keystroke/IME validation'}, indent=2))
+            print('PASS: external saved files → single Start → C1 pass → retry; source/history/progress preserved.')
             print('PASS: unified godot launcher exits with the window and closes its HTTP backend.')
             print('Evidence:', out.relative_to(ROOT))
             return 0
         finally:
+            editor_settings.stop()
+            editor_launcher.stop()
+            if args.real_vscode:
+                for process in editor_processes:
+                    if process.poll() is None:
+                        process.terminate()
+                        try:
+                            process.wait(timeout=5)
+                        except subprocess.TimeoutExpired:
+                            process.kill()
             server.http.shutdown()
             service.join(timeout=5)
             server.authority.close()

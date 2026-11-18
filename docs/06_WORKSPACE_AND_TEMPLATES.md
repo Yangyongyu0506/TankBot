@@ -4,7 +4,7 @@
 
 ## 目的、范围与约束
 
-支持持久化、多文件Python项目、无损解锁新模块和不可变部署。当前本机已支持单模块兼容包装及同步周期/event模块图、整图测试/部署/回滚、模板升级预览和项目维护；分别见 [17](17_EDITOR_AND_DEPLOYMENT.md)、[26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)、[38](38_ENGINEERING_AND_ALGORITHM_LAB.md)。ADR-0009/0012约束非覆盖管理与编辑/运行分离。独立静态Web存储、云同步、持久运行checkpoint和动态RobotApp组装仍未实现。
+支持持久化、多文件Python项目、无损解锁新模块和不可变部署。当前本机已支持单模块兼容包装及同步周期/event模块图、整图测试/部署/回滚、模板升级预览和项目维护；分别见 [17](17_EDITOR_AND_DEPLOYMENT.md)、[26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)、[38](38_ENGINEERING_AND_ALGORITHM_LAB.md)。ADR-0009/0012约束非覆盖管理与编辑/运行分离；[ADR-0058](adr/0058-external-editor-and-single-start.md) 将玩家操作简化为VS Code保存→Start，内部检查和正式启动仍分离，见 [45](45_EXTERNAL_EDITOR_AND_START.md)。独立静态Web存储、云同步、持久运行checkpoint和动态RobotApp组装仍未实现。
 
 ## Navigation规划工程增量
 
@@ -31,7 +31,7 @@ workspace/
 
 按解锁需要创建目录；不要求所有目录从第一关存在。算法文件与玩家自建工具库均属玩家内容。受管框架包装器与玩家算法分文件保存，部署使用不可变副本；升级只通过预览更新受管文件，不靠注释区或自动AST改写玩家算法。玩家文件允许同项目绝对 import；`localization` 是 Python 包，SDK 自带 `tankbot` 不被工作区同名文件覆盖，检测同名遮蔽并报错。
 
-两种本机运行方式都由启动器在 `userdata/workspaces/<项目标识>/` 保存源码revision、模板ledger、测试/部署观察归档、实验记录和备份；旧缓存库非覆盖复制迁移，见 [17](17_EDITOR_AND_DEPLOYMENT.md)。campaign/navigation按scope选择独立工程，与稳定关卡ID和进度记录分开。可执行DeploymentArtifact与Ready授权只活在Authority会话中，不等同于磁盘归档；运行checkpoint尚未实现。独立Web的IndexedDB/OPFS、桌面应用数据及服务器按用户存储是待验证的部署适配，不是当前持久化后端。
+当前原生启动器在 `userdata/workspaces/<项目标识>/` 保存源码revision、模板ledger、测试/部署观察归档、实验记录和备份；旧缓存库非覆盖复制迁移，见 [17](17_EDITOR_AND_DEPLOYMENT.md)。同级files目录供VS Code保存草稿，Start捕获revision；冲突拒绝及恢复副本见45。campaign/navigation按scope选择独立工程，与稳定关卡ID和进度记录分开。可执行DeploymentArtifact与Ready授权只活在Authority会话中，不等同于磁盘归档；运行checkpoint尚未实现。独立Web的IndexedDB/OPFS、桌面应用数据及服务器按用户存储是待验证的部署适配，不是当前持久化后端。
 
 ## Manifest
 

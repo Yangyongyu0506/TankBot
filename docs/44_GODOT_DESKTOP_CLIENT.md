@@ -10,7 +10,7 @@ Godot 4标准版/GDScript是当前唯一玩家GUI，使用原生CPython和Rust�
 
 ```mermaid
 flowchart LR
-    L[无参数Python启动器] --> G[Godot GUI / CodeEdit]
+    L[无参数Python启动器] --> G[Godot GUI / Start / 日志]
     L --> A[Python Authority / 本机API]
     A --> C[Rust Core 权威物理]
     A --> P[独立CPython玩家Worker]
@@ -24,11 +24,13 @@ Godot使用既有 `GET /api/profile`、`/api/view`、`/api/workspace`、`/api/de
 
 任务反馈文本仅变化时刷新，保留滚动位置；切关/重试后从顶部显示新任务。
 
-## 编辑、部署与源码兼容
+## 外部编辑、Start与源码兼容
 
-F2/按钮打开全窗口CodeEdit，×/同一键收起，Ctrl/⌘S保存。原生Tree显示多文件并高亮本关edit_files，支持添加文件；保存仍经Workspace CAS原子生成revision。算法不存到Godot `user://`，不因客户端退役重置工程、历史或进度。
+内置CodeEdit、源码文件树及保存/测试/部署按钮已按 [ADR-0058](adr/0058-external-editor-and-single-start.md) 删除。F2/VS Code按钮打开当前课程真实代码目录及主要文件，玩家保存后只需点击Start。Godot保留只读说明、升级预览、日志和停止操作，具体磁盘/版本接口见 [45](45_EXTERNAL_EDITOR_AND_START.md)。
 
-测试在独立CPython执行原有检查和授权短输入；当前revision Ready后才能部署。Active后自动关闭/锁定编辑器，结束/重试恢复；失焦和编辑时清除人工输入。框架升级展示旧/建议文本，经明确确认创建新revision，后端排除已有算法。旧存档或历史报告不能恢复Ready授权，环境变化后重新测试是正常验证流程。
+Start自动生成原Workspace CAS快照，执行原独立检查，再创建全新正式Worker。失败显示Python日志；不以操作简化绕过检查、权限、规划准备或固定提交门。运行中可外部编辑，当前revision不变；停止后才能Start新版本。框架升级先捕获保存内容、预览/明确确认，再同步未修改文件，冲突拒绝并保留源码/历史。
+
+文件保存在原userdata版本库的files目录，不迁移或清空原工程、ledger、revision或进度；游戏退出不关闭玩家VS Code。缺失编辑器时说明安装/PATH和实际目录，不恢复内置编辑器。选择课程载入准备场景，Start才运行保存代码。
 
 ## 配置与入口
 
@@ -50,7 +52,7 @@ python3 tools/check.py --suite godot --offline
 
 标准入口自动发现Python回归，并检查Rust、文档/Schema和生成配置；不需要Node。Godot真实流程单列 `--suite godot`，使用临时设置/进度/工程/XDG和随机端口。Rust WASM构建/ABI对照为独立开发能力，`--suite wasm`才需要Node，不提供浏览器显示或Pyodide。
 
-待移植界面：Vim/补全/悬停及矩阵实验；控制/定位曲线；算法实验台；项目导出/备份/历史/清理管理；设置/改键、手柄与完整关卡树；完整开发者图层及导航专用可视化。有关后端API和数据仍保留，旧教材中的网页菜单/快捷键不代表已在Godot实现。用户明确选择本轮先清理，不同时补齐这些功能。
+待移植界面：游戏专用矩阵实验（编辑能力交由VS Code）；控制/定位曲线；算法实验台；项目导出/备份/历史/清理管理；设置/改键、手柄与完整关卡树；完整开发者图层及导航专用可视化。有关后端API和数据仍保留，旧教材中的网页菜单/快捷键不代表已在Godot实现。用户明确选择本轮先清理，不同时补齐这些功能。
 
 历史原型证据见 [2026-11-17报告](reports/GODOT_DESKTOP_VALIDATION.md)，本轮证据见 [退役验收](reports/GODOT_ONLY_ENTRY_VALIDATION.md)。Linux窗口证据不推断Windows/macOS、输入法、全部课程或正式发行能力。普通CPython子进程仍非OS强沙箱；30ms profile保持experimental，不因删除浏览器提高预算或可靠性等级。
 

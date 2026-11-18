@@ -26,6 +26,7 @@ from tankbot_host.server import LocalServer
 from tankbot_host.workspace import workspace_scope
 from tankbot_host.workspace_api import WorkspaceAPI
 from tankbot_protocol.validation import Validator
+from editor_baseline_support import legacy_editor_instructions
 
 DEPENDENCIES={'c0':[],'c1':['c0'],'c2':['c1'],'c3':['c2'],'c4':['c3'],'c5':['c4'],
               'navigation.c0':['c0'],'navigation.c1':['navigation.c0'],'navigation.c2':['navigation.c1'],'navigation.c3':['navigation.c2'],'navigation.c4':['navigation.c3'],'navigation.c5':['navigation.c4'],'navigation.c6':['navigation.c5']}
@@ -113,7 +114,9 @@ class BranchingProgressionTests(unittest.TestCase):
         frozen=json.loads((ROOT/'tests/fixtures/progression-gameplay-before.json').read_text())
         seen=set()
         for path in (ROOT/'levels').glob('*.yaml'):
-            value=yaml.safe_load(path.read_text());lid=value['metadata']['id'];value['metadata'].pop('prerequisites')
+            # ADR-0058 changes only explicit editor operation text; keep the old
+            # fixture/hash intact and compare every other field exactly.
+            value=legacy_editor_instructions(yaml.safe_load(path.read_text()));lid=value['metadata']['id'];value['metadata'].pop('prerequisites')
             if lid not in frozen:continue
             value['evaluation'].pop('experiment',None)  # New lab capability is independent of frozen gameplay.
             seen.add(lid)

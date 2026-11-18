@@ -16,6 +16,12 @@ client:
   max_inflight: 8
   status_poll_ms: 500
   log_height: 160
-  file_tree_width: 290
+  guide_width: 420
   font_size: 18
   shutdown_timeout_s: 5.0
+editor:
+  executable: code
+  arguments: []
+  working_directory: files
+  max_scan_entries: 4096
+  max_scan_depth: 16

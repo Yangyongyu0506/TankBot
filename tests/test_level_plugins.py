@@ -17,6 +17,7 @@ from tankbot_host.level_plugins import LevelValidationError
 from tankbot_host.workspace import starter
 from tankbot_host.application import ApplicationState
 from level_baseline_support import projection
+from editor_baseline_support import legacy_editor_instructions
 from campaign_support import TRANSFORMS,solutions
 from tankbot_host.level_rules import evaluate
 
@@ -125,7 +126,8 @@ class LevelPluginTests(unittest.TestCase):
                 expected['guide']['steps']=[text.replace('击杀后通关；真值误差仅在尝试结束后给出。','击杀后通关；运行中查看累计位置 RMSE 和趋势，越低表示整体误差越小。') for text in expected['guide']['steps']]
                 expected['guide']['completion']=expected['guide']['completion'].replace('把敌车 HP 减到 0 即通关；误差评分在尝试结束后显示，不作为额外门槛。','把敌车 HP 减到 0 即通关；运行中显示累计位置 RMSE，结束后保留最终诊断，不作为额外门槛。')
             with self.subTest(level=lid):
-                actual=projection(config,lid)
+                # Exact approved UI-text translations only, never physics/rules.
+                actual=legacy_editor_instructions(projection(config,lid))
                 # SDK reference is additive across every lesson. Existing constructors, field
                 # types and method signatures remain compatible; explanatory text can describe
                 # the new sensors without pretending the old center-only C4 still exists.

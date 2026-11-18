@@ -25,13 +25,13 @@ python3 tools/tankbot.py --level c0 --map open_large
 
 锁定关卡不能通过CLI绕过。`--developer` 明确开启开发者练习，不计正式进度；地图覆盖同样只作练习，不解锁后续课程。Godot完整开发者图层及地图预览界面仍待移植，开发者模式不表示这些界面已具备。
 
-## 编辑和运行算法
+## 用 VS Code 编辑，点击 Start 运行
 
-F2 或顶部按钮打开全屏编辑器，×/同一快捷键收起。文件树高亮本关主要算法文件，支持多个 Python 文件、新建文件和 Ctrl/⌘S 保存。
+安装 VS Code 并确保 `code` 在 PATH 中。F2/「VS Code」按钮打开当前章节真实代码目录和本关主要文件，在VS Code中编辑、新建文件并保存。Godot内置代码编辑器已删除，完整类型和算法说明仍在游戏「任务说明」中。
 
-执行顺序为保存 → 测试快照 → 部署已测试版本。测试在独立CPython中检查源码、依赖、合同、权限、项目测试和短输入；规划课程还执行独立规划检查。通过不等同于完整闭环通关。正式部署使用新Worker，Active后自动关闭编辑器；运行中须先结束尝试或重试再编辑。
+操作只需 **VS Code 保存 → 游戏点击 Start**。Start冻结版本，自动在独立CPython中完成原源码、依赖、合同、权限、项目测试和短输入检查，再启动全新正式Worker；规划课程仍执行独立检查与正式规划。失败直接显示Python日志，修正保存后再次Start。不需手动测试或部署，短测通过仍不等于正式通关。
 
-主界面和编辑器日志提供 `print()`、Python异常及项目源码定位信息。右侧任务栏反馈更新保留滚动位置；切关/重试才回到顶部。
+运行中可在VS Code继续编辑，当前不可变运行版本不变；先「结束尝试」再Start才运行新代码。框架升级仍预览/明确确认，已有算法不覆盖。主界面日志显示 `print()`、Python异常及源码位置。任务栏更新保留滚动位置，切关/重试才回到顶部。
 
 算法输入只包含课程授权的数据；估计不能修改真实物理状态。第三方库只开放NumPy及指定基础标准库，不提供任意pip安装。当前轮电压、里程计、GPS/EKF、航点、连续追踪、全局规划与局部避障课程的算法/评分合同保持，详见 [文档索引](docs/README.md)。
 
@@ -39,9 +39,12 @@ F2 或顶部按钮打开全屏编辑器，×/同一快捷键收起。文件树�
 
 - `userdata/settings.yaml`：键盘映射、开发者模式和图层设置。
 - `userdata/progress.json`：完成记录和当前关卡。
-- `userdata/workspaces/`：完整源码、不可变revision、模板ledger、历史与归档。
+- `userdata/workspaces/<project>/files/`：VS Code编辑的真实文件，Ctrl+S后即保留在磁盘。
+- 同级版本库：Start捕获的不可变revision、模板ledger、历史与归档；editable-recovery保留同步时移出的旧文件。
 
 `--workspace` 是只读种子；`--workspace-store` 可指定版本库。验收或多项目运行可同时指定 `--settings-file`、`--save-file` 和 `--workspace-store`。跨关只补缺失文件；系统脚手架升级经预览/明确确认，不覆盖已有算法。重试重建运行状态，不删除源码。
+
+磁盘和历史同改时冲突拒绝，两边保留。未Start的保存内容尚未进入revision备份，完整备份应包含整个userdata；VS Code未保存缓冲由编辑器管理。未找到VS Code时显示目录和安装/PATH提示，可在 `config/desktop.yaml.editor.executable` 指定程序，arguments配置窗口选项。不自动安装扩展或覆盖已有.vscode设置，详见 [45](docs/45_EXTERNAL_EDITOR_AND_START.md)。
 
 ## 构建与开发检查
 
@@ -74,9 +77,9 @@ WASM对照需要Node和已构建的原生/WASM产物；仅此开发检查需要N
 
 Web GUI、CodeMirror/npm构建、Pyodide/浏览器Workers及专用浏览器工具已删除。Godot仍通过本机HTTP管理API连接后端；这不是浏览器启动入口。
 
-Godot当前可完成授权绘图、插值/相机、键鼠、F2多文件编辑、升级预览、测试部署、日志和关卡选择。以下原Web界面尚未完成Godot移植：
+Godot提供授权绘图、插值/相机、键鼠、VS Code入口、Start、升级预览、日志和关卡选择。以下功能仍待实现：
 
-- Vim、类型补全/悬停、交互矩阵实验。
+- 游戏专用交互矩阵实验；编辑器功能由外部VS Code及玩家自己的扩展提供。
 - 控制/误差曲线、算法实验台。
 - 工程导出、备份、历史恢复及清理管理面板；后端和数据仍保留。
 - 设置/改键界面、手柄、完整关卡树。

@@ -68,7 +68,7 @@
         "max_inflight",
         "status_poll_ms",
         "log_height",
-        "file_tree_width",
+        "guide_width",
         "font_size",
         "shutdown_timeout_s"
       ],
@@ -112,7 +112,7 @@
           "minimum": 80,
           "maximum": 500
         },
-        "file_tree_width": {
+        "guide_width": {
           "type": "integer",
           "minimum": 150,
           "maximum": 500
@@ -126,6 +126,45 @@
           "type": "number",
           "exclusiveMinimum": 0,
           "maximum": 30
+        }
+      }
+    },
+    "editor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "executable",
+        "arguments",
+        "working_directory",
+        "max_scan_entries",
+        "max_scan_depth"
+      ],
+      "properties": {
+        "executable": {
+          "type": "string",
+          "minLength": 1
+        },
+        "arguments": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "type": "string",
+            "maxLength": 1024
+          }
+        },
+        "working_directory": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]*$"
+        },
+        "max_scan_entries": {
+          "type": "integer",
+          "minimum": 64,
+          "maximum": 65536
+        },
+        "max_scan_depth": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 32
         }
       }
     }

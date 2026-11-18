@@ -2,7 +2,7 @@
 
 ## 项目状态与阅读入口
 
-TankBot 已有 Rust 权威仿真、独立 CPython SDK/Runtime 和 Godot 桌面客户端；无参数启动 `python3 tools/tankbot.py`。Web GUI/Pyodide已退役，headless/probe和独立Rust WASM开发验证保留。当前课程由 `levels/*.yaml` 自动发现；真实范围、平台证据及限制以 [文档索引](docs/README.md) 和 [路线图](docs/10_DEVELOPMENT_ROADMAP.md) 为准。新任务先读相关设计及 [ADR 状态表](docs/adr/README.md)，检查 `git status`，保留已有修改；不得把 Proposed 或历史报告视为当前已验证功能。
+TankBot 已有Rust权威仿真、独立CPython及Godot客户端，无参数启动 `python3 tools/tankbot.py`。F2调用VS Code编辑真实文件，保存后Start自动快照/检查/启动，见 [45](docs/45_EXTERNAL_EDITOR_AND_START.md)；无内置源码编辑器。Web/Pyodide已退役，headless/probe与独立Rust WASM验证保留。课程由 `levels/*.yaml` 自动发现；范围和限制以 [文档索引](docs/README.md)、[路线图](docs/10_DEVELOPMENT_ROADMAP.md) 为准。新任务先读设计和 [ADR状态](docs/adr/README.md)，检查git status并保留已有修改；不把Proposed或历史报告视为当前已验证能力。
 
 ## 开发中的交互确认
 
@@ -20,7 +20,7 @@ TankBot 已有 Rust 权威仿真、独立 CPython SDK/Runtime 和 Godot 桌面�
 8. 新模块遵守 [Module Contract](docs/05_ROBOT_MODULE_SYSTEM.md)，声明类型、生命周期、频率、依赖、预算与错误处理。
 9. 修改公共接口时同步修改文档、Schema、样例及相关测试；实现缺失的测试明确标待办。
 10. 重大架构变更必须留下 Context、Alternatives、Consequences 和明确状态，不能仅修改代码。
-11. 不直接覆盖玩家 Workspace 源码；模板与迁移必须非覆盖、可预览、可恢复，见 [06](docs/06_WORKSPACE_AND_TEMPLATES.md)。
+11. 不覆盖玩家Workspace源码；磁盘编辑与不可变运行快照分离，冲突拒绝并保留两边，模板/迁移需预览、可恢复，见 [06](docs/06_WORKSPACE_AND_TEMPLATES.md)、[45](docs/45_EXTERNAL_EDITOR_AND_START.md)。
 12. 接口语义、消息形状与命名优先参考 ROS 2 习惯，见 [ADR-0014](docs/adr/0014-ros-style-velocity-interface.md)；不引入 ROS2/DDS 运行时依赖，不建设不必要的通用中间件。
 13. 架构清晰优先于过早优化；优化以基准为据，不能把前端物理变成权威。
 14. 不为快速实现绕过身份、权限、沙箱、配额或固定 tick 提交边界，见 [07](docs/07_SIMULATION_DESIGN.md)、[08](docs/08_RUNTIME_AND_SECURITY.md)。

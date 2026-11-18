@@ -385,7 +385,7 @@ tutorial:
   problem: 雷达直接提供车体系 (r,theta)。处理非线性观测并输出车体系极坐标估计，人工瞄准击杀敌车。
   hints:
   - 从线性位置观测进阶到距离/方位观测；内部模型可使用 EKF，对外仍返回 (r,theta)。
-  - F2 文件树高亮本关主要编辑文件；已有 perception/、weapons/ 源码和历史版本保留。
+  - F2 用 VS Code 打开本章工程与本关主要文件；已有 perception/、weapons/ 源码和历史版本保留。
   - 运行中主界面可看日志，修改前请结束或重置本次尝试。
   lesson:
     title: C3 · 直接处理距离与方位观测
@@ -395,7 +395,7 @@ tutorial:
     - 从 measurements 元组逐项读取 .range_m/.bearing_rad，框架不会先调用 C1 的坐标变换。内部可用笛卡尔运动状态和非线性观测模型构建
       EKF，输出仍是车体系极坐标。
     - 推导观测 Jacobian，并对 theta 创新做角度环绕。比较预测、测量和滤波结果；丢失时只做预测。
-    - 保存、测试、部署，按 J/L 与空格人工控制炮台和开火，存活击杀。
+    - 在 VS Code 保存后点击 Start，按 J/L 与空格人工控制炮台和开火，存活击杀。
     files:
     - path: perception/polar_tracker.py
       role: 本关填写：原始极坐标观测滤波，返回车体系 (r,theta)。
@@ -410,7 +410,7 @@ tutorial:
     common_errors:
     - 不要把 range/bearing 当作地图 x/y；角度创新须归一到 [-pi,pi)。
     - 观测元组只有当前帧，不是历史；需要保留状态或窗口时必须限制大小。
-    - 运行阶段不能打开编辑器；请先结束本次尝试，修改保存后重试。
+    - 运行时可在 VS Code 编辑，但当前运行版本不变；结束尝试后保存并点击 Start 运行新版本。
     - 输入是 tuple[PolarTargetEstimate, ...]：用 .range_m/.bearing_rad 取值，空帧为 ()；不要使用旧
       measurements_rt 的二维下标。
     execution: 框架以 {algorithm_hz} Hz 提供同期 tuple[PolarTargetEstimate, ...] 观测。Radar

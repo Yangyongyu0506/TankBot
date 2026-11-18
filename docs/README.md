@@ -8,7 +8,7 @@
 
 原生profile仍为20ms声明准入、30ms整批墙钟、6tick提交，状态experimental；不因删除浏览器宣称可靠性提升。历史双Runtime报告、原始JSON和当期测试计数保留，不能作为当前浏览器支持或完整Godot功能等价的证据。历史浏览器源链接指向删除前提交。
 
-Godot当前已验证渲染、键鼠、F2编辑、测试/部署、日志、通关/重试和工程保留。曲线、实验台、备份/历史管理界面、完整图层、手柄/设置及高级编辑工具待移植，其后端合同和玩家数据保留。本轮实际验证和限制见 [退役验收](reports/GODOT_ONLY_ENTRY_VALIDATION.md)；旧愿景、里程碑和报告需按各自时期阅读。
+Godot提供渲染、键鼠、VS Code入口、Start、日志及关卡操作；内置源码编辑与手动测试/部署按钮已由 [ADR-0058](adr/0058-external-editor-and-single-start.md) 移除。VS Code保存真实文件，Start冻结版本并自动完成原检查与启动，见 [45](45_EXTERNAL_EDITOR_AND_START.md)、[当前验收](reports/EXTERNAL_EDITOR_AND_START_VALIDATION.md)。曲线、实验台、工程维护、完整图层及手柄/设置界面仍待移植。旧报告按各自时期阅读，不作为当前菜单说明。
 
 “必须／不得”为设计约束；“建议／拟采用”为待验证方案。Accepted ADR 表示接受设计原则或接口方向，不表示实现或平台验证完成；Proposed 技术不得当作既成依赖。协议 `1.0` 是**未发布草案**，首次发布前由兼容性审查冻结；发布后执行版本规则。
 
@@ -18,6 +18,8 @@ Godot当前已验证渲染、键鼠、F2编辑、测试/部署、日志、通关
 
 | 文档 | 负责的设计与接口 |
 | --- | --- |
+| [45 外部编辑与Start](45_EXTERNAL_EDITOR_AND_START.md) | VS Code真实文件、保存/快照、冲突保护和单次Start自动检查/运行 |
+| [外部编辑与Start验收](reports/EXTERNAL_EDITOR_AND_START_VALIDATION.md) | 磁盘/历史保护、自动启动、隔离编辑器及真实流程证据 |
 | [Godot唯一入口验收](reports/GODOT_ONLY_ENTRY_VALIDATION.md) | 默认启动、Web/Pyodide清理、数据兼容与保留的开发能力 |
 | [44 Godot桌面客户端](44_GODOT_DESKTOP_CLIENT.md) | 统一启动、授权原生渲染、CodeEdit、CPython编辑部署及兼容边界 |
 | [Godot原型验收](reports/GODOT_DESKTOP_VALIDATION.md) | 隔离工程、实际Godot流程、源码/进度保留与截图；非完整迁移 |

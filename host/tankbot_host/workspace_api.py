@@ -24,6 +24,9 @@ class WorkspaceAPI:
     def __init__(self, config, seed=None, directory=None):
         self.config = config
         self.store = open_store(config, seed, directory)
+        from .external_editor import EditableProject
+        from .desktop import settings
+        self.external = EditableProject(self.store, settings()['editor'])
         from .workspace_maintenance import WorkspaceMaintenance
         self.maintenance = WorkspaceMaintenance(self.store)
         with self.store.transaction():self.maintenance._recover_pending()
@@ -36,7 +39,8 @@ class WorkspaceAPI:
         learning["upgrade"] = framework_upgrade(self.config, snapshot["files"], snapshot["ledger"])
         learning["upgrade_required"] = learning["upgrade"]["required"]
         return {"snapshot": snapshot, "limits": self.config["workspace"], "storage": "local-versioned-store",
-                "level_id": self.config.get("campaign", {}).get("active_level"), "learning": learning}
+                "level_id": self.config.get("campaign", {}).get("active_level"), "learning": learning,
+                "editable_directory": str(self.external.root)}
 
     def unlock(self, config):
         """Append newly granted files; explicit migration still handles existing paths."""
@@ -54,6 +58,20 @@ class WorkspaceAPI:
         return self.get()
 
     def post(self, operation, value):
+        if operation in ('external_open', 'external_upgrade'):
+            if value != {}:
+                raise ValueError('INVALID_EDITOR_REQUEST')
+            if operation == 'external_open':
+                return self.external.open(learning_bundle(self.config).get('lesson', {}))
+            snapshot = self.external.capture()
+            return self.post('upgrade', {'revision': snapshot['revision']})
+        if operation == 'external_apply':
+            if not isinstance(value, dict) or set(value) != {'plan_id', 'revision', 'resolutions'}:
+                raise ValueError('INVALID_EDITOR_REQUEST')
+            self.external.capture()
+            result = self.post('apply', value)
+            self.external.refresh()
+            return result
         tools={"storage":set(),"revisions":set(),"pin":{"revision","target_revision","enabled"},
                "backup_export":set(),"backup_create":set(),"backup_preview":{"backup","revision"},
                "backup_apply":{"plan_id","revision"},"backup_cleanup_plan":{"revision","backup_ids"},

@@ -571,7 +571,7 @@ tutorial:
     - 对状态使用 F@state 代替非线性 f；忽略 yaw 的 Jacobian。
     - 将每次固定的增益误差当作独立噪声，低估持续漂移。
     - P 的 shape/dtype 错误、非对称、非半正定、NaN/Inf；日志会展示 Python 调用位置。
-    - 在编辑器中改代码不会立即改变机器人；先结束尝试，再测试和部署新快照。
+    - 在 VS Code 改代码不会立即改变机器人；保存后先结束当前尝试，再点击 Start 自动检查并运行新快照。
     type_notes: {}
     calibration:
       wheel_radius_m:

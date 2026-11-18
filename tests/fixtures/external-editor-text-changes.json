@@ -1,0 +1,236 @@
+[
+  {
+    "path": [
+      "levels/hello_robot.C0.yaml",
+      "tutorial",
+      "lesson",
+      "steps",
+      4
+    ],
+    "before": "正式尝试持续计时，打开编辑器不暂停；可在任务页或编辑器点击「结束本次尝试」，修改保存后重试。",
+    "after": "正式尝试持续计时，切换到 VS Code 不暂停；可在游戏点击「结束尝试」，修改并保存后点击 Start 重试。"
+  },
+  {
+    "path": [
+      "levels/hello_robot.C0.yaml",
+      "tutorial",
+      "lesson",
+      "execution"
+    ],
+    "before": "本关无需编程；关闭代码编辑器后使用键盘驾驶。",
+    "after": "本关无需编程；在游戏窗口使用键盘驾驶，Start 可开始或重试。"
+  },
+  {
+    "path": [
+      "levels/hello_robot.C0.yaml",
+      "tutorial",
+      "lesson",
+      "common_errors",
+      0
+    ],
+    "before": "编辑器打开时，驾驶按键用于编辑代码；关闭后才能控制坦克。",
+    "after": "切换到 VS Code 时游戏释放驾驶按键；切回游戏窗口后再操控坦克。"
+  },
+  {
+    "path": [
+      "levels/navigation.C0.yaml",
+      "tutorial",
+      "hints",
+      0
+    ],
+    "before": "在 F2 中只需编辑高亮的 control/wheel_controller.py；Navigation 使用独立项目，Weapons 代码与历史保留在原工程。",
+    "after": "按 F2 在 VS Code 编辑 control/wheel_controller.py；Navigation 使用独立项目，Weapons 代码与历史保留在原工程。"
+  },
+  {
+    "path": [
+      "levels/navigation.C2.yaml",
+      "tutorial",
+      "lesson",
+      "common_errors",
+      5
+    ],
+    "before": "在编辑器中改代码不会立即改变机器人；先结束尝试，再测试和部署新快照。",
+    "after": "在 VS Code 改代码不会立即改变机器人；保存后先结束当前尝试，再点击 Start 自动检查并运行新快照。"
+  },
+  {
+    "path": [
+      "levels/navigation.C3.yaml",
+      "tutorial",
+      "lesson",
+      "steps",
+      12
+    ],
+    "before": "保存→测试→部署；部署后编辑器关闭并锁定，发现问题可结束尝试或重试。测试不会移动正式机器人，重试才重置任务和时间；已有源码及历史保留。",
+    "after": "在 VS Code 保存→点击 Start 自动检查并运行，发现问题可结束尝试后修改保存，再点击 Start。测试不会移动正式机器人，重试才重置任务和时间；已有源码及历史保留。"
+  },
+  {
+    "path": [
+      "levels/navigation.C4.yaml",
+      "tutorial",
+      "lesson",
+      "steps",
+      7
+    ],
+    "before": "保存→测试→部署；结束尝试或重试后可以重新编辑，源码与历史保留。",
+    "after": "在 VS Code 保存→游戏点击 Start，自动检查并运行；运行时的编辑不影响当前快照，源码与历史保留。"
+  },
+  {
+    "path": [
+      "levels/weapons.C1.yaml",
+      "tutorial",
+      "hints",
+      0
+    ],
+    "before": "F2 打开编辑器，阅读任务说明，完成 perception/transforms.py 的 radar_to_map。",
+    "after": "F2 用 VS Code 打开代码；游戏的「任务说明」提供类型与公式，完成 perception/transforms.py 的 radar_to_map。"
+  },
+  {
+    "path": [
+      "levels/weapons.C1.yaml",
+      "tutorial",
+      "hints",
+      1
+    ],
+    "before": "F1 查看 Pose2D 字段、NumPy 返回类型及矩阵实验：前三列是基向量，最后一列是原点位置。",
+    "after": "F1 查看 Pose2D 字段、NumPy 返回类型及矩阵公式：前三列是基向量，最后一列是原点位置。"
+  },
+  {
+    "path": [
+      "levels/weapons.C1.yaml",
+      "tutorial",
+      "hints",
+      2
+    ],
+    "before": "系统负责极坐标展开和 T @ p；保存 → 测试快照 → 部署，然后手动瞄准命中。",
+    "after": "系统负责极坐标展开和 T @ p；在 VS Code 保存 → 游戏点击 Start，然后手动瞄准命中。"
+  },
+  {
+    "path": [
+      "levels/weapons.C1.yaml",
+      "tutorial",
+      "lesson",
+      "steps",
+      4
+    ],
+    "before": "保存 → 测试快照 → 部署已测试版本。看到目标估计后手动瞄准命中。",
+    "after": "在 VS Code 保存 → 游戏点击 Start。看到目标估计后手动瞄准命中。"
+  },
+  {
+    "path": [
+      "levels/weapons.C1.yaml",
+      "tutorial",
+      "lesson",
+      "steps",
+      5
+    ],
+    "before": "正式尝试持续计时，打开编辑器不暂停；可在任务页或编辑器点击「结束本次尝试」，修改保存后重试。",
+    "after": "正式尝试持续计时，切换到 VS Code 不暂停；可在游戏点击「结束尝试」，修改并保存后点击 Start 重试。"
+  },
+  {
+    "path": [
+      "levels/weapons.C2.yaml",
+      "tutorial",
+      "lesson",
+      "steps",
+      4
+    ],
+    "before": "保存、测试并部署。跟踪巡逻敌车，考虑弹丸飞行时间，击杀后通关；运行中查看累计位置 RMSE 和趋势，越低表示整体误差越小。",
+    "after": "在 VS Code 保存后点击游戏 Start，自动检查并运行。跟踪巡逻敌车，考虑弹丸飞行时间，击杀后通关；运行中查看累计位置 RMSE 和趋势，越低表示整体误差越小。"
+  },
+  {
+    "path": [
+      "levels/weapons.C2.yaml",
+      "tutorial",
+      "lesson",
+      "steps",
+      5
+    ],
+    "before": "正式尝试持续计时，打开编辑器不暂停；可在任务页或编辑器点击「结束本次尝试」，修改保存后重试。",
+    "after": "正式尝试持续计时，切换到 VS Code 不暂停；可在游戏点击「结束尝试」，修改并保存后点击 Start 重试。"
+  },
+  {
+    "path": [
+      "levels/weapons.C3.yaml",
+      "tutorial",
+      "hints",
+      1
+    ],
+    "before": "F2 文件树高亮本关主要编辑文件；已有 perception/、weapons/ 源码和历史版本保留。",
+    "after": "F2 用 VS Code 打开本章工程与本关主要文件；已有 perception/、weapons/ 源码和历史版本保留。"
+  },
+  {
+    "path": [
+      "levels/weapons.C3.yaml",
+      "tutorial",
+      "lesson",
+      "steps",
+      3
+    ],
+    "before": "保存、测试、部署，按 J/L 与空格人工控制炮台和开火，存活击杀。",
+    "after": "在 VS Code 保存后点击 Start，按 J/L 与空格人工控制炮台和开火，存活击杀。"
+  },
+  {
+    "path": [
+      "levels/weapons.C3.yaml",
+      "tutorial",
+      "lesson",
+      "common_errors",
+      2
+    ],
+    "before": "运行阶段不能打开编辑器；请先结束本次尝试，修改保存后重试。",
+    "after": "运行时可在 VS Code 编辑，但当前运行版本不变；结束尝试后保存并点击 Start 运行新版本。"
+  },
+  {
+    "path": [
+      "levels/weapons.C4.yaml",
+      "tutorial",
+      "hints",
+      2
+    ],
+    "before": "F2 文件树高亮本关主要编辑文件；已有 perception/、weapons/ 源码和历史版本保留。",
+    "after": "F2 用 VS Code 打开本章工程与本关主要文件；已有 perception/、weapons/ 源码和历史版本保留。"
+  },
+  {
+    "path": [
+      "levels/weapons.C4.yaml",
+      "tutorial",
+      "lesson",
+      "steps",
+      4
+    ],
+    "before": "保存、测试、部署后，炮台和开火全部由程序控制，人工 J/L/空格与手柄武器输入禁用；无需估计敌车 yaw，也不要求命中装甲。",
+    "after": "保存后点击 Start，自动检查并运行；炮台和开火全部由程序控制，人工 J/L/空格与手柄武器输入禁用；无需估计敌车 yaw，也不要求命中装甲。"
+  },
+  {
+    "path": [
+      "levels/weapons.C4.yaml",
+      "tutorial",
+      "lesson",
+      "common_errors",
+      2
+    ],
+    "before": "运行阶段不能打开编辑器；请先结束本次尝试，修改保存后重试。",
+    "after": "运行时可在 VS Code 编辑，但当前运行版本不变；结束尝试后保存并点击 Start 运行新版本。"
+  },
+  {
+    "path": [
+      "levels/weapons.C5.yaml",
+      "tutorial",
+      "hints",
+      1
+    ],
+    "before": "F2 文件树高亮本关主要编辑文件；已有 perception/、weapons/ 源码和历史版本保留。",
+    "after": "F2 用 VS Code 打开本章工程与本关主要文件；已有 perception/、weapons/ 源码和历史版本保留。"
+  },
+  {
+    "path": [
+      "levels/weapons.C5.yaml",
+      "tutorial",
+      "lesson",
+      "steps",
+      5
+    ],
+    "before": "复用 C4 的 auto_aim.py 控制器；扩展 target_prediction.py 处理旋转装甲和命中提前量。保存、测试、部署后完全由程序操纵武器；日志和模块页可用于排错。",
+    "after": "复用 C4 的 auto_aim.py 控制器；扩展 target_prediction.py 处理旋转装甲和命中提前量。在 VS Code 保存后点击 Start，自动检查并运行程序操纵武器；游戏日志可用于排错。"
+  }
+]

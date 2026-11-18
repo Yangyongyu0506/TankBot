@@ -6,6 +6,8 @@
 
 当前优先任务是补齐Godot中的曲线、实验台、项目维护/历史界面、设置/手柄、完整关卡树和导航/开发者图层；这些原Web功能的后端和数据保留，尚未完成界面移植。当前入口与验收见 [44](44_GODOT_DESKTOP_CLIENT.md)、[本轮报告](reports/GODOT_ONLY_ENTRY_VALIDATION.md)。
 
+编辑流程已进一步改为VS Code真实目录＋单次Start，见 [45](45_EXTERNAL_EDITOR_AND_START.md)、[验收](reports/EXTERNAL_EDITOR_AND_START_VALIDATION.md)：删除内置源码编辑及手动测试/部署按钮，内部快照、独立检查、正式Worker和固定门保持。运行中编辑不改当前revision，升级仍预览/显式应用。不再规划内置Vim/补全等工具移植。
+
 先验证本项目独特的端到端数据流，再扩展内容。M0、M1/M1b 已交付并完成[收尾复核](reports/M1_CLOSEOUT.md)；M2 已完成浏览器双 Worker、Adapter 一致性及本机资源验收，见 [M2 报告](reports/M2_VALIDATION.md)。其他 OS/浏览器验证仍待执行；M3 编辑部署和 M4 C0–C2 本机教学闭环已完成，见 [M3](reports/M3_VALIDATION.md)、[M4 报告](reports/M4_VALIDATION.md)。M5 多模块和 Weapons C3/C4 已完成本机验收，见 [M5 报告](reports/M5_VALIDATION.md)；M6a–M6g 已接入 Navigation 双轮控制、控制调试、里程计、GPS/EKF、航点闭环、连续路径追踪、已知地图规划和局部静态避障；其他导航课程尚未实施。Accepted 安全/状态边界从 M1 开始，不把三层状态分离推迟到画面完成以后。
 
 ```mermaid

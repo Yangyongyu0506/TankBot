@@ -4,7 +4,7 @@
 
 ## 当前范围与历史界面
 
-当前Godot提供持久多文件Python编辑、单模块/同步多模块图的Manifest/Contract校验、非覆盖模板、不可变快照测试、原子部署与回滚，以及后端工程备份/固定版本/预览清理API；相应Godot管理界面待移植。继承 [06](06_WORKSPACE_AND_TEMPLATES.md)、ADR-0009/0012；模块图详见 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)，维护详见 [38](38_ENGINEERING_AND_ALGORITHM_LAB.md)。Arena、云同步和独立静态Web存储尚未实现。
+当前源码由VS Code在真实files目录编辑，Godot Start自动执行单模块/同步多模块图的Manifest/Contract校验、非覆盖模板、不可变快照测试、原子部署与回滚，以及后端工程备份/固定版本/预览清理API；相应Godot管理界面待移植。继承 [06](06_WORKSPACE_AND_TEMPLATES.md)、ADR-0009/0012；模块图详见 [26](26_MODULE_GRAPH_AND_WEAPONS_CHAPTER.md)，维护详见 [38](38_ENGINEERING_AND_ALGORITHM_LAB.md)。Arena、云同步和独立静态Web存储尚未实现。
 
 当前应用配置为 `2.1`，workspace段和engineering.yaml共同提供文件、测试/部署、归档/备份与UI配额；Runtime准入/墙钟分别由后端profile约束，见 [41](41_RUNTIME_EXECUTION_PROFILES.md)。历史M3在1.5引入workspace段，没有改变物理或Protocol 1.0；该历史版本不代表当前配置要求。工具不改写用户自定义配置。
 
@@ -16,7 +16,8 @@ C5 Test在新候选中执行项目检查、一次5秒完整规划及路径校验
 
 ```mermaid
 flowchart LR
-    CM[Godot CodeEdit 草稿] --> SAVE[Workspace API / CAS revision]
+    CM[VS Code保存文件] --> START[Godot Start]
+    START --> SAVE[Workspace API / CAS revision]
     SAVE --> SNAP[文件与 ledger 快照]
     SNAP --> CHECK[Authority 结构、语义、权限与摘要检查]
     CHECK --> TEST[独立测试 Runtime]
@@ -28,9 +29,9 @@ flowchart LR
     REPORT --> ARCHIVE[只读归档与导出]
 ```
 
-`workspace.py` / `workspace_api.py` 管理文件；不 import 玩家代码。`deployment.py` 只使用授权传感器、Contract 和 Supervisor，不把 World 传给 Runtime。`module_profile.py` 生成任务授权的初始合同，Manifest 不能增加输入、输出或执行器权限。`clients/godot/main.gd`管理编辑事务与请求，时间插值/绘图仅消费授权视图，见44。
+`workspace.py` / `workspace_api.py` 管理文件；不 import 玩家代码。`deployment.py` 只使用授权传感器、Contract 和 Supervisor，不把 World 传给 Runtime。`module_profile.py` 生成任务授权的初始合同，Manifest 不能增加输入、输出或执行器权限。`external_editor.py`管理磁盘副本，`player_run.py`编排自动检查/启动，`clients/godot/main.gd`提供对应请求入口，时间插值/绘图仅消费授权视图，见44。
 
-当前Host驱动DeploymentManager，候选使用独立CPython子进程；候选import/测试不执行在Authority物理循环。原Pyodide双Worker已按ADR-0057删除。
+当前玩家只需保存后点击Start，详见 [45](45_EXTERNAL_EDITOR_AND_START.md)；下面Test/Deploy为内部阶段及兼容开发接口，不是要求点击的按钮。当前Host驱动DeploymentManager，候选使用独立CPython子进程；候选import/测试不执行在Authority物理循环。原Pyodide双Worker已按ADR-0057删除。
 
 ## Workspace 与存储
 

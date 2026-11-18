@@ -51,7 +51,7 @@ estimated_pose为只读map系(3,) [x,y,yaw]，path_xy[i]为map系[x,y]米制坐�
 
 path与checkpoints独立图层，公开起终点、完整折线、检查点位置和通过状态。UI主反馈为真实质心距终点的欧式距离，可在绕行时增大，不转成单调百分比。permissions.visualization.task_feedback独立授权运行中的距终点/检查点，以及终局RMSE、最大偏离、计分时长和样本数；运行中不公布额外真实追踪误差。既有获授权定位RMSE不改变，图层不能扩大算法输入权限。
 
-F2高亮navigation/path_follower.py，完整说明ndarray维度/坐标/单位、连续追踪与逐点停车的区别、最近线段/前视点/横向误差、角度环绕、弯道减速、终点制动和提交延迟。正式空模板只返回零Twist，参考解只在测试或隔离工程。
+F2用VS Code打开navigation/path_follower.py；只读任务说明提供完整说明ndarray维度/坐标/单位、连续追踪与逐点停车的区别、最近线段/前视点/横向误差、角度环绕、弯道减速、终点制动和提交延迟。正式空模板只返回零Twist，参考解只在测试或隔离工程。
 
 旧轮控/里程计/EKF/C3源码及revision/ledger/history不覆盖。新算法只补缺失文件，受管适配器/manifest/Contract升级须预览和显式应用，可从旧版本恢复。课程YAML自动发现，不按ID写仿真、评分或UI分支。新增本关前的十关、地图、Topic和进度保持兼容；当前目录后续新增C5/C6后共十三关；C5规划合同与评分见 [42](42_NAVIGATION_GLOBAL_PLANNING.md)，不改变本文C4。
 

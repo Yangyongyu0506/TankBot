@@ -6,6 +6,8 @@
 - Supersedes: [0020](0020-shared-browser-authority.md) 的浏览器部署架构
 - Amends: [0021](0021-editor-and-deployment-profile.md)、[0056](0056-godot-desktop-presentation.md) 的Web界面保留；[0053](0053-backend-runtime-execution-profiles.md) 的活跃后端集合
 
+2026-11-18局部修订：内置编辑器和手动测试/部署按钮由 [ADR-0058](0058-external-editor-and-single-start.md) 替换为VS Code＋Start；本记录的浏览器退役、原生Worker与开发工具范围保持。
+
 ## Context
 
 Godot原型已经能够连接原生Authority、编辑/测试/部署并运行CPython算法。继续维护Web GUI、CodeMirror/npm、独立origin/Pyodide和浏览器工具形成两套客户端成本。用户明确要求删除浏览器功能，并逐项确认：一并移除浏览器Runtime和专用工具；Web独有界面功能列为待移植；保留headless/probe和Rust WASM开发能力。
